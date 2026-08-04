@@ -53,7 +53,7 @@ public class DayanStpInterface implements StpInterface {
     @Override
     public List<String> getPermissionList(Object loginId, String loginType) {
         // 仅 Admin 端走 organ 权限体系；其余端 P1 暂不处理
-        if (!AccountType.ADMIN.getLoginType().equals(loginType)) {
+        if (!isAdminLoginType(loginType)) {
             return Collections.emptyList();
         }
         if (loginId == null) {
@@ -106,7 +106,7 @@ public class DayanStpInterface implements StpInterface {
     @Override
     public List<String> getRoleList(Object loginId, String loginType) {
         // 仅 Admin 端走 organ 权限体系；其余端 P1 暂不处理
-        if (!AccountType.ADMIN.getLoginType().equals(loginType)) {
+        if (!isAdminLoginType(loginType)) {
             return Collections.emptyList();
         }
         if (loginId == null) {
@@ -141,5 +141,16 @@ public class DayanStpInterface implements StpInterface {
                 .map(OrganAccountRoleRel::getRoleCode)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 判断是否为 Admin 端登录类型。
+     *
+     * <p>接受 "admin"（{@link AccountType#ADMIN}）与 Sa-Token 默认 loginType "login"：
+     * 因为 {@code OrganCodeGeneratorConfig} 已将默认 StpLogic 设为 ADMIN，未指定 type 的
+     * {@code @SaCheckPermission} 会以 loginType=admin 调用本实现；这里兼容 "login" 以备兜底。
+     */
+    private boolean isAdminLoginType(String loginType) {
+        return AccountType.ADMIN.getLoginType().equals(loginType) || "login".equals(loginType);
     }
 }

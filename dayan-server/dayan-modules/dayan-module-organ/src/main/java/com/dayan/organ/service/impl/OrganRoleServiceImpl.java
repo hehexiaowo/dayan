@@ -32,7 +32,9 @@ import java.util.stream.Collectors;
 /**
  * organ 域角色管理服务实现。
  *
- * <p>角色编码：{@code OR + 5位序列}（如 OR00001），全局唯一；同一 organCode 下不允许重名。
+ * <p>角色编码：{@code RL + 5位序列}（如 RL00001），全局唯一；同一 organCode 下不允许重名。
+ * <p>注意：{@code OR} 前缀已被组织编码（{@link com.dayan.common.core.code.BusinessCode#ORGAN}）占用，
+ * 角色独立使用 {@code RL}（RoLe）前缀，避免 CodeGenerator 序列键冲突。
  * 删除前校验是否有账号关联，授权采用"先删后增"全量覆盖语义。
  */
 @Slf4j
@@ -40,8 +42,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrganRoleServiceImpl implements OrganRoleService {
 
-    /** 角色编码前缀（Organ Role） */
-    private static final String ROLE_CODE_PREFIX = "OR";
+    /** 角色编码前缀（RoLe） */
+    private static final String ROLE_CODE_PREFIX = "RL";
 
     private final OrganRoleMapper roleMapper;
     private final OrganRolePermissionShipMapper rolePermissionShipMapper;
