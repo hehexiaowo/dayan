@@ -1,3 +1,6 @@
+-- 强制连接字符集为 utf8mb4，避免 docker-entrypoint-initdb.d 按默认字符集读取
+-- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
+SET NAMES utf8mb4;
 -- =====================================================================
 -- state_machine_seed.sql  状态机配置种子数据
 -- 6 个状态机：EQUITY_SM(8态) / ORDER_SM(8态) / SERVICE_SESSION_SM(7态) / PARK_SM(4态) / CONTENT_SM(5态) / SCENE_SM(4态)

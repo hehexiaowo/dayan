@@ -19,8 +19,12 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
       - --default-time-zone=+08:00
       - --max-connections=500
+      # 拒绝 client 字符集协商，强制连接用 server 的 utf8mb4。
+      # 配合下方 initdb.cnf 挂载，确保 docker-entrypoint 执行 seed 时按 utf8mb4 读取。
+      - --character-set-client-handshake=FALSE
     ports:
       - "3306:3306"
     volumes:
