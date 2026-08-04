@@ -53,8 +53,9 @@
     <modules>
         <module>dayan-common</module>
         <module>dayan-modules</module>
+        <module>dayan-starters</module>
         <module>dayan-gateway</module>
-        <!-- 启动模块、job 在 P0-B 子任务中加入 -->
+        <!-- job 模块在 P0-B 子任务中加入 -->
     </modules>
 
     <dependencyManagement>

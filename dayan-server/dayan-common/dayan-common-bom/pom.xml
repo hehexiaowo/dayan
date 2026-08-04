@@ -70,6 +70,93 @@
                 <artifactId>dayan-common-lbs</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <!-- 业务模块版本统一管理（17 域） -->
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-system</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-organ</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-butler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-supplier</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-park</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-scene</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-channel</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-agent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-equity</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-goods</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-content</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-course</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-order</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-finance</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-distributor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
