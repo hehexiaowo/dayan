@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
 @TableName("equity_activate")
 public class EquityActivate extends BaseEntity {
 
-    /** 主键 */
-    @TableId(type = IdType.AUTO)
+    /** 主键（分片表，雪花ID，MyBatis-Plus 自动分配） */
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
 

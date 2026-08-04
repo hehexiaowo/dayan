@@ -26,6 +26,7 @@ import java.util.Set;
  *   <li>核心域全部 9 张表（organ_*）</li>
  *   <li>管家域 butler_* 8 张（平台共享）</li>
  *   <li>分销商 distributor_info 1 张</li>
+ *   <li>权益域 equity_* 6 张（P4：Admin 全局管理，渠道归属通过 channel_code 字段显式查询）</li>
  *   <li>channel_info（渠道本身定义，非渠道内数据）</li>
  * </ul>
  * 具体忽略表名可通过配置项 {@code dayan.tenant.ignore-tables} 覆盖/追加。
@@ -38,7 +39,7 @@ public class DayanTenantHandler implements TenantLineHandler {
 
     /** 平台共享表前缀（默认忽略） */
     private static final String[] DEFAULT_IGNORE_PREFIXES = {
-            "system_", "organ_", "butler_", "distributor_"
+            "system_", "organ_", "butler_", "distributor_", "equity_"
     };
 
     /** 单独忽略的表（平台共享但不匹配前缀） */
