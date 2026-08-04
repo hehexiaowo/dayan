@@ -15,8 +15,10 @@ export default defineConfig({
     host: true,
     open: true,
     proxy: {
+      // 联调阶段直连 dayan-admin（8080），不经过 dayan-gateway（8000）
+      // 上线后改回 gateway 地址即可
       '/admin-api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8080',
         changeOrigin: true
       }
     }

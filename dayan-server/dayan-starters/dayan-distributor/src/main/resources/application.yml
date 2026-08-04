@@ -39,7 +39,8 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 sa-token:
-  token-name: Authorization
+  # Distributor 端独立 token 头（前端 Distributor-Token，命名风格与各端一致）
+  token-name: Distributor-Token
   timeout: 7200
   active-timeout: -1
   is-concurrent: true

@@ -1,11 +1,15 @@
 package com.dayan.system.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.dayan.common.mybatis.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.util.List;
+
 /**
  * 表 system_menu 对应实体。
  */
@@ -63,4 +67,10 @@ public class SystemMenu extends BaseEntity {
 
     /** 备注 */
     private String remark;
+
+    /**
+     * 子菜单列表（非数据库字段，仅用于 /menus/tree 接口组装树形结构返回）。
+     */
+    @TableField(exist = false)
+    private List<SystemMenu> children;
 }

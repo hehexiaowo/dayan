@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
+    name: 'Layout',
     component: () => import('@/layouts/default/index.vue'),
     redirect: '/dashboard',
     children: [
@@ -57,7 +58,10 @@ const router = createRouter({
  */
 export function addDynamicRoutes(dynamicRoutes: RouteRecordRaw[]) {
   for (const route of dynamicRoutes) {
-    router.addRoute('/', route)
+    // addRoute(parentName, route)：第一个参数是父路由的 name（非 path）。
+    // 根布局路由 name 为 'Layout'（见上方路由表），动态业务路由作为它的 children 挂载，
+    // 从而共享 DefaultLayout 的 <router-view> 容器。
+    router.addRoute('Layout', route)
   }
 }
 

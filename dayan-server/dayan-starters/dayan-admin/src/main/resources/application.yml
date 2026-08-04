@@ -39,7 +39,9 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 sa-token:
-  token-name: Authorization
+  # 与 Admin 前端写死的 TOKEN_HEADER='Admin-Token' 保持一致
+  # 各端独立命名（Channel-Token / Agent-Token / Client-Token 等），便于网关按端路由
+  token-name: Admin-Token
   timeout: 7200
   active-timeout: -1
   is-concurrent: true

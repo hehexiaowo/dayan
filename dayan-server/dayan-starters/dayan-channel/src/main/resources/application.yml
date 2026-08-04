@@ -39,7 +39,8 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 sa-token:
-  token-name: Authorization
+  # 与 Channel 前端写死的 TOKEN_HEADER='Channel-Token' 保持一致
+  token-name: Channel-Token
   timeout: 7200
   active-timeout: -1
   is-concurrent: true

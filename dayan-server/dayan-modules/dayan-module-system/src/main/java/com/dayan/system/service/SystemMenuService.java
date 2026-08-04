@@ -61,9 +61,7 @@ public class SystemMenuService {
         return all.stream()
                 .filter(m -> (parentCode == null && m.getParentCode() == null)
                         || (parentCode != null && parentCode.equals(m.getParentCode())))
-                .peek(m -> {
-                    // 递归设置 children（用 transient 字段需在 Entity 加，P1 简化返回平铺）
-                })
+                .peek(m -> m.setChildren(buildTree(all, m.getMenuCode())))
                 .sorted(Comparator.comparingInt(m -> m.getSortOrder() == null ? 0 : m.getSortOrder()))
                 .collect(Collectors.toList());
     }
