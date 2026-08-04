@@ -17,8 +17,8 @@ import java.time.LocalDateTime;
 @TableName("order_scene")
 public class OrderScene extends BaseEntity {
 
-    /** 主键 */
-    @TableId(type = IdType.AUTO)
+    /** 主键（分片表，雪花ID，MyBatis-Plus 自动分配） */
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
 

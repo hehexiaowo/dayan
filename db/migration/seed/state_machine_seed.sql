@@ -27,21 +27,25 @@ VALUES
 
 -- ============================================
 -- ORDER_SM 订单状态机（8 态）
--- 0=待支付 1=已支付 2=处理中 3=已完成 4=已取消 5=退款中 6=已退款 7=异常
+-- 0=待支付 1=已支付 2=部分发放 3=已发放 4=已完成 5=已取消 6=退款中 7=已退款
+-- 状态码与 DDL order_status 注释及 PRD §2.3 ORDER_STATUS 完全对齐
+-- （P7 重写：原种子"处理中/异常"语义不符订单履约模型，改为"部分发放/已发放/已退款"）
 -- ============================================
 INSERT INTO `system_state_machine`
   (`machine_code`, `machine_name`, `biz_type`, `from_state`, `from_state_name`, `to_state`, `to_state_name`, `event_code`, `event_name`, `sort_order`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
   ('ORDER_SM', '订单状态机', 'order', 0, '待支付', 1, '已支付', 'pay', '支付成功', 10, 1, '支付回调确认', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 0, '待支付', 4, '已取消', 'cancel', '取消', 11, 1, '用户取消或超时自动取消', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 1, '已支付', 2, '处理中', 'process', '开始处理', 20, 1, '进入业务处理', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 2, '处理中', 3, '已完成', 'complete', '完成', 30, 1, '业务履约完成', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 1, '已支付', 5, '退款中', 'refund_apply', '申请退款', 40, 1, '用户申请退款', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 2, '处理中', 5, '退款中', 'refund_apply', '申请退款', 41, 1, '处理中申请退款', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 5, '退款中', 6, '已退款', 'refund_done', '退款完成', 50, 1, '退款到账', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 5, '退款中', 1, '已支付', 'refund_reject', '退款驳回', 51, 1, '退款申请被驳回', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 1, '已支付', 7, '异常', 'error', '异常', 90, 1, '支付后业务异常', NOW(), NOW(), 'system', 'system', 0),
-  ('ORDER_SM', '订单状态机', 'order', 2, '处理中', 7, '异常', 'error', '异常', 91, 1, '处理过程异常', NOW(), NOW(), 'system', 'system', 0);
+  ('ORDER_SM', '订单状态机', 'order', 0, '待支付', 5, '已取消', 'cancel', '取消', 11, 1, '用户取消或超时自动取消', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 1, '已支付', 2, '部分发放', 'partial_deliver', '部分发放', 20, 1, '部分履约（如批量权益部分出库）', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 1, '已支付', 3, '已发放', 'deliver', '全部发放', 21, 1, '全部履约（权益全出库/排期确认/课程开通/旅居确认）', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 2, '部分发放', 3, '已发放', 'deliver', '全部发放', 30, 1, '剩余部分发放完成', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 3, '已发放', 4, '已完成', 'complete', '完成', 40, 1, '业务完结（服务完成/离店/课程学完）', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 1, '已支付', 6, '退款中', 'refund_apply', '申请退款', 50, 1, '已支付申请退款', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 2, '部分发放', 6, '退款中', 'refund_apply', '申请退款', 51, 1, '部分发放后申请退款', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 3, '已发放', 6, '退款中', 'refund_apply', '申请退款', 52, 1, '已发放后申请退款', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 6, '退款中', 7, '已退款', 'refund_done', '退款完成', 60, 1, '退款到账', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 6, '退款中', 1, '已支付', 'refund_reject', '退款驳回', 61, 1, '退款申请被驳回恢复', NOW(), NOW(), 'system', 'system', 0),
+  ('ORDER_SM', '订单状态机', 'order', 6, '退款中', 5, '已取消', 'cancel', '取消', 62, 1, '退款流程取消订单', NOW(), NOW(), 'system', 'system', 0);
 
 -- ============================================
 -- SERVICE_SESSION_SM 服务会话状态机（7 态）
