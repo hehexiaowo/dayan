@@ -1,0 +1,27 @@
+{
+  "pages": [
+    { "path": "pages/login/index", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
+    { "path": "pages/home/index", "style": { "navigationBarTitleText": "首页" } },
+    { "path": "pages/acquisition/index", "style": { "navigationBarTitleText": "获客" } },
+    { "path": "pages/customer/index", "style": { "navigationBarTitleText": "客户" } },
+    { "path": "pages/activity/index", "style": { "navigationBarTitleText": "活动" } }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "大雁养老",
+    "navigationBarBackgroundColor": "#409EFF",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#7A7E83",
+    "selectedColor": "#409EFF",
+    "borderStyle": "black",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/home/index", "text": "首页" },
+      { "pagePath": "pages/acquisition/index", "text": "获客" },
+      { "pagePath": "pages/customer/index", "text": "客户" },
+      { "pagePath": "pages/activity/index", "text": "活动" }
+    ]
+  }
+}
