@@ -92,7 +92,7 @@ VALUES
   ('CONTENT_SM', '内容审核状态机', 'content', 2, '审核通过', 4, '已下线', 'offline', '下线', 40, 1, '内容下线', NOW(), NOW(), 'system', 'system', 0);
 
 -- ============================================
--- SCENE_SM 场景审核状态机（4 态，3 条流转规则）
+-- SCENE_SM 场景审核状态机（4 态，4 条流转规则）
 -- 0=草稿 1=已上架 2=已下架 3=已满期
 -- 状态码与 DDL scene_info.scene_status 注释对齐
 -- ============================================
@@ -101,4 +101,5 @@ INSERT INTO `system_state_machine`
 VALUES
   ('SCENE_SM', '场景状态机', 'scene', 0, '草稿', 1, '已上架', 'shelves', '上架', 10, 1, '审核通过后上架', NOW(), NOW(), 'system', 'system', 0),
   ('SCENE_SM', '场景状态机', 'scene', 1, '已上架', 2, '已下架', 'offshelves', '下架', 20, 1, '场景下架', NOW(), NOW(), 'system', 'system', 0),
-  ('SCENE_SM', '场景状态机', 'scene', 2, '已下架', 1, '已上架', 'reshelves', '重新上架', 30, 1, '下架后重新上架', NOW(), NOW(), 'system', 'system', 0);
+  ('SCENE_SM', '场景状态机', 'scene', 2, '已下架', 1, '已上架', 'reshelves', '重新上架', 30, 1, '下架后重新上架', NOW(), NOW(), 'system', 'system', 0),
+  ('SCENE_SM', '场景状态机', 'scene', 1, '已上架', 3, '已满期', 'full', '满期', 40, 1, '活动到期或名额约满', NOW(), NOW(), 'system', 'system', 0);

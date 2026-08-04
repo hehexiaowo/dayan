@@ -112,4 +112,12 @@ public class SceneInfoAdminController {
         sceneInfoService.reshelves(sceneCode);
         return R.ok();
     }
+
+    @Operation(summary = "满期（活动到期或名额约满）")
+    @OperationLog(module = "场景信息", action = "满期")
+    @PostMapping("/full")
+    public R<Void> full(@RequestParam String sceneCode) {
+        sceneInfoService.full(sceneCode);
+        return R.ok();
+    }
 }

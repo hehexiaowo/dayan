@@ -43,4 +43,7 @@ public interface SceneInfoService {
 
     /** 重新上架（scene_status 2→1） */
     void reshelves(String sceneCode);
+
+    /** 满期（scene_status 1→3，活动到期或名额约满） */
+    void full(String sceneCode);
 }

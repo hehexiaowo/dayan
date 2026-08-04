@@ -3,11 +3,12 @@ package com.dayan.scene.enums;
 /**
  * 场景审核状态机（SCENE_SM）事件常量。
  *
- * <p>4 态 3 规则，规则已存在于 {@code db/migration/seed/state_machine_seed.sql}：
+ * <p>4 态 4 规则，规则已存在于 {@code db/migration/seed/state_machine_seed.sql}：
  * <ul>
  *   <li>{@link #SHELVES}     0→1（上架）</li>
  *   <li>{@link #OFFSHELVES}  1→2（下架）</li>
  *   <li>{@link #RESHELVES}   2→1（重新上架）</li>
+ *   <li>{@link #FULL}        1→3（满期，活动到期或名额约满）</li>
  * </ul>
  *
  * <p>状态码与字典/DDL {@code scene_info.scene_status} 注释对齐：
@@ -30,6 +31,8 @@ public final class SceneEvent {
     public static final String OFFSHELVES = "offshelves";
     /** 重新上架：2→1 */
     public static final String RESHELVES = "reshelves";
+    /** 满期：1→3（活动到期或名额约满） */
+    public static final String FULL = "full";
 
     // ====== 状态码常量 ======
 

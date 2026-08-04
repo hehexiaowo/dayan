@@ -14,6 +14,8 @@ public class ParkInfoQueryDTO {
     private String parkCode;
     private String fullName;
     private String supplierCode;
+    /** 城市编码（精确匹配） */
+    private String cityCode;
     private Integer abilityType;
     private Integer natureType;
     private Integer dayanLevel;

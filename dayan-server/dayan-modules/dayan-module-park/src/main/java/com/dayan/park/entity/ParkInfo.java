@@ -201,7 +201,7 @@ public class ParkInfo extends BaseEntity {
     /** 首页角标 */
     private String subScript;
 
-    /** 运营状态 */
+    /** 运营状态（0=待审核, 1=已上线, 2=已下架, 3=暂停营业；PARK_SM 驱动） */
     private Integer operateStatus;
 
     /** 开业时间 */

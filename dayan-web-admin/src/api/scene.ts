@@ -13,6 +13,7 @@ import type { SceneInfo, SceneInfoQuery } from '@/types/scene'
  * - shelves（审核通过→上架，sceneStatus=1）
  * - offshelves（已上架→下架，sceneStatus=2）
  * - reshelves（已下架→重新上架，sceneStatus=1）
+ * - full（已上架→满期，sceneStatus=3，活动到期或名额约满）
  */
 
 /** 场景分页：GET /admin-api/scene/info/page */
@@ -120,6 +121,15 @@ export function offshelvesScene(sceneCode: string): Promise<void> {
 export function reshelvesScene(sceneCode: string): Promise<void> {
   return request<void>({
     url: '/admin-api/scene/info/reshelves',
+    method: 'post',
+    params: { sceneCode }
+  })
+}
+
+/** 满期（已上架→已满期，活动到期或名额约满）：POST /admin-api/scene/info/full?sceneCode= */
+export function fullScene(sceneCode: string): Promise<void> {
+  return request<void>({
+    url: '/admin-api/scene/info/full',
     method: 'post',
     params: { sceneCode }
   })

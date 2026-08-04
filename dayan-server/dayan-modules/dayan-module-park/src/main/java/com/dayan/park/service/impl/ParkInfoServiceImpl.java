@@ -272,6 +272,9 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         if (query.getSupplierCode() != null && !query.getSupplierCode().isEmpty()) {
             wrapper.eq(ParkInfo::getSupplierCode, query.getSupplierCode());
         }
+        if (query.getCityCode() != null && !query.getCityCode().isEmpty()) {
+            wrapper.eq(ParkInfo::getCityCode, query.getCityCode());
+        }
         if (query.getAbilityType() != null) {
             wrapper.eq(ParkInfo::getAbilityType, query.getAbilityType());
         }

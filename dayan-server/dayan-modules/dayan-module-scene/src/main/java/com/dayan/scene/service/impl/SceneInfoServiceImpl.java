@@ -240,6 +240,20 @@ public class SceneInfoServiceImpl implements SceneInfoService {
         log.info("场景重新上架: sceneCode={}", sceneCode);
     }
 
+    /** 满期（scene_status 1→3，活动到期或名额约满） */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void full(String sceneCode) {
+        SceneInfo existing = requireScene(sceneCode);
+        int from = existing.getSceneStatus() == null ? SceneEvent.STATUS_DRAFT : existing.getSceneStatus();
+        int to = stateMachineEngine.transition(SceneEvent.DOMAIN, from, SceneEvent.FULL);
+        SceneInfo update = new SceneInfo();
+        update.setId(existing.getId());
+        update.setSceneStatus(to);
+        sceneInfoMapper.updateById(update);
+        log.info("场景满期: sceneCode={}", sceneCode);
+    }
+
     // ====== 内部方法 ======
 
     /**

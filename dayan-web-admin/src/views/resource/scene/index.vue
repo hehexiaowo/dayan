@@ -12,7 +12,8 @@ import {
   auditScene,
   shelvesScene,
   offshelvesScene,
-  reshelvesScene
+  reshelvesScene,
+  fullScene
 } from '@/api/scene'
 import type { SceneInfo, SceneInfoQuery } from '@/types/scene'
 import {
@@ -28,7 +29,7 @@ import {
  * 场景活动管理页。
  *
  * - 标准 CRUD（搜索 + 表格 + 分页 + 新增/编辑弹窗）；
- * - 审核流：提交审核 / 审核（通过或驳回）/ 上架 / 下架 / 重新上架。
+ * - 审核流：提交审核 / 审核（通过或驳回）/ 上架 / 下架 / 重新上架 / 满期。
  *   操作按钮按 sceneStatus + auditStatus 组合动态显示。
  *
  * 状态约定：
@@ -269,6 +270,18 @@ async function handleReshelves(row: SceneInfo) {
   loadPage()
 }
 
+async function handleFull(row: SceneInfo) {
+  if (!row.sceneCode) return
+  await ElMessageBox.confirm(`确定将「${row.sceneName}」标记为满期吗？（活动到期或名额约满）`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await fullScene(row.sceneCode)
+  ElMessage.success('已标记满期')
+  loadPage()
+}
+
 async function handleDeleteRow(row: SceneInfo) {
   if (!row.sceneCode) return
   await ElMessageBox.confirm(`确定删除「${row.sceneName}」吗？`, '提示', {
@@ -477,6 +490,15 @@ loadPage()
               @click="handleOffshelves(row)"
             >
               下架
+            </el-button>
+            <el-button
+              v-if="row.sceneStatus === SceneStatus.PUBLISHED"
+              link
+              type="danger"
+              size="small"
+              @click="handleFull(row)"
+            >
+              满期
             </el-button>
             <el-button
               v-if="row.sceneStatus === SceneStatus.OFFLINE"

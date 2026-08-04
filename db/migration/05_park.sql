@@ -72,7 +72,7 @@ CREATE TABLE `park_info` (
   `sort_order` INT(11) DEFAULT 0 COMMENT '排序号',
   `is_hot` TINYINT(2) DEFAULT NULL COMMENT '平台内评级（1=付费广告, 2=热门）',
   `sub_script` VARCHAR(11) DEFAULT NULL COMMENT '首页角标（1=最新, 2=最热, 3=优惠, 4=店庆）',
-  `operate_status` TINYINT(1) DEFAULT NULL COMMENT '运营状态（1=开业, 2=停业）',
+  `operate_status` TINYINT(1) DEFAULT NULL COMMENT '运营状态（0=待审核, 1=已上线, 2=已下架, 3=暂停营业；PARK_SM 驱动）',
   `opening_time` DATETIME DEFAULT NULL COMMENT '开业时间',
   `online_time` DATETIME DEFAULT NULL COMMENT '上架时间',
   `offline_time` DATETIME DEFAULT NULL COMMENT '下架时间',

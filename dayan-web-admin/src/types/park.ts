@@ -136,15 +136,13 @@ export interface ParkInfo {
 }
 
 /**
- * 机构分页查询参数（后端 ParkInfoQueryDTO）。
- *
- * 后端 QueryDTO 当前未声明 cityCode，传参会被无害忽略；保留以便未来扩展。
+ * 机构分页查询参数（对齐后端 ParkInfoQueryDTO）。
  */
 export interface ParkInfoQuery extends PageQuery {
   parkCode?: string
   fullName?: string
   supplierCode?: string
-  /** 城市编码（前端筛选用，后端暂未消费） */
+  /** 城市编码（精确匹配） */
   cityCode?: string
   abilityType?: number
   natureType?: number
