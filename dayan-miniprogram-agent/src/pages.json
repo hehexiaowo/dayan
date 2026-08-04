@@ -2,9 +2,9 @@
   "pages": [
     { "path": "pages/login/index", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
     { "path": "pages/home/index", "style": { "navigationBarTitleText": "首页" } },
-    { "path": "pages/acquisition/index", "style": { "navigationBarTitleText": "获客" } },
-    { "path": "pages/customer/index", "style": { "navigationBarTitleText": "客户" } },
-    { "path": "pages/activity/index", "style": { "navigationBarTitleText": "活动" } }
+    { "path": "pages/acquisition/index", "style": { "navigationBarTitleText": "获客", "enablePullDownRefresh": true } },
+    { "path": "pages/customer/index", "style": { "navigationBarTitleText": "客户", "enablePullDownRefresh": true } },
+    { "path": "pages/activity/index", "style": { "navigationBarTitleText": "活动", "enablePullDownRefresh": true } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "white",
