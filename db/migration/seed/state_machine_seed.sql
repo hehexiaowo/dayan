@@ -1,6 +1,6 @@
 -- =====================================================================
 -- state_machine_seed.sql  状态机配置种子数据
--- 4 个状态机：EQUITY_SM(8态) / ORDER_SM(8态) / SERVICE_SESSION_SM(7态) / PARK_SM(4态)
+-- 5 个状态机：EQUITY_SM(8态) / ORDER_SM(8态) / SERVICE_SESSION_SM(7态) / PARK_SM(4态) / CONTENT_SM(5态)
 -- 生成依据：规格 §7.3 + docs/02 §3.1.4 system_state_machine 表结构
 -- 字段映射：from_state/to_state ↔ StateRule.fromStatus/toStatus，event_code ↔ event
 -- =====================================================================
@@ -77,3 +77,16 @@ VALUES
   ('PARK_SM', '机构状态机', 'park', 2, '已下架', 1, '已上线', 'online', '重新上线', 21, 1, '下架后重新上线', NOW(), NOW(), 'system', 'system', 0),
   ('PARK_SM', '机构状态机', 'park', 1, '已上线', 3, '暂停营业', 'suspend', '暂停营业', 30, 1, '临时暂停营业', NOW(), NOW(), 'system', 'system', 0),
   ('PARK_SM', '机构状态机', 'park', 3, '暂停营业', 1, '已上线', 'resume', '恢复营业', 31, 1, '暂停后恢复营业', NOW(), NOW(), 'system', 'system', 0);
+
+-- ============================================
+-- CONTENT_SM 内容审核状态机（5 态）
+-- 0=草稿 1=待审核 2=审核通过 3=审核驳回 4=已下线
+-- 状态码与 DDL content_info.content_status 注释对齐
+-- ============================================
+INSERT INTO `system_state_machine`
+  (`machine_code`, `machine_name`, `biz_type`, `from_state`, `from_state_name`, `to_state`, `to_state_name`, `event_code`, `event_name`, `sort_order`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  ('CONTENT_SM', '内容审核状态机', 'content', 0, '草稿', 1, '待审核', 'submit', '提交审核', 10, 1, '草稿提交审核', NOW(), NOW(), 'system', 'system', 0),
+  ('CONTENT_SM', '内容审核状态机', 'content', 1, '待审核', 2, '审核通过', 'audit_pass', '审核通过', 20, 1, '管理员审核通过', NOW(), NOW(), 'system', 'system', 0),
+  ('CONTENT_SM', '内容审核状态机', 'content', 1, '待审核', 3, '审核驳回', 'audit_reject', '审核驳回', 30, 1, '管理员审核驳回', NOW(), NOW(), 'system', 'system', 0),
+  ('CONTENT_SM', '内容审核状态机', 'content', 2, '审核通过', 4, '已下线', 'offline', '下线', 40, 1, '内容下线', NOW(), NOW(), 'system', 'system', 0);

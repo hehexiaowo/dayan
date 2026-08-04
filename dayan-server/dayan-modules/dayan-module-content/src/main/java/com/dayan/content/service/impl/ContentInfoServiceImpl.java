@@ -6,11 +6,13 @@ import com.dayan.common.core.code.SequenceProvider;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
+import com.dayan.common.core.statemachine.StateMachineEngine;
 import com.dayan.content.dto.ContentInfoAuditDTO;
 import com.dayan.content.dto.ContentInfoCreateDTO;
 import com.dayan.content.dto.ContentInfoQueryDTO;
 import com.dayan.content.dto.ContentInfoUpdateDTO;
 import com.dayan.content.entity.ContentInfo;
+import com.dayan.content.enums.ContentEvent;
 import com.dayan.content.mapper.ContentInfoMapper;
 import com.dayan.content.service.ContentInfoService;
 import com.dayan.content.vo.ContentInfoVO;
@@ -25,13 +27,13 @@ import java.util.List;
 /**
  * 内容信息服务实现。
  *
- * <p>审核流（contentStatus 多状态流转）：
+ * <p>审核流（contentStatus 状态流转，经 CONTENT_SM 状态机校验）：
  * <ul>
  *   <li>{@code create}：初始 0（草稿）</li>
- *   <li>{@code submit}：0 草稿 → 1 待审</li>
- *   <li>{@code audit}：1 待审 → 2 通过 / 3 拒绝（auditStatus 驱动）</li>
- *   <li>{@code publish}：2 通过 → 正式上线（保持 contentStatus=2，置 publishTime）</li>
- *   <li>{@code offline}：2 通过 → 4 下线</li>
+ *   <li>{@code submit}：0 草稿 → 1 待审（{@link ContentEvent#SUBMIT}）</li>
+ *   <li>{@code audit}：1 待审 → 2 通过 / 3 拒绝（{@link ContentEvent#AUDIT_PASS}/{@link ContentEvent#AUDIT_REJECT}）</li>
+ *   <li>{@code publish}：2 通过 → 正式上线（保持 contentStatus=2，置 publishTime；自环不经状态机）</li>
+ *   <li>{@code offline}：2 通过 → 4 下线（{@link ContentEvent#OFFLINE}）</li>
  * </ul>
  *
  * <p>约束：{@code title} 全表唯一；{@code contentCode}（CT 前缀）由 {@link SequenceProvider} 生成。
@@ -48,20 +50,9 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     /** 内容编码序列键（全局共享计数，channelCode 维度传 0） */
     private static final String SEQ_KEY = "code:seq:CT:0";
 
-    // ====== contentStatus 取值 ======
-    /** 0 草稿 */
-    private static final int STATUS_DRAFT = 0;
-    /** 1 待审 */
-    private static final int STATUS_PENDING = 1;
-    /** 2 通过 */
-    private static final int STATUS_PASS = 2;
-    /** 3 拒绝 */
-    private static final int STATUS_REJECT = 3;
-    /** 4 下线 */
-    private static final int STATUS_OFFLINE = 4;
-
     private final ContentInfoMapper contentInfoMapper;
     private final SequenceProvider sequenceProvider;
+    private final StateMachineEngine stateMachineEngine;
 
     @Override
     public PageResult<ContentInfoVO> page(ContentInfoQueryDTO query) {
@@ -125,7 +116,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
         entity.setShareCount(0);
         entity.setCollectCount(0);
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
-        entity.setContentStatus(STATUS_DRAFT);
+        entity.setContentStatus(ContentEvent.STATUS_DRAFT);
         entity.setAuditStatus(0);
         entity.setRemark(dto.getRemark());
 
@@ -179,13 +170,11 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void submit(String contentCode) {
         ContentInfo existing = requireContent(contentCode);
-        if (existing.getContentStatus() == null || existing.getContentStatus() != STATUS_DRAFT) {
-            throw new BusinessException(ErrorCode.BUSINESS,
-                    "内容当前状态不可提交审核（需为草稿状态）: contentCode=" + contentCode);
-        }
+        int from = existing.getContentStatus() == null ? ContentEvent.STATUS_DRAFT : existing.getContentStatus();
+        int to = stateMachineEngine.transition(ContentEvent.DOMAIN, from, ContentEvent.SUBMIT);
         ContentInfo update = new ContentInfo();
         update.setId(existing.getId());
-        update.setContentStatus(STATUS_PENDING);
+        update.setContentStatus(to);
         contentInfoMapper.updateById(update);
         log.info("内容提交审核成功: contentCode={}", contentCode);
     }
@@ -195,18 +184,19 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     public void audit(ContentInfoAuditDTO dto) {
         ContentInfo existing = requireContent(dto.getContentCode());
         Integer auditStatus = dto.getAuditStatus();
-        if (auditStatus == null || (auditStatus != STATUS_PASS && auditStatus != STATUS_REJECT)) {
+        // 业务校验：auditStatus 取值仅允许 2=通过 / 3=拒绝
+        if (auditStatus == null || (auditStatus != ContentEvent.STATUS_PASS && auditStatus != ContentEvent.STATUS_REJECT)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR,
                     "审核状态非法（仅支持 2=通过 / 3=拒绝）");
         }
-        if (existing.getContentStatus() == null || existing.getContentStatus() != STATUS_PENDING) {
-            throw new BusinessException(ErrorCode.BUSINESS,
-                    "内容当前状态不可审核（需为待审状态）: contentCode=" + dto.getContentCode());
-        }
+        // 当前状态合法性（需为待审）交给状态机：非法转移引擎抛 BusinessException
+        int from = existing.getContentStatus() == null ? ContentEvent.STATUS_DRAFT : existing.getContentStatus();
+        String event = (auditStatus == ContentEvent.STATUS_PASS) ? ContentEvent.AUDIT_PASS : ContentEvent.AUDIT_REJECT;
+        int to = stateMachineEngine.transition(ContentEvent.DOMAIN, from, event);
 
         ContentInfo update = new ContentInfo();
         update.setId(existing.getId());
-        update.setContentStatus(auditStatus);
+        update.setContentStatus(to);
         update.setAuditStatus(auditStatus);
         contentInfoMapper.updateById(update);
         log.info("审核内容完成: contentCode={}, auditStatus={}", dto.getContentCode(), auditStatus);
@@ -216,7 +206,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void publish(String contentCode) {
         ContentInfo existing = requireContent(contentCode);
-        if (existing.getContentStatus() == null || existing.getContentStatus() != STATUS_PASS) {
+        if (existing.getContentStatus() == null || existing.getContentStatus() != ContentEvent.STATUS_PASS) {
             throw new BusinessException(ErrorCode.BUSINESS,
                     "内容当前状态不可发布（需为审核通过状态）: contentCode=" + contentCode);
         }
@@ -234,13 +224,11 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void offline(String contentCode) {
         ContentInfo existing = requireContent(contentCode);
-        if (existing.getContentStatus() == null || existing.getContentStatus() != STATUS_PASS) {
-            throw new BusinessException(ErrorCode.BUSINESS,
-                    "内容当前状态不可下线（需为审核通过/上线状态）: contentCode=" + contentCode);
-        }
+        int from = existing.getContentStatus() == null ? ContentEvent.STATUS_DRAFT : existing.getContentStatus();
+        int to = stateMachineEngine.transition(ContentEvent.DOMAIN, from, ContentEvent.OFFLINE);
         ContentInfo update = new ContentInfo();
         update.setId(existing.getId());
-        update.setContentStatus(STATUS_OFFLINE);
+        update.setContentStatus(to);
         contentInfoMapper.updateById(update);
         log.info("内容下线成功: contentCode={}", contentCode);
     }
