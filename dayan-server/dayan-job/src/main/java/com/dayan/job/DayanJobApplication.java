@@ -19,13 +19,13 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * </ul>
  * 生产环境可切换为 XXL-Job 调度中心。
  *
- * <p>扫描范围扩展至 {@code com.dayan.equity}，以便注入权益域 Mapper/Service。
+ * <p>扫描范围扩展至 {@code com.dayan.equity} 和 {@code com.dayan.service}，以便注入权益/服务域 Mapper/Service。
  */
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableScheduling
-@ComponentScan(basePackages = {"com.dayan.job", "com.dayan.equity", "com.dayan.common"})
-@MapperScan(basePackages = {"com.dayan.job.mapper", "com.dayan.equity.mapper"})
+@ComponentScan(basePackages = {"com.dayan.job", "com.dayan.equity", "com.dayan.service", "com.dayan.common"})
+@MapperScan(basePackages = {"com.dayan.job.mapper", "com.dayan.equity.mapper", "com.dayan.service.mapper"})
 public class DayanJobApplication {
 
     public static void main(String[] args) {
