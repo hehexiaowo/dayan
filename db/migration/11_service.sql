@@ -63,6 +63,7 @@ CREATE TABLE `service_session` (
 DROP TABLE IF EXISTS `service_equity_demand`;
 CREATE TABLE `service_equity_demand` (
   `id` BIGINT NOT NULL COMMENT '主键（雪花ID）',
+  `demand_code` VARCHAR(50) NOT NULL COMMENT '需求编码',
   `session_code` VARCHAR(50) NOT NULL COMMENT '服务会话编码',
   `client_code` VARCHAR(64) NOT NULL COMMENT '客户编码',
   `butler_code` VARCHAR(64) NOT NULL COMMENT '管家编码',
@@ -94,6 +95,7 @@ CREATE TABLE `service_equity_demand` (
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
   `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_demand_code` (`demand_code`),
   KEY `idx_session_code` (`session_code`),
   KEY `idx_client_code` (`client_code`),
   KEY `idx_butler_code` (`butler_code`),

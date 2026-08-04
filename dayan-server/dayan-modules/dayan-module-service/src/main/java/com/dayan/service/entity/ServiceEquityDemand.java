@@ -22,6 +22,9 @@ public class ServiceEquityDemand extends BaseEntity {
     private Long id;
 
 
+    /** 需求编码 */
+    private String demandCode;
+
     /** 服务会话编码 */
     private String sessionCode;
 
