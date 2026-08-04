@@ -85,6 +85,7 @@ function writePackageInfo(mod, relPkgPath, leafName) {
  */
 package ${fullPkg};
 `;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content);
 }
 
@@ -128,7 +129,7 @@ function writeEntity(mod, tableName, fields) {
   const needBigDecimal = fields.some(f => f.type === 'BigDecimal');
   const needLocalDate = fields.some(f => f.type === 'LocalDate');
   const needLocalTime = fields.some(f => f.type === 'LocalTime');
-  // LocalDateTime always from BaseEntity, no extra import here (BaseEntity uses it)
+  const needLocalDateTime = fields.some(f => f.type === 'LocalDateTime');
 
   let imports = `import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -140,6 +141,7 @@ import lombok.EqualsAndHashCode;
   if (needBigDecimal) imports += `import java.math.BigDecimal;\n`;
   if (needLocalDate) imports += `import java.time.LocalDate;\n`;
   if (needLocalTime) imports += `import java.time.LocalTime;\n`;
+  if (needLocalDateTime) imports += `import java.time.LocalDateTime;\n`;
 
   const fieldLines = fields.map(f => {
     const comment = (f.comment || '').replace(/\s+/g, ' ').trim();
@@ -164,6 +166,7 @@ public class ${className} extends BaseEntity {
 ${fieldLines}
 }
 `;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content);
 }
 
@@ -190,6 +193,7 @@ import org.apache.ibatis.annotations.Mapper;
 public interface ${className}Mapper extends BaseMapper<${className}> {
 }
 `;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content);
 }
 
