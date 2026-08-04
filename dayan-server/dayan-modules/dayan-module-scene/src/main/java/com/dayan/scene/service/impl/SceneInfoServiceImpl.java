@@ -6,10 +6,13 @@ import com.dayan.common.core.code.SequenceProvider;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
+import com.dayan.common.core.statemachine.StateMachineEngine;
+import com.dayan.scene.dto.SceneInfoAuditDTO;
 import com.dayan.scene.dto.SceneInfoCreateDTO;
 import com.dayan.scene.dto.SceneInfoQueryDTO;
 import com.dayan.scene.dto.SceneInfoUpdateDTO;
 import com.dayan.scene.entity.SceneInfo;
+import com.dayan.scene.enums.SceneEvent;
 import com.dayan.scene.mapper.SceneInfoMapper;
 import com.dayan.scene.service.SceneInfoService;
 import com.dayan.scene.vo.SceneInfoVO;
@@ -22,6 +25,16 @@ import java.util.List;
 
 /**
  * 场景信息服务实现。
+ *
+ * <p>审核流（sceneStatus 状态流转，经 SCENE_SM 状态机校验）：
+ * <ul>
+ *   <li>{@code create}：初始 0（草稿）</li>
+ *   <li>{@code submit}：置 audit_status=0（待审），不改 sceneStatus</li>
+ *   <li>{@code audit}：置 audit_status=1 通过 / 2 驳回，不改 sceneStatus</li>
+ *   <li>{@code shelves}：0 草稿 → 1 已上架（{@link SceneEvent#SHELVES}，要求 audit_status=1）</li>
+ *   <li>{@code offshelves}：1 已上架 → 2 已下架（{@link SceneEvent#OFFSHELVES}）</li>
+ *   <li>{@code reshelves}：2 已下架 → 1 已上架（{@link SceneEvent#RESHELVES}）</li>
+ * </ul>
  *
  * <p>{@code scene_info} 平台共享表（{@code DayanTenantHandler} 忽略前缀），Admin 全局管理。
  * 编码生成：{@code "SC" + String.format("%05d", sequenceProvider.next("code:seq:SC:0"))}，
@@ -36,13 +49,10 @@ public class SceneInfoServiceImpl implements SceneInfoService {
     private static final String CODE_PREFIX = "SC";
     /** 序列键 */
     private static final String SEQ_KEY = "code:seq:SC:0";
-    /** 默认场景状态：上架 */
-    private static final int DEFAULT_SCENE_STATUS = 1;
-    /** 默认审核状态：待审 */
-    private static final int DEFAULT_AUDIT_STATUS = 0;
 
     private final SceneInfoMapper sceneInfoMapper;
     private final SequenceProvider sequenceProvider;
+    private final StateMachineEngine stateMachineEngine;
 
     @Override
     public PageResult<SceneInfoVO> page(SceneInfoQueryDTO query) {
@@ -99,8 +109,8 @@ public class SceneInfoServiceImpl implements SceneInfoService {
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
         entity.setViewCount(0);
         entity.setBookCount(0);
-        entity.setSceneStatus(dto.getSceneStatus() == null ? DEFAULT_SCENE_STATUS : dto.getSceneStatus());
-        entity.setAuditStatus(dto.getAuditStatus() == null ? DEFAULT_AUDIT_STATUS : dto.getAuditStatus());
+        entity.setSceneStatus(dto.getSceneStatus() == null ? SceneEvent.STATUS_DRAFT : dto.getSceneStatus());
+        entity.setAuditStatus(dto.getAuditStatus() == null ? SceneEvent.AUDIT_PENDING : dto.getAuditStatus());
         entity.setRemark(dto.getRemark());
 
         sceneInfoMapper.insert(entity);
@@ -155,6 +165,79 @@ public class SceneInfoServiceImpl implements SceneInfoService {
         SceneInfo existing = requireScene(sceneCode);
         sceneInfoMapper.deleteById(existing.getId());
         log.info("删除场景成功: sceneCode={}", sceneCode);
+    }
+
+    /** 提交审核（草稿态提交，audit_status 置为待审） */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void submit(String sceneCode) {
+        SceneInfo existing = requireScene(sceneCode);
+        SceneInfo update = new SceneInfo();
+        update.setId(existing.getId());
+        update.setAuditStatus(SceneEvent.AUDIT_PENDING);
+        sceneInfoMapper.updateById(update);
+        log.info("场景提交审核: sceneCode={}", sceneCode);
+    }
+
+    /** 审核（audit_status → 1通过 / 2驳回） */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void audit(SceneInfoAuditDTO dto) {
+        SceneInfo existing = requireScene(dto.getSceneCode());
+        Integer auditStatus = dto.getAuditStatus();
+        if (auditStatus == null || (auditStatus != SceneEvent.AUDIT_PASS && auditStatus != SceneEvent.AUDIT_REJECT)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "审核状态非法（仅支持 1=通过 / 2=驳回）");
+        }
+        SceneInfo update = new SceneInfo();
+        update.setId(existing.getId());
+        update.setAuditStatus(auditStatus);
+        sceneInfoMapper.updateById(update);
+        log.info("场景审核完成: sceneCode={}, auditStatus={}", dto.getSceneCode(), auditStatus);
+    }
+
+    /** 上架（scene_status 0→1，要求 audit_status=1 通过） */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void shelves(String sceneCode) {
+        SceneInfo existing = requireScene(sceneCode);
+        if (existing.getAuditStatus() == null || existing.getAuditStatus() != SceneEvent.AUDIT_PASS) {
+            throw new BusinessException(ErrorCode.BUSINESS, "场景未审核通过，不可上架: " + sceneCode);
+        }
+        int from = existing.getSceneStatus() == null ? SceneEvent.STATUS_DRAFT : existing.getSceneStatus();
+        int to = stateMachineEngine.transition(SceneEvent.DOMAIN, from, SceneEvent.SHELVES);
+        SceneInfo update = new SceneInfo();
+        update.setId(existing.getId());
+        update.setSceneStatus(to);
+        sceneInfoMapper.updateById(update);
+        log.info("场景上架: sceneCode={}", sceneCode);
+    }
+
+    /** 下架（scene_status 1→2） */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void offshelves(String sceneCode) {
+        SceneInfo existing = requireScene(sceneCode);
+        int from = existing.getSceneStatus() == null ? SceneEvent.STATUS_DRAFT : existing.getSceneStatus();
+        int to = stateMachineEngine.transition(SceneEvent.DOMAIN, from, SceneEvent.OFFSHELVES);
+        SceneInfo update = new SceneInfo();
+        update.setId(existing.getId());
+        update.setSceneStatus(to);
+        sceneInfoMapper.updateById(update);
+        log.info("场景下架: sceneCode={}", sceneCode);
+    }
+
+    /** 重新上架（scene_status 2→1） */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void reshelves(String sceneCode) {
+        SceneInfo existing = requireScene(sceneCode);
+        int from = existing.getSceneStatus() == null ? SceneEvent.STATUS_DRAFT : existing.getSceneStatus();
+        int to = stateMachineEngine.transition(SceneEvent.DOMAIN, from, SceneEvent.RESHELVES);
+        SceneInfo update = new SceneInfo();
+        update.setId(existing.getId());
+        update.setSceneStatus(to);
+        sceneInfoMapper.updateById(update);
+        log.info("场景重新上架: sceneCode={}", sceneCode);
     }
 
     // ====== 内部方法 ======

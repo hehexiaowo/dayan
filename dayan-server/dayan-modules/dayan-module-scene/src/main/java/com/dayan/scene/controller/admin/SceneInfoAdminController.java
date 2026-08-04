@@ -3,6 +3,7 @@ package com.dayan.scene.controller.admin;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
+import com.dayan.scene.dto.SceneInfoAuditDTO;
 import com.dayan.scene.dto.SceneInfoCreateDTO;
 import com.dayan.scene.dto.SceneInfoQueryDTO;
 import com.dayan.scene.dto.SceneInfoUpdateDTO;
@@ -69,6 +70,46 @@ public class SceneInfoAdminController {
     @DeleteMapping("/{sceneCode}")
     public R<Void> delete(@PathVariable String sceneCode) {
         sceneInfoService.delete(sceneCode);
+        return R.ok();
+    }
+
+    @Operation(summary = "提交审核")
+    @OperationLog(module = "场景信息", action = "提交审核")
+    @PostMapping("/submit")
+    public R<Void> submit(@RequestParam String sceneCode) {
+        sceneInfoService.submit(sceneCode);
+        return R.ok();
+    }
+
+    @Operation(summary = "审核场景")
+    @OperationLog(module = "场景信息", action = "审核")
+    @PostMapping("/audit")
+    public R<Void> audit(@RequestBody @Valid SceneInfoAuditDTO dto) {
+        sceneInfoService.audit(dto);
+        return R.ok();
+    }
+
+    @Operation(summary = "上架")
+    @OperationLog(module = "场景信息", action = "上架")
+    @PostMapping("/shelves")
+    public R<Void> shelves(@RequestParam String sceneCode) {
+        sceneInfoService.shelves(sceneCode);
+        return R.ok();
+    }
+
+    @Operation(summary = "下架")
+    @OperationLog(module = "场景信息", action = "下架")
+    @PostMapping("/offshelves")
+    public R<Void> offshelves(@RequestParam String sceneCode) {
+        sceneInfoService.offshelves(sceneCode);
+        return R.ok();
+    }
+
+    @Operation(summary = "重新上架")
+    @OperationLog(module = "场景信息", action = "重新上架")
+    @PostMapping("/reshelves")
+    public R<Void> reshelves(@RequestParam String sceneCode) {
+        sceneInfoService.reshelves(sceneCode);
         return R.ok();
     }
 }

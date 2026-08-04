@@ -28,7 +28,7 @@ import java.util.Set;
  *   <li>分销商 distributor_info 1 张</li>
  *   <li>权益域 equity_* 6 张（P4：Admin 全局管理，渠道归属通过 channel_code 字段显式查询）</li>
  *   <li>服务域 service_* 7 张（P5：Admin 全局视图，服务跨渠道分配管家）</li>
- *   <li>商品域 goods_* / 场景域 scene_* / 内容域 content_* / 课程域 course_*（P6：平台共享资源，Admin 全局管理）</li>
+ *   <li>商品域 goods_* / 机构域 park_* / 场景域 scene_* / 内容域 content_* / 课程域 course_*（P6：平台共享资源，Admin 全局管理）</li>
  *   <li>订单域 order_* / 结算域 finance_*（P7：平台全局资金链路，Admin 全局对账与结算）</li>
  *   <li>channel_info（渠道本身定义，非渠道内数据）</li>
  * </ul>
@@ -43,7 +43,7 @@ public class DayanTenantHandler implements TenantLineHandler {
     /** 平台共享表前缀（默认忽略） */
     private static final String[] DEFAULT_IGNORE_PREFIXES = {
             "system_", "organ_", "butler_", "distributor_", "equity_", "service_",
-            "goods_", "scene_", "content_", "course_", "order_", "finance_"
+            "goods_", "park_", "scene_", "content_", "course_", "order_", "finance_"
     };
 
     /** 单独忽略的表（平台共享但不匹配前缀） */

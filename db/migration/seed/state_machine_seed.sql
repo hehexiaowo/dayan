@@ -1,6 +1,6 @@
 -- =====================================================================
 -- state_machine_seed.sql  状态机配置种子数据
--- 5 个状态机：EQUITY_SM(8态) / ORDER_SM(8态) / SERVICE_SESSION_SM(7态) / PARK_SM(4态) / CONTENT_SM(5态)
+-- 6 个状态机：EQUITY_SM(8态) / ORDER_SM(8态) / SERVICE_SESSION_SM(7态) / PARK_SM(4态) / CONTENT_SM(5态) / SCENE_SM(4态)
 -- 生成依据：规格 §7.3 + docs/02 §3.1.4 system_state_machine 表结构
 -- 字段映射：from_state/to_state ↔ StateRule.fromStatus/toStatus，event_code ↔ event
 -- =====================================================================
@@ -90,3 +90,15 @@ VALUES
   ('CONTENT_SM', '内容审核状态机', 'content', 1, '待审核', 2, '审核通过', 'audit_pass', '审核通过', 20, 1, '管理员审核通过', NOW(), NOW(), 'system', 'system', 0),
   ('CONTENT_SM', '内容审核状态机', 'content', 1, '待审核', 3, '审核驳回', 'audit_reject', '审核驳回', 30, 1, '管理员审核驳回', NOW(), NOW(), 'system', 'system', 0),
   ('CONTENT_SM', '内容审核状态机', 'content', 2, '审核通过', 4, '已下线', 'offline', '下线', 40, 1, '内容下线', NOW(), NOW(), 'system', 'system', 0);
+
+-- ============================================
+-- SCENE_SM 场景审核状态机（4 态，3 条流转规则）
+-- 0=草稿 1=已上架 2=已下架 3=已满期
+-- 状态码与 DDL scene_info.scene_status 注释对齐
+-- ============================================
+INSERT INTO `system_state_machine`
+  (`machine_code`, `machine_name`, `biz_type`, `from_state`, `from_state_name`, `to_state`, `to_state_name`, `event_code`, `event_name`, `sort_order`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  ('SCENE_SM', '场景状态机', 'scene', 0, '草稿', 1, '已上架', 'shelves', '上架', 10, 1, '审核通过后上架', NOW(), NOW(), 'system', 'system', 0),
+  ('SCENE_SM', '场景状态机', 'scene', 1, '已上架', 2, '已下架', 'offshelves', '下架', 20, 1, '场景下架', NOW(), NOW(), 'system', 'system', 0),
+  ('SCENE_SM', '场景状态机', 'scene', 2, '已下架', 1, '已上架', 'reshelves', '重新上架', 30, 1, '下架后重新上架', NOW(), NOW(), 'system', 'system', 0);

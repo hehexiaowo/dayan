@@ -1,6 +1,7 @@
 package com.dayan.scene.service;
 
 import com.dayan.common.core.resp.PageResult;
+import com.dayan.scene.dto.SceneInfoAuditDTO;
 import com.dayan.scene.dto.SceneInfoCreateDTO;
 import com.dayan.scene.dto.SceneInfoQueryDTO;
 import com.dayan.scene.dto.SceneInfoUpdateDTO;
@@ -27,4 +28,19 @@ public interface SceneInfoService {
     void update(String sceneCode, SceneInfoUpdateDTO dto);
 
     void delete(String sceneCode);
+
+    /** 提交审核（草稿态提交，audit_status 置为待审） */
+    void submit(String sceneCode);
+
+    /** 审核（audit_status → 1通过 / 2驳回） */
+    void audit(SceneInfoAuditDTO dto);
+
+    /** 上架（scene_status 0→1，要求 audit_status=1 通过） */
+    void shelves(String sceneCode);
+
+    /** 下架（scene_status 1→2） */
+    void offshelves(String sceneCode);
+
+    /** 重新上架（scene_status 2→1） */
+    void reshelves(String sceneCode);
 }
