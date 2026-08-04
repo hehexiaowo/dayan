@@ -1,0 +1,25 @@
+# ZCode 本地工作区配置
+.zcode/
+
+# IDE / 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志与临时文件
+*.log
+*.tmp
+*.bak
+
+# 依赖与构建产物（按需启用）
+node_modules/
+__pycache__/
+*.pyc
+dist/
+build/
