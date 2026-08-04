@@ -63,5 +63,39 @@ docker compose up -d --build
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P0 | 脚手架 & 基础设施 | 🚧 进行中 |
+| P0 | 脚手架 & 基础设施 | ✅ 完成 |
 | P1-P12 | 业务域开发 → 测试 → 上线 | ⏳ 待启动 |
+
+## P0 完成内容
+
+| 模块 | 内容 |
+|------|------|
+| **后端 common（11 模块）** | core/redis/mybatis/security/log/swagger 完整实现，142 单元测试通过；mq/oss/sms/pay/lbs 预留 |
+| **17 业务域（127 表）** | Entity + Mapper 全量生成，编译通过 |
+| **数据库 DDL（127 表）** | 17 域 SQL 全量，Docker MySQL 8.0 实测全部创建成功 |
+| **种子数据** | 超管 admin/admin123 + 4 状态机(36 规则) + 44 字典 + 37 菜单 |
+| **6 启动模块 + 网关 + job** | admin/channel/agent/client/supplier/distributor 独立启动，全量编译通过 |
+| **四端登录接口** | Admin/Channel/Agent/Client 登录闭环，Sa-Token 多端隔离，Agent/Client 选渠道 |
+| **状态机引擎** | 接口 + Redis 实现，6 测试通过 |
+| **4 前端工程** | dayan-web-admin/channel（Vue3+Element Plus）+ 2 uni-app 小程序 |
+| **CI/CD** | GitHub Actions（ci.yml 编译测试 + docker.yml 8 服务推 GHCR） |
+| **Docker 编排** | docker-compose.infra.yml（基础设施）+ docker-compose.yml（全量） |
+
+## 验证 DDL（已实测）
+
+```bash
+# 启动 MySQL（注意 Git Bash 用 Windows 绝对路径或 MSYS_NO_PATHCONV=1）
+docker run -d --name dayan-mysql-test -p 13306:3306 \
+  -e MYSQL_ROOT_PASSWORD=root123 -e MYSQL_DATABASE=dayan \
+  -v "F:/code/dayan/db/migration:/docker-entrypoint-initdb.d:ro" \
+  mysql:8.0 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+# 验证表数 = 127
+docker exec dayan-mysql-test mysql -uroot -proot123 dayan -e \
+  "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='dayan';"
+
+# 验证管理员
+docker exec dayan-mysql-test mysql -uroot -proot123 dayan -e \
+  "SELECT username, is_admin FROM organ_account;"
+```
+
