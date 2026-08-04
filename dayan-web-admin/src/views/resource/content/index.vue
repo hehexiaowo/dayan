@@ -1,0 +1,562 @@
+<script setup lang="ts">
+import { reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { useCrud } from '@/composables/useCrud'
+import {
+  pageContents,
+  getContent,
+  createContent,
+  updateContent,
+  deleteContent,
+  submitContent,
+  auditContent,
+  publishContent,
+  offlineContent
+} from '@/api/content'
+import type { ContentInfo, ContentInfoQuery } from '@/types/content'
+import {
+  ContentType,
+  ContentStatus,
+  CONTENT_TYPE_OPTIONS,
+  CONTENT_STATUS_OPTIONS,
+  SOURCE_TYPE_OPTIONS
+} from '@/types/content'
+
+/**
+ * 内容素材管理页。
+ *
+ * - 标准 CRUD（搜索 + 表格 + 分页 + 新增/编辑弹窗）；
+ * - 额外审核流：提交审核 / 审核（通过或驳回）/ 发布 / 下线，操作按钮按 contentStatus 动态显示。
+ */
+
+const {
+  loading,
+  tableData,
+  total,
+  query,
+  loadPage,
+  handleSearch,
+  handlePageChange,
+  handleSizeChange
+} = useCrud<ContentInfo, ContentInfoQuery>(
+  { page: pageContents },
+  {
+    initialQuery: {
+      title: '',
+      contentType: undefined,
+      contentStatus: undefined
+    }
+  }
+)
+
+// ---------- 新增 / 编辑弹窗 ----------
+const dialogVisible = ref(false)
+const dialogType = ref<'create' | 'edit'>('create')
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
+
+const form = reactive<ContentInfo>({
+  contentCode: undefined,
+  title: '',
+  subtitle: '',
+  contentType: ContentType.ARTICLE,
+  categoryCode: '',
+  authorName: '',
+  coverImage: '',
+  summary: '',
+  contentBody: '',
+  sourceType: 1,
+  sourceUrl: '',
+  tags: '',
+  isTop: 0,
+  isRecommend: 0,
+  isComment: 1,
+  sortOrder: 0,
+  remark: ''
+})
+
+const rules: FormRules<ContentInfo> = {
+  title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+  contentType: [{ required: true, message: '请选择内容类型', trigger: 'change' }]
+}
+
+function resetForm() {
+  Object.assign(form, {
+    contentCode: undefined,
+    title: '',
+    subtitle: '',
+    contentType: ContentType.ARTICLE,
+    categoryCode: '',
+    authorName: '',
+    coverImage: '',
+    summary: '',
+    contentBody: '',
+    sourceType: 1,
+    sourceUrl: '',
+    tags: '',
+    isTop: 0,
+    isRecommend: 0,
+    isComment: 1,
+    sortOrder: 0,
+    remark: ''
+  })
+}
+
+function openCreate() {
+  dialogType.value = 'create'
+  resetForm()
+  dialogVisible.value = true
+}
+
+async function openEdit(row: ContentInfo) {
+  if (!row.contentCode) return
+  dialogType.value = 'edit'
+  resetForm()
+  try {
+    const detail = await getContent(row.contentCode)
+    Object.assign(form, {
+      contentCode: detail.contentCode,
+      title: detail.title ?? '',
+      subtitle: detail.subtitle ?? '',
+      contentType: detail.contentType ?? ContentType.ARTICLE,
+      categoryCode: detail.categoryCode ?? '',
+      authorName: detail.authorName ?? '',
+      coverImage: detail.coverImage ?? '',
+      summary: detail.summary ?? '',
+      contentBody: detail.contentBody ?? '',
+      sourceType: detail.sourceType ?? 1,
+      sourceUrl: detail.sourceUrl ?? '',
+      tags: detail.tags ?? '',
+      isTop: detail.isTop ?? 0,
+      isRecommend: detail.isRecommend ?? 0,
+      isComment: detail.isComment ?? 1,
+      sortOrder: detail.sortOrder ?? 0,
+      remark: detail.remark ?? ''
+    })
+  } catch {
+    // 拉取详情失败时回退到行数据
+    Object.assign(form, {
+      contentCode: row.contentCode,
+      title: row.title ?? '',
+      subtitle: row.subtitle ?? '',
+      contentType: row.contentType ?? ContentType.ARTICLE,
+      categoryCode: row.categoryCode ?? '',
+      authorName: row.authorName ?? '',
+      coverImage: row.coverImage ?? '',
+      summary: row.summary ?? '',
+      contentBody: row.contentBody ?? '',
+      sourceType: row.sourceType ?? 1,
+      sourceUrl: row.sourceUrl ?? '',
+      tags: row.tags ?? '',
+      isTop: row.isTop ?? 0,
+      isRecommend: row.isRecommend ?? 0,
+      isComment: row.isComment ?? 1,
+      sortOrder: row.sortOrder ?? 0,
+      remark: row.remark ?? ''
+    })
+  }
+  dialogVisible.value = true
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
+  submitLoading.value = true
+  try {
+    if (dialogType.value === 'create') {
+      await createContent(form)
+      ElMessage.success('新增成功')
+    } else if (form.contentCode) {
+      await updateContent(form.contentCode, form)
+      ElMessage.success('修改成功')
+    }
+    dialogVisible.value = false
+    loadPage()
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+function handleReset() {
+  query.title = ''
+  query.contentType = undefined
+  query.contentStatus = undefined
+  handleSearch()
+}
+
+// ---------- 审核流操作 ----------
+async function handleSubmitAudit(row: ContentInfo) {
+  if (!row.contentCode) return
+  await ElMessageBox.confirm(`确定提交「${row.title}」进入审核吗？`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await submitContent(row.contentCode)
+  ElMessage.success('已提交审核')
+  loadPage()
+}
+
+async function handlePublish(row: ContentInfo) {
+  if (!row.contentCode) return
+  await ElMessageBox.confirm(`确定发布「${row.title}」吗？`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await publishContent(row.contentCode)
+  ElMessage.success('发布成功')
+  loadPage()
+}
+
+async function handleOffline(row: ContentInfo) {
+  if (!row.contentCode) return
+  await ElMessageBox.confirm(`确定下线「${row.title}」吗？`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await offlineContent(row.contentCode)
+  ElMessage.success('已下线')
+  loadPage()
+}
+
+async function handleDeleteRow(row: ContentInfo) {
+  if (!row.contentCode) return
+  await deleteContent(row.contentCode)
+  ElMessage.success('删除成功')
+  loadPage()
+}
+
+// ---------- 审核弹窗 ----------
+const auditDialogVisible = ref(false)
+const auditSubmitLoading = ref(false)
+const auditForm = reactive<{ contentCode: string; title: string; auditStatus: number; auditRemark: string }>({
+  contentCode: '',
+  title: '',
+  // 2=通过 / 3=拒绝（对齐后端 audit 约定），默认通过
+  auditStatus: 2,
+  auditRemark: ''
+})
+
+function openAudit(row: ContentInfo) {
+  if (!row.contentCode) return
+  auditForm.contentCode = row.contentCode
+  auditForm.title = row.title ?? ''
+  auditForm.auditStatus = 2
+  auditForm.auditRemark = ''
+  auditDialogVisible.value = true
+}
+
+async function handleAuditSubmit() {
+  auditSubmitLoading.value = true
+  try {
+    await auditContent({
+      contentCode: auditForm.contentCode,
+      auditStatus: auditForm.auditStatus,
+      auditRemark: auditForm.auditRemark || undefined
+    })
+    ElMessage.success(auditForm.auditStatus === 2 ? '已通过' : '已驳回')
+    auditDialogVisible.value = false
+    loadPage()
+  } finally {
+    auditSubmitLoading.value = false
+  }
+}
+
+// ---------- 辅助渲染 ----------
+function contentTypeLabel(t?: number): string {
+  const found = CONTENT_TYPE_OPTIONS.find((o) => o.value === t)
+  return found ? found.label : t != null ? String(t) : '--'
+}
+
+function contentStatusLabel(s?: number): string {
+  const found = CONTENT_STATUS_OPTIONS.find((o) => o.value === s)
+  return found ? found.label : s != null ? String(s) : '--'
+}
+
+/** 根据内容状态返回 el-tag type。 */
+function contentStatusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' {
+  switch (status) {
+    case ContentStatus.PASS:
+      return 'success'
+    case ContentStatus.PENDING:
+      return 'warning'
+    case ContentStatus.REJECT:
+      return 'danger'
+    case ContentStatus.DRAFT:
+    case ContentStatus.OFFLINE:
+    default:
+      return 'info'
+  }
+}
+
+// 初始化加载
+loadPage()
+</script>
+
+<template>
+  <div class="page-container">
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
+      <el-form :inline="true" :model="query" @submit.prevent>
+        <el-form-item label="标题">
+          <el-input v-model="query.title" placeholder="标题关键字" clearable @keyup.enter="handleSearch" />
+        </el-form-item>
+        <el-form-item label="内容类型">
+          <el-select v-model="query.contentType" placeholder="全部" clearable style="width: 140px">
+            <el-option v-for="o in CONTENT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="内容状态">
+          <el-select v-model="query.contentStatus" placeholder="全部" clearable style="width: 140px">
+            <el-option v-for="o in CONTENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 表格 -->
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>内容列表</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增内容</el-button>
+        </div>
+      </template>
+
+      <el-table v-loading="loading" :data="tableData" border stripe row-key="contentCode">
+        <el-table-column prop="contentCode" label="内容编码" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="contentType" label="类型" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag type="info">{{ contentTypeLabel(row.contentType) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="authorName" label="作者" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="viewCount" label="浏览量" width="90" align="center" />
+        <el-table-column prop="contentStatus" label="状态" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="contentStatusTagType(row.contentStatus)">
+              {{ contentStatusLabel(row.contentStatus) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="publishTime" label="发布时间" min-width="160" show-overflow-tooltip />
+        <el-table-column label="操作" width="280" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button
+              v-if="row.contentStatus === ContentStatus.DRAFT"
+              link
+              type="warning"
+              size="small"
+              @click="handleSubmitAudit(row)"
+            >
+              提交审核
+            </el-button>
+            <el-button
+              v-if="row.contentStatus === ContentStatus.PENDING"
+              link
+              type="primary"
+              size="small"
+              @click="openAudit(row)"
+            >
+              审核
+            </el-button>
+            <el-button
+              v-if="row.contentStatus === ContentStatus.PASS"
+              link
+              type="success"
+              size="small"
+              @click="handlePublish(row)"
+            >
+              发布
+            </el-button>
+            <el-button
+              v-if="row.contentStatus === ContentStatus.PASS"
+              link
+              type="warning"
+              size="small"
+              @click="handleOffline(row)"
+            >
+              下线
+            </el-button>
+            <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="pagination-wrap">
+        <el-pagination
+          :current-page="query.current"
+          :page-size="query.size"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @current-change="handlePageChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
+    </el-card>
+
+    <!-- 新增 / 编辑弹窗 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogType === 'create' ? '新增内容' : '编辑内容'"
+      width="760px"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-row :gutter="16">
+          <el-col :span="24">
+            <el-form-item label="标题" prop="title">
+              <el-input v-model="form.title" placeholder="标题" maxlength="200" show-word-limit />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="副标题">
+              <el-input v-model="form.subtitle" placeholder="副标题" maxlength="200" show-word-limit />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="内容类型" prop="contentType">
+              <el-select v-model="form.contentType" placeholder="内容类型" style="width: 100%">
+                <el-option v-for="o in CONTENT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="来源类型">
+              <el-select v-model="form.sourceType" placeholder="来源类型" style="width: 100%">
+                <el-option v-for="o in SOURCE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="分类编码">
+              <el-input v-model="form.categoryCode" placeholder="分类编码" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="作者">
+              <el-input v-model="form.authorName" placeholder="作者名称" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="封面图">
+              <el-input v-model="form.coverImage" placeholder="封面图 URL" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="来源链接">
+              <el-input v-model="form.sourceUrl" placeholder="转载来源 URL（可选）" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="摘要">
+              <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="内容摘要" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="正文">
+              <el-input v-model="form.contentBody" type="textarea" :rows="6" placeholder="内容正文" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="标签">
+              <el-input v-model="form.tags" placeholder="多个标签用逗号分隔" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="置顶">
+              <el-switch v-model="form.isTop" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="推荐">
+              <el-switch v-model="form.isRecommend" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="允许评论">
+              <el-switch v-model="form.isComment" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="排序号">
+              <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="备注">
+              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="内部备注（可选）" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 审核弹窗 -->
+    <el-dialog v-model="auditDialogVisible" title="内容审核" width="520px" :close-on-click-modal="false">
+      <el-form label-width="90px">
+        <el-form-item label="内容标题">
+          <span>{{ auditForm.title }}</span>
+        </el-form-item>
+        <el-form-item label="审核结果">
+          <el-radio-group v-model="auditForm.auditStatus">
+            <el-radio :value="2">通过</el-radio>
+            <el-radio :value="3">驳回</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="审核备注">
+          <el-input v-model="auditForm.auditRemark" type="textarea" :rows="3" placeholder="审核备注（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="auditDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="auditSubmitLoading" @click="handleAuditSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+</style>
