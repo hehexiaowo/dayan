@@ -1,0 +1,81 @@
+/**
+ * 权限相关类型。
+ *
+ * 字段对齐后端 com.dayan.organ.entity.OrganPermission。
+ */
+
+/** 权限类型：1菜单 2按钮 3接口 */
+export enum PermissionType {
+  /** 菜单 */
+  MENU = 1,
+  /** 按钮 */
+  BUTTON = 2,
+  /** 接口 */
+  API = 3
+}
+
+/** 权限类型选项 */
+export const PERMISSION_TYPE_OPTIONS = [
+  { label: '菜单', value: PermissionType.MENU },
+  { label: '按钮', value: PermissionType.BUTTON },
+  { label: '接口', value: PermissionType.API }
+] as const
+
+/** 权限状态：1启用 0禁用 */
+export enum PermissionStatus {
+  ENABLED = 1,
+  DISABLED = 0
+}
+
+/** 权限状态选项 */
+export const PERMISSION_STATUS_OPTIONS = [
+  { label: '启用', value: PermissionStatus.ENABLED },
+  { label: '禁用', value: PermissionStatus.DISABLED }
+] as const
+
+/**
+ * 权限实体（后端 OrganPermission）。
+ *
+ * 树形结构：children 由后端 tree 接口组装；list/all 接口为平铺，
+ * 前端可用 buildPermissionTree 自行组树。
+ */
+export interface Permission {
+  id?: number
+  /** 权限编码（主键业务码） */
+  permissionCode: string
+  /** 权限名称 */
+  permissionName: string
+  /** 父权限编码（顶级为 null/空） */
+  parentCode: string | null
+  /** 权限类型：1菜单 2按钮 3接口 */
+  permissionType: PermissionType
+  /** 资源路径（接口/页面路径） */
+  path?: string
+  /** 请求方法（接口类权限用：GET/POST/PUT/DELETE） */
+  method?: string
+  /** 图标 */
+  icon?: string
+  /** 排序号 */
+  sortOrder?: number
+  /** 状态：1启用 0禁用 */
+  status: PermissionStatus
+  /** 备注 */
+  remark?: string
+  /** 子权限（树形接口返回时填充） */
+  children?: Permission[]
+}
+
+/**
+ * 将平铺权限列表构建为树形结构。
+ *
+ * 用于 list/all 接口（平铺）转树；tree 接口已组装则无需调用。
+ */
+export function buildPermissionTree(list: Permission[], parentCode: string | null = null): Permission[] {
+  return list
+    .filter((p) => (p.parentCode ?? null) === parentCode)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((p) => {
+      const children = buildPermissionTree(list, p.permissionCode)
+      return children.length > 0 ? { ...p, children } : { ...p, children: undefined }
+    })
+}
