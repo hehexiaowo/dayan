@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 public class ServiceEquityDemand extends BaseEntity {
 
     /** 主键 */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
 

@@ -16,7 +16,7 @@ import java.time.LocalDate;
 public class ButlerServiceRecord extends BaseEntity {
 
     /** 主键 */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
 
