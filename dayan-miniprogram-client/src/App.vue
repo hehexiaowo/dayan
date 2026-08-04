@@ -13,10 +13,8 @@ onHide(() => {
 </script>
 
 <style lang="scss">
-@import 'uview-ui/index.scss';
-
-/* 全局样式 */
+/* 全局样式（uView 组件库未使用，已移除其 SCSS 导入以避免未定义的主题变量） */
 page {
-  background-color: #f8f8f8;
+  background-color: #f5f6f8;
 }
 </style>
