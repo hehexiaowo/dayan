@@ -1,0 +1,5 @@
+# 强制脚本与 SQL 文件使用 LF 行尾（避免 Windows CRLF 导致容器内 bash/sql 执行失败）
+*.sh text eol=lf
+*.sql text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
