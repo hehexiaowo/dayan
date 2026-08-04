@@ -3,10 +3,13 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { usePermissionStore } from '@/stores/permission'
+import SidebarItem from '@/components/SidebarItem.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const permissionStore = usePermissionStore()
 
 const isCollapse = ref(false)
 
@@ -15,6 +18,9 @@ const avatarUrl = computed(() => userStore.userInfo?.avatar || '')
 
 // 顶部/侧边标题
 const systemTitle = '大雁养老运营后台'
+
+/** 动态菜单树（来自后端，permissionStore 加载后填充） */
+const menuTree = computed(() => permissionStore.menus)
 
 function toggleCollapse() {
   isCollapse.value = !isCollapse.value
@@ -51,10 +57,11 @@ async function handleLogout() {
         text-color="#c9d1d9"
         active-text-color="#ffffff"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><Odometer /></el-icon>
-          <template #title>工作台</template>
-        </el-menu-item>
+        <sidebar-item
+          v-for="menu in menuTree"
+          :key="menu.menuCode"
+          :item="menu"
+        />
       </el-menu>
     </el-aside>
 

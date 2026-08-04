@@ -1,5 +1,7 @@
 import router from '@/router'
+import { addDynamicRoutes } from '@/router'
 import { useUserStore } from '@/stores/user'
+import { usePermissionStore } from '@/stores/permission'
 
 /** 登录页白名单 */
 const WHITE_LIST = ['/login']
@@ -9,29 +11,49 @@ const WHITE_LIST = ['/login']
  *
  * - 白名单路由直接放行；
  * - 无 token 访问受保护路由时跳转 /login，并带上 redirect 参数；
- * - 已登录访问 /login 时重定向到首页。
+ * - 已登录访问 /login 时重定向到首页；
+ * - 首次进入受保护路由时，拉取用户信息 + 菜单树，挂载动态路由后重放当前跳转（确保动态路由已注册）。
  */
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
+  const permissionStore = usePermissionStore()
   const hasToken = userStore.isLoggedIn()
 
-  if (hasToken) {
-    if (to.path === '/login') {
-      next({ path: '/' })
-    } else {
+  if (!hasToken) {
+    if (WHITE_LIST.includes(to.path)) {
       next()
+      return
     }
+    // 无 token 访问受保护路由 -> 登录页
+    next({ path: '/login', query: { redirect: to.fullPath } })
     return
   }
 
-  if (WHITE_LIST.includes(to.path)) {
-    next()
+  // 已登录访问 /login -> 首页
+  if (to.path === '/login') {
+    next({ path: '/' })
     return
   }
 
-  // 无 token 访问受保护路由 -> 登录页
-  next({
-    path: '/login',
-    query: { redirect: to.fullPath }
-  })
+  // 首次进入：加载用户信息与动态路由
+  if (!permissionStore.loaded) {
+    try {
+      if (!userStore.userInfo) {
+        await userStore.getInfo()
+      }
+      const dynamicRoutes = await permissionStore.loadMenus('admin')
+      addDynamicRoutes(dynamicRoutes)
+      // 动态路由已注册，重放本次跳转以命中新路由（replace 避免历史记录冗余）
+      next({ ...to, replace: true })
+      return
+    } catch (e) {
+      // 菜单拉取失败（如后端未启动 / token 失效）：清登录态并跳登录
+      userStore.reset()
+      permissionStore.reset()
+      next({ path: '/login', query: { redirect: to.fullPath } })
+      return
+    }
+  }
+
+  next()
 })

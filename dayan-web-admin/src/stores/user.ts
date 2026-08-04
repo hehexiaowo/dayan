@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { login as loginApi, logout as logoutApi, getInfo as getInfoApi } from '@/api/auth'
 import { TOKEN_STORAGE_KEY } from '@/utils/request'
+import { usePermissionStore } from '@/stores/permission'
 import type { LoginParams, UserInfo } from '@/types/auth'
 
 /**
@@ -64,6 +65,8 @@ export const useUserStore = defineStore('user', () => {
   function reset() {
     setToken('')
     userInfo.value = null
+    // 同步清空已加载的动态菜单/路由
+    usePermissionStore().reset()
   }
 
   return {
