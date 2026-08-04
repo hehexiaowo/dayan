@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.dayan</groupId>
+        <artifactId>dayan-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>dayan-modules</artifactId>
+    <packaging>pom</packaging>
+    <name>dayan-modules</name>
+    <description>大雁养老 - 17 个业务域模块聚合</description>
+
+    <modules>
+        <module>dayan-module-system</module>
+        <module>dayan-module-organ</module>
+        <module>dayan-module-butler</module>
+        <module>dayan-module-supplier</module>
+        <module>dayan-module-park</module>
+        <module>dayan-module-scene</module>
+        <module>dayan-module-channel</module>
+        <module>dayan-module-agent</module>
+        <module>dayan-module-client</module>
+        <module>dayan-module-equity</module>
+        <module>dayan-module-service</module>
+        <module>dayan-module-goods</module>
+        <module>dayan-module-content</module>
+        <module>dayan-module-course</module>
+        <module>dayan-module-order</module>
+        <module>dayan-module-finance</module>
+        <module>dayan-module-distributor</module>
+    </modules>
+</project>

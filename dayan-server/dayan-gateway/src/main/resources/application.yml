@@ -1,0 +1,62 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: dayan-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+    gateway:
+      # 六端路由：按 context-path 前缀转发到对应启动模块
+      routes:
+        - id: dayan-admin
+          uri: lb://dayan-admin
+          predicates:
+            - Path=/admin-api/**
+        - id: dayan-channel
+          uri: lb://dayan-channel
+          predicates:
+            - Path=/channel-api/**
+        - id: dayan-agent
+          uri: lb://dayan-agent
+          predicates:
+            - Path=/agent-api/**
+        - id: dayan-client
+          uri: lb://dayan-client
+          predicates:
+            - Path=/client-api/**
+        - id: dayan-supplier
+          uri: lb://dayan-supplier
+          predicates:
+            - Path=/supplier-api/**
+        - id: dayan-distributor
+          uri: lb://dayan-distributor
+          predicates:
+            - Path=/distributor-api/**
+      # 跨域
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+      discovery:
+        locator:
+          enabled: false  # 关闭按服务名自动路由，显式配置 routes
+
+# Sa-Token 配置（网关侧仅做 Token 解析与透传，鉴权交下游业务模块）
+sa-token:
+  token-name: Authorization
+  is-read-cookie: false
+  is-read-header: true
+  is-log: false
+
+logging:
+  level:
+    com.dayan.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
