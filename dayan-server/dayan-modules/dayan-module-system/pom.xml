@@ -14,6 +14,7 @@
     <description>系统域</description>
     <dependencies>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-core</artifactId></dependency>
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-redis</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-mybatis</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-security</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-log</artifactId></dependency>
