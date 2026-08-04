@@ -55,7 +55,7 @@
         <module>dayan-modules</module>
         <module>dayan-starters</module>
         <module>dayan-gateway</module>
-        <!-- job 模块在 P0-B 子任务中加入 -->
+        <module>dayan-job</module>
     </modules>
 
     <dependencyManagement>

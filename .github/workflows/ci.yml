@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ============ 后端：编译 + 测试 ============
+  backend:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dayan-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Compile
+        run: mvn -B -ntp compile
+
+      - name: Test
+        run: mvn -B -ntp test
+
+      - name: Package (skip tests)
+        run: mvn -B -ntp package -DskipTests
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: dayan-server/**/target/surefire-reports/*.xml
+
+  # ============ 前端：构建（Admin + Channel）============
+  frontend-web:
+    name: Frontend Web Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [dayan-web-admin, dayan-web-channel]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+      - name: Install & Build
+        working-directory: ${{ matrix.project }}
+        run: |
+          if [ -f package.json ]; then
+            npm ci || npm install
+            npm run build
+          fi
