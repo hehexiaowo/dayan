@@ -23,3 +23,38 @@ __pycache__/
 *.pyc
 dist/
 build/
+
+# Maven
+target/
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing-properties
+.mvn/wrapper/maven-wrapper.properties
+
+# Java
+*.class
+hs_err_pid*
+replay_pid*
+
+# 前端
+dist-ssr/
+.local
+*.local
+.unidist/
+unpackage/
+
+# 测试与报告
+coverage/
+*.lcov
+.nyc_output/
+
+# 环境变量与密钥
+.env
+.env.*
+!.env.example
+
+# 数据库本地数据卷
+.mysql_data/
+.redis_data/
+.nacos_data/

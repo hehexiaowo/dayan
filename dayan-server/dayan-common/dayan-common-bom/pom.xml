@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- BOM 独立存在，不继承 dayan-parent，避免与父 POM 的 dependencyManagement import 形成循环 -->
+
+    <groupId>com.dayan</groupId>
+    <artifactId>dayan-common-bom</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>dayan-common-bom</name>
+    <description>大雁养老 - 公共模块版本统一 BOM</description>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-redis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-mybatis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-log</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-mq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-oss</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-swagger</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-sms</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-pay</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-lbs</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

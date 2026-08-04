@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.dayan</groupId>
+        <artifactId>dayan-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>dayan-common</artifactId>
+    <packaging>pom</packaging>
+    <name>dayan-common</name>
+    <description>大雁养老 - 公共模块聚合（按子模块发布）</description>
+
+    <modules>
+        <module>dayan-common-bom</module>
+        <module>dayan-common-core</module>
+        <module>dayan-common-redis</module>
+        <module>dayan-common-mybatis</module>
+        <module>dayan-common-security</module>
+        <module>dayan-common-log</module>
+        <module>dayan-common-mq</module>
+        <module>dayan-common-oss</module>
+        <module>dayan-common-swagger</module>
+        <module>dayan-common-sms</module>
+        <module>dayan-common-pay</module>
+        <module>dayan-common-lbs</module>
+    </modules>
+</project>

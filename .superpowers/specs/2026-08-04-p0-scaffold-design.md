@@ -6,7 +6,7 @@
 > **依据**：`docs/08项目计划书.md` §2.1 P0、`docs/03系统架构设计文档.md` §3-§5、`docs/06项目开发规范.md` §1.1-§1.4、`docs/02数据库设计文档_v4.1.md`
 > **设计文档冲突说明**：本规格在以下两点偏离计划书原文，业经用户确认：
 > - CI/CD：GitLab CI + Harbor → **GitHub Actions + GHCR**（用户实际使用 GitHub，本地有 Docker）
-> - 工作目录：`docs/06` 规范使用 `dayan-server/` 作为根目录名，本项目仓库根为 `F:/code/dayan`，所有模块直接置于仓库根下
+> - 工作目录：后端 Maven 多模块统一聚合在 `dayan-server/` 下（与 `docs/06` 规范命名一致），前端 4 个工程（dayan-web-admin / dayan-web-channel / dayan-miniprogram-agent / dayan-miniprogram-client）平级置于仓库根
 
 ---
 
@@ -68,54 +68,58 @@
 
 ## 三、项目目录结构
 
-仓库根为 `F:/code/dayan`，所有后端模块与前端工程直接置于根下（不引入 `dayan-server/` 中间层，避免路径过深）。
+仓库根为 `F:/code/dayan`。后端 Maven 多模块统一聚合在 `dayan-server/` 下；前端 4 个工程、数据库脚本、Dockerfile、CI 配置平级置于仓库根（前后端构建体系分离，互不通过 Maven 聚合）。
 
 ```
 dayan/
 ├── docs/                              # 设计文档（已存在，含本规格）
-├── dayan-common/                      # 公共模块（聚合）
-│   ├── dayan-common-core/             # R<T>/异常/常量/工具/雪花 ID
-│   ├── dayan-common-redis/            # Redis 封装
-│   ├── dayan-common-mybatis/          # MyBatis-Plus 配置与插件（分页/自动填充/租户/乐观锁）
-│   ├── dayan-common-security/         # Sa-Token 多端鉴权
-│   ├── dayan-common-log/              # 日志切面 + trace_id + 脱敏
-│   ├── dayan-common-mq/               # 消息队列（预留，P0 空壳）
-│   ├── dayan-common-oss/              # 文件存储（预留，P0 空壳）
-│   ├── dayan-common-swagger/          # Knife4j 配置
-│   ├── dayan-common-sms/              # 短信（预留，P0 空壳）
-│   ├── dayan-common-pay/              # 支付（预留，P0 空壳）
-│   └── dayan-common-lbs/              # 地理位置（预留，P0 空壳）
-├── dayan-gateway/                     # Spring Cloud Gateway（端口 8000）
-├── dayan-modules/                     # 17 个业务模块
-│   ├── dayan-module-system/           # 系统域（18 表）
-│   ├── dayan-module-organ/            # 核心域（9 表）
-│   ├── dayan-module-butler/           # 养老管家域（8 表）
-│   ├── dayan-module-supplier/         # 供应商域（10 表）
-│   ├── dayan-module-park/             # 养老机构域（15 表）
-│   ├── dayan-module-scene/            # 场景域（5 表）
-│   ├── dayan-module-channel/          # 渠道域（11 表）
-│   ├── dayan-module-agent/            # 代理人域（6 表）
-│   ├── dayan-module-client/           # 客户域（7 表）
-│   ├── dayan-module-equity/           # 权益域（6 表）
-│   ├── dayan-module-service/          # 服务域（7 表）
-│   ├── dayan-module-goods/            # 商品域（5 表）
-│   ├── dayan-module-content/          # 内容域（5 表）
-│   ├── dayan-module-course/           # 课程域（3 表）
-│   ├── dayan-module-order/            # 订单域（4 表）
-│   ├── dayan-module-finance/          # 结算域（7 表）
-│   └── dayan-module-distributor/      # 分销商域（1 表）
-├── dayan-starters/                    # 启动模块
-│   ├── dayan-admin/                   # Admin 端（端口 8080，/admin-api/）
-│   ├── dayan-channel/                 # Channel 端（端口 8081，/channel-api/）
-│   ├── dayan-supplier/                # Supplier 端（端口 8084，/supplier-api/，后端预留最小 1 副本）
-│   ├── dayan-distributor/             # Distributor 端（端口 8085，/distributor-api/，后端预留最小 1 副本）
-│   ├── dayan-agent/                   # Agent 端（端口 8082，/agent-api/）
-│   └── dayan-client/                  # Client 端（端口 8083，/client-api/）
-├── dayan-job/                         # 定时任务模块（独立部署，不对外 HTTP）
-├── dayan-web-admin/                   # Admin 前端
-├── dayan-web-channel/                 # Channel 前端
-├── dayan-miniprogram-agent/           # Agent 小程序
-├── dayan-miniprogram-client/          # Client 小程序
+├── .superpowers/                      # AI 辅助开发规格与计划
+├── dayan-server/                      # 后端聚合根（Maven 多模块）
+│   ├── pom.xml                        # 后端父 POM（统一版本管理）
+│   ├── dayan-common/                  # 公共模块（聚合）
+│   │   ├── dayan-common-bom/          # 内部模块版本 BOM
+│   │   ├── dayan-common-core/         # R<T>/异常/常量/工具/雪花 ID/编码生成/AES
+│   │   ├── dayan-common-redis/        # Redis 封装
+│   │   ├── dayan-common-mybatis/      # MyBatis-Plus 配置与插件（分页/自动填充/租户/乐观锁）
+│   │   ├── dayan-common-security/     # Sa-Token 多端鉴权
+│   │   ├── dayan-common-log/          # 日志切面 + trace_id + 脱敏
+│   │   ├── dayan-common-mq/           # 消息队列（预留，P0 空壳）
+│   │   ├── dayan-common-oss/          # 文件存储（预留，P0 空壳）
+│   │   ├── dayan-common-swagger/      # Knife4j 配置
+│   │   ├── dayan-common-sms/          # 短信（预留，P0 空壳）
+│   │   ├── dayan-common-pay/          # 支付（预留，P0 空壳）
+│   │   └── dayan-common-lbs/          # 地理位置（预留，P0 空壳）
+│   ├── dayan-gateway/                 # Spring Cloud Gateway（端口 8000）
+│   ├── dayan-modules/                 # 17 个业务模块
+│   │   ├── dayan-module-system/       # 系统域（18 表）
+│   │   ├── dayan-module-organ/        # 核心域（9 表）
+│   │   ├── dayan-module-butler/       # 养老管家域（8 表）
+│   │   ├── dayan-module-supplier/     # 供应商域（10 表）
+│   │   ├── dayan-module-park/         # 养老机构域（15 表）
+│   │   ├── dayan-module-scene/        # 场景域（5 表）
+│   │   ├── dayan-module-channel/      # 渠道域（11 表）
+│   │   ├── dayan-module-agent/        # 代理人域（6 表）
+│   │   ├── dayan-module-client/       # 客户域（7 表）
+│   │   ├── dayan-module-equity/       # 权益域（6 表）
+│   │   ├── dayan-module-service/      # 服务域（7 表）
+│   │   ├── dayan-module-goods/        # 商品域（5 表）
+│   │   ├── dayan-module-content/      # 内容域（5 表）
+│   │   ├── dayan-module-course/       # 课程域（3 表）
+│   │   ├── dayan-module-order/        # 订单域（4 表）
+│   │   ├── dayan-module-finance/      # 结算域（7 表）
+│   │   └── dayan-module-distributor/  # 分销商域（1 表）
+│   ├── dayan-starters/                # 启动模块
+│   │   ├── dayan-admin/               # Admin 端（端口 8080，/admin-api/）
+│   │   ├── dayan-channel/             # Channel 端（端口 8081，/channel-api/）
+│   │   ├── dayan-agent/               # Agent 端（端口 8082，/agent-api/）
+│   │   ├── dayan-client/              # Client 端（端口 8083，/client-api/）
+│   │   ├── dayan-supplier/            # Supplier 端（端口 8084，/supplier-api/，后端预留最小 1 副本）
+│   │   └── dayan-distributor/         # Distributor 端（端口 8085，/distributor-api/，后端预留最小 1 副本）
+│   └── dayan-job/                     # 定时任务模块（独立部署，不对外 HTTP）
+├── dayan-web-admin/                   # Admin 前端（Vue3 + TS + Element Plus）
+├── dayan-web-channel/                 # Channel 前端（同 Admin 模板）
+├── dayan-miniprogram-agent/           # Agent 小程序/H5（uni-app）
+├── dayan-miniprogram-client/          # Client 小程序/H5（uni-app）
 ├── db/
 │   └── migration/
 │       ├── 01_system.sql              # 系统域 18 表 DDL
