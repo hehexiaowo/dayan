@@ -16,8 +16,8 @@ import java.time.LocalDateTime;
 @TableName("course_record_learn")
 public class CourseRecordLearn extends BaseEntity {
 
-    /** 主键 */
-    @TableId(type = IdType.AUTO)
+    /** 主键（雪花ID，分片表） */
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
 
