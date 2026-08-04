@@ -4,6 +4,26 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 
+/**
+ * 侧边栏静态菜单（Channel 渠道后台业务菜单）。
+ *
+ * 注：channel 域菜单数据后端尚未 seed，本期在 layout 内硬编码菜单项，
+ * 由 el-menu 的 router 模式（index 即跳转 path）驱动路由。
+ */
+interface MenuItem {
+  index: string
+  title: string
+  icon: string
+}
+
+const menus: MenuItem[] = [
+  { index: '/dashboard', title: '工作台', icon: 'Odometer' },
+  { index: '/agent', title: '代理人管理', icon: 'User' },
+  { index: '/client', title: '客户管理', icon: 'UserFilled' },
+  { index: '/equity', title: '权益查询', icon: 'Ticket' },
+  { index: '/order', title: '订单查询', icon: 'List' }
+]
+
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
@@ -18,6 +38,14 @@ const systemTitle = '大雁养老渠道后台'
 
 function toggleCollapse() {
   isCollapse.value = !isCollapse.value
+}
+
+/** el-menu select 回调：使用 vue-router 跳转 */
+function handleMenuSelect(index: string) {
+  if (index === route.path) return
+  router.push(index).catch(() => {
+    // 路由跳转失败忽略（如目标路由不存在，由 404 兜底）
+  })
 }
 
 async function handleLogout() {
@@ -50,10 +78,11 @@ async function handleLogout() {
         background-color="#0c2d57"
         text-color="#c9d1d9"
         active-text-color="#ffffff"
+        @select="handleMenuSelect"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><Odometer /></el-icon>
-          <template #title>工作台</template>
+        <el-menu-item v-for="m in menus" :key="m.index" :index="m.index">
+          <el-icon><component :is="m.icon" /></el-icon>
+          <template #title>{{ m.title }}</template>
         </el-menu-item>
       </el-menu>
     </el-aside>

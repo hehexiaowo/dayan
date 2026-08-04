@@ -88,7 +88,9 @@ service.interceptors.response.use(
 
 /** 通用请求方法，返回后端 R<T> 中的 data */
 export function request<T = unknown>(config: AxiosRequestConfig): Promise<T> {
-  return service.request<unknown, T>(config)
+  // 响应拦截器已对 R<T> 拆包并返回 data，此处用 unknown 中转后断言为 T
+  // （axios 类型按完整 response 推导，与拦截器拆包语义不一致，故需断言）
+  return service.request(config) as Promise<T>
 }
 
 export default service
