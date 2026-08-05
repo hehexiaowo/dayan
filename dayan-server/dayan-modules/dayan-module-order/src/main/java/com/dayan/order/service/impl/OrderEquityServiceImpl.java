@@ -153,10 +153,12 @@ public class OrderEquityServiceImpl implements OrderEquityService {
         orderEquityMapper.insert(entity);
 
         // 写初始状态日志（0→0，记录创建）
+        String operatorType = dto.getOperatorType() != null && !dto.getOperatorType().isEmpty()
+                ? dto.getOperatorType() : "admin";
         statusLogHelper.writeLog(OrderType.EQUITY, orderCode,
                 OrderEvent.STATUS_PENDING_PAY, OrderEvent.STATUS_PENDING_PAY,
                 "订单创建",
-                dto.getOperatorCode(), dto.getOperatorName(), "admin",
+                dto.getOperatorCode(), dto.getOperatorName(), operatorType,
                 "权益采购订单创建");
 
         log.info("权益订单创建成功: orderCode={}, totalAmount={}, payAmount={}", orderCode, totalAmount, payAmount);

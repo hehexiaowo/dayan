@@ -18,6 +18,9 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-security</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-log</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-swagger</artifactId></dependency>
+        <!-- Channel 端下单需查询商品目录（价格/名称权威解析）+ 渠道白名单校验 -->
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-goods</artifactId></dependency>
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-channel</artifactId></dependency>
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
         <dependency><groupId>org.mapstruct</groupId><artifactId>mapstruct</artifactId></dependency>
     </dependencies>

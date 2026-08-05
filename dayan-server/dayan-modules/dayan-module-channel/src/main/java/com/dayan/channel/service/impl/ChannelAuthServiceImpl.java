@@ -10,6 +10,7 @@ import com.dayan.channel.vo.AuthLoginVO;
 import com.dayan.common.core.exception.AccountLockedException;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
+import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.common.security.AccountType;
 import com.dayan.common.security.StpKit;
 import com.dayan.common.security.password.PasswordService;
@@ -54,6 +55,15 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
         if (account == null) {
             throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
         }
+
+        // 关键：在写操作前把 channelCode 注入 ContextHolder。
+        // 登录时尚无 Sa-Token 会话，SaTokenContextFilter 无法填充 channelCode，
+        // 导致 DayanTenantHandler.getTenantId() 返回 LongValue(0L)，
+        // TenantLineInnerInterceptor 追加 `AND channel_code = 0` 到 UPDATE，
+        // MySQL 把 VARCHAR 'CH00001' 与 0 比较 → DOUBLE 强转截断 → MysqlDataTruncation。
+        ContextHolder.setChannelCode(account.getChannelCode());
+        ContextHolder.setAccountCode(account.getAccountCode());
+        ContextHolder.setAccountType(AccountType.CHANNEL.getLoginType());
 
         // 2. 校验账号状态
         if (account.getAccountStatus() != null && account.getAccountStatus() == 0) {

@@ -68,16 +68,27 @@ public class SaTokenContextFilter extends OncePerRequestFilter {
             ContextHolder.setChannelCode(channelCode.toString());
         }
     }
-
+    /**
+     * 检测当前请求来自哪一端，并填充上下文。
+     * 四端优先级：admin > channel > agent > client > supplier > distributor。
+     * 命中第一个已登录端即停止（同一请求不会同时持有两端 Token）。
+     *
+     * <p>注意：不能仅靠 {@code getTokenValueNotCut()} 判断，因为所有 StpLogic 共享
+     * 全局 token-name 配置（如 Channel 端配置 token-name=Channel-Token 后，ADMIN/AGENT
+     * 的 StpLogic 也会读到同一个 header 值）。必须用 {@code getLoginIdDefaultNull()}
+     * 确认 Token 在该端的 Session 中确实存在有效登录态。
+     */
     private AccountType detectLoginType() {
-        // 按端逐一检测 Token 是否存在且有效
         AccountType[] types = {
                 AccountType.ADMIN, AccountType.CHANNEL, AccountType.SUPPLIER,
                 AccountType.DISTRIBUTOR, AccountType.AGENT, AccountType.CLIENT
         };
         for (AccountType type : types) {
             StpLogic logic = StpKit.of(type.getLoginType());
-            if (logic.getTokenValueNotCut() != null) {
+            // 用 getLoginIdDefaultNull 而非 getTokenValueNotCut：
+            // 前者验证 Token 在该 loginType 的 Session 中确实存在登录态，
+            // 后者仅判断 header/cookie 是否有值（所有端共享同一 token-name 时会误判）。
+            if (logic.getLoginIdDefaultNull() != null) {
                 return type;
             }
         }

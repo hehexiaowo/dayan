@@ -73,4 +73,6 @@ public class CreateOrderEquityDTO {
     private String operatorCode;
     /** 创建人姓名（写入日志 operatorName，可空） */
     private String operatorName;
+    /** 操作人类型：admin/channel/agent/client/supplier/distributor（写入日志 operatorType，可空） */
+    private String operatorType;
 }

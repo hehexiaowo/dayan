@@ -26,8 +26,7 @@ public class CreatePaymentDTO {
     @NotNull(message = "支付方式不能为空")
     private Integer payType;
 
-    /** 支付金额 */
-    @NotNull(message = "支付金额不能为空")
+    /** 支付金额（Channel 端下单时由订单权威解析，可不传） */
     private BigDecimal payAmount;
 
     /** 付款方账号（可空） */

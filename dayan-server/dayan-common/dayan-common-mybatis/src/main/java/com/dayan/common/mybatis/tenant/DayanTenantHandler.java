@@ -99,6 +99,15 @@ public class DayanTenantHandler implements TenantLineHandler {
         if (tableName == null) {
             return true;
         }
+        // 平台域（admin/system）跨渠道管理：不追加 channel_code 条件。
+        // admin 端需要查看/操作全部渠道的数据（如配置 channel_config_goods、
+        // 审核订单等），若强加 channel_code = ? 会把超管困在单一渠道视野内，
+        // 且 channelCode 为 null 时 LongValue(0) 会导致 VARCHAR 列截断异常。
+        String accountType = ContextHolder.getAccountType();
+        if (accountType == null || accountType.isEmpty()
+                || "admin".equals(accountType) || "system".equals(accountType)) {
+            return true;
+        }
         String normalized = normalize(tableName);
         // 显式忽略清单
         if (ignoreTables.contains(normalized)) {
