@@ -25,6 +25,20 @@ export function getMenuTree(domainType?: DomainType): Promise<Menu[]> {
   })
 }
 
+/**
+ * 当前账号可见菜单树（RBAC 数据权限，后端已组装 children）：GET /admin-api/menus/mine
+ *
+ * 后端按当前登录账号的角色过滤可见菜单，并自动补全祖先目录、组装树。
+ * 超管返回全部菜单；非超管仅返回角色在 organ_role_menu_rel 中关联的菜单。
+ */
+export function getMyMenuTree(domainType?: DomainType): Promise<Menu[]> {
+  return request<Menu[]>({
+    url: '/admin-api/menus/mine',
+    method: 'get',
+    params: domainType ? { domainType } : {}
+  })
+}
+
 /** 新增菜单：POST /admin-api/menus */
 export function createMenu(data: Menu): Promise<string> {
   return request<string>({

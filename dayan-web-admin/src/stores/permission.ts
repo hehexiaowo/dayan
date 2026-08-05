@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
-import { getMenuTree } from '@/api/menu'
+import { getMyMenuTree } from '@/api/menu'
 import type { Menu } from '@/types/menu'
 import { buildAsyncRoutes } from '@/router/dynamic'
 
@@ -20,15 +20,16 @@ export const usePermissionStore = defineStore('permission', () => {
   const loaded = ref(false)
 
   /**
-   * 拉取菜单树并生成动态路由。
+   * 拉取当前账号可见菜单树（RBAC 数据权限）并生成动态路由。
    *
    * 仅加载一次（loaded 标记），登出时调用 reset 后可重新加载。
+   * 走 /menus/mine：超管返回全部，非超管按角色 organ_role_menu_rel 过滤。
    *
    * @param domainType 端类型，Admin 端传 'admin'
    */
   async function loadMenus(domainType: 'admin' | 'channel' | 'agent' | 'client' = 'admin') {
     if (loaded.value) return dynamicRoutes.value
-    const tree = await getMenuTree(domainType)
+    const tree = await getMyMenuTree(domainType)
     menus.value = tree
     dynamicRoutes.value = buildAsyncRoutes(tree)
     loaded.value = true

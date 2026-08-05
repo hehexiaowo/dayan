@@ -31,12 +31,12 @@ public class SystemMenuAdminController {
         return R.ok(menuService.listAll(domainType));
     }
 
-    @Operation(summary = "当前账号可见菜单（RBAC 动态路由）")
+    @Operation(summary = "当前账号可见菜单（RBAC 动态路由，组装树）")
     @GetMapping("/mine")
     public R<List<SystemMenu>> mine(@RequestParam(required = false) String domainType) {
         String accountCode = StpKit.ADMIN.getLoginIdAsString();
         boolean isAdmin = StpKit.ADMIN.getRoleList().contains(DayanStpInterface.ROLE_SUPER_ADMIN);
-        return R.ok(menuService.listByRole(domainType, isAdmin, accountCode));
+        return R.ok(menuService.treeByRole(domainType, isAdmin, accountCode));
     }
 
     @Operation(summary = "菜单树")

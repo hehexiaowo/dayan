@@ -11,9 +11,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -48,13 +51,14 @@ public class SystemMenuService {
     }
 
     /**
-     * 按当前登录账号查询可见菜单（供前端动态路由，RBAC 数据权限）。
+     * 按当前登录账号查询可见菜单（平铺列表，RBAC 数据权限）。
      *
      * <p>数据权限链：
      * <ul>
      *   <li>超管（isAdmin=true）：返回全部菜单（按 domainType 过滤）</li>
      *   <li>非超管：account_code → organ_account_role_rel 取 roleCodes
-     *       → organ_role_menu_rel 取 menuCodes → system_menu 过滤</li>
+     *       → organ_role_menu_rel 取 menuCodes → system_menu 过滤
+     *       + <b>沿 parentCode 链向上回溯补全所有祖先目录</b>（确保 buildTree 能重建层级）</li>
      * </ul>
      *
      * @param domainType  端类型过滤（admin/channel/agent/client），null=全部
@@ -65,6 +69,32 @@ public class SystemMenuService {
         if (isAdmin) {
             return listAll(domainType);
         }
+        List<SystemMenu> menus = listByRoleDirect(domainType, accountCode);
+        return withAncestors(menus);
+    }
+
+    /**
+     * 按当前登录账号查询可见菜单（组装树，RBAC 数据权限）。
+     *
+     * <p>与 {@link #listByRole} 数据源一致，区别是返回已组装 children 的树形结构，
+     * 与 {@link #tree(String)} 契约对齐，供前端直接渲染侧边栏（无需自行 buildTree）。
+     *
+     * @param domainType  端类型过滤，null=全部
+     * @param isAdmin     是否超管（true 走全量树捷径）
+     * @param accountCode 当前登录账号编码（非超管时必填）
+     */
+    public List<SystemMenu> treeByRole(String domainType, boolean isAdmin, String accountCode) {
+        if (isAdmin) {
+            return tree(domainType);
+        }
+        List<SystemMenu> all = withAncestors(listByRoleDirect(domainType, accountCode));
+        return buildTree(all, null);
+    }
+
+    /**
+     * 非超管：account_code → roleCodes → menuCodes → system_menu（不含祖先补全）。
+     */
+    private List<SystemMenu> listByRoleDirect(String domainType, String accountCode) {
         // 1. 账号 → roleCodes
         List<String> roleCodes = accountRoleRelMapper.selectList(
                         new LambdaQueryWrapper<OrganAccountRoleRel>()
@@ -96,6 +126,52 @@ public class SystemMenuService {
             wrapper.eq(SystemMenu::getDomainType, domainType);
         }
         return menuMapper.selectList(wrapper);
+    }
+
+    /**
+     * 沿 parentCode 链向上回溯，补全所有缺失的祖先目录。
+     *
+     * <p>非超管 RBAC 仅关联到具体菜单（menuType=2），但侧边栏树形渲染依赖父目录（menuType=1）存在。
+     * 用迭代 + 单批 in() 查询补全，避免递归 N+1：
+     * <ol>
+     *   <li>从当前结果集收集所有 parentCode（结果集尚未包含的）</li>
+     *   <li>单批查出这些缺失父级，并入结果集</li>
+     *   <li>重复直到无新增缺失父级（parentCode=null 到达根）</li>
+     * </ol>
+     *
+     * @param menus RBAC 直接命中的菜单（可能缺父目录）
+     * @return 含所有祖先目录的完整菜单集合（去重，按 sortOrder 排序）
+     */
+    private List<SystemMenu> withAncestors(List<SystemMenu> menus) {
+        if (menus.isEmpty()) {
+            return menus;
+        }
+        Set<String> haveCodes = menus.stream()
+                .map(SystemMenu::getMenuCode)
+                .collect(Collectors.toCollection(HashSet::new));
+        List<SystemMenu> result = new ArrayList<>(menus);
+        // 迭代补全祖先，直到无新增缺失父级
+        while (true) {
+            List<String> missingParents = result.stream()
+                    .map(SystemMenu::getParentCode)
+                    .filter(p -> p != null && !p.isEmpty() && !haveCodes.contains(p))
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (missingParents.isEmpty()) {
+                break;
+            }
+            List<SystemMenu> parents = menuMapper.selectList(
+                    new LambdaQueryWrapper<SystemMenu>()
+                            .in(SystemMenu::getMenuCode, missingParents)
+                            .eq(SystemMenu::getStatus, 1));
+            for (SystemMenu p : parents) {
+                if (haveCodes.add(p.getMenuCode())) {
+                    result.add(p);
+                }
+            }
+        }
+        result.sort(Comparator.comparingInt(m -> m.getSortOrder() == null ? 0 : m.getSortOrder()));
+        return result;
     }
 
     /**
