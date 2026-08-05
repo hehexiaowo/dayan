@@ -12,6 +12,7 @@ import {
 } from '@/api/account'
 import type { Account, AccountQuery } from '@/types/account'
 import { AccountStatus, ACCOUNT_STATUS_OPTIONS, GENDER_OPTIONS } from '@/types/account'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 账号管理页。
@@ -281,7 +282,9 @@ loadPage()
         <el-table-column prop="phone" label="手机号" min-width="120" />
         <el-table-column prop="email" label="邮箱" min-width="160" show-overflow-tooltip />
         <el-table-column prop="loginCount" label="登录次数" width="90" align="center" />
-        <el-table-column prop="lastLoginTime" label="最近登录" min-width="160" />
+        <el-table-column prop="lastLoginTime" label="最近登录" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.lastLoginTime) }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-switch

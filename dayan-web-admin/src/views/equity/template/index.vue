@@ -17,6 +17,7 @@ import {
   EQUITY_LEVEL_OPTIONS
 } from '@/types/equity'
 import { COMMON_STATUS_OPTIONS } from '@/types/common'
+import { formatMoney } from '@/utils/format'
 
 /**
  * 权益模板管理页（标准 CRUD）。
@@ -297,8 +298,12 @@ loadPage()
             {{ equityLevelLabel(row.equityLevel) }}
           </template>
         </el-table-column>
-        <el-table-column prop="equityValue" label="权益面值" width="110" align="right" />
-        <el-table-column prop="costPrice" label="成本价" width="100" align="right" />
+        <el-table-column prop="equityValue" label="权益面值" width="130" align="right">
+          <template #default="{ row }">{{ formatMoney(row.equityValue) }}</template>
+        </el-table-column>
+        <el-table-column prop="costPrice" label="成本价" width="120" align="right">
+          <template #default="{ row }">{{ formatMoney(row.costPrice) }}</template>
+        </el-table-column>
         <el-table-column prop="validDays" label="有效天数" width="100" align="center" />
         <el-table-column prop="isTransferable" label="可转让" width="80" align="center">
           <template #default="{ row }">

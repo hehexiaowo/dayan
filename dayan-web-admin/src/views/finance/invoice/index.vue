@@ -22,6 +22,7 @@ import {
   TITLE_TYPE_OPTIONS,
   INVOICE_STATUS_OPTIONS
 } from '@/types/finance'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 发票（FinanceInvoice）管理页。
@@ -519,7 +520,9 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="applyTime" label="申请时间" width="170" align="center" />
+        <el-table-column prop="applyTime" label="申请时间" width="170" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.applyTime) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
@@ -906,16 +909,16 @@ loadPage()
           {{ detail.receiverAddress ?? '--' }}
         </el-descriptions-item>
         <el-descriptions-item label="申请时间">
-          {{ detail.applyTime ?? '--' }}
+          {{ formatDateTime(detail.applyTime) }}
         </el-descriptions-item>
         <el-descriptions-item label="开票时间">
-          {{ detail.issueTime ?? '--' }}
+          {{ formatDateTime(detail.issueTime) }}
         </el-descriptions-item>
         <el-descriptions-item label="寄出时间">
-          {{ detail.sendTime ?? '--' }}
+          {{ formatDateTime(detail.sendTime) }}
         </el-descriptions-item>
         <el-descriptions-item label="创建时间">
-          {{ detail.createdAt ?? '--' }}
+          {{ formatDateTime(detail.createdAt) }}
         </el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">
           {{ detail.remark ?? '--' }}

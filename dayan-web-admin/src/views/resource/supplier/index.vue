@@ -272,9 +272,11 @@ function auditStatusLabel(s?: number): string {
   return found ? found.label : s != null ? String(s) : '--'
 }
 
-/** 根据启用状态返回 el-tag type：启用 success / 禁用 info。 */
-function statusTagType(status?: number): 'success' | 'info' {
-  return status === SupplierStatus.ENABLED ? 'success' : 'info'
+/** 根据启用状态返回 el-tag type：启用 success / 禁用 info / 暂停 warning。 */
+function statusTagType(status?: number): 'success' | 'info' | 'warning' {
+  if (status === SupplierStatus.ENABLED) return 'success'
+  if (status === SupplierStatus.SUSPENDED) return 'warning'
+  return 'info'
 }
 
 /** 根据审核状态返回 el-tag type：通过 success / 待审 warning / 驳回 danger。 */

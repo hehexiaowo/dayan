@@ -12,6 +12,7 @@ import {
 } from '@/api/equity'
 import type { EquityBatch, EquityBatchQuery, EquityBatchStats } from '@/types/equity'
 import { BatchStatus, BATCH_STATUS_OPTIONS } from '@/types/equity'
+import { formatMoney } from '@/utils/format'
 
 /**
  * 权益批次管理页（CRUD + 统计）。
@@ -284,8 +285,12 @@ loadPage()
             <el-tag size="small" type="success">{{ row.remainCount ?? 0 }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="unitCost" label="单位成本" width="100" align="right" />
-        <el-table-column prop="totalCost" label="批次总成本" width="110" align="right" />
+        <el-table-column prop="unitCost" label="单位成本" width="120" align="right">
+          <template #default="{ row }">{{ formatMoney(row.unitCost) }}</template>
+        </el-table-column>
+        <el-table-column prop="totalCost" label="批次总成本" width="140" align="right">
+          <template #default="{ row }">{{ formatMoney(row.totalCost) }}</template>
+        </el-table-column>
         <el-table-column prop="produceDate" label="生产日期" width="120" align="center" />
         <el-table-column prop="expireDate" label="批次有效期" width="120" align="center" />
         <el-table-column prop="batchStatus" label="批次状态" width="100" align="center">

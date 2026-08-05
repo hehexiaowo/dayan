@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import { pageOrderEquitys, getOrderEquity, cancelOrderEquity } from '@/api/order'
 import type { OrderEquity, OrderEquityQuery } from '@/types/order'
+import { formatDateTime, formatMoney } from '@/utils/format'
 import {
   EquityOrderStatus,
   EQUITY_ORDER_STATUS_OPTIONS,
@@ -223,19 +224,23 @@ loadPage()
           <template #default="{ row }">{{ row.skuName || row.skuCode || '--' }}</template>
         </el-table-column>
         <el-table-column prop="quantity" label="数量" width="80" align="center" />
-        <el-table-column prop="payAmount" label="实付金额" width="110" align="center">
-          <template #default="{ row }">{{ row.payAmount != null ? row.payAmount : '--' }}</template>
+        <el-table-column prop="payAmount" label="实付金额" width="130" align="right">
+          <template #default="{ row }">{{ formatMoney(row.payAmount) }}</template>
         </el-table-column>
         <el-table-column prop="payType" label="支付方式" width="100" align="center">
           <template #default="{ row }">{{ payTypeLabel(row.payType) }}</template>
         </el-table-column>
-        <el-table-column prop="payTime" label="支付时间" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="payTime" label="支付时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.payTime) }}</template>
+        </el-table-column>
         <el-table-column prop="orderStatus" label="订单状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="orderStatusTagType(row.orderStatus)">{{ orderStatusLabel(row.orderStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
@@ -279,25 +284,25 @@ loadPage()
         <el-descriptions-item label="商品">{{ detail.goodsName || detail.goodsCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="SKU">{{ detail.skuName || detail.skuCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="数量">{{ detail.quantity ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="单价">{{ detail.unitPrice ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="订单总额">{{ detail.totalAmount ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="优惠金额">{{ detail.discountAmount ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="实付金额">{{ detail.payAmount ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="单价">{{ formatMoney(detail.unitPrice) }}</el-descriptions-item>
+        <el-descriptions-item label="订单总额">{{ formatMoney(detail.totalAmount) }}</el-descriptions-item>
+        <el-descriptions-item label="优惠金额">{{ formatMoney(detail.discountAmount) }}</el-descriptions-item>
+        <el-descriptions-item label="实付金额">{{ formatMoney(detail.payAmount) }}</el-descriptions-item>
         <el-descriptions-item label="支付方式">{{ payTypeLabel(detail.payType) }}</el-descriptions-item>
         <el-descriptions-item label="支付流水号">{{ detail.payTradeNo || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="支付时间">{{ detail.payTime || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="支付时间">{{ formatDateTime(detail.payTime) }}</el-descriptions-item>
         <el-descriptions-item label="入库方式">{{ detail.deliverType ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="已入库数量">{{ detail.deliverCount ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="入库完成时间">{{ detail.deliverTime || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="过期时间">{{ detail.expireTime || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="入库完成时间">{{ formatDateTime(detail.deliverTime) }}</el-descriptions-item>
+        <el-descriptions-item label="过期时间">{{ formatDateTime(detail.expireTime) }}</el-descriptions-item>
         <el-descriptions-item label="发票状态">{{ detail.invoiceStatus ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="订单状态">
           <el-tag :type="orderStatusTagType(detail.orderStatus)">{{ orderStatusLabel(detail.orderStatus) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="取消原因">{{ detail.cancelReason || '--' }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ detail.remark || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detail.createdAt || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ detail.updatedAt || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatDateTime(detail.createdAt) }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ formatDateTime(detail.updatedAt) }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button type="primary" @click="detailVisible = false">关闭</el-button>

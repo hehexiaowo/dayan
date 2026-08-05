@@ -275,10 +275,42 @@ function auditStatusTagType(status?: number): 'success' | 'warning' | 'danger' |
   }
 }
 
-/** 售价显示（含单位）。 */
+/**
+ * 售价显示（含单位）。
+ *
+ * 后端 priceUnit 是自由字符串，可能存英文（如 "yuan/month"），运营看起来不直观。
+ * 这里把常见英文单位映射为中文，未命中时原样回显。
+ */
+const PRICE_UNIT_CN_MAP: Record<string, string> = {
+  yuan: '元',
+  rmb: '元',
+  'yuan/month': '元/月',
+  'rmb/month': '元/月',
+  'yuan/year': '元/年',
+  'rmb/year': '元/年',
+  'yuan/piece': '元/件',
+  'yuan/time': '元/次',
+  'yuan/day': '元/天'
+}
+
+function normalizePriceUnit(unit?: string): string {
+  if (!unit) return ''
+  const key = unit.trim().toLowerCase()
+  return PRICE_UNIT_CN_MAP[key] ?? unit
+}
+
 function priceLabel(row: GoodsInfo): string {
   if (row.salePrice == null) return '--'
-  return row.priceUnit ? `${row.salePrice} ${row.priceUnit}` : String(row.salePrice)
+  const unit = normalizePriceUnit(row.priceUnit)
+  return unit ? `${row.salePrice} ${unit}` : String(row.salePrice)
+}
+
+/**
+ * 库存显示：后端用 -1 约定"不限/无限库存"，直接给运营看 -1 会困惑，转成"不限"。
+ */
+function stockLabel(stock?: number): string {
+  if (stock == null) return '--'
+  return stock < 0 ? '不限' : String(stock)
 }
 
 // 初始化加载
@@ -353,7 +385,9 @@ loadPage()
             {{ priceLabel(row) }}
           </template>
         </el-table-column>
-        <el-table-column prop="stock" label="库存" width="90" align="center" />
+        <el-table-column prop="stock" label="库存" width="90" align="center">
+          <template #default="{ row }">{{ stockLabel(row.stock) }}</template>
+        </el-table-column>
         <el-table-column prop="goodsStatus" label="商品状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="goodsStatusTagType(row.goodsStatus)">

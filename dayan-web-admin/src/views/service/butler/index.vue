@@ -12,6 +12,7 @@ import {
 import type { ButlerInfo, ButlerInfoQuery } from '@/types/service'
 import { BUTLER_LEVEL_OPTIONS } from '@/types/service'
 import { COMMON_STATUS_OPTIONS } from '@/types/common'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 管家信息管理页。
@@ -246,7 +247,9 @@ loadPage()
           </template>
         </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>

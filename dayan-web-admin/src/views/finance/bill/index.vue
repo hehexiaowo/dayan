@@ -18,6 +18,7 @@ import {
   BILL_STATUS_OPTIONS,
   SETTLEMENT_METHOD_OPTIONS
 } from '@/types/finance'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 结算单（FinanceBill）管理页。
@@ -380,7 +381,9 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="170" align="center" />
+        <el-table-column prop="createdAt" label="创建时间" width="170" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
@@ -693,19 +696,19 @@ loadPage()
           {{ detail.auditorName ?? '--' }}
         </el-descriptions-item>
         <el-descriptions-item label="审核时间">
-          {{ detail.auditTime ?? '--' }}
+          {{ formatDateTime(detail.auditTime) }}
         </el-descriptions-item>
         <el-descriptions-item label="审核备注" :span="2">
           {{ detail.auditRemark ?? '--' }}
         </el-descriptions-item>
         <el-descriptions-item label="申请时间">
-          {{ detail.applyTime ?? '--' }}
+          {{ formatDateTime(detail.applyTime) }}
         </el-descriptions-item>
         <el-descriptions-item label="结算完成时间">
-          {{ detail.settleTime ?? '--' }}
+          {{ formatDateTime(detail.settleTime) }}
         </el-descriptions-item>
         <el-descriptions-item label="创建时间" :span="2">
-          {{ detail.createdAt ?? '--' }}
+          {{ formatDateTime(detail.createdAt) }}
         </el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">
           {{ detail.remark ?? '--' }}

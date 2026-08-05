@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import { pageOrderScenes, getOrderScene, cancelOrderScene } from '@/api/order'
 import type { OrderScene, OrderSceneQuery } from '@/types/order'
+import { formatDateTime, formatMoney } from '@/utils/format'
 import {
   SceneOrderStatus,
   SCENE_ORDER_STATUS_OPTIONS,
@@ -212,13 +213,15 @@ loadPage()
         </el-table-column>
         <el-table-column prop="activityDate" label="活动日期" width="120" align="center" />
         <el-table-column prop="participantCount" label="参与人数" width="90" align="center" />
-        <el-table-column prop="payAmount" label="实付金额" width="110" align="center">
-          <template #default="{ row }">{{ row.payAmount != null ? row.payAmount : '--' }}</template>
+        <el-table-column prop="payAmount" label="实付金额" width="130" align="right">
+          <template #default="{ row }">{{ formatMoney(row.payAmount) }}</template>
         </el-table-column>
         <el-table-column prop="payType" label="支付方式" width="100" align="center">
           <template #default="{ row }">{{ payTypeLabel(row.payType) }}</template>
         </el-table-column>
-        <el-table-column prop="payTime" label="支付时间" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="payTime" label="支付时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.payTime) }}</template>
+        </el-table-column>
         <el-table-column prop="orderStatus" label="订单状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="orderStatusTagType(row.orderStatus)">{{ orderStatusLabel(row.orderStatus) }}</el-tag>
@@ -269,15 +272,15 @@ loadPage()
         <el-descriptions-item label="活动日期">{{ detail.activityDate || '--' }}</el-descriptions-item>
         <el-descriptions-item label="参与人数">{{ detail.participantCount ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="参与人姓名" :span="2">{{ detail.participantNames || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="单价">{{ detail.unitPrice ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="订单总额">{{ detail.totalAmount ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="优惠金额">{{ detail.discountAmount ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="实付金额">{{ detail.payAmount ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="单价">{{ formatMoney(detail.unitPrice) }}</el-descriptions-item>
+        <el-descriptions-item label="订单总额">{{ formatMoney(detail.totalAmount) }}</el-descriptions-item>
+        <el-descriptions-item label="优惠金额">{{ formatMoney(detail.discountAmount) }}</el-descriptions-item>
+        <el-descriptions-item label="实付金额">{{ formatMoney(detail.payAmount) }}</el-descriptions-item>
         <el-descriptions-item label="优惠券编码">{{ detail.couponCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="优惠券抵扣">{{ detail.couponAmount ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="优惠券抵扣">{{ formatMoney(detail.couponAmount) }}</el-descriptions-item>
         <el-descriptions-item label="使用的权益">{{ detail.equityCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="支付方式">{{ payTypeLabel(detail.payType) }}</el-descriptions-item>
-        <el-descriptions-item label="支付时间">{{ detail.payTime || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="支付时间">{{ formatDateTime(detail.payTime) }}</el-descriptions-item>
         <el-descriptions-item label="联系人">{{ detail.contactName || '--' }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ detail.contactPhone || '--' }}</el-descriptions-item>
         <el-descriptions-item label="订单状态">
@@ -285,8 +288,8 @@ loadPage()
         </el-descriptions-item>
         <el-descriptions-item label="取消原因">{{ detail.cancelReason || '--' }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ detail.remark || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detail.createdAt || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ detail.updatedAt || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatDateTime(detail.createdAt) }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ formatDateTime(detail.updatedAt) }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button type="primary" @click="detailVisible = false">关闭</el-button>

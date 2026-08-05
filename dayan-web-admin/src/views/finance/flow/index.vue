@@ -12,6 +12,7 @@ import {
   FlowStatus,
   FLOW_STATUS_OPTIONS
 } from '@/types/finance'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 资金流水（FinanceFlow）管理页。
@@ -358,7 +359,9 @@ loadPage()
             <span>{{ payTypeLabel(row.payType) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="flowTime" label="流水时间" width="170" align="center" />
+        <el-table-column prop="flowTime" label="流水时间" width="170" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.flowTime) }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="flowStatusTagType(row.status)">{{ flowStatusLabel(row.status) }}</el-tag>
@@ -371,7 +374,9 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="170" align="center" />
+        <el-table-column prop="createdAt" label="创建时间" width="170" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
@@ -508,7 +513,7 @@ loadPage()
         <el-descriptions-item label="变动前余额">{{ plainAmount(detail.balanceBefore) }}</el-descriptions-item>
         <el-descriptions-item label="变动后余额">{{ plainAmount(detail.balanceAfter) }}</el-descriptions-item>
         <el-descriptions-item label="交易流水号">{{ detail.tradeNo ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="流水时间">{{ detail.flowTime ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="流水时间">{{ formatDateTime(detail.flowTime) }}</el-descriptions-item>
         <el-descriptions-item label="对方类型">{{ detail.counterpartyType ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="对方编码">{{ detail.counterpartyCode ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="对方名称" :span="2">{{ detail.counterpartyName ?? '--' }}</el-descriptions-item>
@@ -519,7 +524,7 @@ loadPage()
           <el-tag :type="settledTagType(detail.isSettled)" effect="plain">{{ settledLabel(detail.isSettled) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="结算单号">{{ detail.settleCode ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detail.createdAt ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatDateTime(detail.createdAt) }}</el-descriptions-item>
         <el-descriptions-item label="流水描述" :span="2">{{ detail.flowDescription ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ detail.remark ?? '--' }}</el-descriptions-item>
       </el-descriptions>

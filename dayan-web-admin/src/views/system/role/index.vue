@@ -152,6 +152,36 @@ const permTreeRef = ref()
 const permTreeData = ref<Permission[]>([])
 const currentRoleCode = ref('')
 
+/**
+ * 归一化后端权限树字段。
+ *
+ * 后端 /permissions/tree 返回 { name, code, children } 结构（且分组节点
+ * permissionCode 为 null），而前端 Permission 类型与 el-tree 默认期望
+ * permissionName / permissionCode。这里递归补齐，保证树节点有可读名称、
+ * 每个节点都有稳定 key，避免分组节点因 key 为 null 而无法勾选/回显。
+ */
+type PermissionLike = Partial<Permission> & {
+  name?: string
+  code?: string
+  children?: PermissionLike[]
+}
+
+function normalizePermissionTree(nodes: PermissionLike[] | undefined): Permission[] {
+  if (!Array.isArray(nodes)) return []
+  return nodes.map((n) => {
+    const permissionName = n.permissionName || n.name || ''
+    const permissionCode = n.permissionCode || n.code || ''
+    const childrenRaw = n.children ?? []
+    const children = childrenRaw.length > 0 ? normalizePermissionTree(childrenRaw) : undefined
+    return {
+      ...(n as Permission),
+      permissionName,
+      permissionCode,
+      children
+    } as Permission
+  })
+}
+
 async function openAssignPermission(row: Role) {
   if (!row.roleCode) return
   currentRoleCode.value = row.roleCode
@@ -163,7 +193,10 @@ async function openAssignPermission(row: Role) {
       getPermissionTree(),
       getRolePermissions(row.roleCode)
     ])
-    permTreeData.value = tree
+    // 后端 tree 接口实际返回 name/code 字段（与前端 Permission 类型的
+    // permissionName/permissionCode 不一致），此处做一次归一化映射，
+    // 让 el-tree 的 label/node-key 能正确命中，同时保留前端类型契约。
+    permTreeData.value = normalizePermissionTree(tree as unknown as PermissionLike[])
     // 等待树渲染后回显勾选
     await nextTick()
     permTreeRef.value?.setCheckedKeys(checked, false)
