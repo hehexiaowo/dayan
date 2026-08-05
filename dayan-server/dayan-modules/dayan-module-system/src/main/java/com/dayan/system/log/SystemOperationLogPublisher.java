@@ -43,8 +43,11 @@ public class SystemOperationLogPublisher implements com.dayan.common.log.operati
         entity.setTraceId(record.getTraceId());
         entity.setModule(record.getModule());
         entity.setAction(record.getAction());
-        entity.setAccountCode(record.getOperator());
-        entity.setAccountType(ContextHolder.getAccountType());
+        // account_code / account_type 为 NOT NULL 列，兜底 "unknown" / "system"
+        String accountCode = record.getOperator();
+        entity.setAccountCode(accountCode != null && !accountCode.isEmpty() ? accountCode : "unknown");
+        String accountType = ContextHolder.getAccountType();
+        entity.setAccountType(accountType != null && !accountType.isEmpty() ? accountType : "system");
         entity.setRequestUrl(record.getUri());
         entity.setRequestMethod(record.getHttpMethod());
         entity.setRequestParams(truncate(record.getArgs(), 2000));

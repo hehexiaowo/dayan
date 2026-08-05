@@ -134,8 +134,11 @@ public class OrderEquityServiceImpl implements OrderEquityService {
         entity.setDistributorFullName(dto.getDistributorFullName());
         entity.setGoodsCode(dto.getGoodsCode());
         entity.setGoodsName(dto.getGoodsName());
-        entity.setSkuCode(dto.getSkuCode());
-        entity.setSkuName(dto.getSkuName());
+        // sku_code/sku_name 为 NOT NULL 列，DTO 未提供时用 goodsCode/goodsName 兜底
+        entity.setSkuCode(dto.getSkuCode() != null && !dto.getSkuCode().isEmpty()
+                ? dto.getSkuCode() : dto.getGoodsCode());
+        entity.setSkuName(dto.getSkuName() != null && !dto.getSkuName().isEmpty()
+                ? dto.getSkuName() : dto.getGoodsName());
         entity.setQuantity(quantity);
         entity.setUnitPrice(unitPrice);
         entity.setTotalAmount(totalAmount);

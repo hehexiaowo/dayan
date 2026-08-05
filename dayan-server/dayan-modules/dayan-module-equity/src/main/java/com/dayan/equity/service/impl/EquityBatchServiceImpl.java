@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -114,10 +115,14 @@ public class EquityBatchServiceImpl implements EquityBatchService {
         entity.setExpiredCount(0);
         entity.setVoidedCount(0);
         entity.setRemainCount(0);
-        entity.setUnitCost(dto.getUnitCost());
-        entity.setTotalCost(dto.getTotalCost());
-        entity.setProduceDate(dto.getProduceDate());
-        entity.setExpireDate(dto.getExpireDate());
+        // unit_cost/total_cost/produce_date/expire_date 为 NOT NULL 列，
+        // DTO 未提供时兜底默认值（成本 0 + 生产日期取今天 + 有效期取模板 shelfLifeDays 后）
+        entity.setUnitCost(dto.getUnitCost() != null ? dto.getUnitCost() : BigDecimal.ZERO);
+        entity.setTotalCost(dto.getTotalCost() != null ? dto.getTotalCost() : BigDecimal.ZERO);
+        LocalDate produceDate = dto.getProduceDate() != null ? dto.getProduceDate() : LocalDate.now();
+        entity.setProduceDate(produceDate);
+        entity.setExpireDate(dto.getExpireDate() != null ? dto.getExpireDate()
+                : produceDate.plusDays(template.getShelfLifeDays() != null ? template.getShelfLifeDays() : 365));
         entity.setBatchStatus(dto.getBatchStatus() == null ? BATCH_STATUS_PENDING : dto.getBatchStatus());
         entity.setRemark(dto.getRemark());
 
