@@ -15,7 +15,7 @@ import lombok.EqualsAndHashCode;
 public class AgentFavorite extends BaseEntity {
 
     /** 主键 */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
 

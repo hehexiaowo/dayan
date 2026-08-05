@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 public class AgentPerformance extends BaseEntity {
 
     /** 主键 */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
 

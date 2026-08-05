@@ -71,7 +71,9 @@ public class ButlerInfoServiceImpl implements ButlerInfoService {
         entity.setFullName(dto.getFullName());
         entity.setPhone(dto.getPhone());
         entity.setAvatar(dto.getAvatar());
-        entity.setOrganCode(dto.getOrganCode());
+        // organ_code 为 NOT NULL 列，未指定所属组织时兜底平台默认组织
+        entity.setOrganCode(dto.getOrganCode() != null && !dto.getOrganCode().isEmpty()
+                ? dto.getOrganCode() : "OR00000");
         entity.setButlerLevel(dto.getButlerLevel());
         entity.setStatus(dto.getStatus() == null ? DEFAULT_STATUS : dto.getStatus());
         entity.setRemark(dto.getRemark());
