@@ -213,12 +213,94 @@
 
 ---
 
+## TC-E2E-006：结算对账全流程 ✅ PASS
+
+| 项目 | 内容 |
+|------|------|
+| **用例编号** | TC-E2E-006 |
+| **测试目标** | 验证从流水归集到开票的完整结算流程 |
+| **执行端** | Admin（`/admin-api`，账号 `admin/admin123`） |
+| **执行时间** | 2026-08-05 20:50 ~ 20:55 |
+| **最终结论** | ✅ **PASS**（6 步全链路打通，结算单 0→1→2→3 完整流转，对账一致；发现 1 处跨域解耦缺口 G-7） |
+
+### 执行结果汇总
+
+| Step | 环节 | 关键产物 | 状态机 | 结果 |
+|------|------|---------|--------|------|
+| 1 | 流水归集验证 | 2 条 type=1 收入流水（FL1+FL2），总额 170 万，balance 连续 | — | ✅ |
+| 2 | 生成结算单 | bill `BL0000000002`（final=170万，关联 2 条 flow） | bill=0 待审核 | ✅ |
+| 3 | 审核确认 | audit pass | bill **0→1** | ✅ |
+| 4 | 执行结算 | start-settle + finish-settle | bill **1→2→3** | ✅（结算 flow 未自动-见 G-7） |
+| 5 | 开具发票 | invoice `IV0000000002`（专票 170 万）→ audit → issue | invoice **0→1→2** | ✅ |
+| 6 | 对账确认 | reconciliation `RC0000000004`（我方=对方=170 万，无差异）→ complete | recon **0→1** | ✅ |
+
+### Step 详情
+
+#### Step 1：流水归集验证 ✅
+
+- **接口**：`GET /admin-api/finance/flow/page`
+- **验证**：
+  - 2 条流水（FL0000000001=120 万 + FL0000000002=50 万），全部 type=1（收入），status=1 ✅
+  - balanceBefore/balanceAfter 连续（0→120 万→170 万）✅
+  - 流水关联订单（bizCode=OD202608050003 / OD202608050013）✅
+- **注**：流水号格式实际为 `FL+9 位序列`，文档描述"FL+日期+6 位"，属小差异（序列号策略，非 bug）
+
+#### Step 2：生成结算单 ✅
+
+- **接口**：`POST /admin-api/finance/bill/generate`
+- **入参**：billType=1 渠道结算 / target=CH00001 / 周期 2026-08-01~08-31 / totalAmount=170 万 / flowIds=[2 条]
+- **计算公式**：`final = total(170万) - commission(0) - refund(0) + adjust(0) = 170 万` ✅
+- **产物**：bill `BL0000000002`，bill_status=0，flow_ids 正确关联
+
+#### Step 3-4：审核 + 结算 ✅
+
+- **审核**（0→1）：`POST /finance/bill/audit` `{billCode, pass:true}`
+- **开始结算**（1→2）：`POST /finance/bill/start-settle/{billCode}`
+- **完成结算**（2→3）：`POST /finance/bill/finish-settle` `{billCode}`
+- **验证**：bill_status=3（已结算），settle_time 已写入 ✅
+- **观察**：完成结算**未自动生成 type=4 结算收款流水**（见缺口 G-7）
+
+#### Step 5：开具发票 ✅
+
+- **申请**：`POST /finance/invoice/apply`（invoiceType=2 专票 / 关联 BL0000000002 / 金额 170 万）
+- **审核**（0→1）：`POST /finance/invoice/audit`
+- **开具**（1→2）：`POST /finance/invoice/issue`（invoiceNo=INV20260805001）
+- **验证**：invoice_status=2（已开具），invoice_no / issue_time 已写入 ✅
+
+#### Step 6：对账确认 ✅
+
+- **创建**：`POST /finance/reconciliation`（我方 170 万 = 对方 170 万，diff=0，reconResult=1 一致）
+- **完成**（0→1）：`POST /finance/reconciliation/complete/{reconCode}`
+- **验证**：status=1（已完成），recon_result=1（一致），diff_amount=0 ✅
+
+---
+
+## TC-E2E-006 跨域解耦缺口
+
+| 编号 | 缺口 | 现象 | 影响 | 建议 |
+|------|------|------|------|------|
+| **G-7** | 完成结算不自动写结算收款流水 | bill finish-settle 只更新 bill 状态，不生成 type=4 结算 flow | 财务缺少结算收款流水记录 | finish-settle 成功后追加 `financeFlowService.record(...)` 写 type=4 结算流水（跨域 try-catch） |
+
+---
+
+## TC-E2E-006 数据清单（回归排查用）
+
+| 表 | 关键记录 |
+|----|---------|
+| finance_flow | FL1（120 万 / OD202608050003）+ FL2（50 万 / OD202608050013）/ type=1 / status=1 |
+| finance_bill | `BL0000000002` / status=3 / final=170 万 / flow_ids=[FL1,FL2] / settle_time=08-05 20:54 |
+| finance_invoice | `IV0000000002` / bill=BL2 / type=2 专票 / status=2 已开具 / invoice_no=INV20260805001 / 170 万 |
+| finance_reconciliation | `RC0000000004` / type=1 / CH00001 / our=their=170 万 / diff=0 / result=1 / status=1 |
+
+---
+
 ## 后续待执行用例
 
 | 用例 | 主题 | 状态 |
 |------|------|------|
 | TC-E2E-002 | 代理人个人采购权益流程（Channel 端） | 待执行（Channel 端业务接口完备性待探查） |
-| TC-E2E-006 | 财务对账流程（ReconciliationScheduler） | 待执行 |
+| TC-E2E-004 | 场景活动全生命周期（Agent 端） | 待执行（Agent 端业务接口完备性待探查） |
+| TC-E2E-005 | 供应商入驻→机构上线（Channel 端） | 待执行 |
 
 ---
 
@@ -228,3 +310,4 @@
 |------|------|------|
 | 2026-08-05 | v1.0 | TC-E2E-001 首次执行完成（PASS）；记录 3 处跨域解耦缺口 G-1/G-2/G-3 |
 | 2026-08-05 | v1.1 | TC-E2E-003 执行完成（PASS）；记录 3 处跨域解耦缺口 G-4/G-5/G-6；发现 Client 端业务接口未实现 |
+| 2026-08-05 | v1.2 | TC-E2E-006 执行完成（PASS）；记录 1 处跨域解耦缺口 G-7。三条核心 E2E 全部通过 |
