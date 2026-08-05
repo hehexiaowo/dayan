@@ -1,0 +1,563 @@
+<script setup lang="ts">
+import { reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { useCrud } from '@/composables/useCrud'
+import {
+  pageGoods,
+  getGoods,
+  createGoods,
+  updateGoods,
+  deleteGoods,
+  shelfGoods
+} from '@/api/goods'
+import type { GoodsInfo, GoodsInfoQuery } from '@/types/goods'
+import {
+  GoodsType,
+  GoodsStatus,
+  GoodsAuditStatus,
+  GOODS_TYPE_OPTIONS,
+  GOODS_STATUS_OPTIONS,
+  GOODS_AUDIT_STATUS_OPTIONS
+} from '@/types/goods'
+
+/**
+ * 商品管理页。
+ *
+ * - 标准 CRUD（搜索 + 表格 + 分页 + 新增/编辑弹窗）；
+ * - 上下架流：shelf（上架/下架切换）；
+ * - 主键 goodsCode 由服务端 CodeGenerator 生成，新增表单不含该字段；
+ * - 修改走 PUT path（goodsCode 在 URL 上，与 distributor/supplier 的 query string 不同）。
+ *
+ * 状态约定：
+ * - goodsType：1实物 / 2虚拟 / 3服务
+ * - goodsStatus：0下架 / 1上架 / 2预览
+ * - auditStatus：0待审 / 1通过 / 2驳回
+ */
+
+const {
+  loading,
+  tableData,
+  total,
+  query,
+  loadPage,
+  handleSearch,
+  handlePageChange,
+  handleSizeChange
+} = useCrud<GoodsInfo, GoodsInfoQuery>(
+  { page: pageGoods },
+  {
+    initialQuery: {
+      goodsCode: '',
+      goodsName: '',
+      goodsType: undefined,
+      categoryCode: '',
+      goodsStatus: undefined,
+      auditStatus: undefined
+    }
+  }
+)
+
+// ---------- 新增 / 编辑弹窗 ----------
+const dialogVisible = ref(false)
+const dialogType = ref<'create' | 'edit'>('create')
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
+
+const form = reactive<GoodsInfo>({
+  goodsCode: undefined,
+  goodsName: '',
+  goodsShortName: '',
+  goodsType: GoodsType.PHYSICAL,
+  categoryCode: '',
+  brandName: '',
+  coverImage: '',
+  imageUrls: '',
+  videoUrl: '',
+  goodsDescription: '',
+  summary: '',
+  originalPrice: undefined,
+  salePrice: undefined,
+  costPrice: undefined,
+  priceUnit: '',
+  stock: undefined,
+  isHot: 0,
+  isNew: 0,
+  isRecommend: 0,
+  sortOrder: 0,
+  goodsStatus: GoodsStatus.OFF_SHELF,
+  remark: ''
+})
+
+const rules: FormRules<GoodsInfo> = {
+  goodsName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
+  goodsType: [{ required: true, message: '请选择商品类型', trigger: 'change' }]
+}
+
+function resetForm() {
+  Object.assign(form, {
+    goodsCode: undefined,
+    goodsName: '',
+    goodsShortName: '',
+    goodsType: GoodsType.PHYSICAL,
+    categoryCode: '',
+    brandName: '',
+    coverImage: '',
+    imageUrls: '',
+    videoUrl: '',
+    goodsDescription: '',
+    summary: '',
+    originalPrice: undefined,
+    salePrice: undefined,
+    costPrice: undefined,
+    priceUnit: '',
+    stock: undefined,
+    isHot: 0,
+    isNew: 0,
+    isRecommend: 0,
+    sortOrder: 0,
+    goodsStatus: GoodsStatus.OFF_SHELF,
+    remark: ''
+  })
+}
+
+function openCreate() {
+  dialogType.value = 'create'
+  resetForm()
+  dialogVisible.value = true
+}
+
+/** 将详情/行数据回填到表单（缺省值兜底，避免 undefined 渲染问题）。 */
+function fillForm(detail: GoodsInfo) {
+  Object.assign(form, {
+    goodsCode: detail.goodsCode,
+    goodsName: detail.goodsName ?? '',
+    goodsShortName: detail.goodsShortName ?? '',
+    goodsType: detail.goodsType ?? GoodsType.PHYSICAL,
+    categoryCode: detail.categoryCode ?? '',
+    brandName: detail.brandName ?? '',
+    coverImage: detail.coverImage ?? '',
+    imageUrls: detail.imageUrls ?? '',
+    videoUrl: detail.videoUrl ?? '',
+    goodsDescription: detail.goodsDescription ?? '',
+    summary: detail.summary ?? '',
+    originalPrice: detail.originalPrice,
+    salePrice: detail.salePrice,
+    costPrice: detail.costPrice,
+    priceUnit: detail.priceUnit ?? '',
+    stock: detail.stock,
+    isHot: detail.isHot ?? 0,
+    isNew: detail.isNew ?? 0,
+    isRecommend: detail.isRecommend ?? 0,
+    sortOrder: detail.sortOrder ?? 0,
+    goodsStatus: detail.goodsStatus ?? GoodsStatus.OFF_SHELF,
+    remark: detail.remark ?? ''
+  })
+}
+
+async function openEdit(row: GoodsInfo) {
+  if (!row.goodsCode) return
+  dialogType.value = 'edit'
+  resetForm()
+  try {
+    const detail = await getGoods(row.goodsCode)
+    fillForm(detail)
+  } catch {
+    // 拉取详情失败时回退到行数据
+    fillForm(row)
+  }
+  dialogVisible.value = true
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
+  submitLoading.value = true
+  try {
+    if (dialogType.value === 'create') {
+      await createGoods(form)
+      ElMessage.success('新增成功')
+    } else if (form.goodsCode) {
+      await updateGoods(form.goodsCode, form)
+      ElMessage.success('修改成功')
+    }
+    dialogVisible.value = false
+    loadPage()
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+function handleReset() {
+  query.goodsCode = ''
+  query.goodsName = ''
+  query.goodsType = undefined
+  query.categoryCode = ''
+  query.goodsStatus = undefined
+  query.auditStatus = undefined
+  handleSearch()
+}
+
+async function handleDeleteRow(row: GoodsInfo) {
+  if (!row.goodsCode) return
+  await ElMessageBox.confirm(`确定删除「${row.goodsName}」吗？`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await deleteGoods(row.goodsCode)
+  ElMessage.success('删除成功')
+  loadPage()
+}
+
+// ---------- 上下架 ----------
+async function handleShelf(row: GoodsInfo) {
+  if (!row.goodsCode) return
+  const targetStatus = row.goodsStatus === GoodsStatus.ON_SHELF ? GoodsStatus.OFF_SHELF : GoodsStatus.ON_SHELF
+  const action = targetStatus === GoodsStatus.ON_SHELF ? '上架' : '下架'
+  await ElMessageBox.confirm(`确定${action}「${row.goodsName}」吗？`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await shelfGoods({
+    goodsCode: row.goodsCode,
+    shelfStatus: targetStatus
+  })
+  ElMessage.success(`${action}成功`)
+  loadPage()
+}
+
+// ---------- 辅助渲染 ----------
+function goodsTypeLabel(t?: number): string {
+  const found = GOODS_TYPE_OPTIONS.find((o) => o.value === t)
+  return found ? found.label : t != null ? String(t) : '--'
+}
+
+function goodsStatusLabel(s?: number): string {
+  const found = GOODS_STATUS_OPTIONS.find((o) => o.value === s)
+  return found ? found.label : s != null ? String(s) : '--'
+}
+
+function auditStatusLabel(s?: number): string {
+  const found = GOODS_AUDIT_STATUS_OPTIONS.find((o) => o.value === s)
+  return found ? found.label : s != null ? String(s) : '--'
+}
+
+/** 根据商品状态返回 el-tag type：上架 success / 下架 info / 预览 warning。 */
+function goodsStatusTagType(status?: number): 'success' | 'info' | 'warning' {
+  switch (status) {
+    case GoodsStatus.ON_SHELF:
+      return 'success'
+    case GoodsStatus.PREVIEW:
+      return 'warning'
+    case GoodsStatus.OFF_SHELF:
+    default:
+      return 'info'
+  }
+}
+
+/** 根据审核状态返回 el-tag type：通过 success / 待审 warning / 驳回 danger。 */
+function auditStatusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' {
+  switch (status) {
+    case GoodsAuditStatus.PASS:
+      return 'success'
+    case GoodsAuditStatus.PENDING:
+      return 'warning'
+    case GoodsAuditStatus.REJECT:
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
+
+/** 售价显示（含单位）。 */
+function priceLabel(row: GoodsInfo): string {
+  if (row.salePrice == null) return '--'
+  return row.priceUnit ? `${row.salePrice} ${row.priceUnit}` : String(row.salePrice)
+}
+
+// 初始化加载
+loadPage()
+</script>
+
+<template>
+  <div class="page-container">
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
+      <el-form :inline="true" :model="query" @submit.prevent>
+        <el-form-item label="商品编码">
+          <el-input
+            v-model="query.goodsCode"
+            placeholder="商品编码"
+            clearable
+            @keyup.enter="handleSearch"
+          />
+        </el-form-item>
+        <el-form-item label="商品名称">
+          <el-input
+            v-model="query.goodsName"
+            placeholder="商品名称关键字"
+            clearable
+            @keyup.enter="handleSearch"
+          />
+        </el-form-item>
+        <el-form-item label="商品类型">
+          <el-select v-model="query.goodsType" placeholder="全部" clearable style="width: 120px">
+            <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="商品状态">
+          <el-select v-model="query.goodsStatus" placeholder="全部" clearable style="width: 120px">
+            <el-option v-for="o in GOODS_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="审核状态">
+          <el-select v-model="query.auditStatus" placeholder="全部" clearable style="width: 120px">
+            <el-option v-for="o in GOODS_AUDIT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 表格 -->
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>商品列表</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增商品</el-button>
+        </div>
+      </template>
+
+      <el-table v-loading="loading" :data="tableData" border stripe row-key="goodsCode">
+        <el-table-column prop="goodsCode" label="商品编码" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="goodsName" label="商品名称" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="goodsShortName" label="简称" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="goodsType" label="类型" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag type="info">{{ goodsTypeLabel(row.goodsType) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="categoryCode" label="分类编码" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="brandName" label="品牌" min-width="120" show-overflow-tooltip />
+        <el-table-column label="售价" width="120" align="center">
+          <template #default="{ row }">
+            {{ priceLabel(row) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="stock" label="库存" width="90" align="center" />
+        <el-table-column prop="goodsStatus" label="商品状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="goodsStatusTagType(row.goodsStatus)">
+              {{ goodsStatusLabel(row.goodsStatus) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="auditStatus" label="审核状态" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="auditStatusTagType(row.auditStatus)">
+              {{ auditStatusLabel(row.auditStatus) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button
+              v-if="row.goodsStatus === GoodsStatus.ON_SHELF"
+              link
+              type="warning"
+              size="small"
+              @click="handleShelf(row)"
+            >
+              下架
+            </el-button>
+            <el-button
+              v-else
+              link
+              type="success"
+              size="small"
+              @click="handleShelf(row)"
+            >
+              上架
+            </el-button>
+            <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="pagination-wrap">
+        <el-pagination
+          :current-page="query.current"
+          :page-size="query.size"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @current-change="handlePageChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
+    </el-card>
+
+    <!-- 新增 / 编辑弹窗 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogType === 'create' ? '新增商品' : '编辑商品'"
+      width="820px"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-row :gutter="16">
+          <el-col :span="24">
+            <el-form-item label="商品名称" prop="goodsName">
+              <el-input v-model="form.goodsName" placeholder="商品名称" maxlength="100" show-word-limit />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="商品简称">
+              <el-input v-model="form.goodsShortName" placeholder="商品简称" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="商品类型" prop="goodsType">
+              <el-select v-model="form.goodsType" placeholder="商品类型" style="width: 100%">
+                <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="分类编码">
+              <el-input v-model="form.categoryCode" placeholder="分类编码" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="品牌">
+              <el-input v-model="form.brandName" placeholder="品牌名称" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="原价">
+              <el-input-number v-model="form.originalPrice" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="售价">
+              <el-input-number v-model="form.salePrice" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="成本价">
+              <el-input-number v-model="form.costPrice" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="价格单位">
+              <el-input v-model="form.priceUnit" placeholder="元/件 等" maxlength="20" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="库存">
+              <el-input-number v-model="form.stock" :min="0" :max="9999999" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="排序号">
+              <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="封面图">
+              <el-input v-model="form.coverImage" placeholder="封面图 URL" maxlength="255" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="图集">
+              <el-input v-model="form.imageUrls" type="textarea" :rows="2" placeholder="图集 URL（逗号分隔或 JSON）" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="视频">
+              <el-input v-model="form.videoUrl" placeholder="视频 URL" maxlength="255" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="是否热门">
+              <el-switch v-model="form.isHot" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="是否新品">
+              <el-switch v-model="form.isNew" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="是否推荐">
+              <el-switch v-model="form.isRecommend" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="商品状态">
+              <el-select v-model="form.goodsStatus" placeholder="商品状态" style="width: 100%">
+                <el-option v-for="o in GOODS_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="摘要">
+              <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="商品摘要" maxlength="500" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="商品描述">
+              <el-input v-model="form.goodsDescription" type="textarea" :rows="3" placeholder="商品描述" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="备注">
+              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="内部备注（可选）" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+</style>

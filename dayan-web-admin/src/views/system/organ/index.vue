@@ -164,8 +164,8 @@ async function handleDeleteRow(row: Department) {
   loadTree()
 }
 
-function typeText(t?: string) {
-  return DEPT_TYPE_OPTIONS.find((o) => o.value === t)?.label ?? (t ?? '-')
+function typeText(t?: number) {
+  return DEPT_TYPE_OPTIONS.find((o) => o.value === t)?.label ?? (t != null ? String(t) : '-')
 }
 
 // 初始化加载
