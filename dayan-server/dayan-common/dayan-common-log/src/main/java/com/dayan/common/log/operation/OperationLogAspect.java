@@ -32,11 +32,14 @@ public class OperationLogAspect {
 
     private final ObjectMapper objectMapper;
     private final ObjectProvider<OperationLogPublisher> publisherProvider;
+    private final ObjectProvider<OperatorResolver> operatorResolverProvider;
 
     public OperationLogAspect(ObjectMapper objectMapper,
-                              ObjectProvider<OperationLogPublisher> publisherProvider) {
+                              ObjectProvider<OperationLogPublisher> publisherProvider,
+                              ObjectProvider<OperatorResolver> operatorResolverProvider) {
         this.objectMapper = objectMapper;
         this.publisherProvider = publisherProvider;
+        this.operatorResolverProvider = operatorResolverProvider;
     }
 
     @Around("@annotation(operationLog)")
@@ -47,6 +50,8 @@ public class OperationLogAspect {
                 .action(operationLog.action())
                 .traceId(MDC.get("traceId"));
 
+        // 在主请求线程解析操作人信息（异步落库时 ThreadLocal 已失效）
+        fillOperator(builder);
         fillRequest(builder);
 
         if (operationLog.logArgs()) {
@@ -68,6 +73,7 @@ public class OperationLogAspect {
         } finally {
             builder.costMs(System.currentTimeMillis() - start);
             OperationLogRecord record = builder.build();
+            parseUserAgent(record);
             log.info("操作日志: module={}, action={}, operator={}, uri={}, success={}, cost={}ms",
                     record.getModule(), record.getAction(), record.getOperator(),
                     record.getUri(), record.isSuccess(), record.getCostMs());
@@ -78,6 +84,67 @@ public class OperationLogAspect {
         }
     }
 
+    /**
+     * 按 User-Agent 简单解析设备类型/操作系统/浏览器。
+     * 仅覆盖主流 UA，边缘 UA 解析失败时字段留 null（不影响主流程）。
+     */
+    private void parseUserAgent(OperationLogRecord record) {
+        String ua = record.getUserAgent();
+        if (ua == null || ua.isEmpty()) {
+            return;
+        }
+        String uaLower = ua.toLowerCase();
+        // 设备类型
+        if (uaLower.contains("mobile") || uaLower.contains("android") || uaLower.contains("iphone")) {
+            if (uaLower.contains("tablet") || uaLower.contains("ipad")) {
+                record.setDeviceType("tablet");
+            } else {
+                record.setDeviceType("mobile");
+            }
+        } else {
+            record.setDeviceType("pc");
+        }
+        // 操作系统
+        if (uaLower.contains("windows")) {
+            record.setOs("Windows");
+        } else if (uaLower.contains("mac os") || uaLower.contains("macintosh")) {
+            record.setOs("macOS");
+        } else if (uaLower.contains("linux")) {
+            record.setOs("Linux");
+        } else if (uaLower.contains("android")) {
+            record.setOs("Android");
+        } else if (uaLower.contains("iphone") || uaLower.contains("ipad") || uaLower.contains("ios")) {
+            record.setOs("iOS");
+        }
+        // 浏览器（注意顺序：Edge/Edg 要先于 Chrome 判断，否则会被 Chrome 吞掉）
+        if (uaLower.contains("edg/") || uaLower.contains("edge")) {
+            record.setBrowser("Edge");
+        } else if (uaLower.contains("firefox")) {
+            record.setBrowser("Firefox");
+        } else if (uaLower.contains("chrome")) {
+            record.setBrowser("Chrome");
+        } else if (uaLower.contains("safari")) {
+            record.setBrowser("Safari");
+        }
+    }
+
+    /**
+     * 在主请求线程解析当前操作人信息（账号编码/姓名/类型）。
+     *
+     * <p>必须在此处（主线程）解析，因为后续 {@code publisher.publish} 是 @Async 异步执行，
+     * 异步线程拿不到主线程的 ThreadLocal 上下文。
+     * 解析结果写入 record，Publisher 落库时直接从 record 取值。
+     */
+    private void fillOperator(OperationLogRecord.OperationLogRecordBuilder builder) {
+        OperatorResolver resolver = operatorResolverProvider.getIfAvailable();
+        if (resolver == null) {
+            return;
+        }
+        builder.operator(resolver.resolveCode());
+        builder.accountName(resolver.resolveName());
+        builder.accountType(resolver.resolveType());
+    }
+
     private void fillRequest(OperationLogRecord.OperationLogRecordBuilder builder) {
         ServletRequestAttributes attrs =
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -85,7 +152,38 @@ public class OperationLogAspect {
             HttpServletRequest request = attrs.getRequest();
             builder.httpMethod(request.getMethod());
             builder.uri(request.getRequestURI());
+            builder.ip(extractIp(request));
+            builder.userAgent(request.getHeader("User-Agent"));
         }
+    }
+
+    /**
+     * 提取客户端真实 IP：依次尝试 X-Forwarded-For / X-Real-IP / Proxy-Client-IP，
+     * 取第一个非 unknown 的值；兜底 request.getRemoteAddr()。
+     */
+    private String extractIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (isUnknownIp(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (isUnknownIp(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (isUnknownIp(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (isUnknownIp(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // X-Forwarded-For 可能含多级代理，取第一个
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
+    }
+
+    private boolean isUnknownIp(String ip) {
+        return ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip);
     }
 
     private String serializeArgs(ProceedingJoinPoint joinPoint, OperationLog operationLog) {

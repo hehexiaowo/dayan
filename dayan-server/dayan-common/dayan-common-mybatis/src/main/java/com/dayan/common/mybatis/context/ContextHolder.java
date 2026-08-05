@@ -17,6 +17,7 @@ public final class ContextHolder {
     private static final ThreadLocal<String> CHANNEL_CODE = new ThreadLocal<>();
     private static final ThreadLocal<String> ACCOUNT_CODE = new ThreadLocal<>();
     private static final ThreadLocal<String> ACCOUNT_TYPE = new ThreadLocal<>();
+    private static final ThreadLocal<String> ACCOUNT_NAME = new ThreadLocal<>();
 
     private ContextHolder() {
     }
@@ -48,11 +49,21 @@ public final class ContextHolder {
         return ACCOUNT_TYPE.get();
     }
 
+    public static void setAccountName(String accountName) {
+        ACCOUNT_NAME.set(accountName);
+    }
+
+    /** 当前登录账号姓名（用于操作日志审计展示），未登录或未设置时为 null */
+    public static String getAccountName() {
+        return ACCOUNT_NAME.get();
+    }
+
     /** 清理全部上下文（请求结束必须调用） */
     public static void clear() {
         CHANNEL_CODE.remove();
         ACCOUNT_CODE.remove();
         ACCOUNT_TYPE.remove();
+        ACCOUNT_NAME.remove();
     }
 
     /** 系统级账号标识（无具体操作人时使用） */

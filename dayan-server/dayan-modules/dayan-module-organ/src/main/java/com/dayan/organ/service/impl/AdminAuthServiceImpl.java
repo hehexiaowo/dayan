@@ -101,6 +101,8 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         // Session 存入渠道/组织信息（Admin 端无 channel_code，存 organ_code 便于审计）
         logic.getSession().set("organCode", account.getOrganCode());
         logic.getSession().set("accountType", AccountType.ADMIN.getLoginType());
+        // 存入操作人姓名，供 SaTokenContextFilter 填充 ContextHolder、操作日志审计读取
+        logic.getSession().set("accountName", account.getRealName());
 
         // 7. 更新登录信息
         OrganAccount update = new OrganAccount();

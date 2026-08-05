@@ -105,6 +105,8 @@ public class AgentAuthServiceImpl implements AgentAuthService {
         logic.getSession().set("channelCode", account.getChannelCode());
         logic.getSession().set("agentCode", account.getAgentCode());
         logic.getSession().set("accountType", AccountType.AGENT.getLoginType());
+        // AgentAccount 无 realName 字段，用 username 作为操作人姓名落库审计
+        logic.getSession().set("accountName", account.getUsername());
 
         // 5. 更新登录时间
         AgentAccount update = new AgentAccount();

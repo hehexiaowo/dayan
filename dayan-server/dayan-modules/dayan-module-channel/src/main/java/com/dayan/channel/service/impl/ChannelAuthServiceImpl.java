@@ -64,6 +64,7 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
         ContextHolder.setChannelCode(account.getChannelCode());
         ContextHolder.setAccountCode(account.getAccountCode());
         ContextHolder.setAccountType(AccountType.CHANNEL.getLoginType());
+        ContextHolder.setAccountName(account.getRealName());
 
         // 2. 校验账号状态
         if (account.getAccountStatus() != null && account.getAccountStatus() == 0) {
@@ -83,6 +84,8 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
         logic.login(account.getAccountCode());
         logic.getSession().set("channelCode", account.getChannelCode());
         logic.getSession().set("accountType", AccountType.CHANNEL.getLoginType());
+        // 存入操作人姓名，供 SaTokenContextFilter 填充 ContextHolder、操作日志审计读取
+        logic.getSession().set("accountName", account.getRealName());
 
         // 5. 更新登录信息
         ChannelAccount update = new ChannelAccount();

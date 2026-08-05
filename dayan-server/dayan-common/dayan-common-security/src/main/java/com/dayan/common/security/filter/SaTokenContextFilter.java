@@ -67,6 +67,12 @@ public class SaTokenContextFilter extends OncePerRequestFilter {
         if (channelCode != null) {
             ContextHolder.setChannelCode(channelCode.toString());
         }
+
+        // account_name 存于 Session（登录时写入），供操作日志审计读取
+        Object accountName = logic.getSession().get("accountName");
+        if (accountName != null) {
+            ContextHolder.setAccountName(accountName.toString());
+        }
     }
     /**
      * 检测当前请求来自哪一端，并填充上下文。

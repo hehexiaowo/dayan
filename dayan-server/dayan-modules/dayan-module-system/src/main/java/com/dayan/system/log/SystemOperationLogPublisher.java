@@ -1,7 +1,6 @@
 package com.dayan.system.log;
 
 import com.dayan.common.log.operation.OperationLogRecord;
-import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.system.entity.SystemOperationLog;
 import com.dayan.system.mapper.SystemOperationLogMapper;
 import lombok.RequiredArgsConstructor;
@@ -43,11 +42,14 @@ public class SystemOperationLogPublisher implements com.dayan.common.log.operati
         entity.setTraceId(record.getTraceId());
         entity.setModule(record.getModule());
         entity.setAction(record.getAction());
-        // account_code / account_type 为 NOT NULL 列，兜底 "unknown" / "system"
+        // account_code / account_type / account_name：由切面在主线程经 OperatorResolver 填入 record，
+        // 此处（异步线程）直接从 record 取，避免 ThreadLocal 跨线程丢失。
+        // NOT NULL 列兜底 "unknown" / "system"
         String accountCode = record.getOperator();
         entity.setAccountCode(accountCode != null && !accountCode.isEmpty() ? accountCode : "unknown");
-        String accountType = ContextHolder.getAccountType();
+        String accountType = record.getAccountType();
         entity.setAccountType(accountType != null && !accountType.isEmpty() ? accountType : "system");
+        entity.setAccountName(record.getAccountName());
         entity.setRequestUrl(record.getUri());
         entity.setRequestMethod(record.getHttpMethod());
         entity.setRequestParams(truncate(record.getArgs(), 2000));
@@ -55,6 +57,13 @@ public class SystemOperationLogPublisher implements com.dayan.common.log.operati
         entity.setResultStatus(record.isSuccess() ? 1 : 0);
         entity.setErrorMsg(truncate(record.getErrorMsg(), 500));
         entity.setDuration((int) record.getCostMs());
+        // 终端信息（由 OperationLogAspect 从 HttpServletRequest 采集）
+        entity.setIpAddress(record.getIp());
+        entity.setIpLocation(record.getIpLocation());
+        entity.setUserAgent(truncate(record.getUserAgent(), 500));
+        entity.setDeviceType(record.getDeviceType());
+        entity.setOs(record.getOs());
+        entity.setBrowser(record.getBrowser());
         return entity;
     }
 
