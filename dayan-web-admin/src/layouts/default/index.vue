@@ -52,6 +52,7 @@ async function handleLogout() {
       <el-menu
         :default-active="route.path"
         :collapse="isCollapse"
+        unique-opened
         router
         background-color="#001529"
         text-color="#c9d1d9"

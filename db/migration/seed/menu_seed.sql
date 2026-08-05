@@ -13,7 +13,7 @@ SET NAMES utf8mb4;
 INSERT INTO `system_menu`
   (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`, `icon`, `sort_order`, `is_visible`, `domain_type`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
-  ('admin_dashboard', '首页看板', NULL, 2, '/dashboard', 'dashboard/index', NULL, 'Dashboard', 0, 1, 'admin', 1, 'Admin 工作台', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_dashboard', '首页看板', NULL, 2, '/dashboard', 'dashboard/index', NULL, 'Odometer', 0, 1, 'admin', 1, 'Admin 工作台', NOW(), NOW(), 'system', 'system', 0),
 
   ('admin_system', '系统管理', NULL, 1, '/system', NULL, NULL, 'Setting', 10, 1, 'admin', 1, '系统管理目录', NOW(), NOW(), 'system', 'system', 0),
   ('admin_resource', '资源管理', NULL, 1, '/resource', NULL, NULL, 'OfficeBuilding', 20, 1, 'admin', 1, '资源管理目录', NOW(), NOW(), 'system', 'system', 0),
