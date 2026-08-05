@@ -89,7 +89,9 @@ public class FinanceReconciliationServiceImpl implements FinanceReconciliationSe
         entity.setDiffDetail(dto.getDiffDetail());
         entity.setReconResult(dto.getReconResult() != null ? dto.getReconResult() : FinanceEvent.RECON_RESULT_DIFF);
         entity.setReconTime(dto.getReconTime() != null ? dto.getReconTime() : now);
-        entity.setOperatorCode(dto.getOperatorCode());
+        // operator_code 为 NOT NULL 列，未指定时兜底 system
+        entity.setOperatorCode(dto.getOperatorCode() != null && !dto.getOperatorCode().isEmpty()
+                ? dto.getOperatorCode() : "system");
         entity.setOperatorName(dto.getOperatorName());
         entity.setStatus(FinanceEvent.RECON_STATUS_DOING);
         entity.setRemark(dto.getRemark());
