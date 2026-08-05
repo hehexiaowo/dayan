@@ -5,8 +5,7 @@ import type { SystemStateMachine, StateMachineQuery } from '@/types/stateMachine
 /**
  * 状态机配置接口封装。
  *
- * 预期契约对应后端 SystemStateMachineAdminController（/admin-api/state-machines/*）。
- * 注意：后端 controller 暂未提供，页面调用会 404，前端在页面层做 try/catch 降级。
+ * 对应后端 SystemStateMachineAdminController（/admin-api/state-machines/*）。
  */
 
 /** 分页查询状态机配置：GET /admin-api/state-machines?machineCode&bizType&current&size */
@@ -23,9 +22,17 @@ export function pageStateMachines(query: StateMachineQuery): Promise<PageResult<
   })
 }
 
+/** 查询状态机规则详情：GET /admin-api/state-machines/{id} */
+export function getStateMachine(id: number): Promise<SystemStateMachine> {
+  return request<SystemStateMachine>({
+    url: `/admin-api/state-machines/${id}`,
+    method: 'get'
+  })
+}
+
 /** 新增状态机配置：POST /admin-api/state-machines */
-export function createStateMachine(data: Partial<SystemStateMachine>): Promise<string> {
-  return request<string>({
+export function createStateMachine(data: Partial<SystemStateMachine>): Promise<number> {
+  return request<number>({
     url: '/admin-api/state-machines',
     method: 'post',
     data
