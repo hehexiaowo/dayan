@@ -25,7 +25,8 @@ import java.util.Set;
  *   <li>系统域全部 18 张表（system_*）</li>
  *   <li>核心域全部 9 张表（organ_*）</li>
  *   <li>管家域 butler_* 8 张（平台共享）</li>
- *   <li>分销商 distributor_info 1 张</li>
+     *   <li>分销商 distributor_info 1 张</li>
+     *   <li>供应商域 supplier_* 10 张（平台共享，Admin 全局管理供应商资质与合同）</li>
  *   <li>权益域 equity_* 6 张（P4：Admin 全局管理，渠道归属通过 channel_code 字段显式查询）</li>
  *   <li>服务域 service_* 7 张（P5：Admin 全局视图，服务跨渠道分配管家）</li>
  *   <li>商品域 goods_* / 机构域 park_* / 场景域 scene_* / 内容域 content_* / 课程域 course_*（P6：平台共享资源，Admin 全局管理）</li>
@@ -40,10 +41,17 @@ public class DayanTenantHandler implements TenantLineHandler {
     /** 租户字段名 */
     public static final String TENANT_COLUMN = "channel_code";
 
-    /** 平台共享表前缀（默认忽略） */
+    /**
+     * 平台共享表前缀（默认忽略）。
+     *
+     * <p>这些域的全部表均无 channel_code 字段（平台全局共享），TenantLineInnerInterceptor
+     * 不应对其追加 {@code channel_code = ?} 条件，否则触发
+     * {@code Unknown column 'channel_code'} SQL 异常。
+     */
     private static final String[] DEFAULT_IGNORE_PREFIXES = {
-            "system_", "organ_", "butler_", "distributor_", "equity_", "service_",
-            "goods_", "park_", "scene_", "content_", "course_", "order_", "finance_"
+            "system_", "organ_", "butler_", "supplier_", "distributor_", "equity_",
+            "service_", "goods_", "park_", "scene_", "content_", "course_",
+            "order_", "finance_"
     };
 
     /** 单独忽略的表（平台共享但不匹配前缀） */

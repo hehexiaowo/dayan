@@ -45,12 +45,32 @@ class DayanTenantHandlerTest {
     }
 
     @Test
+    void ignoreTable_shouldIgnorePlatformSharedDomainsByPrefix() {
+        // 平台共享表（无 channel_code 字段）应被忽略
+        assertThat(handler.ignoreTable("system_dict_common")).isTrue();
+        assertThat(handler.ignoreTable("organ_account")).isTrue();
+        assertThat(handler.ignoreTable("butler_info")).isTrue();
+        assertThat(handler.ignoreTable("distributor_info")).isTrue();
+        assertThat(handler.ignoreTable("supplier_info")).isTrue();
+        assertThat(handler.ignoreTable("supplier_contract")).isTrue();
+    }
+
+    @Test
+    void ignoreTable_shouldIgnoreAdminGlobalDomainsByPrefix() {
+        // 权益/订单域含 channel_code 字段，但设计为 Admin 全局管理（显式查询 channel_code），
+        // 因此前缀级忽略，不自动追加租户条件
+        assertThat(handler.ignoreTable("equity_depot")).isTrue();
+        assertThat(handler.ignoreTable("equity_template")).isTrue();
+        assertThat(handler.ignoreTable("order_equity")).isTrue();
+        assertThat(handler.ignoreTable("order_scene")).isTrue();
+    }
+
+    @Test
     void ignoreTable_shouldNotIgnoreChannelScopedTables() {
-        // 含 channel_code 且需隔离的表不应被忽略
+        // 含 channel_code 且需渠道级隔离的表不应被忽略
         assertThat(handler.ignoreTable("agent_info")).isFalse();
         assertThat(handler.ignoreTable("client_info")).isFalse();
-        assertThat(handler.ignoreTable("equity_depot")).isFalse();
-        assertThat(handler.ignoreTable("order_equity")).isFalse();
+        assertThat(handler.ignoreTable("channel_agent")).isFalse();
     }
 
     @Test
