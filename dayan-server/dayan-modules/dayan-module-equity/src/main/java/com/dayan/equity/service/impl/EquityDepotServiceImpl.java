@@ -31,6 +31,8 @@ import com.dayan.equity.service.EquityBatchService;
 import com.dayan.equity.service.EquityDepotService;
 import com.dayan.equity.service.EquityTemplateService;
 import com.dayan.equity.vo.EquityDepotVO;
+import com.dayan.order.dto.EquityDeliverDTO;
+import com.dayan.order.service.OrderEquityService;
 import com.dayan.service.dto.ServiceSessionCreateDTO;
 import com.dayan.service.service.ServiceSessionService;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +41,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -100,6 +104,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
     private final SequenceProvider sequenceProvider;
     private final StateMachineEngine stateMachineEngine;
     private final ServiceSessionService serviceSessionService;
+    private final OrderEquityService orderEquityService;
     /** AES 密钥 hex（由配置 dayan.aes.key 派生） */
     private final String aesKeyHex;
 
@@ -113,6 +118,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             SequenceProvider sequenceProvider,
             StateMachineEngine stateMachineEngine,
             ServiceSessionService serviceSessionService,
+            OrderEquityService orderEquityService,
             @Value("${dayan.aes.key:}") String configuredKey) {
         this.depotMapper = depotMapper;
         this.activateMapper = activateMapper;
@@ -123,6 +129,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         this.sequenceProvider = sequenceProvider;
         this.stateMachineEngine = stateMachineEngine;
         this.serviceSessionService = serviceSessionService;
+        this.orderEquityService = orderEquityService;
         if (configuredKey == null || configuredKey.isBlank()) {
             this.aesKeyHex = AesGcmUtil.deriveKey(DEFAULT_KEY_PASSWORD);
             log.warn("未配置 dayan.aes.key，回退使用默认派生密钥（仅供开发/测试）");
@@ -248,6 +255,8 @@ public class EquityDepotServiceImpl implements EquityDepotService {
 
         LocalDateTime now = LocalDateTime.now();
         int success = 0;
+        // 收集本次出库涉及的订单编码及数量（用于联动订单发放，G-3 修复）
+        Map<String, Integer> orderDeliverCount = new HashMap<>();
         for (String code : codes) {
             EquityDepot depot = requireEquity(code);
             int from = depot.getEquityStatus() == null ? EquityEvent.STATUS_STOCK : depot.getEquityStatus();
@@ -271,9 +280,42 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             batchService.incrementStat(depot.getBatchCode(), "outbound_count", 1);
             batchService.incrementStat(depot.getBatchCode(), "remain_count", -1);
             success++;
+
+            // 收集订单维度的出库数量（order_code 非空时）
+            if (depot.getOrderCode() != null && !depot.getOrderCode().isEmpty()) {
+                orderDeliverCount.merge(depot.getOrderCode(), 1, Integer::sum);
+            }
         }
         log.info("权益出库成功: count={}, outboundChannelCode={}", success, dto.getOutboundChannelCode());
+
+        // 出库后自动联动订单发放（G-3 修复：跨域 try-catch，失败不回滚出库）
+        triggerOrderDeliver(orderDeliverCount);
         return success;
+    }
+
+    /**
+     * 出库成功后按订单维度自动回调 OrderEquityService.deliver（全部发放 1→3）。
+     *
+     * <p>跨域解耦：订单发放失败不影响出库主流程（权益已成功出库），仅记录警告。
+     *
+     * @param orderDeliverCount 订单编码 → 本次出库数量
+     */
+    private void triggerOrderDeliver(Map<String, Integer> orderDeliverCount) {
+        for (Map.Entry<String, Integer> entry : orderDeliverCount.entrySet()) {
+            String orderCode = entry.getKey();
+            int count = entry.getValue();
+            try {
+                EquityDeliverDTO deliverDTO = new EquityDeliverDTO();
+                deliverDTO.setOrderCode(orderCode);
+                deliverDTO.setDeliverCount(count);
+                deliverDTO.setPartialDeliver(false);
+                deliverDTO.setOperatorType("system");
+                orderEquityService.deliver(deliverDTO);
+                log.info("权益出库联动订单发放: orderCode={}, deliverCount={}", orderCode, count);
+            } catch (Exception e) {
+                log.warn("权益出库后联动订单发放失败（忽略）: orderCode={}, err={}", orderCode, e.getMessage());
+            }
+        }
     }
 
     // ====== 核心链路：激活（activate） ======

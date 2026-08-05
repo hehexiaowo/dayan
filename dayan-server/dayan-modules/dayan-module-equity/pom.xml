@@ -20,6 +20,8 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-swagger</artifactId></dependency>
         <!-- 权益激活后自动创建服务会话 -->
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-service</artifactId></dependency>
+        <!-- 权益出库后自动联动订单发放（G-3 修复） -->
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-order</artifactId></dependency>
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
         <dependency><groupId>org.mapstruct</groupId><artifactId>mapstruct</artifactId></dependency>
     </dependencies>

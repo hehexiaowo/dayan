@@ -10,9 +10,11 @@ import com.dayan.finance.dto.CreatePaymentDTO;
 import com.dayan.finance.dto.FinancePaymentQueryDTO;
 import com.dayan.finance.dto.PaymentMarkFailedDTO;
 import com.dayan.finance.dto.PaymentMarkSuccessDTO;
+import com.dayan.finance.dto.RecordFlowDTO;
 import com.dayan.finance.entity.FinancePayment;
 import com.dayan.finance.enums.FinanceEvent;
 import com.dayan.finance.mapper.FinancePaymentMapper;
+import com.dayan.finance.service.FinanceFlowService;
 import com.dayan.finance.service.FinancePaymentService;
 import com.dayan.finance.vo.FinancePaymentVO;
 import com.dayan.order.dto.PayCallbackDTO;
@@ -48,6 +50,8 @@ public class FinancePaymentServiceImpl implements FinancePaymentService {
     private final OrderSceneService orderSceneService;
     private final OrderCourseService orderCourseService;
     private final OrderSojournService orderSojournService;
+    // 财务流水 Service，用于支付成功后自动生成收入流水（G-1 修复）
+    private final FinanceFlowService financeFlowService;
 
     // ====== 查询 ======
 
@@ -131,6 +135,46 @@ public class FinancePaymentServiceImpl implements FinancePaymentService {
         // 支付成功后自动联动订单状态机（0→1 已支付）
         // 按 payment.orderType 分发到对应 OrderXxxService.payCallback
         triggerOrderPayCallback(payment, dto);
+
+        // 支付成功后自动生成财务收入流水（G-1 修复：跨域联动，try-catch 不阻断支付主流程）
+        recordIncomeFlow(payment, dto);
+    }
+
+    /**
+     * 支付成功后自动生成 type=1 收入流水。
+     *
+     * <p>跨域解耦：流水写入失败不影响支付主流程（支付记录已成功更新），仅记录警告。
+     * 这与 {@link #triggerOrderPayCallback} 的容错策略一致。
+     *
+     * <p>accountCode 用 paymentCode 作为占位（FinancePayment 实体不含 channelCode），
+     * 后续如需按渠道维度对账，可扩展 FinancePayment 增加 channelCode 冗余字段。
+     *
+     * @param payment 支付记录（含 orderCode/payAmount）
+     * @param dto     标记成功的入参（含 tradeNo）
+     */
+    private void recordIncomeFlow(FinancePayment payment, PaymentMarkSuccessDTO dto) {
+        try {
+            RecordFlowDTO flowDTO = new RecordFlowDTO();
+            flowDTO.setFlowType(1); // 1=收入
+            flowDTO.setBizType(payment.getOrderType() == 1 ? "equity_order"
+                    : payment.getOrderType() == 2 ? "scene_order"
+                    : payment.getOrderType() == 3 ? "course_order"
+                    : payment.getOrderType() == 4 ? "sojourn_order" : "order");
+            flowDTO.setBizCode(payment.getOrderCode());
+            flowDTO.setAccountType("payment");
+            flowDTO.setAccountCode(payment.getPaymentCode());
+            flowDTO.setFlowAmount(payment.getPayAmount());
+            flowDTO.setPayType(payment.getPayType());
+            flowDTO.setTradeNo(dto.getTradeNo());
+            flowDTO.setFlowDescription("订单 " + payment.getOrderCode() + " 支付到账");
+            flowDTO.setRemark("支付成功自动生成");
+            financeFlowService.record(flowDTO);
+            log.info("支付成功自动生成收入流水: paymentCode={}, orderCode={}, amount={}",
+                    payment.getPaymentCode(), payment.getOrderCode(), payment.getPayAmount());
+        } catch (Exception e) {
+            log.warn("支付成功后生成收入流水失败（忽略）: paymentCode={}, err={}",
+                    payment.getPaymentCode(), e.getMessage());
+        }
     }
 
     /**

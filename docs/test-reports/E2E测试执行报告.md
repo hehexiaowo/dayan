@@ -381,3 +381,63 @@
 | 2026-08-05 | v1.1 | TC-E2E-003 执行完成（PASS）；记录 3 处跨域解耦缺口 G-4/G-5/G-6；发现 Client 端业务接口未实现 |
 | 2026-08-05 | v1.2 | TC-E2E-006 执行完成（PASS）；记录 1 处跨域解耦缺口 G-7。三条核心 E2E 全部通过 |
 | 2026-08-05 | v1.3 | TC-E2E-002 执行完成（PASS）；Channel 端核心链路打通。四条 E2E 全部通过 |
+| 2026-08-06 | v1.4 | **修复 G-1/G-3/G-5/G-7 四处跨域解耦缺口并端到端回归验证通过**；G-2/G-4/G-6 维持现状（见下章） |
+
+---
+
+## 跨域解耦缺口修复验证（v1.4，2026-08-06）
+
+> **背景**：v1.0~v1.3 记录了 7 处跨域解耦缺口（G-1~G-7），其中 G-1/G-3/G-5/G-7 四处涉及「主流程自动联动缺失」，本轮全部修复并端到端验证通过。G-2/G-4/G-6 属于「辅助数据补全」性质，维持现状（不阻塞主流程）。
+
+### 修复清单与验证结果
+
+| 编号 | 修复内容 | 实现方式 | 验证结果 |
+|------|---------|---------|---------|
+| **G-1** ✅ | markSuccess 后自动写 type=1 收入 flow | `FinancePaymentServiceImpl.markSuccess()` 末尾追加 `recordIncomeFlow()`，try-catch 包裹 | **PASS**：新支付 `PAY0000000005` markSuccess 后自动生成 `FL0000000003`（type=1 / equity_order / 999 元） |
+| **G-3** ✅ | outbound 后自动回调订单发放 | `EquityDepotServiceImpl.outbound()` 按 order_code 聚合后追加 `triggerOrderDeliver()`，try-catch 包裹 | **PASS**：权益 `EQ000000000002` 出库后，订单 `OD202608060015` 自动 order_status 1→3、deliver_count 0→1 |
+| **G-5** ✅ | start/finish 双向联动 equity 状态机 | Spring 事件机制：service 发 `ServiceSessionStartedEvent`/`ServiceSessionFinishedEvent`，equity 监听器调 `transition(START_SERVICE/END_SERVICE)` | **PASS**：start_service 后 equity 2→3、use_count 0→1；finish 后 equity 3→2 恢复激活 |
+| **G-7** ✅ | finishSettle 后自动写 type=4 结算 flow | `FinanceBillServiceImpl.finishSettle()` 末尾追加 `recordSettlementFlow()`，try-catch 包裹 | **PASS**：bill `BL0000000002` finishSettle 后自动生成 `FL0000000004`（type=4 / settlement / 1700000 元） |
+
+### G-5 实现细节（事件机制破解循环依赖）
+
+**问题**：equity 模块已依赖 service 模块（激活后自动创建服务会话），若 service 反向调 equity 会形成循环依赖。
+
+**方案**：Spring `ApplicationEventPublisher` + `@EventListener` 单向解耦。
+
+```
+service 模块（发布方）                    equity 模块（监听方）
+┌─────────────────────────┐              ┌──────────────────────────────┐
+│ startService()          │              │ EquityUsageEventListener     │
+│   ├ 状态机 4→5          │              │   @EventListener              │
+│   └ publishEvent(       │ ──事件──→   │   onSessionStarted()          │
+│       StartedEvent)     │              │     └ transition(START_SERVICE)│
+│                         │              │         → equity 2→3          │
+│ finish()                │              │         + use_count+1         │
+│   ├ 状态机 5→6          │              │   @EventListener              │
+│   └ publishEvent(       │ ──事件──→   │   onSessionFinished()         │
+│       FinishedEvent)    │              │     └ transition(END_SERVICE) │
+│                         │              │         → equity 3→2 恢复     │
+└─────────────────────────┘              └──────────────────────────────┘
+```
+
+**新增文件**：
+- `dayan-module-service/.../event/ServiceSessionStartedEvent.java`
+- `dayan-module-service/.../event/ServiceSessionFinishedEvent.java`
+- `dayan-module-equity/.../event/EquityUsageEventListener.java`
+
+### 未修复缺口（维持现状）
+
+| 编号 | 缺口 | 维持原因 |
+|------|------|---------|
+| **G-2** | 权益入库不校验订单已支付 | 业务允许「先备货后下单」场景（供应商代发），强制校验会限制业务灵活性。补文档说明即可 |
+| **G-4** | 分配管家不自动创建 butler_client_rel | butler_client_rel 是「管家-客户」长期关系表，单次会话分配不应自动绑定。由管家主动认领客户时创建 |
+| **G-6** | 开始服务不自动写 service_record | service_record 是「服务执行明细」（签到/打卡/工单），start_service 只是状态流转，实际服务记录应由管家在履约过程中逐条创建 |
+
+### 回归验证数据清单
+
+| 验证项 | 关键数据 |
+|--------|---------|
+| G-1 验证订单 | `OD202608060015` / 支付 `PAY0000000005` / 自动生成 flow `FL0000000003`（999 元） |
+| G-3 验证权益 | `EQ000000000002` 出库 → 订单 `OD202608060015` 自动 deliver_count=1 / order_status=3 |
+| G-5 验证会话 | `SS0000000002`（权益 `EQ000000000076`）：start→equity 2→3/use_count=1；finish→equity 3→2 |
+| G-7 验证结算单 | `BL0000000002` finishSettle → 自动生成 flow `FL0000000004`（1700000 元） |

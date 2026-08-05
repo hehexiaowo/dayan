@@ -20,6 +20,8 @@ import com.dayan.service.entity.ServiceEquityArrange;
 import com.dayan.service.entity.ServiceEquitySolution;
 import com.dayan.service.entity.ServiceSession;
 import com.dayan.service.enums.ServiceSessionEvent;
+import com.dayan.service.event.ServiceSessionFinishedEvent;
+import com.dayan.service.event.ServiceSessionStartedEvent;
 import com.dayan.service.mapper.ButlerInfoViewMapper;
 import com.dayan.service.mapper.ServiceEquityArrangeMapper;
 import com.dayan.service.mapper.ServiceEquitySolutionMapper;
@@ -28,6 +30,7 @@ import com.dayan.service.service.ServiceSessionService;
 import com.dayan.service.vo.ServiceSessionVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,6 +70,7 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
     private final ServiceEquityArrangeMapper arrangeMapper;
     private final SequenceProvider sequenceProvider;
     private final StateMachineEngine stateMachineEngine;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ====== 查询 ======
 
@@ -261,6 +265,13 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         int to = stateMachineEngine.transition(ServiceSessionEvent.DOMAIN, from, ServiceSessionEvent.START_SERVICE);
         applyStatus(session, to);
         log.info("开始服务: sessionCode={}, from={}, to={}", sessionCode, from, to);
+        // 联动权益状态：发布事件，由 equity 模块监听（2→3 使用中 + use_count 维护）
+        try {
+            eventPublisher.publishEvent(new ServiceSessionStartedEvent(
+                    this, sessionCode, session.getEquityCode(), session.getClientCode()));
+        } catch (Exception e) {
+            log.warn("发布服务开始事件失败（不影响主流程）: sessionCode={}", sessionCode, e);
+        }
     }
 
     @Override
@@ -276,6 +287,13 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         update.setCompleteTime(LocalDateTime.now());
         sessionMapper.updateById(update);
         log.info("完成服务: sessionCode={}, from={}, to={}", sessionCode, from, to);
+        // 联动权益使用计数：发布事件，由 equity 模块监听（避免 service→equity 循环依赖）
+        try {
+            eventPublisher.publishEvent(new ServiceSessionFinishedEvent(
+                    this, sessionCode, session.getEquityCode(), session.getClientCode()));
+        } catch (Exception e) {
+            log.warn("发布服务完成事件失败（不影响主流程）: sessionCode={}", sessionCode, e);
+        }
     }
 
     @Override

@@ -10,10 +10,12 @@ import com.dayan.finance.dto.BillAuditDTO;
 import com.dayan.finance.dto.BillFinishSettleDTO;
 import com.dayan.finance.dto.FinanceBillQueryDTO;
 import com.dayan.finance.dto.GenerateBillDTO;
+import com.dayan.finance.dto.RecordFlowDTO;
 import com.dayan.finance.entity.FinanceBill;
 import com.dayan.finance.enums.FinanceEvent;
 import com.dayan.finance.mapper.FinanceBillMapper;
 import com.dayan.finance.service.FinanceBillService;
+import com.dayan.finance.service.FinanceFlowService;
 import com.dayan.finance.vo.FinanceBillVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,8 @@ public class FinanceBillServiceImpl implements FinanceBillService {
 
     private final FinanceBillMapper billMapper;
     private final SequenceProvider sequenceProvider;
+    // 财务流水 Service，用于完成结算后自动生成 type=4 结算收款流水（G-7 修复）
+    private final FinanceFlowService financeFlowService;
 
     // ====== 查询 ======
 
@@ -174,6 +178,36 @@ public class FinanceBillServiceImpl implements FinanceBillService {
         }
         billMapper.updateById(update);
         log.info("结算单完成结算: billCode={}", dto.getBillCode());
+
+        // 完成结算后自动生成 type=4 结算收款流水（G-7 修复：跨域联动，try-catch 不阻断结算主流程）
+        recordSettlementFlow(bill);
+    }
+
+    /**
+     * 完成结算后自动生成 type=4 结算收款流水。
+     *
+     * <p>跨域解耦：流水写入失败不影响结算主流程（结算单已成功更新），仅记录警告。
+     *
+     * @param bill 结算单（含 billCode/finalAmount/targetCode）
+     */
+    private void recordSettlementFlow(FinanceBill bill) {
+        try {
+            RecordFlowDTO flowDTO = new RecordFlowDTO();
+            flowDTO.setFlowType(4); // 4=结算
+            flowDTO.setBizType("settlement");
+            flowDTO.setBizCode(bill.getBillCode());
+            flowDTO.setAccountType(bill.getTargetType() != null ? bill.getTargetType() : "channel");
+            flowDTO.setAccountCode(bill.getTargetCode());
+            flowDTO.setFlowAmount(bill.getFinalAmount());
+            flowDTO.setFlowDescription("结算单 " + bill.getBillCode() + " 结算收款");
+            flowDTO.setRemark("完成结算自动生成");
+            financeFlowService.record(flowDTO);
+            log.info("完成结算自动生成结算流水: billCode={}, amount={}",
+                    bill.getBillCode(), bill.getFinalAmount());
+        } catch (Exception e) {
+            log.warn("完成结算后生成结算流水失败（忽略）: billCode={}, err={}",
+                    bill.getBillCode(), e.getMessage());
+        }
     }
 
     // ====== 内部方法 ======
