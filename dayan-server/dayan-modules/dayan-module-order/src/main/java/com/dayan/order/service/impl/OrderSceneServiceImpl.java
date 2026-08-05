@@ -135,7 +135,9 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         entity.setGoodsCode(dto.getGoodsCode());
         entity.setSceneCode(dto.getSceneCode());
         entity.setSceneName(dto.getSceneName());
-        entity.setSkuCode(dto.getSkuCode());
+        // sku_code 为 NOT NULL 列，DTO 未提供时用 goodsCode 兜底
+        entity.setSkuCode(dto.getSkuCode() != null && !dto.getSkuCode().isEmpty()
+                ? dto.getSkuCode() : dto.getGoodsCode());
         entity.setScheduleCode(dto.getScheduleCode());
         entity.setActivityDate(dto.getActivityDate());
         entity.setParticipantCount(participantCount);
