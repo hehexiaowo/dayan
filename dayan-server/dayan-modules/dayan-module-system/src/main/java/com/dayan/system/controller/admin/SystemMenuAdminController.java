@@ -2,6 +2,8 @@ package com.dayan.system.controller.admin;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.security.StpKit;
+import com.dayan.organ.security.DayanStpInterface;
 import com.dayan.system.entity.SystemMenu;
 import com.dayan.system.service.SystemMenuService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +29,14 @@ public class SystemMenuAdminController {
     @GetMapping
     public R<List<SystemMenu>> list(@RequestParam(required = false) String domainType) {
         return R.ok(menuService.listAll(domainType));
+    }
+
+    @Operation(summary = "当前账号可见菜单（RBAC 动态路由）")
+    @GetMapping("/mine")
+    public R<List<SystemMenu>> mine(@RequestParam(required = false) String domainType) {
+        String accountCode = StpKit.ADMIN.getLoginIdAsString();
+        boolean isAdmin = StpKit.ADMIN.getRoleList().contains(DayanStpInterface.ROLE_SUPER_ADMIN);
+        return R.ok(menuService.listByRole(domainType, isAdmin, accountCode));
     }
 
     @Operation(summary = "菜单树")
