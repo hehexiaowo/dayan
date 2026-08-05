@@ -27,4 +27,25 @@ public interface SceneScheduleService {
     void update(Long id, SceneScheduleUpdateDTO dto);
 
     void delete(Long id);
+
+    /**
+     * 扣减排期容量（下单时调用）。
+     *
+     * <p>原子操作：{@code currentPerson += count}，并校验不超过 {@code maxPerson}。
+     * 若排期不存在或已关闭，抛 BusinessException。
+     *
+     * @param scheduleId 排期 ID（对应 order_scene.schedule_code 的字符串形式）
+     * @param count      参与人数
+     */
+    void deductCapacity(String scheduleId, int count);
+
+    /**
+     * 回补排期容量（取消订单时调用）。
+     *
+     * <p>原子操作：{@code currentPerson -= count}，不低于 0。
+     *
+     * @param scheduleId 排期 ID
+     * @param count      参与人数
+     */
+    void restoreCapacity(String scheduleId, int count);
 }

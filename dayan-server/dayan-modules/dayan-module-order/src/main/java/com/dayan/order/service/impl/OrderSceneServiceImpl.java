@@ -13,6 +13,7 @@ import com.dayan.order.dto.OrderCompleteDTO;
 import com.dayan.order.dto.OrderSceneQueryDTO;
 import com.dayan.order.dto.PayCallbackDTO;
 import com.dayan.order.dto.RefundApplyDTO;
+import com.dayan.order.dto.SceneDeliverDTO;
 import com.dayan.order.entity.OrderScene;
 import com.dayan.order.enums.OrderEvent;
 import com.dayan.order.enums.OrderType;
@@ -20,6 +21,7 @@ import com.dayan.order.mapper.OrderSceneMapper;
 import com.dayan.order.service.OrderSceneService;
 import com.dayan.order.service.OrderStatusLogHelper;
 import com.dayan.order.vo.OrderSceneVO;
+import com.dayan.scene.service.SceneScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -61,6 +63,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
     private final StateMachineEngine stateMachineEngine;
     private final SequenceProvider sequenceProvider;
     private final OrderStatusLogHelper statusLogHelper;
+    private final SceneScheduleService sceneScheduleService;
 
     // ====== 查询 ======
 
@@ -161,6 +164,11 @@ public class OrderSceneServiceImpl implements OrderSceneService {
                 dto.getOperatorCode(), dto.getOperatorName(), "admin",
                 "场景报名订单创建");
 
+        // 扣减排期容量（下单即占位，取消时回补）
+        if (dto.getScheduleCode() != null && !dto.getScheduleCode().isEmpty()) {
+            sceneScheduleService.deductCapacity(dto.getScheduleCode(), participantCount);
+        }
+
         log.info("场景订单创建成功: orderCode={}, totalAmount={}, payAmount={}", orderCode, totalAmount, payAmount);
         return orderCode;
     }
@@ -189,6 +197,40 @@ public class OrderSceneServiceImpl implements OrderSceneService {
                 "tradeNo=" + dto.getPayTradeNo());
 
         log.info("场景订单支付成功: orderCode={}, {} --pay--> {}", order.getOrderCode(), from, to);
+    }
+
+    // ====== 核心链路：deliver（核销/发货） ======
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deliver(SceneDeliverDTO dto) {
+        OrderScene order = requireOrder(dto.getOrderCode());
+        int from = order.getOrderStatus() == null ? OrderEvent.STATUS_PENDING_PAY : order.getOrderStatus();
+        // 场景订单核销：1(已支付) --deliver--> 3(已发放/已核销)
+        int to = stateMachineEngine.transition(OrderEvent.DOMAIN, from, OrderEvent.DELIVER);
+
+        OrderScene update = new OrderScene();
+        update.setId(order.getId());
+        update.setOrderStatus(to);
+        // 核销备注追加到 remark（OrderScene 无专用核销字段，复用 remark 记录核销信息）
+        if (dto.getRemark() != null && !dto.getRemark().isEmpty()) {
+            String existing = order.getRemark() == null ? "" : order.getRemark();
+            update.setRemark(existing + " | 核销:" + dto.getRemark());
+        }
+        orderSceneMapper.updateById(update);
+
+        String logDetail = "到场核销";
+        if (dto.getVerifierName() != null) {
+            logDetail += "，核销人=" + dto.getVerifierName();
+        }
+        if (dto.getActualCount() != null) {
+            logDetail += "，实际到场=" + dto.getActualCount() + "人";
+        }
+        statusLogHelper.writeLog(OrderType.SCENE, order.getOrderCode(),
+                from, to, "核销",
+                dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
+                logDetail);
+        log.info("场景订单核销: orderCode={}, {} --deliver--> {}", order.getOrderCode(), from, to);
     }
 
     // ====== 核心链路：complete ======
@@ -252,6 +294,19 @@ public class OrderSceneServiceImpl implements OrderSceneService {
                 from, to, "取消订单：" + dto.getCancelReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "场景订单取消");
+
+        // 取消时回补排期容量（仅在订单曾占位时）
+        if (order.getScheduleCode() != null && !order.getScheduleCode().isEmpty()
+                && order.getParticipantCount() != null && order.getParticipantCount() > 0) {
+            try {
+                sceneScheduleService.restoreCapacity(order.getScheduleCode(), order.getParticipantCount());
+            } catch (Exception e) {
+                // 回补失败不阻断取消流程（排期可能已被删除），仅记录警告
+                log.warn("排期容量回补失败（忽略）: orderCode={}, scheduleCode={}, err={}",
+                        order.getOrderCode(), order.getScheduleCode(), e.getMessage());
+            }
+        }
+
         log.info("场景订单取消: orderCode={}, {} --cancel--> {}", order.getOrderCode(), from, to);
     }
 

@@ -7,6 +7,7 @@ import com.dayan.order.dto.OrderCompleteDTO;
 import com.dayan.order.dto.OrderSceneQueryDTO;
 import com.dayan.order.dto.PayCallbackDTO;
 import com.dayan.order.dto.RefundApplyDTO;
+import com.dayan.order.dto.SceneDeliverDTO;
 import com.dayan.order.entity.OrderScene;
 import com.dayan.order.vo.OrderSceneVO;
 
@@ -34,6 +35,9 @@ public interface OrderSceneService {
 
     /** 支付回调：0→1 + 写 payTime/payTradeNo/payType */
     void payCallback(PayCallbackDTO dto);
+
+    /** 核销（发货）：1→3，到场核销即视为全部履约完成 */
+    void deliver(SceneDeliverDTO dto);
 
     /** 申请退款：1/2/3→6 */
     void applyRefund(RefundApplyDTO dto);

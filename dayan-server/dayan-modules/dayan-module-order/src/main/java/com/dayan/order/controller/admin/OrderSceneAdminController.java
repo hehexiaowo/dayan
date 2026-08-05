@@ -9,6 +9,7 @@ import com.dayan.order.dto.OrderCompleteDTO;
 import com.dayan.order.dto.OrderSceneQueryDTO;
 import com.dayan.order.dto.PayCallbackDTO;
 import com.dayan.order.dto.RefundApplyDTO;
+import com.dayan.order.dto.SceneDeliverDTO;
 import com.dayan.order.service.OrderSceneService;
 import com.dayan.order.vo.OrderSceneVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,6 +70,14 @@ public class OrderSceneAdminController {
     @PostMapping("/pay-callback")
     public R<Void> payCallback(@RequestBody @Valid PayCallbackDTO dto) {
         orderSceneService.payCallback(dto);
+        return R.ok();
+    }
+
+    @Operation(summary = "核销/发货（1→3 到场核销）")
+    @SaCheckPermission("order:scene:deliver")
+    @PostMapping("/deliver")
+    public R<Void> deliver(@RequestBody @Valid SceneDeliverDTO dto) {
+        orderSceneService.deliver(dto);
         return R.ok();
     }
 

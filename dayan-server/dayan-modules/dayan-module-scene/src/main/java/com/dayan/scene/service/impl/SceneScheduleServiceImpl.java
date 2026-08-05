@@ -1,6 +1,7 @@
 package com.dayan.scene.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
@@ -120,6 +121,80 @@ public class SceneScheduleServiceImpl implements SceneScheduleService {
         SceneSchedule existing = requireSchedule(id);
         sceneScheduleMapper.deleteById(existing.getId());
         log.info("删除场景日程成功: id={}, sceneCode={}", id, existing.getSceneCode());
+    }
+
+    // ====== 容量操作（订单域联动） ======
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deductCapacity(String scheduleId, int count) {
+        if (count <= 0) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "扣减人数必须大于 0");
+        }
+        Long id = parseScheduleId(scheduleId);
+        SceneSchedule schedule = requireSchedule(id);
+        if (schedule.getStatus() != null && schedule.getStatus() == 0) {
+            throw new BusinessException(ErrorCode.BUSINESS, "排期已取消，无法报名");
+        }
+        int current = schedule.getCurrentPerson() == null ? 0 : schedule.getCurrentPerson();
+        int max = schedule.getMaxPerson() == null ? 0 : schedule.getMaxPerson();
+        if (current + count > max) {
+            throw new BusinessException(ErrorCode.BUSINESS,
+                    "排期容量不足: 已报名=" + current + ", 最大=" + max + ", 本次=" + count);
+        }
+        // 条件 UPDATE：current_person = current_person + count，WHERE current_person = current（乐观锁）
+        int updated = sceneScheduleMapper.update(null,
+                new LambdaUpdateWrapper<SceneSchedule>()
+                        .eq(SceneSchedule::getId, id)
+                        .eq(SceneSchedule::getCurrentPerson, current)
+                        .setSql("current_person = current_person + " + count));
+        if (updated == 0) {
+            throw new BusinessException(ErrorCode.BUSINESS, "排期容量扣减失败（并发冲突），请重试");
+        }
+        // 若扣减后刚好满员，自动置为已约满(2)
+        if (current + count >= max) {
+            sceneScheduleMapper.update(null,
+                    new LambdaUpdateWrapper<SceneSchedule>()
+                            .eq(SceneSchedule::getId, id)
+                            .set(SceneSchedule::getStatus, 2));
+        }
+        log.info("排期容量扣减: scheduleId={}, +{}人, {}→{}", id, count, current, current + count);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void restoreCapacity(String scheduleId, int count) {
+        if (count <= 0) {
+            return; // 无需回补
+        }
+        Long id = parseScheduleId(scheduleId);
+        SceneSchedule schedule = requireSchedule(id);
+        int current = schedule.getCurrentPerson() == null ? 0 : schedule.getCurrentPerson();
+        int restored = Math.max(0, current - count); // 不低于 0
+        sceneScheduleMapper.update(null,
+                new LambdaUpdateWrapper<SceneSchedule>()
+                        .eq(SceneSchedule::getId, id)
+                        .set(SceneSchedule::getCurrentPerson, restored));
+        // 若之前是已约满(2)状态，回补后恢复为可预约(1)
+        if (schedule.getStatus() != null && schedule.getStatus() == 2 && restored < schedule.getMaxPerson()) {
+            sceneScheduleMapper.update(null,
+                    new LambdaUpdateWrapper<SceneSchedule>()
+                            .eq(SceneSchedule::getId, id)
+                            .set(SceneSchedule::getStatus, 1));
+        }
+        log.info("排期容量回补: scheduleId={}, -{}人, {}→{}", id, count, current, restored);
+    }
+
+    /** 将订单侧的 scheduleCode（字符串）解析为排期 id（Long） */
+    private Long parseScheduleId(String scheduleId) {
+        if (scheduleId == null || scheduleId.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "排期编码不能为空");
+        }
+        try {
+            return Long.parseLong(scheduleId);
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "排期编码格式错误: " + scheduleId);
+        }
     }
 
     // ====== 内部方法 ======

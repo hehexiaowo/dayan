@@ -15,6 +15,11 @@ import com.dayan.finance.enums.FinanceEvent;
 import com.dayan.finance.mapper.FinancePaymentMapper;
 import com.dayan.finance.service.FinancePaymentService;
 import com.dayan.finance.vo.FinancePaymentVO;
+import com.dayan.order.dto.PayCallbackDTO;
+import com.dayan.order.service.OrderCourseService;
+import com.dayan.order.service.OrderEquityService;
+import com.dayan.order.service.OrderSceneService;
+import com.dayan.order.service.OrderSojournService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +43,11 @@ public class FinancePaymentServiceImpl implements FinancePaymentService {
 
     private final FinancePaymentMapper paymentMapper;
     private final SequenceProvider sequenceProvider;
+    // 订单域 4 类 Service，用于支付成功后按 orderType 自动联动订单状态机
+    private final OrderEquityService orderEquityService;
+    private final OrderSceneService orderSceneService;
+    private final OrderCourseService orderCourseService;
+    private final OrderSojournService orderSojournService;
 
     // ====== 查询 ======
 
@@ -117,6 +127,56 @@ public class FinancePaymentServiceImpl implements FinancePaymentService {
         }
         paymentMapper.updateById(update);
         log.info("支付成功: paymentCode={}, tradeNo={}", dto.getPaymentCode(), dto.getTradeNo());
+
+        // 支付成功后自动联动订单状态机（0→1 已支付）
+        // 按 payment.orderType 分发到对应 OrderXxxService.payCallback
+        triggerOrderPayCallback(payment, dto);
+    }
+
+    /**
+     * 支付成功后按 orderType 路由到对应订单 Service 的 payCallback。
+     *
+     * <p>幂等保护：订单状态机自身有状态守卫（只有 0→1 合法），若订单已经是已支付状态，
+     * transition 会抛 BusinessException，此处捕获并记录警告日志，不中断支付流程
+     * （支付记录本身已成功更新，不能因订单侧重复回调而回滚）。
+     *
+     * @param payment 支付记录（含 orderType/orderCode）
+     * @param dto     标记成功的入参（含 tradeNo）
+     */
+    private void triggerOrderPayCallback(FinancePayment payment, PaymentMarkSuccessDTO dto) {
+        PayCallbackDTO payCallback = new PayCallbackDTO();
+        payCallback.setOrderCode(payment.getOrderCode());
+        payCallback.setPayTradeNo(dto.getTradeNo());
+        payCallback.setPayType(payment.getPayType());
+        payCallback.setOperatorType("system");
+
+        Integer orderType = payment.getOrderType();
+        try {
+            if (orderType == null) {
+                log.warn("支付记录无 orderType，跳过订单联动: paymentCode={}", dto.getPaymentCode());
+                return;
+            }
+            switch (orderType) {
+                case 1: // 权益
+                    orderEquityService.payCallback(payCallback);
+                    break;
+                case 2: // 场景
+                    orderSceneService.payCallback(payCallback);
+                    break;
+                case 3: // 课程
+                    orderCourseService.payCallback(payCallback);
+                    break;
+                case 4: // 旅居
+                    orderSojournService.payCallback(payCallback);
+                    break;
+                default:
+                    log.warn("未知 orderType={}，跳过订单联动: paymentCode={}", orderType, dto.getPaymentCode());
+            }
+        } catch (Exception e) {
+            // 订单侧可能因重复回调（订单已是已支付状态）抛状态机异常，记录警告但不回滚支付
+            log.warn("订单 payCallback 联动失败（可能重复回调）: orderCode={}, orderType={}, err={}",
+                    payment.getOrderCode(), orderType, e.getMessage());
+        }
     }
 
     @Override

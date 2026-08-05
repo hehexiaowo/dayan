@@ -31,6 +31,8 @@ import com.dayan.equity.service.EquityBatchService;
 import com.dayan.equity.service.EquityDepotService;
 import com.dayan.equity.service.EquityTemplateService;
 import com.dayan.equity.vo.EquityDepotVO;
+import com.dayan.service.dto.ServiceSessionCreateDTO;
+import com.dayan.service.service.ServiceSessionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -97,6 +99,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
     private final EquityTemplateService templateService;
     private final SequenceProvider sequenceProvider;
     private final StateMachineEngine stateMachineEngine;
+    private final ServiceSessionService serviceSessionService;
     /** AES 密钥 hex（由配置 dayan.aes.key 派生） */
     private final String aesKeyHex;
 
@@ -109,6 +112,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             EquityTemplateService templateService,
             SequenceProvider sequenceProvider,
             StateMachineEngine stateMachineEngine,
+            ServiceSessionService serviceSessionService,
             @Value("${dayan.aes.key:}") String configuredKey) {
         this.depotMapper = depotMapper;
         this.activateMapper = activateMapper;
@@ -118,6 +122,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         this.templateService = templateService;
         this.sequenceProvider = sequenceProvider;
         this.stateMachineEngine = stateMachineEngine;
+        this.serviceSessionService = serviceSessionService;
         if (configuredKey == null || configuredKey.isBlank()) {
             this.aesKeyHex = AesGcmUtil.deriveKey(DEFAULT_KEY_PASSWORD);
             log.warn("未配置 dayan.aes.key，回退使用默认派生密钥（仅供开发/测试）");
@@ -347,6 +352,27 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             person.setRelationWithHolder("本人");
             person.setIsDefaultHolder(1);
             usePersonMapper.insert(person);
+        }
+
+        // 5. 自动创建服务会话（权益激活后创建会话，待分配管家）
+        // 规格见 state_machine_seed.sql: SERVICE_SESSION_SM 注释「权益激活后创建会话，分配管家」
+        try {
+            ServiceSessionCreateDTO sessionDTO = new ServiceSessionCreateDTO();
+            sessionDTO.setEquityCode(depot.getEquityCode());
+            sessionDTO.setClientCode(dto.getClientCode());
+            sessionDTO.setServiceType(mapEquityTypeToServiceType(depot.getEquityType()));
+            sessionDTO.setServiceTitle("权益激活 - " + (dto.getClientFullName() != null ? dto.getClientFullName() : dto.getClientCode()));
+            sessionDTO.setServiceDescription("权益 " + depot.getEquityCode() + " 激活后自动创建的服务会话，待分配管家");
+            sessionDTO.setSourceType(1); // 1=权益触发
+            sessionDTO.setSourceCode(activateRecordCode);
+            sessionDTO.setAgentCode(depot.getAgentCode());
+            sessionDTO.setChannelCode(depot.getChannelCode());
+            sessionDTO.setRemark("权益激活自动创建");
+            serviceSessionService.create(sessionDTO);
+            log.info("权益激活联动创建服务会话: equityCode={}, clientCode={}", depot.getEquityCode(), dto.getClientCode());
+        } catch (Exception e) {
+            // 会话创建失败不阻断激活流程（激活本身已成功），仅记录警告
+            log.warn("权益激活后创建服务会话失败（忽略）: equityCode={}, err={}", depot.getEquityCode(), e.getMessage());
         }
 
         log.info("权益激活成功: equityCode={}, clientCode={}, activateRecordCode={}",
@@ -579,6 +605,33 @@ public class EquityDepotServiceImpl implements EquityDepotService {
     }
 
     // ====== 内部方法 ======
+
+    /**
+     * 权益类型 → 服务类型映射（用于激活后自动创建服务会话）。
+     *
+     * <p>权益类型（equity_template.equity_type）：1=机构入住, 2=机构参观, 3=场景活动,
+     * 4=居家护理, 5=健康检测, 6=课程学习, 7=旅居体验。
+     * 服务类型（service_session.service_type）：1=机构入住, 2=场景活动, 3=居家养老, 4=健康咨询。
+     */
+    private Integer mapEquityTypeToServiceType(Integer equityType) {
+        if (equityType == null) return null;
+        switch (equityType) {
+            case 1: // 机构入住权益 → 机构入住
+            case 2: // 机构参观权益 → 归入机构入住
+                return 1;
+            case 3: // 场景活动权益 → 场景活动
+                return 2;
+            case 4: // 居家护理权益 → 居家养老
+                return 3;
+            case 5: // 健康检测权益 → 健康咨询
+                return 4;
+            case 6: // 课程学习权益 → 默认健康咨询（无直接对应）
+            case 7: // 旅居体验权益 → 默认机构入住（无直接对应）
+                return 4;
+            default:
+                return null;
+        }
+    }
 
     private EquityDepot findByActivateCode(String activateCode) {
         EquityDepot depot = depotMapper.selectOne(new LambdaQueryWrapper<EquityDepot>()
