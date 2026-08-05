@@ -98,12 +98,126 @@
 
 ---
 
+## TC-E2E-003：权益激活→管家服务全流程 ✅ PASS
+
+| 项目 | 内容 |
+|------|------|
+| **用例编号** | TC-E2E-003 |
+| **测试目标** | 验证从客户激活权益到管家完成服务回访的完整流程 |
+| **执行端** | Admin（`/admin-api`，账号 `admin/admin123`）—— Client 端业务接口未实现，激活/评价改由 Admin 端代操作 |
+| **执行时间** | 2026-08-05 20:42 ~ 20:45 |
+| **最终结论** | ✅ **PASS**（11 步全链路打通，服务会话状态机 1→2→3→4→5→6 完整流转；发现 3 处跨域解耦缺口 G-4/G-5/G-6） |
+
+### 执行结果汇总
+
+| Step | 环节 | 关键产物 | 状态机 | 结果 |
+|------|------|---------|--------|------|
+| 1-2 | 激活权益 | 激活记录 `AC0000000005` + 使用人自动建 + 会话 `SS0000000003` 自动创建 | equity 1→2 / session=1 | ✅ |
+| 3 | 管家分配 | assign-butler → `BT00002` | session 1→2 | ✅ |
+| 4 | 需求收集 | submit-demand + demand `DM0000000002`（机构入住 / 预算 3000-6000） | session 2→3 | ✅ |
+| 5-6 | 方案定制+确认 | solution `SO0000000002`（推荐 PK00001 / 预估 5000）+ accept + confirm-solution | session 3→4 | ✅ |
+| 7-8 | 全程安排+开始服务 | arrange `AR0000000002`（参访 PK00001）+ confirm + start-service | session 4→5 | ✅ |
+| 9 | 完成服务 | finish | session 5→6 | ✅（equity 未联动-见 G-5） |
+| 10 | 回访品控 | followup `FU0000000002`（满意度 4/5） | — | ✅ |
+| 11 | 客户评价 | evaluation（态度5/专业4/响应4/满意5） | — | ✅ |
+
+### 服务会话全生命周期（session_status）
+
+```
+1（待分配）——assign-butler——→ 2（处理中）
+2（处理中）——submit-demand——→ 3（方案待确认）
+3（方案待确认）——confirm-solution——→ 4（服务安排中）
+4（服务安排中）——start-service——→ 5（服务中）
+5（服务中）——finish——→ 6（已完成）
+```
+
+### Step 详情
+
+#### Step 1-2：权益激活 ✅
+
+- **接口**：`POST /admin-api/equity/depot/activate`
+- **入参**：`carrierType=1` / `activateCode=DY01314162`（EQ101）/ `clientCode=CL07426479` / `clientFullName`（必填）
+- **注意**：`equity_activate.client_full_name` 是 NOT NULL 无默认值，**必须传 clientFullName**，否则报 SQLException
+- **联动**：
+  - equity_depot：status 1→2，activate_time / expire_time（+365 天）/ client_code 写入 ✅
+  - equity_activate 记录 `AC0000000005` 生成 ✅
+  - equity_use_person 自动建（relation=本人，is_default_holder=1）✅
+  - equity_batch.activated_count +1 ✅
+  - **service_session `SS0000000003` 自动创建**（session_status=1 待分配，source_type=1 权益触发，source_code=AC0000000005）✅
+
+#### Step 3：管家分配 ✅
+
+- **接口**：`POST /admin-api/service/session/assign-butler`（入参 `{sessionCode, butlerCode}`）
+- **流转**：session 1→2（处理中），butler_code/butler_full_name 写入
+- **观察**：butler_client_rel **未自动创建**（见缺口 G-4）
+
+#### Step 4：需求收集 ✅
+
+- **接口 A**：`POST /admin-api/service/session/submit-demand?sessionCode=xxx` → session 2→3
+- **接口 B**：`POST /admin-api/service/demand`（注意路径是 `/service/demand` 不是 `/service/equity-demand`）
+- **产物**：demand `DM0000000002`（demandType=1 机构入住 / 预算 3000-6000 / 使用人 TestClient 75 岁）
+
+#### Step 5-6：方案定制 + 确认 ✅
+
+- **接口 A**：`POST /admin-api/service/solution` → 创建方案 `SO0000000002`（推荐 PK00001 / 预估 5000）
+- **接口 B**：`POST /admin-api/service/solution/accept`（入参 `{id, isAccepted, clientFeedback}`）→ 采纳
+- **接口 C**：`POST /admin-api/service/session/confirm-solution?sessionCode=xxx` → session 3→4
+
+#### Step 7-8：全程安排 + 开始服务 ✅
+
+- **接口 A**：`POST /admin-api/service/arrange` → 创建安排 `AR0000000002`（参访 PK00001 / 2026-08-10 09:00-11:00）
+- **接口 B**：`POST /admin-api/service/arrange/confirm`（入参 `{id, isConfirmed}`）
+- **接口 C**：`POST /admin-api/service/session/start-service?sessionCode=xxx` → session 4→5
+- **观察**：start-service **未自动生成 butler_service_record**（见缺口 G-6）
+
+#### Step 9：完成服务 ✅
+
+- **接口**：`POST /admin-api/service/session/finish?sessionCode=xxx` → session 5→6
+- **观察**：finish **未联动 equity** — use_count 仍为 0，equity_status 仍为 2（见缺口 G-5）
+
+#### Step 10：回访品控 ✅
+
+- **接口**：`POST /admin-api/service/followup`
+- **产物**：followup `FU0000000002`（电话回访 / 服务满意 4 / 机构满意 5 / 管家满意 5 / 综合 4 / is_resolved=1）
+
+#### Step 11：客户评价 ✅
+
+- **接口**：`POST /admin-api/service/evaluation`（Client 端无此接口，用 Admin 端代创建）
+- **产物**：评价记录（态度 5 / 专业 4 / 响应 4 / 满意 5）
+
+---
+
+## TC-E2E-003 跨域解耦缺口清单
+
+| 编号 | 缺口 | 现象 | 影响 | 建议 |
+|------|------|------|------|------|
+| **G-4** | 管家分配不自动建 butler_client_rel | assign-butler 只更新 session.butler_code，不插 butler_client_rel | 客户-管家绑定关系缺失 | 在 assign-butler 成功后追加 butler_client_rel 插入（ON DUPLICATE KEY 容错） |
+| **G-5** | 完成服务不联动权益使用计数 | session.finish 只更新会话状态，不回调 equity_depot | equity.use_count 不 +1，equity_status 不流转 2→4 | finish 成功后按 session.equityCode 回调 equity 使用计数（跨域 try-catch） |
+| **G-6** | 开始服务不自动建 butler_service_record | start-service 不插 butler_service_record | 管家服务记录缺失 | start-service 成功后按 session/butler 信息自动建 record |
+
+---
+
+## TC-E2E-003 数据清单（回归排查用）
+
+| 表 | 关键记录 |
+|----|---------|
+| equity_depot | `EQ000000000101` / status=2（已激活）/ client=CL07426479 / activate_time=08-05 20:42 |
+| equity_activate | `AC0000000005` / equity=EQ101 / channel=2 |
+| equity_use_person | EQ101 / CL07426479 / relation=本人 / is_default=1 |
+| service_session | `SS0000000003` / status=6（已完成）/ butler=BT00002 / equity=EQ101 |
+| service_equity_demand | `DM0000000002` / type=1 / 预算 3000-6000 |
+| service_equity_solution | `SO0000000002` / 推荐 PK00001 / 预估 5000 / is_accepted=1 |
+| service_equity_arrange | `AR0000000002` / 参访 PK00001 / 2026-08-10 / is_confirmed=1 |
+| service_equity_followup | `FU0000000002` / 电话 / 综合 4 星 / is_resolved=1 |
+| service_evaluation | 态度 5/专业 4/响应 4/满意 5 |
+
+---
+
 ## 后续待执行用例
 
 | 用例 | 主题 | 状态 |
 |------|------|------|
-| TC-E2E-002 | 代理人个人采购权益流程（Channel 端） | 待执行 |
-| TC-E2E-003 | 权益激活→管家服务全流程（Client + Admin） | 待执行 |
+| TC-E2E-002 | 代理人个人采购权益流程（Channel 端） | 待执行（Channel 端业务接口完备性待探查） |
 | TC-E2E-006 | 财务对账流程（ReconciliationScheduler） | 待执行 |
 
 ---
@@ -113,3 +227,4 @@
 | 日期 | 版本 | 内容 |
 |------|------|------|
 | 2026-08-05 | v1.0 | TC-E2E-001 首次执行完成（PASS）；记录 3 处跨域解耦缺口 G-1/G-2/G-3 |
+| 2026-08-05 | v1.1 | TC-E2E-003 执行完成（PASS）；记录 3 处跨域解耦缺口 G-4/G-5/G-6；发现 Client 端业务接口未实现 |
