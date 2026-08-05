@@ -49,9 +49,9 @@ const form = reactive<Role>({
   organCode: '',
   roleCode: undefined,
   roleName: '',
-  roleType: 'system',
+  roleType: 2,
   description: '',
-  dataScope: 'all',
+  dataScope: 1,
   status: RoleStatus.ENABLED,
   sortOrder: 0,
   permissionCodes: []
@@ -68,9 +68,9 @@ function resetForm() {
     organCode: query.organCode || '',
     roleCode: undefined,
     roleName: '',
-    roleType: 'system',
+    roleType: 2,
     description: '',
-    dataScope: 'all',
+    dataScope: 1,
     status: RoleStatus.ENABLED,
     sortOrder: 0,
     permissionCodes: []

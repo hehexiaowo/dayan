@@ -16,14 +16,14 @@ export const DEPARTMENT_STATUS_OPTIONS = [
   { label: '禁用', value: DepartmentStatus.DISABLED }
 ] as const
 
-/** 部门类型 */
-export type DeptType = string
+/** 部门类型：1公司 2部门 3小组（对齐后端 dept_type TINYINT） */
+export type DeptType = number
 
-/** 部门类型选项（对齐常见组织类型取值） */
+/** 部门类型选项（对齐后端 dept_type 取值：1=公司, 2=部门, 3=小组） */
 export const DEPT_TYPE_OPTIONS = [
-  { label: '公司', value: 'company' },
-  { label: '部门', value: 'dept' },
-  { label: '小组', value: 'group' }
+  { label: '公司', value: 1 },
+  { label: '部门', value: 2 },
+  { label: '小组', value: 3 }
 ] as const
 
 /**

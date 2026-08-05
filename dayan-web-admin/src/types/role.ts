@@ -16,26 +16,24 @@ export const ROLE_STATUS_OPTIONS = [
   { label: '禁用', value: RoleStatus.DISABLED }
 ] as const
 
-/** 角色类型 */
-export type RoleType = string
+/** 角色类型：1系统预置 2自定义（对齐后端 role_type TINYINT） */
+export type RoleType = number
 
-/** 角色类型选项（对齐业务常见取值，后端无枚举强约束） */
+/** 角色类型选项（对齐后端 role_type 取值：1=系统预置, 2=自定义） */
 export const ROLE_TYPE_OPTIONS = [
-  { label: '系统角色', value: 'system' },
-  { label: '业务角色', value: 'business' },
-  { label: '数据角色', value: 'data' }
+  { label: '系统预置', value: 1 },
+  { label: '自定义', value: 2 }
 ] as const
 
-/** 数据权限范围 */
-export type DataScope = string
+/** 数据权限范围：1全部 2本部门及下级 3本部门 4仅本人（对齐后端 data_scope TINYINT） */
+export type DataScope = number
 
-/** 数据权限范围选项（对齐常见 RBAC 数据范围取值） */
+/** 数据权限范围选项（对齐后端 data_scope 取值：1=全部, 2=本部门及下级, 3=本部门, 4=仅本人） */
 export const DATA_SCOPE_OPTIONS = [
-  { label: '全部数据', value: 'all' },
-  { label: '本部门数据', value: 'dept' },
-  { label: '本部门及下级', value: 'dept_and_sub' },
-  { label: '仅本人数据', value: 'self' },
-  { label: '自定义', value: 'custom' }
+  { label: '全部数据', value: 1 },
+  { label: '本部门及下级', value: 2 },
+  { label: '本部门数据', value: 3 },
+  { label: '仅本人数据', value: 4 }
 ] as const
 
 /**
