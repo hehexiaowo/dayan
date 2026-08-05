@@ -18,6 +18,7 @@ import {
   ABILITY_TYPE_OPTIONS,
   NATURE_TYPE_OPTIONS
 } from '@/types/park'
+import RegionSelect from '@/components/RegionSelect.vue'
 
 /**
  * 养老机构管理页。
@@ -268,8 +269,8 @@ loadPage()
         <el-form-item label="机构名称">
           <el-input v-model="query.fullName" placeholder="机构全称" clearable @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item label="城市编码">
-          <el-input v-model="query.cityCode" placeholder="城市编码" clearable @keyup.enter="handleSearch" />
+        <el-form-item label="城市">
+          <el-input v-model="query.cityCode" placeholder="城市名称/编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="运营状态">
           <el-select v-model="query.operateStatus" placeholder="全部" clearable style="width: 140px">
@@ -440,19 +441,13 @@ loadPage()
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="8">
-            <el-form-item label="省编码">
-              <el-input v-model="form.provinceCode" placeholder="省编码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="市编码">
-              <el-input v-model="form.cityCode" placeholder="市编码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="区编码">
-              <el-input v-model="form.districtCode" placeholder="区编码" />
+          <el-col :span="24">
+            <el-form-item label="所在地区">
+              <RegionSelect
+                v-model:province-code="form.provinceCode"
+                v-model:city-code="form.cityCode"
+                v-model:district-code="form.districtCode"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">

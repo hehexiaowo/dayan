@@ -17,6 +17,7 @@ import {
   type AgentInfoQuery
 } from '@/types/agent'
 import { buildChannelTree, type ChannelInfo } from '@/types/channel'
+import RegionSelect from '@/components/RegionSelect.vue'
 
 /**
  * 代理人管理页。
@@ -462,19 +463,13 @@ onMounted(() => {
               <el-input v-model="form.licenseNo" placeholder="从业资格证号" maxlength="50" />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
-            <el-form-item label="省级编码">
-              <el-input v-model="form.provinceCode" placeholder="省级编码" maxlength="20" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="市级编码">
-              <el-input v-model="form.cityCode" placeholder="市级编码" maxlength="20" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="区县编码">
-              <el-input v-model="form.districtCode" placeholder="区县编码" maxlength="20" />
+          <el-col :span="24">
+            <el-form-item label="所在地区">
+              <RegionSelect
+                v-model:province-code="form.provinceCode"
+                v-model:city-code="form.cityCode"
+                v-model:district-code="form.districtCode"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">
