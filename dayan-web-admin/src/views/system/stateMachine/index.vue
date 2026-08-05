@@ -13,19 +13,9 @@ import {
   STATE_MACHINE_BIZ_TYPE_OPTIONS
 } from '@/types/stateMachine'
 
-/**
- * 状态机配置页（降级）。
- *
- * 后端 SystemStateMachineAdminController 暂未提供，页面 onMounted 用 try/catch 包裹，
- * 失败时 ElMessage.warning 提示 + 显示空状态表格。
- * 新增/编辑/删除操作同样 try/catch，失败时仅提示「接口待后端提供」，不阻塞交互。
- */
-
 const loading = ref(false)
 const tableData = ref<SystemStateMachine[]>([])
 const total = ref(0)
-/** 后端接口是否可用（首次列表调用失败后置 false，UI 显示降级提示） */
-const available = ref(true)
 
 const query = reactive<StateMachineQuery>({
   machineCode: '',
@@ -34,20 +24,13 @@ const query = reactive<StateMachineQuery>({
   size: 20
 })
 
-/** 拉取分页数据（try/catch 降级） */
+/** 拉取分页数据 */
 async function loadData() {
   loading.value = true
   try {
     const res = await pageStateMachines({ ...query })
     tableData.value = res.records
     total.value = res.total
-    available.value = true
-  } catch (err) {
-    tableData.value = []
-    total.value = 0
-    available.value = false
-    ElMessage.warning('状态机配置接口待后端提供')
-    void err
   } finally {
     loading.value = false
   }
@@ -88,9 +71,9 @@ function defaultForm(): SystemStateMachine {
     machineCode: '',
     machineName: '',
     bizType: 'order',
-    fromState: '',
+    fromState: 0,
     fromStateName: '',
-    toState: '',
+    toState: 0,
     toStateName: '',
     eventCode: '',
     eventName: '',
@@ -144,10 +127,6 @@ async function handleSubmit() {
     }
     dialogVisible.value = false
     loadData()
-  } catch (err) {
-    // 后端缺失或校验失败，仅提示，不关闭弹窗
-    ElMessage.warning(dialogMode.value === 'create' ? '新增失败：接口待后端提供' : '修改失败：接口待后端提供')
-    void err
   } finally {
     submitting.value = false
   }
@@ -159,7 +138,7 @@ async function onDelete(row: SystemStateMachine) {
     return
   }
   try {
-    await ElMessageBox.confirm(`确定删除状态机规则「${row.fromState} → ${row.toState}」？`, '提示', {
+    await ElMessageBox.confirm(`确定删除状态机规则「${row.fromStateName || row.fromState} → ${row.toStateName || row.toState}」？`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -167,14 +146,9 @@ async function onDelete(row: SystemStateMachine) {
   } catch {
     return // 用户取消
   }
-  try {
-    await deleteStateMachine(row.id)
-    ElMessage.success('删除成功')
-    loadData()
-  } catch (err) {
-    ElMessage.warning('删除失败：接口待后端提供')
-    void err
-  }
+  await deleteStateMachine(row.id)
+  ElMessage.success('删除成功')
+  loadData()
 }
 
 onMounted(() => {
@@ -185,17 +159,6 @@ onMounted(() => {
 <template>
   <div class="sm-page">
     <el-card shadow="never">
-      <!-- 降级提示条 -->
-      <el-alert
-        v-if="!available"
-        title="状态机配置接口待后端提供"
-        type="warning"
-        description="当前后端 SystemStateMachineAdminController 暂未实现，页面展示为空状态。接口就绪后将自动加载。"
-        show-icon
-        :closable="false"
-        class="degrade-alert"
-      />
-
       <!-- 搜索栏 -->
       <div class="toolbar">
         <el-input
@@ -235,7 +198,7 @@ onMounted(() => {
         :data="tableData"
         border
         stripe
-        :empty-text="available ? '暂无状态机配置' : '接口待后端提供'"
+        empty-text="暂无状态机配置"
       >
         <el-table-column prop="machineCode" label="状态机编码" min-width="160" show-overflow-tooltip />
         <el-table-column prop="machineName" label="状态机名称" min-width="140" show-overflow-tooltip />
@@ -339,7 +302,15 @@ onMounted(() => {
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="起始状态码" prop="fromState">
-              <el-input v-model="form.fromState" placeholder="如 pending" />
+              <el-input-number
+                v-model="form.fromState"
+                :min="0"
+                :step="1"
+                :precision="0"
+                controls-position="right"
+                placeholder="状态枚举值"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -352,7 +323,15 @@ onMounted(() => {
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="目标状态码" prop="toState">
-              <el-input v-model="form.toState" placeholder="如 paid" />
+              <el-input-number
+                v-model="form.toState"
+                :min="0"
+                :step="1"
+                :precision="0"
+                controls-position="right"
+                placeholder="状态枚举值"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -394,10 +373,6 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .sm-page {
-  .degrade-alert {
-    margin-bottom: 16px;
-  }
-
   .toolbar {
     display: flex;
     flex-wrap: wrap;
