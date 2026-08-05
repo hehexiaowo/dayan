@@ -224,7 +224,7 @@ CREATE TABLE `equity_change_holder` (
   `change_reason` VARCHAR(500) DEFAULT NULL COMMENT '更换原因',
   `change_status` TINYINT(2) NOT NULL DEFAULT 0 COMMENT '更换状态（0=待处理, 1=已完成, 2=已回滚）',
   `operate_time` DATETIME NOT NULL COMMENT '操作时间',
-  `operator_code` VARCHAR(64) NOT NULL COMMENT '操作人编码',
+  `operator_code` VARCHAR(64) NOT NULL DEFAULT 'system' COMMENT '操作人编码',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',

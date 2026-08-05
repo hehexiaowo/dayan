@@ -435,7 +435,7 @@ CREATE TABLE `system_service_change_log` (
   `from_value` VARCHAR(500) DEFAULT NULL COMMENT '变更前值',
   `to_value` VARCHAR(500) DEFAULT NULL COMMENT '变更后值',
   `change_reason` VARCHAR(500) DEFAULT NULL COMMENT '变更原因',
-  `operator_code` VARCHAR(64) NOT NULL COMMENT '操作人编码',
+  `operator_code` VARCHAR(64) NOT NULL DEFAULT 'system' COMMENT '操作人编码',
   `operator_name` VARCHAR(50) DEFAULT NULL COMMENT '操作人姓名',
   `operator_type` VARCHAR(30) NOT NULL COMMENT '操作人类型（butler/client/system/admin）',
   `operate_time` DATETIME NOT NULL COMMENT '操作时间',

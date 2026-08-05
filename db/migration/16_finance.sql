@@ -196,7 +196,7 @@ CREATE TABLE `finance_reconciliation` (
   `recon_result` TINYINT(2) NOT NULL DEFAULT 0 COMMENT '对账结果（0=有差异, 1=一致）',
   `handle_result` TEXT DEFAULT NULL COMMENT '差异处理结果',
   `recon_time` DATETIME NOT NULL COMMENT '对账时间',
-  `operator_code` VARCHAR(64) NOT NULL COMMENT '操作人编码',
+  `operator_code` VARCHAR(64) NOT NULL DEFAULT 'system' COMMENT '操作人编码',
   `operator_name` VARCHAR(50) DEFAULT NULL COMMENT '操作人姓名',
   `status` TINYINT(2) NOT NULL DEFAULT 0 COMMENT '状态（0=对账中, 1=已完成, 2=待确认, 3=已确认）',
   `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',

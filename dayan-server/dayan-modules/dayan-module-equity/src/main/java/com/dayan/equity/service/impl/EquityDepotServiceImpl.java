@@ -429,7 +429,9 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         record.setChangeReason(dto.getChangeReason());
         record.setChangeStatus(EquityEvent.CHANGE_STATUS_PENDING);
         record.setOperateTime(LocalDateTime.now());
-        record.setOperatorCode(dto.getOperatorCode());
+        // operator_code 为 NOT NULL 列，未指定时兜底 system
+        record.setOperatorCode(dto.getOperatorCode() != null && !dto.getOperatorCode().isEmpty()
+                ? dto.getOperatorCode() : "system");
         changeHolderMapper.insert(record);
 
         log.info("发起更换权益人: equityCode={}, changeId={}", depot.getEquityCode(), record.getId());
