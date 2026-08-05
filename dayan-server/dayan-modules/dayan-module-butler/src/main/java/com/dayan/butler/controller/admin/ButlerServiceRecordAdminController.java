@@ -8,6 +8,7 @@ import com.dayan.butler.vo.ButlerServiceRecordVO;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,18 +31,21 @@ public class ButlerServiceRecordAdminController {
     private final ButlerServiceRecordService butlerServiceRecordService;
 
     @Operation(summary = "管家服务记录分页列表")
+    @SaCheckPermission("butler:service-record:list")
     @GetMapping("/page")
     public R<PageResult<ButlerServiceRecordVO>> page(ButlerServiceRecordQueryDTO query) {
         return R.ok(butlerServiceRecordService.page(query));
     }
 
     @Operation(summary = "管家服务记录列表")
+    @SaCheckPermission("butler:service-record:list")
     @GetMapping("/list")
     public R<List<ButlerServiceRecordVO>> list(ButlerServiceRecordQueryDTO query) {
         return R.ok(butlerServiceRecordService.list(query));
     }
 
     @Operation(summary = "管家服务记录详情")
+    @SaCheckPermission("butler:service-record:query")
     @GetMapping("/{id}")
     public R<ButlerServiceRecordVO> getDetail(@PathVariable Long id) {
         return R.ok(butlerServiceRecordService.getDetail(id));
@@ -49,6 +53,7 @@ public class ButlerServiceRecordAdminController {
 
     @Operation(summary = "新增管家服务记录")
     @OperationLog(module = "管家服务记录", action = "新增")
+    @SaCheckPermission("butler:service-record:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ButlerServiceRecordCreateDTO dto) {
         return R.ok(butlerServiceRecordService.create(dto));
@@ -56,6 +61,7 @@ public class ButlerServiceRecordAdminController {
 
     @Operation(summary = "修改管家服务记录")
     @OperationLog(module = "管家服务记录", action = "修改")
+    @SaCheckPermission("butler:service-record:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ButlerServiceRecordUpdateDTO dto) {
@@ -65,6 +71,7 @@ public class ButlerServiceRecordAdminController {
 
     @Operation(summary = "删除管家服务记录")
     @OperationLog(module = "管家服务记录", action = "删除")
+    @SaCheckPermission("butler:service-record:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         butlerServiceRecordService.delete(id);

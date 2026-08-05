@@ -7,6 +7,7 @@ import com.dayan.park.dto.ParkServiceItemQueryDTO;
 import com.dayan.park.dto.ParkServiceItemUpdateDTO;
 import com.dayan.park.service.ParkServiceItemService;
 import com.dayan.park.vo.ParkServiceItemVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,30 +30,35 @@ public class ParkServiceItemAdminController {
     private final ParkServiceItemService parkServiceItemService;
 
     @Operation(summary = "机构服务项分页列表")
+    @SaCheckPermission("park:service-item:list")
     @GetMapping("/page")
     public R<PageResult<ParkServiceItemVO>> page(ParkServiceItemQueryDTO query) {
         return R.ok(parkServiceItemService.page(query));
     }
 
     @Operation(summary = "机构服务项列表（按机构）")
+    @SaCheckPermission("park:service-item:list")
     @GetMapping("/list")
     public R<List<ParkServiceItemVO>> list(@RequestParam String parkCode) {
         return R.ok(parkServiceItemService.listByPark(parkCode));
     }
 
     @Operation(summary = "机构服务项详情")
+    @SaCheckPermission("park:service-item:query")
     @GetMapping("/{id}")
     public R<ParkServiceItemVO> getDetail(@PathVariable Long id) {
         return R.ok(parkServiceItemService.getDetail(id));
     }
 
     @Operation(summary = "新增机构服务项")
+    @SaCheckPermission("park:service-item:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ParkServiceItemCreateDTO dto) {
         return R.ok(parkServiceItemService.create(dto));
     }
 
     @Operation(summary = "修改机构服务项")
+    @SaCheckPermission("park:service-item:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ParkServiceItemUpdateDTO dto) {
@@ -61,6 +67,7 @@ public class ParkServiceItemAdminController {
     }
 
     @Operation(summary = "删除机构服务项")
+    @SaCheckPermission("park:service-item:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         parkServiceItemService.delete(id);

@@ -8,6 +8,7 @@ import com.dayan.scene.dto.SceneItemQueryDTO;
 import com.dayan.scene.dto.SceneItemUpdateDTO;
 import com.dayan.scene.service.SceneItemService;
 import com.dayan.scene.vo.SceneItemVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,18 +31,21 @@ public class SceneItemAdminController {
     private final SceneItemService sceneItemService;
 
     @Operation(summary = "场景项目分页列表")
+    @SaCheckPermission("scene:item:list")
     @GetMapping("/page")
     public R<PageResult<SceneItemVO>> page(SceneItemQueryDTO query) {
         return R.ok(sceneItemService.page(query));
     }
 
     @Operation(summary = "场景项目列表")
+    @SaCheckPermission("scene:item:list")
     @GetMapping("/list")
     public R<List<SceneItemVO>> list(SceneItemQueryDTO query) {
         return R.ok(sceneItemService.list(query));
     }
 
     @Operation(summary = "场景项目详情")
+    @SaCheckPermission("scene:item:query")
     @GetMapping("/{id}")
     public R<SceneItemVO> getDetail(@PathVariable Long id) {
         return R.ok(sceneItemService.getDetail(id));
@@ -49,6 +53,7 @@ public class SceneItemAdminController {
 
     @Operation(summary = "新增场景项目")
     @OperationLog(module = "场景项目", action = "新增")
+    @SaCheckPermission("scene:item:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid SceneItemCreateDTO dto) {
         return R.ok(sceneItemService.create(dto));
@@ -56,6 +61,7 @@ public class SceneItemAdminController {
 
     @Operation(summary = "修改场景项目")
     @OperationLog(module = "场景项目", action = "修改")
+    @SaCheckPermission("scene:item:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody @Valid SceneItemUpdateDTO dto) {
@@ -65,6 +71,7 @@ public class SceneItemAdminController {
 
     @Operation(summary = "删除场景项目")
     @OperationLog(module = "场景项目", action = "删除")
+    @SaCheckPermission("scene:item:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         sceneItemService.delete(id);

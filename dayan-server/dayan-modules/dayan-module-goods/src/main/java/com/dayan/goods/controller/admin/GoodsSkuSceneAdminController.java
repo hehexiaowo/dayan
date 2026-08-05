@@ -7,6 +7,7 @@ import com.dayan.goods.dto.GoodsSkuSceneQueryDTO;
 import com.dayan.goods.dto.GoodsSkuSceneUpdateDTO;
 import com.dayan.goods.service.GoodsSkuSceneService;
 import com.dayan.goods.vo.GoodsSkuSceneVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,30 +30,35 @@ public class GoodsSkuSceneAdminController {
     private final GoodsSkuSceneService goodsSkuSceneService;
 
     @Operation(summary = "场景 SKU 分页列表")
+    @SaCheckPermission("goods:sku-scene:list")
     @GetMapping("/page")
     public R<PageResult<GoodsSkuSceneVO>> page(GoodsSkuSceneQueryDTO query) {
         return R.ok(goodsSkuSceneService.page(query));
     }
 
     @Operation(summary = "场景 SKU 列表（按商品）")
+    @SaCheckPermission("goods:sku-scene:list")
     @GetMapping("/list")
     public R<List<GoodsSkuSceneVO>> list(@RequestParam String goodsCode) {
         return R.ok(goodsSkuSceneService.listByGoods(goodsCode));
     }
 
     @Operation(summary = "场景 SKU 详情")
+    @SaCheckPermission("goods:sku-scene:query")
     @GetMapping("/{id}")
     public R<GoodsSkuSceneVO> getDetail(@PathVariable Long id) {
         return R.ok(goodsSkuSceneService.getDetail(id));
     }
 
     @Operation(summary = "新增场景 SKU")
+    @SaCheckPermission("goods:sku-scene:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid GoodsSkuSceneCreateDTO dto) {
         return R.ok(goodsSkuSceneService.create(dto));
     }
 
     @Operation(summary = "修改场景 SKU")
+    @SaCheckPermission("goods:sku-scene:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody GoodsSkuSceneUpdateDTO dto) {
@@ -61,6 +67,7 @@ public class GoodsSkuSceneAdminController {
     }
 
     @Operation(summary = "删除场景 SKU")
+    @SaCheckPermission("goods:sku-scene:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         goodsSkuSceneService.delete(id);

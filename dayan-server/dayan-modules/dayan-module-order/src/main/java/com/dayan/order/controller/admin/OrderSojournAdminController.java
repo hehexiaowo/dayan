@@ -1,5 +1,6 @@
 package com.dayan.order.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.order.dto.CreateOrderSojournDTO;
@@ -36,30 +37,35 @@ public class OrderSojournAdminController {
     private final OrderSojournService orderSojournService;
 
     @Operation(summary = "旅居订单分页列表")
+    @SaCheckPermission("order:sojourn:list")
     @GetMapping("/page")
     public R<PageResult<OrderSojournVO>> page(OrderSojournQueryDTO query) {
         return R.ok(orderSojournService.page(query));
     }
 
     @Operation(summary = "旅居订单列表（全量）")
+    @SaCheckPermission("order:sojourn:list")
     @GetMapping("/list")
     public R<List<OrderSojournVO>> list(OrderSojournQueryDTO query) {
         return R.ok(orderSojournService.list(query));
     }
 
     @Operation(summary = "旅居订单详情")
+    @SaCheckPermission("order:sojourn:query")
     @GetMapping("/{orderCode}")
     public R<OrderSojournVO> getDetail(@PathVariable @NotBlank String orderCode) {
         return R.ok(orderSojournService.getDetail(orderCode));
     }
 
     @Operation(summary = "创建旅居订单（生成订单号 + 校验金额 + 置待支付）")
+    @SaCheckPermission("order:sojourn:create")
     @PostMapping("/create")
     public R<String> create(@RequestBody @Valid CreateOrderSojournDTO dto) {
         return R.ok(orderSojournService.create(dto));
     }
 
     @Operation(summary = "支付回调（0→1 已支付）")
+    @SaCheckPermission("order:sojourn:pay-callback")
     @PostMapping("/pay-callback")
     public R<Void> payCallback(@RequestBody @Valid PayCallbackDTO dto) {
         orderSojournService.payCallback(dto);
@@ -67,6 +73,7 @@ public class OrderSojournAdminController {
     }
 
     @Operation(summary = "完成订单（3→4 已完成，离店）")
+    @SaCheckPermission("order:sojourn:complete")
     @PostMapping("/complete")
     public R<Void> complete(@RequestBody @Valid OrderCompleteDTO dto) {
         orderSojournService.complete(dto);
@@ -74,6 +81,7 @@ public class OrderSojournAdminController {
     }
 
     @Operation(summary = "申请退款（1/2/3→6 退款中）")
+    @SaCheckPermission("order:sojourn:apply-refund")
     @PostMapping("/apply-refund")
     public R<Void> applyRefund(@RequestBody @Valid RefundApplyDTO dto) {
         orderSojournService.applyRefund(dto);
@@ -81,6 +89,7 @@ public class OrderSojournAdminController {
     }
 
     @Operation(summary = "取消订单（0→5 或 6→5 已取消）")
+    @SaCheckPermission("order:sojourn:cancel")
     @PostMapping("/cancel")
     public R<Void> cancel(@RequestBody @Valid OrderCancelDTO dto) {
         orderSojournService.cancel(dto);

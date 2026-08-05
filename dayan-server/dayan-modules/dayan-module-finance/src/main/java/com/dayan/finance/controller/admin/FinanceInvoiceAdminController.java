@@ -10,6 +10,7 @@ import com.dayan.finance.dto.InvoiceOperateDTO;
 import com.dayan.finance.dto.InvoiceSendDTO;
 import com.dayan.finance.service.FinanceInvoiceService;
 import com.dayan.finance.vo.FinanceInvoiceVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,30 +33,35 @@ public class FinanceInvoiceAdminController {
     private final FinanceInvoiceService financeInvoiceService;
 
     @Operation(summary = "发票分页列表")
+    @SaCheckPermission("finance:invoice:list")
     @GetMapping("/page")
     public R<PageResult<FinanceInvoiceVO>> page(FinanceInvoiceQueryDTO query) {
         return R.ok(financeInvoiceService.page(query));
     }
 
     @Operation(summary = "发票列表（全量）")
+    @SaCheckPermission("finance:invoice:list")
     @GetMapping("/list")
     public R<List<FinanceInvoiceVO>> list(FinanceInvoiceQueryDTO query) {
         return R.ok(financeInvoiceService.list(query));
     }
 
     @Operation(summary = "发票详情")
+    @SaCheckPermission("finance:invoice:query")
     @GetMapping("/{invoiceCode}")
     public R<FinanceInvoiceVO> getDetail(@PathVariable String invoiceCode) {
         return R.ok(financeInvoiceService.getDetail(invoiceCode));
     }
 
     @Operation(summary = "申请发票")
+    @SaCheckPermission("finance:invoice:apply")
     @PostMapping("/apply")
     public R<String> apply(@RequestBody @Valid ApplyInvoiceDTO dto) {
         return R.ok(financeInvoiceService.apply(dto));
     }
 
     @Operation(summary = "审核发票（0→1）")
+    @SaCheckPermission("finance:invoice:audit")
     @PostMapping("/audit")
     public R<Void> audit(@RequestBody @Valid InvoiceAuditDTO dto) {
         financeInvoiceService.audit(dto);
@@ -63,6 +69,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "开具发票（1→2）")
+    @SaCheckPermission("finance:invoice:issue")
     @PostMapping("/issue")
     public R<Void> issue(@RequestBody @Valid InvoiceIssueDTO dto) {
         financeInvoiceService.issue(dto);
@@ -70,6 +77,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "寄出发票（2→3）")
+    @SaCheckPermission("finance:invoice:send")
     @PostMapping("/send")
     public R<Void> send(@RequestBody @Valid InvoiceSendDTO dto) {
         financeInvoiceService.send(dto);
@@ -77,6 +85,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "完成发票（3→4）")
+    @SaCheckPermission("finance:invoice:finish")
     @PostMapping("/finish")
     public R<Void> finish(@RequestBody @Valid InvoiceOperateDTO dto) {
         financeInvoiceService.finish(dto);
@@ -84,6 +93,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "作废发票（→5）")
+    @SaCheckPermission("finance:invoice:void")
     @PostMapping("/void")
     public R<Void> voidInvoice(@RequestBody @Valid InvoiceOperateDTO dto) {
         financeInvoiceService.voidInvoice(dto);
@@ -91,6 +101,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "红冲发票（→6）")
+    @SaCheckPermission("finance:invoice:red-flush")
     @PostMapping("/red-flush")
     public R<Void> redFlush(@RequestBody @Valid InvoiceOperateDTO dto) {
         financeInvoiceService.redFlush(dto);

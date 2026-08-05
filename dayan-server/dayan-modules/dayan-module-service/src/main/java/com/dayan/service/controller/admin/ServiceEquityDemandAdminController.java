@@ -1,5 +1,6 @@
 package com.dayan.service.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.service.dto.ServiceEquityDemandCreateDTO;
@@ -29,30 +30,35 @@ public class ServiceEquityDemandAdminController {
     private final ServiceEquityDemandService serviceEquityDemandService;
 
     @Operation(summary = "需求分页列表")
+    @SaCheckPermission("service:equity-demand:list")
     @GetMapping("/page")
     public R<PageResult<ServiceEquityDemandVO>> page(ServiceEquityDemandQueryDTO query) {
         return R.ok(serviceEquityDemandService.page(query));
     }
 
     @Operation(summary = "会话下需求列表")
+    @SaCheckPermission("service:equity-demand:list")
     @GetMapping("/list")
     public R<List<ServiceEquityDemandVO>> list(@RequestParam String sessionCode) {
         return R.ok(serviceEquityDemandService.listBySession(sessionCode));
     }
 
     @Operation(summary = "需求详情")
+    @SaCheckPermission("service:equity-demand:query")
     @GetMapping("/{id}")
     public R<ServiceEquityDemandVO> getDetail(@PathVariable Long id) {
         return R.ok(serviceEquityDemandService.getDetail(id));
     }
 
     @Operation(summary = "新增需求")
+    @SaCheckPermission("service:equity-demand:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceEquityDemandCreateDTO dto) {
         return R.ok(serviceEquityDemandService.create(dto));
     }
 
     @Operation(summary = "修改需求")
+    @SaCheckPermission("service:equity-demand:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ServiceEquityDemandUpdateDTO dto) {
@@ -61,6 +67,7 @@ public class ServiceEquityDemandAdminController {
     }
 
     @Operation(summary = "删除需求")
+    @SaCheckPermission("service:equity-demand:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         serviceEquityDemandService.delete(id);

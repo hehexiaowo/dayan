@@ -1,5 +1,6 @@
 package com.dayan.course.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
@@ -30,24 +31,28 @@ public class CourseRecordLearnAdminController {
     private final CourseRecordLearnService courseRecordLearnService;
 
     @Operation(summary = "学习记录分页列表")
+    @SaCheckPermission("course:record-learn:list")
     @GetMapping("/page")
     public R<PageResult<CourseRecordLearnVO>> page(CourseRecordLearnQueryDTO query) {
         return R.ok(courseRecordLearnService.page(query));
     }
 
     @Operation(summary = "学习记录列表")
+    @SaCheckPermission("course:record-learn:list")
     @GetMapping("/list")
     public R<List<CourseRecordLearnVO>> list(CourseRecordLearnQueryDTO query) {
         return R.ok(courseRecordLearnService.list(query));
     }
 
     @Operation(summary = "学习记录详情")
+    @SaCheckPermission("course:record-learn:query")
     @GetMapping("/{id}")
     public R<CourseRecordLearnVO> getDetail(@PathVariable Long id) {
         return R.ok(courseRecordLearnService.getDetail(id));
     }
 
     @Operation(summary = "新增学习记录")
+    @SaCheckPermission("course:record-learn:create")
     @OperationLog(module = "课程学习记录", action = "新增")
     @PostMapping
     public R<Long> create(@RequestBody @Valid CourseRecordLearnCreateDTO dto) {
@@ -55,6 +60,7 @@ public class CourseRecordLearnAdminController {
     }
 
     @Operation(summary = "修改学习记录")
+    @SaCheckPermission("course:record-learn:update")
     @OperationLog(module = "课程学习记录", action = "修改")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
@@ -64,6 +70,7 @@ public class CourseRecordLearnAdminController {
     }
 
     @Operation(summary = "删除学习记录")
+    @SaCheckPermission("course:record-learn:delete")
     @OperationLog(module = "课程学习记录", action = "删除")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

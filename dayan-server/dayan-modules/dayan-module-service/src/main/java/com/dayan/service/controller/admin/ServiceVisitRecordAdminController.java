@@ -1,5 +1,6 @@
 package com.dayan.service.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.service.dto.ServiceVisitRecordCreateDTO;
@@ -30,30 +31,35 @@ public class ServiceVisitRecordAdminController {
     private final ServiceVisitRecordService serviceVisitRecordService;
 
     @Operation(summary = "探访记录分页列表")
+    @SaCheckPermission("service:visit-record:list")
     @GetMapping("/page")
     public R<PageResult<ServiceVisitRecordVO>> page(ServiceVisitRecordQueryDTO query) {
         return R.ok(serviceVisitRecordService.page(query));
     }
 
     @Operation(summary = "探访记录列表（按 butlerCode/parkCode 等过滤）")
+    @SaCheckPermission("service:visit-record:list")
     @GetMapping("/list")
     public R<List<ServiceVisitRecordVO>> list(ServiceVisitRecordQueryDTO query) {
         return R.ok(serviceVisitRecordService.list(query));
     }
 
     @Operation(summary = "探访记录详情")
+    @SaCheckPermission("service:visit-record:query")
     @GetMapping("/{id}")
     public R<ServiceVisitRecordVO> getDetail(@PathVariable Long id) {
         return R.ok(serviceVisitRecordService.getDetail(id));
     }
 
     @Operation(summary = "新增探访记录")
+    @SaCheckPermission("service:visit-record:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ServiceVisitRecordCreateDTO dto) {
         return R.ok(serviceVisitRecordService.create(dto));
     }
 
     @Operation(summary = "修改探访记录")
+    @SaCheckPermission("service:visit-record:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ServiceVisitRecordUpdateDTO dto) {
@@ -62,6 +68,7 @@ public class ServiceVisitRecordAdminController {
     }
 
     @Operation(summary = "删除探访记录")
+    @SaCheckPermission("service:visit-record:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         serviceVisitRecordService.delete(id);

@@ -10,6 +10,7 @@ import com.dayan.supplier.entity.SupplierRole;
 import com.dayan.supplier.service.SupplierRoleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -31,12 +32,14 @@ public class SupplierRoleAdminController {
     private final SupplierRoleService supplierRoleService;
 
     @Operation(summary = "供应商角色分页列表")
+    @SaCheckPermission("supplier:role:list")
     @GetMapping("/page")
     public R<PageResult<SupplierRole>> page(SupplierRoleQueryDTO query) {
         return R.ok(supplierRoleService.page(query));
     }
 
     @Operation(summary = "供应商角色详情")
+    @SaCheckPermission("supplier:role:query")
     @GetMapping("/{roleCode}")
     public R<SupplierRole> getDetail(@PathVariable String roleCode) {
         return R.ok(supplierRoleService.getDetail(roleCode));
@@ -44,6 +47,7 @@ public class SupplierRoleAdminController {
 
     @Operation(summary = "新增供应商角色")
     @OperationLog(module = "供应商角色", action = "新增")
+    @SaCheckPermission("supplier:role:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid SupplierRoleCreateDTO dto) {
         return R.ok(supplierRoleService.create(dto));
@@ -51,6 +55,7 @@ public class SupplierRoleAdminController {
 
     @Operation(summary = "修改供应商角色")
     @OperationLog(module = "供应商角色", action = "修改")
+    @SaCheckPermission("supplier:role:update")
     @PutMapping
     public R<Void> update(@RequestParam String roleCode,
                           @RequestBody SupplierRoleUpdateDTO dto) {
@@ -60,6 +65,7 @@ public class SupplierRoleAdminController {
 
     @Operation(summary = "删除供应商角色")
     @OperationLog(module = "供应商角色", action = "删除")
+    @SaCheckPermission("supplier:role:delete")
     @DeleteMapping("/{roleCode}")
     public R<Void> delete(@PathVariable String roleCode) {
         supplierRoleService.delete(roleCode);
@@ -68,6 +74,7 @@ public class SupplierRoleAdminController {
 
     @Operation(summary = "给供应商角色授权（全量覆盖）")
     @OperationLog(module = "供应商角色", action = "授权")
+    @SaCheckPermission("supplier:role:assign-permissions")
     @PutMapping("/{roleCode}/permissions")
     public R<Void> assignPermissions(@PathVariable String roleCode,
                                      @RequestBody List<String> permissionCodes) {
@@ -76,6 +83,7 @@ public class SupplierRoleAdminController {
     }
 
     @Operation(summary = "查询供应商角色权限码列表")
+    @SaCheckPermission("supplier:role:query-permissions")
     @GetMapping("/{roleCode}/permissions")
     public R<List<String>> listPermissions(@PathVariable String roleCode) {
         return R.ok(supplierRoleService.listPermissions(roleCode));

@@ -7,6 +7,7 @@ import com.dayan.park.dto.ParkFoodTypeQueryDTO;
 import com.dayan.park.dto.ParkFoodTypeUpdateDTO;
 import com.dayan.park.service.ParkFoodTypeService;
 import com.dayan.park.vo.ParkFoodTypeVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,30 +30,35 @@ public class ParkFoodTypeAdminController {
     private final ParkFoodTypeService parkFoodTypeService;
 
     @Operation(summary = "餐饮类型分页列表")
+    @SaCheckPermission("park:food-type:list")
     @GetMapping("/page")
     public R<PageResult<ParkFoodTypeVO>> page(ParkFoodTypeQueryDTO query) {
         return R.ok(parkFoodTypeService.page(query));
     }
 
     @Operation(summary = "餐饮类型列表（按机构）")
+    @SaCheckPermission("park:food-type:list")
     @GetMapping("/list")
     public R<List<ParkFoodTypeVO>> list(@RequestParam String parkCode) {
         return R.ok(parkFoodTypeService.listByPark(parkCode));
     }
 
     @Operation(summary = "餐饮类型详情")
+    @SaCheckPermission("park:food-type:query")
     @GetMapping("/{id}")
     public R<ParkFoodTypeVO> getDetail(@PathVariable Long id) {
         return R.ok(parkFoodTypeService.getDetail(id));
     }
 
     @Operation(summary = "新增餐饮类型")
+    @SaCheckPermission("park:food-type:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ParkFoodTypeCreateDTO dto) {
         return R.ok(parkFoodTypeService.create(dto));
     }
 
     @Operation(summary = "修改餐饮类型")
+    @SaCheckPermission("park:food-type:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ParkFoodTypeUpdateDTO dto) {
@@ -61,6 +67,7 @@ public class ParkFoodTypeAdminController {
     }
 
     @Operation(summary = "删除餐饮类型")
+    @SaCheckPermission("park:food-type:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         parkFoodTypeService.delete(id);

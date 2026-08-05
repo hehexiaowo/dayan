@@ -9,6 +9,7 @@ import com.dayan.scene.dto.SceneInfoQueryDTO;
 import com.dayan.scene.dto.SceneInfoUpdateDTO;
 import com.dayan.scene.service.SceneInfoService;
 import com.dayan.scene.vo.SceneInfoVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,18 +33,21 @@ public class SceneInfoAdminController {
     private final SceneInfoService sceneInfoService;
 
     @Operation(summary = "场景分页列表")
+    @SaCheckPermission("scene:info:list")
     @GetMapping("/page")
     public R<PageResult<SceneInfoVO>> page(SceneInfoQueryDTO query) {
         return R.ok(sceneInfoService.page(query));
     }
 
     @Operation(summary = "场景列表")
+    @SaCheckPermission("scene:info:list")
     @GetMapping("/list")
     public R<List<SceneInfoVO>> list(SceneInfoQueryDTO query) {
         return R.ok(sceneInfoService.list(query));
     }
 
     @Operation(summary = "场景详情")
+    @SaCheckPermission("scene:info:query")
     @GetMapping("/{sceneCode}")
     public R<SceneInfoVO> getDetail(@PathVariable String sceneCode) {
         return R.ok(sceneInfoService.getDetail(sceneCode));
@@ -51,6 +55,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "新增场景")
     @OperationLog(module = "场景信息", action = "新增")
+    @SaCheckPermission("scene:info:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid SceneInfoCreateDTO dto) {
         return R.ok(sceneInfoService.create(dto));
@@ -58,6 +63,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "修改场景")
     @OperationLog(module = "场景信息", action = "修改")
+    @SaCheckPermission("scene:info:update")
     @PutMapping("/{sceneCode}")
     public R<Void> update(@PathVariable String sceneCode,
                           @RequestBody SceneInfoUpdateDTO dto) {
@@ -67,6 +73,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "删除场景")
     @OperationLog(module = "场景信息", action = "删除")
+    @SaCheckPermission("scene:info:delete")
     @DeleteMapping("/{sceneCode}")
     public R<Void> delete(@PathVariable String sceneCode) {
         sceneInfoService.delete(sceneCode);
@@ -75,6 +82,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "提交审核")
     @OperationLog(module = "场景信息", action = "提交审核")
+    @SaCheckPermission("scene:info:submit")
     @PostMapping("/submit")
     public R<Void> submit(@RequestParam String sceneCode) {
         sceneInfoService.submit(sceneCode);
@@ -83,6 +91,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "审核场景")
     @OperationLog(module = "场景信息", action = "审核")
+    @SaCheckPermission("scene:info:audit")
     @PostMapping("/audit")
     public R<Void> audit(@RequestBody @Valid SceneInfoAuditDTO dto) {
         sceneInfoService.audit(dto);
@@ -91,6 +100,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "上架")
     @OperationLog(module = "场景信息", action = "上架")
+    @SaCheckPermission("scene:info:shelf")
     @PostMapping("/shelves")
     public R<Void> shelves(@RequestParam String sceneCode) {
         sceneInfoService.shelves(sceneCode);
@@ -99,6 +109,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "下架")
     @OperationLog(module = "场景信息", action = "下架")
+    @SaCheckPermission("scene:info:unshelf")
     @PostMapping("/offshelves")
     public R<Void> offshelves(@RequestParam String sceneCode) {
         sceneInfoService.offshelves(sceneCode);
@@ -107,6 +118,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "重新上架")
     @OperationLog(module = "场景信息", action = "重新上架")
+    @SaCheckPermission("scene:info:reshelf")
     @PostMapping("/reshelves")
     public R<Void> reshelves(@RequestParam String sceneCode) {
         sceneInfoService.reshelves(sceneCode);
@@ -115,6 +127,7 @@ public class SceneInfoAdminController {
 
     @Operation(summary = "满期（活动到期或名额约满）")
     @OperationLog(module = "场景信息", action = "满期")
+    @SaCheckPermission("scene:info:full")
     @PostMapping("/full")
     public R<Void> full(@RequestParam String sceneCode) {
         sceneInfoService.full(sceneCode);

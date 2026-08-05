@@ -10,6 +10,7 @@ import com.dayan.supplier.service.SupplierContractService;
 import com.dayan.supplier.vo.SupplierContractVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -29,12 +30,14 @@ public class SupplierContractAdminController {
     private final SupplierContractService supplierContractService;
 
     @Operation(summary = "供应商合同分页列表")
+    @SaCheckPermission("supplier:contract:list")
     @GetMapping("/page")
     public R<PageResult<SupplierContractVO>> page(SupplierContractQueryDTO query) {
         return R.ok(supplierContractService.page(query));
     }
 
     @Operation(summary = "供应商合同详情")
+    @SaCheckPermission("supplier:contract:query")
     @GetMapping("/{contractCode}")
     public R<SupplierContractVO> getDetail(@PathVariable String contractCode) {
         return R.ok(supplierContractService.getDetail(contractCode));
@@ -42,6 +45,7 @@ public class SupplierContractAdminController {
 
     @Operation(summary = "新增供应商合同（含续约：传 parentContractCode）")
     @OperationLog(module = "供应商合同", action = "新增")
+    @SaCheckPermission("supplier:contract:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid SupplierContractCreateDTO dto) {
         return R.ok(supplierContractService.create(dto));
@@ -49,6 +53,7 @@ public class SupplierContractAdminController {
 
     @Operation(summary = "修改供应商合同")
     @OperationLog(module = "供应商合同", action = "修改")
+    @SaCheckPermission("supplier:contract:update")
     @PutMapping
     public R<Void> update(@RequestParam String contractCode,
                           @RequestBody SupplierContractUpdateDTO dto) {
@@ -58,6 +63,7 @@ public class SupplierContractAdminController {
 
     @Operation(summary = "删除供应商合同")
     @OperationLog(module = "供应商合同", action = "删除")
+    @SaCheckPermission("supplier:contract:delete")
     @DeleteMapping("/{contractCode}")
     public R<Void> delete(@PathVariable String contractCode) {
         supplierContractService.delete(contractCode);

@@ -1,5 +1,6 @@
 package com.dayan.service.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.service.dto.ServiceEquitySolutionCreateDTO;
@@ -31,30 +32,35 @@ public class ServiceEquitySolutionAdminController {
     private final ServiceEquitySolutionService serviceEquitySolutionService;
 
     @Operation(summary = "方案分页列表")
+    @SaCheckPermission("service:equity-solution:list")
     @GetMapping("/page")
     public R<PageResult<ServiceEquitySolutionVO>> page(ServiceEquitySolutionQueryDTO query) {
         return R.ok(serviceEquitySolutionService.page(query));
     }
 
     @Operation(summary = "会话下方案列表")
+    @SaCheckPermission("service:equity-solution:list")
     @GetMapping("/list")
     public R<List<ServiceEquitySolutionVO>> list(@RequestParam String sessionCode) {
         return R.ok(serviceEquitySolutionService.listBySession(sessionCode));
     }
 
     @Operation(summary = "方案详情")
+    @SaCheckPermission("service:equity-solution:query")
     @GetMapping("/{id}")
     public R<ServiceEquitySolutionVO> getDetail(@PathVariable Long id) {
         return R.ok(serviceEquitySolutionService.getDetail(id));
     }
 
     @Operation(summary = "新增方案")
+    @SaCheckPermission("service:equity-solution:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceEquitySolutionCreateDTO dto) {
         return R.ok(serviceEquitySolutionService.create(dto));
     }
 
     @Operation(summary = "修改方案")
+    @SaCheckPermission("service:equity-solution:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ServiceEquitySolutionUpdateDTO dto) {
@@ -63,6 +69,7 @@ public class ServiceEquitySolutionAdminController {
     }
 
     @Operation(summary = "方案接受/拒绝标记（0=否, 1=是, 2=需调整）")
+    @SaCheckPermission("service:equity-solution:accept")
     @PostMapping("/accept")
     public R<Void> accept(@RequestBody @Valid SolutionAcceptDTO dto) {
         serviceEquitySolutionService.accept(dto);
@@ -70,6 +77,7 @@ public class ServiceEquitySolutionAdminController {
     }
 
     @Operation(summary = "删除方案")
+    @SaCheckPermission("service:equity-solution:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         serviceEquitySolutionService.delete(id);

@@ -1,5 +1,6 @@
 package com.dayan.content.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
@@ -35,12 +36,14 @@ public class ContentRecordReadAdminController {
     private final ContentRecordReadService contentRecordReadService;
 
     @Operation(summary = "阅读记录分页列表（按 contentCode）")
+    @SaCheckPermission("content:record-read:list")
     @GetMapping("/page")
     public R<PageResult<ContentRecordReadVO>> page(ContentRecordReadQueryDTO query) {
         return R.ok(contentRecordReadService.page(query));
     }
 
     @Operation(summary = "记录阅读事件（前端上报）")
+    @SaCheckPermission("content:record-read:create")
     @OperationLog(module = "阅读记录", action = "新增")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ContentRecordReadCreateDTO dto) {
@@ -48,6 +51,7 @@ public class ContentRecordReadAdminController {
     }
 
     @Operation(summary = "删除阅读记录")
+    @SaCheckPermission("content:record-read:delete")
     @OperationLog(module = "阅读记录", action = "删除")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
@@ -56,6 +60,7 @@ public class ContentRecordReadAdminController {
     }
 
     @Operation(summary = "按 contentCode 统计阅读 UV/PV")
+    @SaCheckPermission("content:record-read:stats")
     @GetMapping("/stats")
     public R<ContentReadStatsVO> stats(@RequestParam String contentCode) {
         return R.ok(contentRecordReadService.stats(contentCode));

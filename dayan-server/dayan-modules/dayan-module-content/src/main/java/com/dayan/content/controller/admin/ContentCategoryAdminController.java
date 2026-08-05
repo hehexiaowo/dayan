@@ -1,5 +1,6 @@
 package com.dayan.content.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
@@ -31,24 +32,28 @@ public class ContentCategoryAdminController {
     private final ContentCategoryService contentCategoryService;
 
     @Operation(summary = "内容分类分页列表")
+    @SaCheckPermission("content:category:list")
     @GetMapping("/page")
     public R<PageResult<ContentCategoryVO>> page(ContentCategoryQueryDTO query) {
         return R.ok(contentCategoryService.page(query));
     }
 
     @Operation(summary = "内容分类列表（全量，按名称排序）")
+    @SaCheckPermission("content:category:list")
     @GetMapping("/list")
     public R<List<ContentCategoryVO>> list(ContentCategoryQueryDTO query) {
         return R.ok(contentCategoryService.list(query));
     }
 
     @Operation(summary = "内容分类详情")
+    @SaCheckPermission("content:category:query")
     @GetMapping("/{id}")
     public R<ContentCategoryVO> getDetail(@PathVariable Long id) {
         return R.ok(contentCategoryService.getDetail(id));
     }
 
     @Operation(summary = "新增内容分类")
+    @SaCheckPermission("content:category:create")
     @OperationLog(module = "内容分类", action = "新增")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ContentCategoryCreateDTO dto) {
@@ -56,6 +61,7 @@ public class ContentCategoryAdminController {
     }
 
     @Operation(summary = "修改内容分类")
+    @SaCheckPermission("content:category:update")
     @OperationLog(module = "内容分类", action = "修改")
     @PutMapping
     public R<Void> update(@RequestParam Long id,
@@ -65,6 +71,7 @@ public class ContentCategoryAdminController {
     }
 
     @Operation(summary = "删除内容分类")
+    @SaCheckPermission("content:category:delete")
     @OperationLog(module = "内容分类", action = "删除")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

@@ -11,6 +11,7 @@ import com.dayan.supplier.service.SupplierAccountService;
 import com.dayan.supplier.vo.SupplierAccountVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -33,12 +34,14 @@ public class SupplierAccountAdminController {
     private final SupplierAccountRoleService supplierAccountRoleService;
 
     @Operation(summary = "供应商账号分页列表")
+    @SaCheckPermission("supplier:account:list")
     @GetMapping("/page")
     public R<PageResult<SupplierAccountVO>> page(SupplierAccountQueryDTO query) {
         return R.ok(supplierAccountService.page(query));
     }
 
     @Operation(summary = "供应商账号详情")
+    @SaCheckPermission("supplier:account:query")
     @GetMapping("/{accountCode}")
     public R<SupplierAccountVO> getDetail(@PathVariable String accountCode) {
         return R.ok(supplierAccountService.getDetail(accountCode));
@@ -46,6 +49,7 @@ public class SupplierAccountAdminController {
 
     @Operation(summary = "新增供应商账号")
     @OperationLog(module = "供应商账号", action = "新增")
+    @SaCheckPermission("supplier:account:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid SupplierAccountCreateDTO dto) {
         return R.ok(supplierAccountService.create(dto));
@@ -53,6 +57,7 @@ public class SupplierAccountAdminController {
 
     @Operation(summary = "修改供应商账号")
     @OperationLog(module = "供应商账号", action = "修改")
+    @SaCheckPermission("supplier:account:update")
     @PutMapping
     public R<Void> update(@RequestParam String accountCode,
                           @RequestBody SupplierAccountUpdateDTO dto) {
@@ -62,6 +67,7 @@ public class SupplierAccountAdminController {
 
     @Operation(summary = "重置供应商账号密码")
     @OperationLog(module = "供应商账号", action = "重置密码")
+    @SaCheckPermission("supplier:account:reset")
     @PutMapping("/{accountCode}/reset-password")
     public R<Void> resetPassword(@PathVariable String accountCode) {
         supplierAccountService.resetPassword(accountCode);
@@ -70,6 +76,7 @@ public class SupplierAccountAdminController {
 
     @Operation(summary = "删除供应商账号")
     @OperationLog(module = "供应商账号", action = "删除")
+    @SaCheckPermission("supplier:account:delete")
     @DeleteMapping("/{accountCode}")
     public R<Void> delete(@PathVariable String accountCode) {
         supplierAccountService.delete(accountCode);
@@ -78,6 +85,7 @@ public class SupplierAccountAdminController {
 
     @Operation(summary = "给供应商账号分配角色（全量覆盖）")
     @OperationLog(module = "供应商账号", action = "分配角色")
+    @SaCheckPermission("supplier:account:assign-roles")
     @PutMapping("/{accountCode}/roles")
     public R<Void> assignRoles(@PathVariable String accountCode,
                                @RequestBody List<String> roleCodes) {
@@ -86,6 +94,7 @@ public class SupplierAccountAdminController {
     }
 
     @Operation(summary = "查询供应商账号的角色编码列表")
+    @SaCheckPermission("supplier:account:query-roles")
     @GetMapping("/{accountCode}/roles")
     public R<List<String>> listRoles(@PathVariable String accountCode) {
         return R.ok(supplierAccountRoleService.listRoles(accountCode));

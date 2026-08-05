@@ -1,5 +1,6 @@
 package com.dayan.course.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
@@ -30,24 +31,28 @@ public class CourseInfoAdminController {
     private final CourseInfoService courseInfoService;
 
     @Operation(summary = "课程信息分页列表")
+    @SaCheckPermission("course:info:list")
     @GetMapping("/page")
     public R<PageResult<CourseInfoVO>> page(CourseInfoQueryDTO query) {
         return R.ok(courseInfoService.page(query));
     }
 
     @Operation(summary = "课程信息列表")
+    @SaCheckPermission("course:info:list")
     @GetMapping("/list")
     public R<List<CourseInfoVO>> list(CourseInfoQueryDTO query) {
         return R.ok(courseInfoService.list(query));
     }
 
     @Operation(summary = "课程信息详情")
+    @SaCheckPermission("course:info:query")
     @GetMapping("/{courseCode}")
     public R<CourseInfoVO> getDetail(@PathVariable String courseCode) {
         return R.ok(courseInfoService.getDetail(courseCode));
     }
 
     @Operation(summary = "新增课程信息")
+    @SaCheckPermission("course:info:create")
     @OperationLog(module = "课程信息", action = "新增")
     @PostMapping
     public R<String> create(@RequestBody @Valid CourseInfoCreateDTO dto) {
@@ -55,6 +60,7 @@ public class CourseInfoAdminController {
     }
 
     @Operation(summary = "修改课程信息")
+    @SaCheckPermission("course:info:update")
     @OperationLog(module = "课程信息", action = "修改")
     @PutMapping("/{courseCode}")
     public R<Void> update(@PathVariable String courseCode,
@@ -64,6 +70,7 @@ public class CourseInfoAdminController {
     }
 
     @Operation(summary = "删除课程信息")
+    @SaCheckPermission("course:info:delete")
     @OperationLog(module = "课程信息", action = "删除")
     @DeleteMapping("/{courseCode}")
     public R<Void> delete(@PathVariable String courseCode) {
@@ -72,6 +79,7 @@ public class CourseInfoAdminController {
     }
 
     @Operation(summary = "课程上架")
+    @SaCheckPermission("course:info:publish")
     @OperationLog(module = "课程信息", action = "上架")
     @PutMapping("/{courseCode}/publish")
     public R<Void> publish(@PathVariable String courseCode) {
@@ -80,6 +88,7 @@ public class CourseInfoAdminController {
     }
 
     @Operation(summary = "课程下架")
+    @SaCheckPermission("course:info:offline")
     @OperationLog(module = "课程信息", action = "下架")
     @PutMapping("/{courseCode}/offline")
     public R<Void> offline(@PathVariable String courseCode) {

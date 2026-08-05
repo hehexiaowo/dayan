@@ -8,6 +8,7 @@ import com.dayan.butler.vo.ButlerAccountRoleRelVO;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,18 +31,21 @@ public class ButlerAccountRoleRelAdminController {
     private final ButlerAccountRoleRelService butlerAccountRoleRelService;
 
     @Operation(summary = "管家账号-角色关联分页列表")
+    @SaCheckPermission("butler:account-role-rel:list")
     @GetMapping("/page")
     public R<PageResult<ButlerAccountRoleRelVO>> page(ButlerAccountRoleRelQueryDTO query) {
         return R.ok(butlerAccountRoleRelService.page(query));
     }
 
     @Operation(summary = "管家账号-角色关联列表")
+    @SaCheckPermission("butler:account-role-rel:list")
     @GetMapping("/list")
     public R<List<ButlerAccountRoleRelVO>> list(ButlerAccountRoleRelQueryDTO query) {
         return R.ok(butlerAccountRoleRelService.list(query));
     }
 
     @Operation(summary = "管家账号-角色关联详情")
+    @SaCheckPermission("butler:account-role-rel:query")
     @GetMapping("/{id}")
     public R<ButlerAccountRoleRelVO> getDetail(@PathVariable Long id) {
         return R.ok(butlerAccountRoleRelService.getDetail(id));
@@ -49,6 +53,7 @@ public class ButlerAccountRoleRelAdminController {
 
     @Operation(summary = "新增管家账号-角色关联")
     @OperationLog(module = "管家账号-角色关联", action = "新增")
+    @SaCheckPermission("butler:account-role-rel:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ButlerAccountRoleRelCreateDTO dto) {
         return R.ok(butlerAccountRoleRelService.create(dto));
@@ -56,6 +61,7 @@ public class ButlerAccountRoleRelAdminController {
 
     @Operation(summary = "修改管家账号-角色关联")
     @OperationLog(module = "管家账号-角色关联", action = "修改")
+    @SaCheckPermission("butler:account-role-rel:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ButlerAccountRoleRelUpdateDTO dto) {
@@ -65,6 +71,7 @@ public class ButlerAccountRoleRelAdminController {
 
     @Operation(summary = "删除管家账号-角色关联")
     @OperationLog(module = "管家账号-角色关联", action = "删除")
+    @SaCheckPermission("butler:account-role-rel:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         butlerAccountRoleRelService.delete(id);

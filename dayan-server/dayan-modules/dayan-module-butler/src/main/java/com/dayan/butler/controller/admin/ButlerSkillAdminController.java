@@ -8,6 +8,7 @@ import com.dayan.butler.vo.ButlerSkillVO;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,18 +31,21 @@ public class ButlerSkillAdminController {
     private final ButlerSkillService butlerSkillService;
 
     @Operation(summary = "管家技能分页列表")
+    @SaCheckPermission("butler:skill:list")
     @GetMapping("/page")
     public R<PageResult<ButlerSkillVO>> page(ButlerSkillQueryDTO query) {
         return R.ok(butlerSkillService.page(query));
     }
 
     @Operation(summary = "管家技能列表")
+    @SaCheckPermission("butler:skill:list")
     @GetMapping("/list")
     public R<List<ButlerSkillVO>> list(ButlerSkillQueryDTO query) {
         return R.ok(butlerSkillService.list(query));
     }
 
     @Operation(summary = "管家技能详情")
+    @SaCheckPermission("butler:skill:query")
     @GetMapping("/{id}")
     public R<ButlerSkillVO> getDetail(@PathVariable Long id) {
         return R.ok(butlerSkillService.getDetail(id));
@@ -49,6 +53,7 @@ public class ButlerSkillAdminController {
 
     @Operation(summary = "新增管家技能")
     @OperationLog(module = "管家技能", action = "新增")
+    @SaCheckPermission("butler:skill:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ButlerSkillCreateDTO dto) {
         return R.ok(butlerSkillService.create(dto));
@@ -56,6 +61,7 @@ public class ButlerSkillAdminController {
 
     @Operation(summary = "修改管家技能")
     @OperationLog(module = "管家技能", action = "修改")
+    @SaCheckPermission("butler:skill:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id, @RequestBody ButlerSkillUpdateDTO dto) {
         butlerSkillService.update(id, dto);
@@ -64,6 +70,7 @@ public class ButlerSkillAdminController {
 
     @Operation(summary = "删除管家技能")
     @OperationLog(module = "管家技能", action = "删除")
+    @SaCheckPermission("butler:skill:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         butlerSkillService.delete(id);

@@ -1,5 +1,6 @@
 package com.dayan.service.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.service.dto.ArrangeConfirmDTO;
@@ -31,30 +32,35 @@ public class ServiceEquityArrangeAdminController {
     private final ServiceEquityArrangeService serviceEquityArrangeService;
 
     @Operation(summary = "安排分页列表")
+    @SaCheckPermission("service:equity-arrange:list")
     @GetMapping("/page")
     public R<PageResult<ServiceEquityArrangeVO>> page(ServiceEquityArrangeQueryDTO query) {
         return R.ok(serviceEquityArrangeService.page(query));
     }
 
     @Operation(summary = "会话下安排列表")
+    @SaCheckPermission("service:equity-arrange:list")
     @GetMapping("/list")
     public R<List<ServiceEquityArrangeVO>> list(@RequestParam String sessionCode) {
         return R.ok(serviceEquityArrangeService.listBySession(sessionCode));
     }
 
     @Operation(summary = "安排详情")
+    @SaCheckPermission("service:equity-arrange:query")
     @GetMapping("/{id}")
     public R<ServiceEquityArrangeVO> getDetail(@PathVariable Long id) {
         return R.ok(serviceEquityArrangeService.getDetail(id));
     }
 
     @Operation(summary = "新增安排")
+    @SaCheckPermission("service:equity-arrange:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceEquityArrangeCreateDTO dto) {
         return R.ok(serviceEquityArrangeService.create(dto));
     }
 
     @Operation(summary = "修改安排")
+    @SaCheckPermission("service:equity-arrange:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ServiceEquityArrangeUpdateDTO dto) {
@@ -63,6 +69,7 @@ public class ServiceEquityArrangeAdminController {
     }
 
     @Operation(summary = "确认安排（isConfirmed 置 1，写 confirmTime）")
+    @SaCheckPermission("service:equity-arrange:confirm")
     @PostMapping("/confirm")
     public R<Void> confirm(@RequestBody @Valid ArrangeConfirmDTO dto) {
         serviceEquityArrangeService.confirm(dto);
@@ -70,6 +77,7 @@ public class ServiceEquityArrangeAdminController {
     }
 
     @Operation(summary = "删除安排")
+    @SaCheckPermission("service:equity-arrange:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         serviceEquityArrangeService.delete(id);

@@ -7,6 +7,7 @@ import com.dayan.park.dto.ParkRoomTypeQueryDTO;
 import com.dayan.park.dto.ParkRoomTypeUpdateDTO;
 import com.dayan.park.service.ParkRoomTypeService;
 import com.dayan.park.vo.ParkRoomTypeVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,30 +30,35 @@ public class ParkRoomTypeAdminController {
     private final ParkRoomTypeService parkRoomTypeService;
 
     @Operation(summary = "房型分页列表")
+    @SaCheckPermission("park:room-type:list")
     @GetMapping("/page")
     public R<PageResult<ParkRoomTypeVO>> page(ParkRoomTypeQueryDTO query) {
         return R.ok(parkRoomTypeService.page(query));
     }
 
     @Operation(summary = "房型列表（按机构）")
+    @SaCheckPermission("park:room-type:list")
     @GetMapping("/list")
     public R<List<ParkRoomTypeVO>> list(@RequestParam String parkCode) {
         return R.ok(parkRoomTypeService.listByPark(parkCode));
     }
 
     @Operation(summary = "房型详情")
+    @SaCheckPermission("park:room-type:query")
     @GetMapping("/{id}")
     public R<ParkRoomTypeVO> getDetail(@PathVariable Long id) {
         return R.ok(parkRoomTypeService.getDetail(id));
     }
 
     @Operation(summary = "新增房型")
+    @SaCheckPermission("park:room-type:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ParkRoomTypeCreateDTO dto) {
         return R.ok(parkRoomTypeService.create(dto));
     }
 
     @Operation(summary = "修改房型")
+    @SaCheckPermission("park:room-type:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ParkRoomTypeUpdateDTO dto) {
@@ -61,6 +67,7 @@ public class ParkRoomTypeAdminController {
     }
 
     @Operation(summary = "删除房型")
+    @SaCheckPermission("park:room-type:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         parkRoomTypeService.delete(id);

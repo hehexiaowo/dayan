@@ -1,5 +1,6 @@
 package com.dayan.service.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.service.dto.ServiceEquityFollowupCreateDTO;
@@ -30,30 +31,35 @@ public class ServiceEquityFollowupAdminController {
     private final ServiceEquityFollowupService serviceEquityFollowupService;
 
     @Operation(summary = "回访分页列表")
+    @SaCheckPermission("service:equity-followup:list")
     @GetMapping("/page")
     public R<PageResult<ServiceEquityFollowupVO>> page(ServiceEquityFollowupQueryDTO query) {
         return R.ok(serviceEquityFollowupService.page(query));
     }
 
     @Operation(summary = "会话下回访列表")
+    @SaCheckPermission("service:equity-followup:list")
     @GetMapping("/list")
     public R<List<ServiceEquityFollowupVO>> list(@RequestParam String sessionCode) {
         return R.ok(serviceEquityFollowupService.listBySession(sessionCode));
     }
 
     @Operation(summary = "回访详情")
+    @SaCheckPermission("service:equity-followup:query")
     @GetMapping("/{id}")
     public R<ServiceEquityFollowupVO> getDetail(@PathVariable Long id) {
         return R.ok(serviceEquityFollowupService.getDetail(id));
     }
 
     @Operation(summary = "新增回访")
+    @SaCheckPermission("service:equity-followup:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceEquityFollowupCreateDTO dto) {
         return R.ok(serviceEquityFollowupService.create(dto));
     }
 
     @Operation(summary = "修改回访")
+    @SaCheckPermission("service:equity-followup:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ServiceEquityFollowupUpdateDTO dto) {
@@ -62,6 +68,7 @@ public class ServiceEquityFollowupAdminController {
     }
 
     @Operation(summary = "删除回访")
+    @SaCheckPermission("service:equity-followup:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         serviceEquityFollowupService.delete(id);

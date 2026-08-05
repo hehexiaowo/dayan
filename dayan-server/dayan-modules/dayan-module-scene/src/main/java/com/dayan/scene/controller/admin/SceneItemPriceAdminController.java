@@ -8,6 +8,7 @@ import com.dayan.scene.dto.SceneItemPriceQueryDTO;
 import com.dayan.scene.dto.SceneItemPriceUpdateDTO;
 import com.dayan.scene.service.SceneItemPriceService;
 import com.dayan.scene.vo.SceneItemPriceVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,18 +31,21 @@ public class SceneItemPriceAdminController {
     private final SceneItemPriceService sceneItemPriceService;
 
     @Operation(summary = "场景项目定价分页列表")
+    @SaCheckPermission("scene:item-price:list")
     @GetMapping("/page")
     public R<PageResult<SceneItemPriceVO>> page(SceneItemPriceQueryDTO query) {
         return R.ok(sceneItemPriceService.page(query));
     }
 
     @Operation(summary = "场景项目定价列表")
+    @SaCheckPermission("scene:item-price:list")
     @GetMapping("/list")
     public R<List<SceneItemPriceVO>> list(SceneItemPriceQueryDTO query) {
         return R.ok(sceneItemPriceService.list(query));
     }
 
     @Operation(summary = "场景项目定价详情")
+    @SaCheckPermission("scene:item-price:query")
     @GetMapping("/{id}")
     public R<SceneItemPriceVO> getDetail(@PathVariable Long id) {
         return R.ok(sceneItemPriceService.getDetail(id));
@@ -49,6 +53,7 @@ public class SceneItemPriceAdminController {
 
     @Operation(summary = "新增场景项目定价")
     @OperationLog(module = "场景项目定价", action = "新增")
+    @SaCheckPermission("scene:item-price:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid SceneItemPriceCreateDTO dto) {
         return R.ok(sceneItemPriceService.create(dto));
@@ -56,6 +61,7 @@ public class SceneItemPriceAdminController {
 
     @Operation(summary = "修改场景项目定价")
     @OperationLog(module = "场景项目定价", action = "修改")
+    @SaCheckPermission("scene:item-price:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody @Valid SceneItemPriceUpdateDTO dto) {
@@ -65,6 +71,7 @@ public class SceneItemPriceAdminController {
 
     @Operation(summary = "删除场景项目定价")
     @OperationLog(module = "场景项目定价", action = "删除")
+    @SaCheckPermission("scene:item-price:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         sceneItemPriceService.delete(id);

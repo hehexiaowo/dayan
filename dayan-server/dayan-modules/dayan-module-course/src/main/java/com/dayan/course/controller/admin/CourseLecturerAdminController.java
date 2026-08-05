@@ -1,5 +1,6 @@
 package com.dayan.course.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
@@ -30,24 +31,28 @@ public class CourseLecturerAdminController {
     private final CourseLecturerService courseLecturerService;
 
     @Operation(summary = "课程讲师分页列表")
+    @SaCheckPermission("course:lecturer:list")
     @GetMapping("/page")
     public R<PageResult<CourseLecturerVO>> page(CourseLecturerQueryDTO query) {
         return R.ok(courseLecturerService.page(query));
     }
 
     @Operation(summary = "课程讲师列表")
+    @SaCheckPermission("course:lecturer:list")
     @GetMapping("/list")
     public R<List<CourseLecturerVO>> list(CourseLecturerQueryDTO query) {
         return R.ok(courseLecturerService.list(query));
     }
 
     @Operation(summary = "课程讲师详情")
+    @SaCheckPermission("course:lecturer:query")
     @GetMapping("/{id}")
     public R<CourseLecturerVO> getDetail(@PathVariable Long id) {
         return R.ok(courseLecturerService.getDetail(id));
     }
 
     @Operation(summary = "新增课程讲师")
+    @SaCheckPermission("course:lecturer:create")
     @OperationLog(module = "课程讲师", action = "新增")
     @PostMapping
     public R<String> create(@RequestBody @Valid CourseLecturerCreateDTO dto) {
@@ -55,6 +60,7 @@ public class CourseLecturerAdminController {
     }
 
     @Operation(summary = "修改课程讲师")
+    @SaCheckPermission("course:lecturer:update")
     @OperationLog(module = "课程讲师", action = "修改")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
@@ -64,6 +70,7 @@ public class CourseLecturerAdminController {
     }
 
     @Operation(summary = "删除课程讲师")
+    @SaCheckPermission("course:lecturer:delete")
     @OperationLog(module = "课程讲师", action = "删除")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

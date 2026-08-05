@@ -5,6 +5,7 @@ import com.dayan.common.core.resp.R;
 import com.dayan.equity.dto.EquityChangeHolderQueryDTO;
 import com.dayan.equity.service.EquityChangeHolderService;
 import com.dayan.equity.vo.EquityChangeHolderVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -26,18 +27,21 @@ public class EquityChangeHolderAdminController {
     private final EquityChangeHolderService equityChangeHolderService;
 
     @Operation(summary = "更换记录分页列表")
+    @SaCheckPermission("equity:change-holder:list")
     @GetMapping("/page")
     public R<PageResult<EquityChangeHolderVO>> page(EquityChangeHolderQueryDTO query) {
         return R.ok(equityChangeHolderService.page(query));
     }
 
     @Operation(summary = "按权益编码列出更换历史")
+    @SaCheckPermission("equity:change-holder:list")
     @GetMapping("/list-by-equity/{equityCode}")
     public R<List<EquityChangeHolderVO>> listByEquity(@PathVariable String equityCode) {
         return R.ok(equityChangeHolderService.listByEquity(equityCode));
     }
 
     @Operation(summary = "更换记录详情")
+    @SaCheckPermission("equity:change-holder:query")
     @GetMapping("/{id}")
     public R<EquityChangeHolderVO> getDetail(@PathVariable Long id) {
         return R.ok(equityChangeHolderService.getDetail(id));

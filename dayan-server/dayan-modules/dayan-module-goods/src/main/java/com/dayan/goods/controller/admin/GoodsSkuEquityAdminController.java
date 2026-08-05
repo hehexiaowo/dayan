@@ -7,6 +7,7 @@ import com.dayan.goods.dto.GoodsSkuEquityQueryDTO;
 import com.dayan.goods.dto.GoodsSkuEquityUpdateDTO;
 import com.dayan.goods.service.GoodsSkuEquityService;
 import com.dayan.goods.vo.GoodsSkuEquityVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,30 +30,35 @@ public class GoodsSkuEquityAdminController {
     private final GoodsSkuEquityService goodsSkuEquityService;
 
     @Operation(summary = "权益 SKU 分页列表")
+    @SaCheckPermission("goods:sku-equity:list")
     @GetMapping("/page")
     public R<PageResult<GoodsSkuEquityVO>> page(GoodsSkuEquityQueryDTO query) {
         return R.ok(goodsSkuEquityService.page(query));
     }
 
     @Operation(summary = "权益 SKU 列表（按商品）")
+    @SaCheckPermission("goods:sku-equity:list")
     @GetMapping("/list")
     public R<List<GoodsSkuEquityVO>> list(@RequestParam String goodsCode) {
         return R.ok(goodsSkuEquityService.listByGoods(goodsCode));
     }
 
     @Operation(summary = "权益 SKU 详情")
+    @SaCheckPermission("goods:sku-equity:query")
     @GetMapping("/{id}")
     public R<GoodsSkuEquityVO> getDetail(@PathVariable Long id) {
         return R.ok(goodsSkuEquityService.getDetail(id));
     }
 
     @Operation(summary = "新增权益 SKU")
+    @SaCheckPermission("goods:sku-equity:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid GoodsSkuEquityCreateDTO dto) {
         return R.ok(goodsSkuEquityService.create(dto));
     }
 
     @Operation(summary = "修改权益 SKU")
+    @SaCheckPermission("goods:sku-equity:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody GoodsSkuEquityUpdateDTO dto) {
@@ -61,6 +67,7 @@ public class GoodsSkuEquityAdminController {
     }
 
     @Operation(summary = "删除权益 SKU")
+    @SaCheckPermission("goods:sku-equity:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         goodsSkuEquityService.delete(id);

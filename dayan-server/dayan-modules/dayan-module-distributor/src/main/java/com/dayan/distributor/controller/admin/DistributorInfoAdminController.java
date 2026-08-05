@@ -1,5 +1,6 @@
 package com.dayan.distributor.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
@@ -33,24 +34,28 @@ public class DistributorInfoAdminController {
     private final DistributorInfoService distributorInfoService;
 
     @Operation(summary = "分销商分页列表")
+    @SaCheckPermission("distributor:info:list")
     @GetMapping("/page")
     public R<PageResult<DistributorInfoVO>> page(DistributorInfoQueryDTO query) {
         return R.ok(distributorInfoService.page(query));
     }
 
     @Operation(summary = "分销商全量列表")
+    @SaCheckPermission("distributor:info:list")
     @GetMapping("/list")
     public R<List<DistributorInfoVO>> list(DistributorInfoQueryDTO query) {
         return R.ok(distributorInfoService.list(query));
     }
 
     @Operation(summary = "分销商详情")
+    @SaCheckPermission("distributor:info:query")
     @GetMapping("/{distributorCode}")
     public R<DistributorInfoVO> getDetail(@PathVariable String distributorCode) {
         return R.ok(distributorInfoService.getDetail(distributorCode));
     }
 
     @Operation(summary = "新增分销商")
+    @SaCheckPermission("distributor:info:create")
     @OperationLog(module = "分销商信息管理", action = "新增")
     @PostMapping
     public R<String> create(@RequestBody @Valid DistributorInfoCreateDTO dto) {
@@ -58,6 +63,7 @@ public class DistributorInfoAdminController {
     }
 
     @Operation(summary = "修改分销商")
+    @SaCheckPermission("distributor:info:update")
     @OperationLog(module = "分销商信息管理", action = "修改")
     @PutMapping
     public R<Void> update(@RequestParam String distributorCode,
@@ -67,6 +73,7 @@ public class DistributorInfoAdminController {
     }
 
     @Operation(summary = "删除分销商")
+    @SaCheckPermission("distributor:info:delete")
     @OperationLog(module = "分销商信息管理", action = "删除")
     @DeleteMapping("/{distributorCode}")
     public R<Void> delete(@PathVariable String distributorCode) {

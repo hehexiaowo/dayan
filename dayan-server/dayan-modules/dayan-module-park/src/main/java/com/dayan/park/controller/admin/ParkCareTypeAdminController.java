@@ -7,6 +7,7 @@ import com.dayan.park.dto.ParkCareTypeQueryDTO;
 import com.dayan.park.dto.ParkCareTypeUpdateDTO;
 import com.dayan.park.service.ParkCareTypeService;
 import com.dayan.park.vo.ParkCareTypeVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,30 +30,35 @@ public class ParkCareTypeAdminController {
     private final ParkCareTypeService parkCareTypeService;
 
     @Operation(summary = "照护类型分页列表")
+    @SaCheckPermission("park:care-type:list")
     @GetMapping("/page")
     public R<PageResult<ParkCareTypeVO>> page(ParkCareTypeQueryDTO query) {
         return R.ok(parkCareTypeService.page(query));
     }
 
     @Operation(summary = "照护类型列表（按机构）")
+    @SaCheckPermission("park:care-type:list")
     @GetMapping("/list")
     public R<List<ParkCareTypeVO>> list(@RequestParam String parkCode) {
         return R.ok(parkCareTypeService.listByPark(parkCode));
     }
 
     @Operation(summary = "照护类型详情")
+    @SaCheckPermission("park:care-type:query")
     @GetMapping("/{id}")
     public R<ParkCareTypeVO> getDetail(@PathVariable Long id) {
         return R.ok(parkCareTypeService.getDetail(id));
     }
 
     @Operation(summary = "新增照护类型")
+    @SaCheckPermission("park:care-type:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ParkCareTypeCreateDTO dto) {
         return R.ok(parkCareTypeService.create(dto));
     }
 
     @Operation(summary = "修改照护类型")
+    @SaCheckPermission("park:care-type:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ParkCareTypeUpdateDTO dto) {
@@ -61,6 +67,7 @@ public class ParkCareTypeAdminController {
     }
 
     @Operation(summary = "删除照护类型")
+    @SaCheckPermission("park:care-type:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         parkCareTypeService.delete(id);

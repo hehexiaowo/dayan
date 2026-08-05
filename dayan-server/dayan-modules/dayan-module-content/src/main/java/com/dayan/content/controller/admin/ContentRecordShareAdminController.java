@@ -1,5 +1,6 @@
 package com.dayan.content.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
@@ -29,18 +30,21 @@ public class ContentRecordShareAdminController {
     private final ContentRecordShareService contentRecordShareService;
 
     @Operation(summary = "分享记录分页列表（按 contentCode）")
+    @SaCheckPermission("content:record-share:list")
     @GetMapping("/page")
     public R<PageResult<ContentRecordShareVO>> page(ContentRecordShareQueryDTO query) {
         return R.ok(contentRecordShareService.page(query));
     }
 
     @Operation(summary = "分享记录详情")
+    @SaCheckPermission("content:record-share:query")
     @GetMapping("/{id}")
     public R<ContentRecordShareVO> getDetail(@PathVariable Long id) {
         return R.ok(contentRecordShareService.getDetail(id));
     }
 
     @Operation(summary = "记录分享事件（前端上报）")
+    @SaCheckPermission("content:record-share:create")
     @OperationLog(module = "分享记录", action = "新增")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ContentRecordShareCreateDTO dto) {
@@ -48,6 +52,7 @@ public class ContentRecordShareAdminController {
     }
 
     @Operation(summary = "回填分享点击/转化数据")
+    @SaCheckPermission("content:record-share:update")
     @OperationLog(module = "分享记录", action = "修改")
     @PutMapping
     public R<Void> update(@RequestParam Long id,
@@ -57,6 +62,7 @@ public class ContentRecordShareAdminController {
     }
 
     @Operation(summary = "删除分享记录")
+    @SaCheckPermission("content:record-share:delete")
     @OperationLog(module = "分享记录", action = "删除")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

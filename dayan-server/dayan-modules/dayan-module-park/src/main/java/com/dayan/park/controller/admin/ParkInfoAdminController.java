@@ -7,6 +7,7 @@ import com.dayan.park.dto.ParkInfoQueryDTO;
 import com.dayan.park.dto.ParkInfoUpdateDTO;
 import com.dayan.park.service.ParkInfoService;
 import com.dayan.park.vo.ParkInfoVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,30 +34,35 @@ public class ParkInfoAdminController {
     private final ParkInfoService parkInfoService;
 
     @Operation(summary = "机构分页列表")
+    @SaCheckPermission("park:info:list")
     @GetMapping("/page")
     public R<PageResult<ParkInfoVO>> page(ParkInfoQueryDTO query) {
         return R.ok(parkInfoService.page(query));
     }
 
     @Operation(summary = "机构列表（全量）")
+    @SaCheckPermission("park:info:list")
     @GetMapping("/list")
     public R<List<ParkInfoVO>> list(ParkInfoQueryDTO query) {
         return R.ok(parkInfoService.list(query));
     }
 
     @Operation(summary = "机构详情")
+    @SaCheckPermission("park:info:query")
     @GetMapping("/{parkCode}")
     public R<ParkInfoVO> getDetail(@PathVariable String parkCode) {
         return R.ok(parkInfoService.getDetail(parkCode));
     }
 
     @Operation(summary = "新增机构")
+    @SaCheckPermission("park:info:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ParkInfoCreateDTO dto) {
         return R.ok(parkInfoService.create(dto));
     }
 
     @Operation(summary = "修改机构")
+    @SaCheckPermission("park:info:update")
     @PutMapping("/{parkCode}")
     public R<Void> update(@PathVariable String parkCode,
                           @RequestBody ParkInfoUpdateDTO dto) {
@@ -65,6 +71,7 @@ public class ParkInfoAdminController {
     }
 
     @Operation(summary = "删除机构")
+    @SaCheckPermission("park:info:delete")
     @DeleteMapping("/{parkCode}")
     public R<Void> delete(@PathVariable String parkCode) {
         parkInfoService.delete(parkCode);
@@ -72,6 +79,7 @@ public class ParkInfoAdminController {
     }
 
     @Operation(summary = "机构状态流转（approve/offline/online/suspend/resume）")
+    @SaCheckPermission("park:info:transition")
     @PostMapping("/transition")
     public R<Integer> transition(@RequestParam @NotBlank String parkCode,
                                  @RequestParam @NotBlank String event) {

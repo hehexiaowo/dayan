@@ -7,6 +7,7 @@ import com.dayan.butler.vo.ButlerClientRelVO;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,18 +30,21 @@ public class ButlerClientRelAdminController {
     private final ButlerClientRelService butlerClientRelService;
 
     @Operation(summary = "管家-客户绑定分页列表")
+    @SaCheckPermission("butler:client-rel:list")
     @GetMapping("/page")
     public R<PageResult<ButlerClientRelVO>> page(ButlerClientRelQueryDTO query) {
         return R.ok(butlerClientRelService.page(query));
     }
 
     @Operation(summary = "管家-客户绑定列表")
+    @SaCheckPermission("butler:client-rel:list")
     @GetMapping("/list")
     public R<List<ButlerClientRelVO>> list(ButlerClientRelQueryDTO query) {
         return R.ok(butlerClientRelService.list(query));
     }
 
     @Operation(summary = "管家-客户绑定详情")
+    @SaCheckPermission("butler:client-rel:query")
     @GetMapping("/{id}")
     public R<ButlerClientRelVO> getDetail(@PathVariable Long id) {
         return R.ok(butlerClientRelService.getDetail(id));
@@ -48,6 +52,7 @@ public class ButlerClientRelAdminController {
 
     @Operation(summary = "绑定管家与客户（一客户一管家约束）")
     @OperationLog(module = "管家-客户绑定", action = "绑定")
+    @SaCheckPermission("butler:client-rel:bind")
     @PostMapping
     public R<Long> bind(@RequestBody @Valid ButlerClientRelBindDTO dto) {
         return R.ok(butlerClientRelService.bind(dto));
@@ -55,6 +60,7 @@ public class ButlerClientRelAdminController {
 
     @Operation(summary = "解绑管家-客户（status 置 0）")
     @OperationLog(module = "管家-客户绑定", action = "解绑")
+    @SaCheckPermission("butler:client-rel:unbind")
     @PutMapping("/{id}/unbind")
     public R<Void> unbind(@PathVariable Long id) {
         butlerClientRelService.unbind(id);
@@ -63,6 +69,7 @@ public class ButlerClientRelAdminController {
 
     @Operation(summary = "删除管家-客户绑定")
     @OperationLog(module = "管家-客户绑定", action = "删除")
+    @SaCheckPermission("butler:client-rel:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         butlerClientRelService.delete(id);

@@ -7,6 +7,7 @@ import com.dayan.park.dto.ParkAdviserQueryDTO;
 import com.dayan.park.dto.ParkAdviserUpdateDTO;
 import com.dayan.park.service.ParkAdviserService;
 import com.dayan.park.vo.ParkAdviserVO;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,30 +30,35 @@ public class ParkAdviserAdminController {
     private final ParkAdviserService parkAdviserService;
 
     @Operation(summary = "机构顾问分页列表")
+    @SaCheckPermission("park:adviser:list")
     @GetMapping("/page")
     public R<PageResult<ParkAdviserVO>> page(ParkAdviserQueryDTO query) {
         return R.ok(parkAdviserService.page(query));
     }
 
     @Operation(summary = "机构顾问列表（按机构）")
+    @SaCheckPermission("park:adviser:list")
     @GetMapping("/list")
     public R<List<ParkAdviserVO>> list(@RequestParam String parkCode) {
         return R.ok(parkAdviserService.listByPark(parkCode));
     }
 
     @Operation(summary = "机构顾问详情")
+    @SaCheckPermission("park:adviser:query")
     @GetMapping("/{id}")
     public R<ParkAdviserVO> getDetail(@PathVariable Long id) {
         return R.ok(parkAdviserService.getDetail(id));
     }
 
     @Operation(summary = "新增机构顾问")
+    @SaCheckPermission("park:adviser:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ParkAdviserCreateDTO dto) {
         return R.ok(parkAdviserService.create(dto));
     }
 
     @Operation(summary = "修改机构顾问")
+    @SaCheckPermission("park:adviser:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ParkAdviserUpdateDTO dto) {
@@ -61,6 +67,7 @@ public class ParkAdviserAdminController {
     }
 
     @Operation(summary = "删除机构顾问")
+    @SaCheckPermission("park:adviser:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         parkAdviserService.delete(id);

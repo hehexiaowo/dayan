@@ -1,5 +1,6 @@
 package com.dayan.service.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.service.dto.ServiceEvaluationCreateDTO;
@@ -30,30 +31,35 @@ public class ServiceEvaluationAdminController {
     private final ServiceEvaluationService serviceEvaluationService;
 
     @Operation(summary = "评价分页列表")
+    @SaCheckPermission("service:evaluation:list")
     @GetMapping("/page")
     public R<PageResult<ServiceEvaluationVO>> page(ServiceEvaluationQueryDTO query) {
         return R.ok(serviceEvaluationService.page(query));
     }
 
     @Operation(summary = "评价列表（支持 sessionCode/butlerCode/parkCode 等过滤，一会话一评价至多 1 条）")
+    @SaCheckPermission("service:evaluation:list")
     @GetMapping("/list")
     public R<List<ServiceEvaluationVO>> list(ServiceEvaluationQueryDTO query) {
         return R.ok(serviceEvaluationService.list(query));
     }
 
     @Operation(summary = "评价详情")
+    @SaCheckPermission("service:evaluation:query")
     @GetMapping("/{id}")
     public R<ServiceEvaluationVO> getDetail(@PathVariable Long id) {
         return R.ok(serviceEvaluationService.getDetail(id));
     }
 
     @Operation(summary = "新增评价（一会话一评价，重复将抛业务异常）")
+    @SaCheckPermission("service:evaluation:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ServiceEvaluationCreateDTO dto) {
         return R.ok(serviceEvaluationService.create(dto));
     }
 
     @Operation(summary = "修改评价（含回复）")
+    @SaCheckPermission("service:evaluation:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
                           @RequestBody ServiceEvaluationUpdateDTO dto) {
@@ -62,6 +68,7 @@ public class ServiceEvaluationAdminController {
     }
 
     @Operation(summary = "删除评价")
+    @SaCheckPermission("service:evaluation:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         serviceEvaluationService.delete(id);

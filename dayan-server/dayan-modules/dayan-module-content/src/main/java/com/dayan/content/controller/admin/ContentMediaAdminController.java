@@ -1,5 +1,6 @@
 package com.dayan.content.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
@@ -31,24 +32,28 @@ public class ContentMediaAdminController {
     private final ContentMediaService contentMediaService;
 
     @Operation(summary = "多媒体资源分页列表（按 contentCode）")
+    @SaCheckPermission("content:media:list")
     @GetMapping("/page")
     public R<PageResult<ContentMediaVO>> page(ContentMediaQueryDTO query) {
         return R.ok(contentMediaService.page(query));
     }
 
     @Operation(summary = "按 contentCode 查询资源列表")
+    @SaCheckPermission("content:media:list")
     @GetMapping("/list")
     public R<List<ContentMediaVO>> list(@RequestParam String contentCode) {
         return R.ok(contentMediaService.listByContentCode(contentCode));
     }
 
     @Operation(summary = "多媒体资源详情")
+    @SaCheckPermission("content:media:query")
     @GetMapping("/{id}")
     public R<ContentMediaVO> getDetail(@PathVariable Long id) {
         return R.ok(contentMediaService.getDetail(id));
     }
 
     @Operation(summary = "新增多媒体资源")
+    @SaCheckPermission("content:media:create")
     @OperationLog(module = "内容多媒体", action = "新增")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ContentMediaCreateDTO dto) {
@@ -56,6 +61,7 @@ public class ContentMediaAdminController {
     }
 
     @Operation(summary = "修改多媒体资源")
+    @SaCheckPermission("content:media:update")
     @OperationLog(module = "内容多媒体", action = "修改")
     @PutMapping
     public R<Void> update(@RequestParam Long id,
@@ -65,6 +71,7 @@ public class ContentMediaAdminController {
     }
 
     @Operation(summary = "删除多媒体资源")
+    @SaCheckPermission("content:media:delete")
     @OperationLog(module = "内容多媒体", action = "删除")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
@@ -73,6 +80,7 @@ public class ContentMediaAdminController {
     }
 
     @Operation(summary = "按 contentCode 批量删除多媒体资源")
+    @SaCheckPermission("content:media:delete")
     @OperationLog(module = "内容多媒体", action = "批量删除")
     @DeleteMapping("/by-code")
     public R<Void> deleteByContentCode(@RequestParam String contentCode) {
