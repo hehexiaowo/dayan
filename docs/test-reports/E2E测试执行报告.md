@@ -294,13 +294,82 @@
 
 ---
 
+## TC-E2E-002：代理人个人采购权益流程 ✅ PASS
+
+| 项目 | 内容 |
+|------|------|
+| **用例编号** | TC-E2E-002 |
+| **测试目标** | 验证代理人通过商城个人采购权益的流程 |
+| **执行端** | Channel（`/channel-api`，端口 8081，账号 `ch001/admin123`）+ Admin（出库寄送） |
+| **执行时间** | 2026-08-05 23:40 ~ 23:42 |
+| **最终结论** | ✅ **PASS**（4 步全链路打通，Channel 端下单→支付→Admin 端出库跨端联调成功） |
+
+### 执行结果汇总
+
+| Step | 环节 | 关键产物 | 状态机 | 结果 |
+|------|------|---------|--------|------|
+| 1 | 浏览商城 | Channel 商品列表（GD00001 + GD00002，白名单过滤） | — | ✅ |
+| 2 | 下单采购 | 订单 `OD202608050014`（source=2 / agent=AG91925238 / 10 张 / 9990 元） | order=0 | ✅ |
+| 3 | 支付 | payment `PAY0000000004`（微信支付）→ 自动回调订单 | order **0→1** | ✅（flow 未自动-G1） |
+| 4 | 出库寄送 | batch `BC00000005` + depot 10 条（EQ201~EQ210）→ 出库给代理人 → 订单发放 | depot **0→1×10** / order **1→3** | ✅ |
+
+### 订单全生命周期（system_order_status_log）
+
+| id | from→to | operator | 说明 |
+|----|---------|----------|------|
+| 21 | 0→0 | CA09657018 (channel) | Channel 端创建（代理人个人采购） |
+| 22 | 0→1 | system | 支付回调（微信支付到账） |
+| 23 | 1→3 | system | 全部发放（Admin 端 deliver） |
+
+### Step 详情
+
+#### Step 1：浏览商城 ✅
+
+- **接口**：`GET /channel-api/goods-infos`
+- **验证**：CH00001 白名单过滤后显示 2 个可购商品（GD00001 参访体验 99 元 + GD00002 居家养老权益卡 999 元）✅
+
+#### Step 2：下单采购 ✅
+
+- **接口**：`POST /channel-api/order-equities`
+- **入参**：orderSource=2 / agentCode=AG91925238 / goodsCode=GD00002 / quantity=10
+- **安全设计**：channelCode 由 ContextHolder 强制注入（防越权），价格由服务端从白名单权威解析（防篡改）
+- **产物**：订单 `OD202608050014` / total=9990（999×10）/ order_status=0
+
+#### Step 3：支付 ✅
+
+- **接口 A**：`POST /channel-api/finance-payments`（创建支付单 PAY0000000004）
+- **接口 B**：`POST /channel-api/finance-payments/{code}/mark-success`（标记成功）
+- **跨端联动**：Channel 端标记成功 → 自动触发订单 payCallback → order 0→1 ✅
+- **观察**：finance_flow 未自动生成（G-1 缺口，同 TC-E2E-001）
+
+#### Step 4：出库寄送 ✅（Admin 端）
+
+- **接口 A**：`POST /admin-api/equity/batch`（创建批次 BC00000005）
+- **接口 B**：`POST /admin-api/equity/depot/stock-in`（入库 10 张 EQ201~EQ210）
+- **接口 C**：`POST /admin-api/equity/depot/outbound`（出库给代理人 AG91925238 / logistics=SF-E002-001）
+- **接口 D**：`POST /admin-api/order/equity/deliver`（订单发放）
+- **验证**：depot 全部 equity_status=1，outbound_agent_code=AG91925238 ✅；order_status 1→3 ✅
+
+---
+
+## TC-E2E-002 数据清单（回归排查用）
+
+| 表 | 关键记录 |
+|----|---------|
+| order_equity | `OD202608050014` / status=3 / source=2 / 9990 元 / CH00001 / AG91925238 / GD00002 / qty=10 |
+| finance_payment | `PAY0000000004` / pay_status=1 / 9990 / pay_type=2 微信 |
+| equity_batch | `BC00000005` / produced=10 / outbound=10 / remain=0 |
+| equity_depot | `EQ000000000201`~`EQ000000000210` 共 10 条 / status=1 / outbound_agent=AG91925238 |
+| system_order_status_log | id 21/22/23（0→0 / 0→1 / 1→3） |
+
+---
+
 ## 后续待执行用例
 
 | 用例 | 主题 | 状态 |
 |------|------|------|
-| TC-E2E-002 | 代理人个人采购权益流程（Channel 端） | 待执行（Channel 端业务接口完备性待探查） |
-| TC-E2E-004 | 场景活动全生命周期（Agent 端） | 待执行（Agent 端业务接口完备性待探查） |
-| TC-E2E-005 | 供应商入驻→机构上线（Channel 端） | 待执行 |
+| TC-E2E-004 | 场景活动全生命周期（Agent 端） | **阻塞**：Agent 端业务接口全部未实现（仅 AgentAuthController 登录），需先补齐 5 个模块的 agent controller |
+| TC-E2E-005 | 供应商入驻→机构上线（Channel 端） | **阻塞**：supplier/park/organ 三个模块的 channel controller 全部未实现 |
 
 ---
 
@@ -311,3 +380,4 @@
 | 2026-08-05 | v1.0 | TC-E2E-001 首次执行完成（PASS）；记录 3 处跨域解耦缺口 G-1/G-2/G-3 |
 | 2026-08-05 | v1.1 | TC-E2E-003 执行完成（PASS）；记录 3 处跨域解耦缺口 G-4/G-5/G-6；发现 Client 端业务接口未实现 |
 | 2026-08-05 | v1.2 | TC-E2E-006 执行完成（PASS）；记录 1 处跨域解耦缺口 G-7。三条核心 E2E 全部通过 |
+| 2026-08-05 | v1.3 | TC-E2E-002 执行完成（PASS）；Channel 端核心链路打通。四条 E2E 全部通过 |
