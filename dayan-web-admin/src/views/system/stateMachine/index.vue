@@ -198,7 +198,7 @@ onMounted(() => {
         :data="tableData"
         border
         stripe
-        empty-text="暂无状态机配置"
+        empty-text="暂无状态规则"
       >
         <el-table-column prop="machineCode" label="状态机编码" min-width="160" show-overflow-tooltip />
         <el-table-column prop="machineName" label="状态机名称" min-width="140" show-overflow-tooltip />

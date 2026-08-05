@@ -5,7 +5,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
  *
  * - /login   登录页（白名单）
  * - /        后台主框架（DefaultLayout 嵌套，需登录）
- *   - /dashboard 工作台（静态注册，始终可用）
+ *   - /dashboard 首页看板（静态注册，始终可用）
  *   - 其余业务路由由 permission 守卫从后端菜单动态 addRoute 挂载（见 stores/permission + router/dynamic）
  * - /:pathMatch(.*)*  404
  *
@@ -29,7 +29,7 @@ const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/dashboard/index.vue'),
-        meta: { title: '工作台', icon: 'Odometer' }
+        meta: { title: '首页看板', icon: 'Odometer' }
       }
     ]
   },

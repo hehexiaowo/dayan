@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 工作台占位页
+// 首页看板占位页
 </script>
 
 <template>
@@ -9,7 +9,7 @@
         <el-icon class="welcome-icon"><Odometer /></el-icon>
         <div class="welcome-text">
           <h2>欢迎使用大雁养老管理后台</h2>
-          <p>工作台占位页 · 后续将展示运营核心指标与待办。</p>
+          <p>首页看板占位页 · 后续将展示运营核心指标与待办。</p>
         </div>
       </div>
     </el-card>
