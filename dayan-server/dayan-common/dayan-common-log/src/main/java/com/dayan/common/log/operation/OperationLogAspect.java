@@ -195,29 +195,15 @@ public class OperationLogAspect {
             for (int i = 0; i < args.length; i++) {
                 if (i > 0) sb.append(",");
                 String name = paramNames != null && i < paramNames.length ? paramNames[i] : "arg" + i;
-                String value = safeToJson(args[i]);
-                if (shouldMask(operationLog, name)) {
-                    value = SensitiveUtil.maskJson(value);
-                }
-                sb.append("\"").append(name).append("\":").append(value);
+                sb.append("\"").append(name).append("\":").append(safeToJson(args[i]));
             }
-            return sb.append("}").toString();
+            sb.append("}");
+            // 字段级深度脱敏：maskFields 匹配的是 JSON 字段名（含嵌套对象内字段），
+            // 因此能正确处理 DTO 包裹下的 password/idCard 等敏感字段。
+            return SensitiveUtil.maskJson(sb.toString(), operationLog.maskFields());
         } catch (Exception e) {
             return "[serialize-failed]";
         }
-    }
-
-    private boolean shouldMask(OperationLog operationLog, String paramName) {
-        String mask = operationLog.maskFields();
-        if (mask == null || mask.isEmpty()) {
-            return false;
-        }
-        for (String f : mask.split(",")) {
-            if (f.trim().equalsIgnoreCase(paramName)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private String safeToJson(Object obj) {

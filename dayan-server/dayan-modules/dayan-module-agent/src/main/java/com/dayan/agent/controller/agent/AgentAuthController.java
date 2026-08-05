@@ -37,7 +37,7 @@ public class AgentAuthController {
     }
 
     @Operation(summary = "登录")
-    @OperationLog(module = "认证", action = "登录", logArgs = false)
+    @OperationLog(module = "认证", action = "登录", maskFields = "password")
     @PostMapping("/login")
     public R<AgentLoginVO> login(@RequestBody @Valid AgentLoginDTO dto) {
         return R.ok(agentAuthService.login(dto));

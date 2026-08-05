@@ -23,8 +23,8 @@ public @interface OperationLog {
     /** 是否记录请求参数（默认 true） */
     boolean logArgs() default true;
 
-    /** 是否记录返回结果（默认 false，敏感接口可关闭） */
-    boolean logResult() default false;
+    /** 是否记录返回结果（默认 true；仅写入类操作记录结果，查询类操作一般不标注此注解，故默认开启安全） */
+    boolean logResult() default true;
 
     /** 参数脱敏字段名（逗号分隔，如 "password,idCard"） */
     String maskFields() default "";

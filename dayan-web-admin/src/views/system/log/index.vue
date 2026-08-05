@@ -250,6 +250,9 @@ onMounted(() => {
         <el-descriptions-item label="请求参数" :span="2">
           <pre class="json-box">{{ prettyJson(detailRow.requestParams) }}</pre>
         </el-descriptions-item>
+        <el-descriptions-item label="响应结果" :span="2">
+          <pre class="json-box">{{ prettyJson(detailRow.responseResult) }}</pre>
+        </el-descriptions-item>
       </el-descriptions>
 
       <template #footer>

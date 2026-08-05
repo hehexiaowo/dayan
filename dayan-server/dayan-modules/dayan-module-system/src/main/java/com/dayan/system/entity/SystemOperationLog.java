@@ -58,6 +58,9 @@ public class SystemOperationLog extends BaseEntity {
     /** 请求参数 */
     private String requestParams;
 
+    /** 响应结果（JSON，超长截断） */
+    private String responseResult;
+
     /** 响应状态码 */
     private Integer responseCode;
 

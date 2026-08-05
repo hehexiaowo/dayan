@@ -53,6 +53,7 @@ public class SystemOperationLogPublisher implements com.dayan.common.log.operati
         entity.setRequestUrl(record.getUri());
         entity.setRequestMethod(record.getHttpMethod());
         entity.setRequestParams(truncate(record.getArgs(), 2000));
+        entity.setResponseResult(truncate(record.getResult(), 4000));
         entity.setResponseCode(record.isSuccess() ? 0 : 1);
         entity.setResultStatus(record.isSuccess() ? 1 : 0);
         entity.setErrorMsg(truncate(record.getErrorMsg(), 500));

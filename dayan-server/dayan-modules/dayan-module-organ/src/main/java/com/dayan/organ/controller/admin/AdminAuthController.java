@@ -25,7 +25,7 @@ public class AdminAuthController {
     private final AdminAuthService adminAuthService;
 
     @Operation(summary = "登录")
-    @OperationLog(module = "认证", action = "登录", logArgs = false)
+    @OperationLog(module = "认证", action = "登录", maskFields = "password")
     @PostMapping("/login")
     public R<AuthLoginVO> login(@RequestBody @Valid AuthLoginDTO dto) {
         return R.ok(adminAuthService.login(dto));

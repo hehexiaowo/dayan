@@ -370,6 +370,7 @@ CREATE TABLE `system_operation_log` (
   `request_url` VARCHAR(500) DEFAULT NULL COMMENT '请求URL',
   `request_method` VARCHAR(10) DEFAULT NULL COMMENT '请求方法',
   `request_params` TEXT DEFAULT NULL COMMENT '请求参数（脱敏后）',
+  `response_result` TEXT DEFAULT NULL COMMENT '响应结果（JSON，超长截断，默认记录）',
   `response_code` INT(11) DEFAULT NULL COMMENT '响应状态码',
   `ip_address` VARCHAR(50) DEFAULT NULL COMMENT '操作IP地址',
   `ip_location` VARCHAR(200) DEFAULT NULL COMMENT 'IP归属地',

@@ -11,6 +11,7 @@
  * - accountType / accountCode / accountName：操作账号类型/编码/姓名
  * - module / action：操作模块 / 操作动作（如 "管家账号" / "新增"）
  * - requestMethod / requestUrl / requestParams：请求方法 / URL / 参数（JSON 字符串，已脱敏）
+ * - responseResult：响应结果（JSON 字符串，超长截断）
  * - resultStatus：结果状态，1=成功 / 0=失败
  * - duration：执行耗时（毫秒）
  * - ipAddress / userAgent / deviceType / os / browser：终端审计信息
@@ -43,6 +44,8 @@ export interface SystemOperationLog {
   requestMethod?: string
   /** 请求参数（JSON 字符串，已脱敏） */
   requestParams?: string
+  /** 响应结果（JSON 字符串，超长截断） */
+  responseResult?: string
   /** 响应状态码（0=成功，1=失败，与 resultStatus 同义但为 Int） */
   responseCode?: number
   /** 操作 IP 地址 */
