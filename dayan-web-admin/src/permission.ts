@@ -43,8 +43,10 @@ router.beforeEach(async (to, _from, next) => {
       }
       const dynamicRoutes = await permissionStore.loadMenus('admin')
       addDynamicRoutes(dynamicRoutes)
-      // 动态路由已注册，重放本次跳转以命中新路由（replace 避免历史记录冗余）
-      next({ ...to, replace: true })
+      // 动态路由已注册，重放本次跳转以命中新路由。
+      // 只传 path（含 query），不 spread 整个 to 对象——后者会携带旧的 matched/params
+      // 等内部字段，导致 router 复用未更新前的匹配结果，深链接刷新仍命中 404。
+      next({ path: to.fullPath, replace: true })
       return
     } catch (e) {
       // 菜单拉取失败（如后端未启动 / token 失效）：清登录态并跳登录

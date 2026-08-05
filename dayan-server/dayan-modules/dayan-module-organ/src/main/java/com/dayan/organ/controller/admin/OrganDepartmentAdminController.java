@@ -25,7 +25,7 @@ public class OrganDepartmentAdminController {
     @Operation(summary = "部门列表（按组织）")
     @SaCheckPermission("organ:dept:list")
     @GetMapping
-    public R<List<OrganDepartment>> list(@RequestParam String organCode) {
+    public R<List<OrganDepartment>> list(@RequestParam(required = false) String organCode) {
         return R.ok(deptService.listByOrgan(organCode));
     }
 

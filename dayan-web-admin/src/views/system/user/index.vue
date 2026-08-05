@@ -18,10 +18,9 @@ import { AccountStatus, ACCOUNT_STATUS_OPTIONS, GENDER_OPTIONS } from '@/types/a
  *
  * - 列表不展示 password / salt / idCard / openId / unionId（后端详情亦不返回）；
  * - create 表单 password 必填；update 表单 password 留空表示不修改；
- * - organCode 为查询必填参数，默认占位值 DAYAN，可在搜索栏调整。
+ * - organCode 为可选过滤参数：留空时后端返回全部机构账号（超管视角），
+ *   填入具体机构编码则仅查该机构。新增账号时 organCode 必填（需归属某机构）。
  */
-
-const DEFAULT_ORGAN_CODE = 'DAYAN'
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   Account,
@@ -32,7 +31,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   },
   {
     initialQuery: {
-      organCode: DEFAULT_ORGAN_CODE,
+      organCode: '',
       username: '',
       realName: '',
       accountStatus: undefined
@@ -48,7 +47,7 @@ const formRef = ref<FormInstance>()
 
 /** 表单数据（含 password 字段，仅在 create 必填） */
 const form = reactive<Account>({
-  organCode: DEFAULT_ORGAN_CODE,
+  organCode: '',
   accountCode: undefined,
   username: '',
   password: '',
@@ -62,7 +61,19 @@ const form = reactive<Account>({
 })
 
 const rules: FormRules<Account> = {
-  organCode: [{ required: true, message: '请输入机构编码', trigger: 'blur' }],
+  organCode: [
+    // 列表查询时可选，但新增/编辑账号时必填（需归属机构）
+    {
+      validator: (_rule, value: string, callback) => {
+        if (dialogVisible.value && !value) {
+          callback(new Error('请输入机构编码'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
   username: [
     { required: true, message: '请输入登录账号', trigger: 'blur' },
     { max: 100, message: '登录账号长度不能超过 100', trigger: 'blur' }
@@ -101,7 +112,7 @@ const rules: FormRules<Account> = {
 
 function resetForm() {
   Object.assign(form, {
-    organCode: query.organCode || DEFAULT_ORGAN_CODE,
+    organCode: query.organCode || '',
     accountCode: undefined,
     username: '',
     password: '',
@@ -212,7 +223,7 @@ function handleReset() {
   query.username = ''
   query.realName = ''
   query.accountStatus = undefined
-  query.organCode = DEFAULT_ORGAN_CODE
+  query.organCode = ''
   handleSearch()
 }
 

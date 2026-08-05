@@ -21,8 +21,6 @@ import { buildDepartmentTree, type Department } from '@/types/department'
  * - 主键为 (organCode, employeeCode) 联合键，update/delete 均带 organCode 路径段。
  */
 
-const DEFAULT_ORGAN_CODE = 'DAYAN'
-
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   Employee,
   EmployeeQuery
@@ -32,7 +30,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   },
   {
     initialQuery: {
-      organCode: DEFAULT_ORGAN_CODE,
+      organCode: '',
       deptCode: '',
       realName: '',
       phone: '',
@@ -45,7 +43,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 const deptTree = ref<Department[]>([])
 async function loadDeptTree() {
   try {
-    const list = await listDepartments(DEFAULT_ORGAN_CODE)
+    const list = await listDepartments(query.organCode || '')
     deptTree.value = buildDepartmentTree(list)
   } catch {
     deptTree.value = []
@@ -59,7 +57,7 @@ const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
 const form = reactive<Employee>({
-  organCode: DEFAULT_ORGAN_CODE,
+  organCode: '',
   employeeCode: undefined,
   accountCode: '',
   deptCode: '',
@@ -98,7 +96,7 @@ const rules: FormRules<Employee> = {
 
 function resetForm() {
   Object.assign(form, {
-    organCode: DEFAULT_ORGAN_CODE,
+    organCode: query.organCode || '',
     employeeCode: undefined,
     accountCode: '',
     deptCode: '',
@@ -186,7 +184,7 @@ function handleReset() {
   query.phone = ''
   query.deptCode = ''
   query.employeeStatus = undefined
-  query.organCode = DEFAULT_ORGAN_CODE
+  query.organCode = ''
   handleSearch()
 }
 

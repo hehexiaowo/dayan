@@ -25,8 +25,11 @@ public class OrganEmployeeService {
     public PageResult<OrganEmployee> page(String organCode, String deptCode, String realName,
                                           long current, long size) {
         LambdaQueryWrapper<OrganEmployee> wrapper = new LambdaQueryWrapper<OrganEmployee>()
-                .eq(OrganEmployee::getOrganCode, organCode)
                 .orderByDesc(OrganEmployee::getCreatedAt);
+        // organCode 为空时不加过滤（超管可查看全部机构员工）
+        if (organCode != null && !organCode.isEmpty()) {
+            wrapper.eq(OrganEmployee::getOrganCode, organCode);
+        }
         if (deptCode != null && !deptCode.isEmpty()) {
             wrapper.eq(OrganEmployee::getDeptCode, deptCode);
         }

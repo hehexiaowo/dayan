@@ -25,7 +25,7 @@ public class OrganAccountAdminController {
     @SaCheckPermission("organ:account:list")
     @GetMapping
     public R<PageResult<OrganAccount>> page(
-            @RequestParam String organCode,
+            @RequestParam(required = false) String organCode,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String realName,
             @RequestParam(required = false) Integer accountStatus,

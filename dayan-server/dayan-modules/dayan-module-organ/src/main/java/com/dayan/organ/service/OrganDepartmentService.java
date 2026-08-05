@@ -30,9 +30,13 @@ public class OrganDepartmentService {
      * 查询组织的部门树（平铺列表，前端按 parentCode 构建树）。
      */
     public List<OrganDepartment> listByOrgan(String organCode) {
-        return deptMapper.selectList(new LambdaQueryWrapper<OrganDepartment>()
-                        .eq(OrganDepartment::getOrganCode, organCode)
-                        .orderByAsc(OrganDepartment::getSortOrder))
+        LambdaQueryWrapper<OrganDepartment> wrapper = new LambdaQueryWrapper<OrganDepartment>()
+                .orderByAsc(OrganDepartment::getSortOrder);
+        // organCode 为空时不加过滤（超管可查看全部组织部门）
+        if (organCode != null && !organCode.isEmpty()) {
+            wrapper.eq(OrganDepartment::getOrganCode, organCode);
+        }
+        return deptMapper.selectList(wrapper)
                 .stream()
                 .sorted(Comparator.comparingInt(d -> d.getSortOrder() == null ? 0 : d.getSortOrder()))
                 .toList();

@@ -25,7 +25,7 @@ public class OrganEmployeeAdminController {
     @SaCheckPermission("organ:employee:list")
     @GetMapping
     public R<PageResult<OrganEmployee>> page(
-            @RequestParam String organCode,
+            @RequestParam(required = false) String organCode,
             @RequestParam(required = false) String deptCode,
             @RequestParam(required = false) String realName,
             @RequestParam(defaultValue = "1") long current,

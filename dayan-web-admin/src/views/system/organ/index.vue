@@ -17,9 +17,7 @@ import {
  * - 主键为 (organCode, deptCode) 联合键，update/delete 均带 organCode 路径段。
  */
 
-const DEFAULT_ORGAN_CODE = 'DAYAN'
-
-const organCode = ref(DEFAULT_ORGAN_CODE)
+const organCode = ref('')
 const loading = ref(false)
 const treeData = ref<Department[]>([])
 const flatList = ref<Department[]>([])
@@ -42,7 +40,7 @@ const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
 const form = reactive<Department>({
-  organCode: DEFAULT_ORGAN_CODE,
+  organCode: '',
   deptCode: '',
   deptName: '',
   parentCode: null,

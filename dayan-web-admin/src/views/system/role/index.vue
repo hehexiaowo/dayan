@@ -22,8 +22,6 @@ import type { Permission } from '@/types/permission'
  * - 额外提供「分配权限」弹窗：el-tree 勾选权限，提交 PUT /roles/{roleCode}/permissions。
  */
 
-const DEFAULT_ORGAN_CODE = 'DAYAN'
-
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   Role,
   RoleQuery
@@ -33,7 +31,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   },
   {
     initialQuery: {
-      organCode: DEFAULT_ORGAN_CODE,
+      organCode: '',
       roleName: '',
       roleCode: '',
       status: undefined
@@ -48,7 +46,7 @@ const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
 const form = reactive<Role>({
-  organCode: DEFAULT_ORGAN_CODE,
+  organCode: '',
   roleCode: undefined,
   roleName: '',
   roleType: 'system',
@@ -67,7 +65,7 @@ const rules: FormRules<Role> = {
 
 function resetForm() {
   Object.assign(form, {
-    organCode: DEFAULT_ORGAN_CODE,
+    organCode: query.organCode || '',
     roleCode: undefined,
     roleName: '',
     roleType: 'system',
@@ -142,7 +140,7 @@ function handleReset() {
   query.roleName = ''
   query.roleCode = ''
   query.status = undefined
-  query.organCode = DEFAULT_ORGAN_CODE
+  query.organCode = ''
   handleSearch()
 }
 

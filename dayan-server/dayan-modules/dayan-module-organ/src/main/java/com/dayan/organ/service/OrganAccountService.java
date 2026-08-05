@@ -28,8 +28,11 @@ public class OrganAccountService {
     public PageResult<OrganAccount> page(String organCode, String username, String realName,
                                          Integer accountStatus, long current, long size) {
         LambdaQueryWrapper<OrganAccount> wrapper = new LambdaQueryWrapper<OrganAccount>()
-                .eq(OrganAccount::getOrganCode, organCode)
                 .orderByDesc(OrganAccount::getCreatedAt);
+        // organCode 为空时不加过滤（超管可查看全部机构账号）
+        if (organCode != null && !organCode.isEmpty()) {
+            wrapper.eq(OrganAccount::getOrganCode, organCode);
+        }
         if (username != null && !username.isEmpty()) {
             wrapper.and(w -> w.eq(OrganAccount::getUsername, username)
                     .or().eq(OrganAccount::getPhone, username)
