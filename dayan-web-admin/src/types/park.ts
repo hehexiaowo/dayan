@@ -497,3 +497,331 @@ export function careFoodPriceTypeLabel(v?: number): string {
   const found = CARE_FOOD_PRICE_TYPE_OPTIONS.find((o) => o.value === v)
   return found ? found.label : v != null ? String(v) : '--'
 }
+
+// ============================================================================
+// 媒体库（ParkMediaImage / ParkMediaVideo / ParkMediaFile / ParkMediaVr）
+// ============================================================================
+
+/**
+ * 机构媒体-图片（后端 ParkMediaImageVO）。
+ *
+ * 外键 parkCode；imageUrl 必填（@NotBlank）。
+ */
+export interface ParkMediaImage {
+  id?: number
+  parkCode?: string
+  /** 图片 URL（必填） */
+  imageUrl: string
+  /** 图片名称 */
+  imageName?: string
+  /** 图片类型 */
+  imageType?: number
+  /** 图片描述 */
+  imageDescription?: string
+  /** 宽度 */
+  width?: number
+  /** 高度 */
+  height?: number
+  /** 文件大小（字节） */
+  fileSize?: number
+  /** 排序号 */
+  sortOrder?: number
+  /** 是否封面：1是 / 0否 */
+  isCover?: number
+  /** 状态：1启用 / 0停用 */
+  status?: number
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/** 媒体-图片分页查询参数 */
+export interface ParkMediaImageQuery extends PageQuery {
+  parkCode?: string
+  imageType?: number
+  isCover?: number
+  status?: number
+}
+
+/**
+ * 机构媒体-视频（后端 ParkMediaVideoVO）。
+ *
+ * 外键 parkCode；videoUrl 必填。
+ */
+export interface ParkMediaVideo {
+  id?: number
+  parkCode?: string
+  /** 视频 URL（必填） */
+  videoUrl: string
+  /** 封面图 URL */
+  coverUrl?: string
+  /** 视频名称 */
+  videoName?: string
+  /** 视频类型 */
+  videoType?: number
+  /** 视频描述 */
+  videoDescription?: string
+  /** 时长（秒） */
+  duration?: number
+  /** 文件大小（字节） */
+  fileSize?: number
+  /** 排序号 */
+  sortOrder?: number
+  /** 状态：1启用 / 0停用 */
+  status?: number
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/** 媒体-视频分页查询参数 */
+export interface ParkMediaVideoQuery extends PageQuery {
+  parkCode?: string
+  videoType?: number
+  status?: number
+}
+
+/**
+ * 机构媒体-文档（后端 ParkMediaFileVO）。
+ *
+ * 外键 parkCode；fileUrl 必填。
+ */
+export interface ParkMediaFile {
+  id?: number
+  parkCode?: string
+  /** 文档 URL（必填） */
+  fileUrl: string
+  /** 文档名称 */
+  fileName?: string
+  /** 文档类型 */
+  fileType?: number
+  /** 文档格式（扩展名） */
+  fileFormat?: string
+  /** 文件大小（字节） */
+  fileSize?: number
+  /** 文档描述 */
+  fileDescription?: string
+  /** 排序号 */
+  sortOrder?: number
+  /** 状态：1启用 / 0停用 */
+  status?: number
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/** 媒体-文档分页查询参数 */
+export interface ParkMediaFileQuery extends PageQuery {
+  parkCode?: string
+  fileType?: number
+  status?: number
+}
+
+/**
+ * 机构媒体-VR（后端 ParkMediaVrVO）。
+ *
+ * 外键 parkCode；vrUrl 必填。vrType：1全景图 / 2 3D 模型 / 3视频。
+ */
+export interface ParkMediaVr {
+  id?: number
+  parkCode?: string
+  /** VR URL（必填） */
+  vrUrl: string
+  /** VR 提供方 */
+  vrProvider?: string
+  /** VR 名称 */
+  vrName?: string
+  /** VR 类型：1全景图 / 2 3D 模型 / 3视频 */
+  vrType?: number
+  /** 缩略图 URL */
+  thumbnailUrl?: string
+  /** VR 描述 */
+  vrDescription?: string
+  /** 排序号 */
+  sortOrder?: number
+  /** 状态：1启用 / 0停用 */
+  status?: number
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/** 媒体-VR 分页查询参数 */
+export interface ParkMediaVrQuery extends PageQuery {
+  parkCode?: string
+  vrType?: number
+  status?: number
+}
+
+// ============================================================================
+// 设施（ParkFacility）
+// ============================================================================
+
+/**
+ * 机构设施（后端 ParkFacilityVO）。
+ *
+ * 外键 parkCode；facilityCode 必填（业务编码，update 不可改），facilityName 必填。
+ */
+export interface ParkFacility {
+  id?: number
+  parkCode?: string
+  /** 设施编码（必填，业务语义编码，update 不可改） */
+  facilityCode: string
+  /** 设施名称（必填） */
+  facilityName: string
+  /** 设施类别 */
+  facilityCategory?: number
+  /** 楼栋名称 */
+  buildingName?: string
+  /** 楼层 */
+  floor?: string
+  /** 面积 */
+  area?: number
+  /** 容纳人数 */
+  capacity?: number
+  /** 开放时间 */
+  openTime?: string
+  /** 设施描述 */
+  facilityDescription?: string
+  /** 封面图 URL */
+  coverImage?: string
+  /** 图片列表（JSON 字符串原文） */
+  images?: string
+  /** 是否免费：1免费 / 0收费 */
+  isFree?: number
+  /** 收费说明 */
+  feeDescription?: string
+  /** 排序号 */
+  sortOrder?: number
+  /** 状态：1启用 / 0停用 */
+  status?: number
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/** 设施分页查询参数 */
+export interface ParkFacilityQuery extends PageQuery {
+  parkCode?: string
+  facilityCode?: string
+  facilityName?: string
+  facilityCategory?: number
+  status?: number
+}
+
+// ============================================================================
+// 顾问（ParkAdviser）
+// ============================================================================
+
+/**
+ * 机构顾问（后端 ParkAdviserVO）。
+ *
+ * 外键 parkCode；adviserName 必填。isPrimary=1 首席，同机构唯一（后端自动互斥）。
+ */
+export interface ParkAdviser {
+  id?: number
+  parkCode?: string
+  /** 顾问姓名（必填） */
+  adviserName: string
+  /** 顾问头衔 */
+  adviserTitle?: string
+  /** 顾问头像 URL */
+  adviserImage?: string
+  /** 顾问介绍 */
+  adviserContent?: string
+  /** 联系电话 */
+  contactPhone?: string
+  /** 是否首席：1首席 / 0普通（同机构唯一，后端自动互斥） */
+  isPrimary?: number
+  /** 排序号 */
+  sortOrder?: number
+  /** 状态：1启用 / 0停用 */
+  status?: number
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/** 顾问分页查询参数 */
+export interface ParkAdviserQuery extends PageQuery {
+  parkCode?: string
+  adviserName?: string
+  isPrimary?: number
+  status?: number
+}
+
+// ============================================================================
+// 周边（ParkPeriphery）+ 服务项（ParkServiceItem）
+// ============================================================================
+
+/**
+ * 机构周边配套（后端 ParkPeripheryVO）。
+ *
+ * 外键 parkCode；placeName 必填。peripheryType 区分周边类型。
+ */
+export interface ParkPeriphery {
+  id?: number
+  parkCode?: string
+  /** 周边类型 */
+  peripheryType?: number
+  /** 地点名称（必填） */
+  placeName: string
+  /** 地点地址 */
+  placeAddress?: string
+  /** 距离（字符串） */
+  distance?: string
+  /** 详细描述 */
+  detailDescription?: string
+  /** 排序号 */
+  sortOrder?: number
+  /** 状态：1启用 / 0停用 */
+  status?: number
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/** 周边配套分页查询参数 */
+export interface ParkPeripheryQuery extends PageQuery {
+  parkCode?: string
+  peripheryType?: number
+  placeName?: string
+  status?: number
+}
+
+/**
+ * 机构服务项（后端 ParkServiceItemVO）。
+ *
+ * 外键 parkCode；serviceCode 必填（业务编码，update 不可改），serviceName 必填。
+ */
+export interface ParkServiceItem {
+  id?: number
+  parkCode?: string
+  /** 服务编码（必填，业务语义编码，update 不可改） */
+  serviceCode: string
+  /** 服务名称（必填） */
+  serviceName: string
+  /** 服务类别 */
+  serviceCategory?: number
+  /** 服务描述 */
+  serviceDescription?: string
+  /** 是否包含：1包含 / 0不包含 */
+  isIncluded?: number
+  /** 收费标准 */
+  feeStandard?: string
+  /** 服务频次 */
+  serviceFrequency?: string
+  /** 服务时长 */
+  serviceDuration?: string
+  /** 封面图 URL */
+  coverImage?: string
+  /** 排序号 */
+  sortOrder?: number
+  /** 状态：1启用 / 0停用 */
+  status?: number
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/** 服务项分页查询参数 */
+export interface ParkServiceItemQuery extends PageQuery {
+  parkCode?: string
+  serviceCode?: string
+  serviceName?: string
+  serviceCategory?: number
+  isIncluded?: number
+  status?: number
+}

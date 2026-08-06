@@ -11,12 +11,12 @@
  * - 房型：ParkRoomType + ParkRoomPrice（type 列表 + 展开行 price 内联）
  * - 照护：ParkCareType + ParkCarePrice
  * - 餐饮：ParkFoodType + ParkFoodPrice
- * - 媒体库：ParkMediaImage/Video/File/Vr（4 表合并，按 mediaType 筛选）
+ * - 媒体库：ParkMediaImage/Video/File/Vr（单 tab 内 el-tabs 切 4 子类）
  * - 设施：ParkFacility
  * - 顾问：ParkAdviser
- * - 周边/服务项：ParkPeriphery + ParkServiceItem
+ * - 周边/服务项：ParkPeriphery + ParkServiceItem（单 tab 内 el-tabs 切 2 子区）
  *
- * 注：本文件为任务 0 基础设施骨架，tab 内容在任务 1/2 逐个填充。
+ * 注：8 个 tab 内容均已实现（任务 0 骨架 + 任务 1 前 4 tab + 任务 2 后 4 tab）。
  */
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -27,6 +27,10 @@ import BasicTab from './BasicTab.vue'
 import RoomTab from './RoomTab.vue'
 import CareTab from './CareTab.vue'
 import FoodTab from './FoodTab.vue'
+import MediaTab from './MediaTab.vue'
+import FacilityTab from './FacilityTab.vue'
+import AdviserTab from './AdviserTab.vue'
+import PeripheryTab from './PeripheryTab.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -93,17 +97,17 @@ const tabs = [
 
     <el-divider />
 
-    <!-- tab 区：基本信息/房型/照护/餐饮 已实现，其余 4 个 tab 占位 -->
+    <!-- tab 区：8 个子表 tab 均已实现 -->
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name">
         <BasicTab v-if="t.name === 'basic'" :park-code="parkCode" />
         <RoomTab v-else-if="t.name === 'room'" :park-code="parkCode" />
         <CareTab v-else-if="t.name === 'care'" :park-code="parkCode" />
         <FoodTab v-else-if="t.name === 'food'" :park-code="parkCode" />
-        <div v-else class="tab-placeholder">
-          <!-- TODO 任务2：媒体/设施/顾问/周边 各子表内联 CRUD -->
-          <el-empty :description="`${t.label}管理（任务 2 实现）`" />
-        </div>
+        <MediaTab v-else-if="t.name === 'media'" :park-code="parkCode" />
+        <FacilityTab v-else-if="t.name === 'facility'" :park-code="parkCode" />
+        <AdviserTab v-else-if="t.name === 'adviser'" :park-code="parkCode" />
+        <PeripheryTab v-else-if="t.name === 'periphery'" :park-code="parkCode" />
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -131,12 +135,6 @@ const tabs = [
   color: var(--el-text-color-secondary);
   font-size: 13px;
   margin-left: 8px;
-}
-.tab-placeholder {
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .ml-8 {
   margin-left: 8px;
