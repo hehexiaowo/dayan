@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import { pageClients, getClient, createClient, updateClient, deleteClient } from '@/api/client'
@@ -50,6 +51,13 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 
 // ---------- 渠道树（供筛选与表单选择） ----------
 const channelTree = ref<ChannelInfo[]>([])
+
+const router = useRouter()
+/** 跳转到客户详情页（携带 clientCode） */
+function goDetail(row: ClientInfo) {
+  if (!row.clientCode) return
+  router.push({ path: `/channel/client/detail/${row.clientCode}` })
+}
 async function loadChannelTree() {
   try {
     const list = await listChannels()
@@ -353,8 +361,9 @@ onMounted(() => {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
           </template>
