@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [dayan-web-admin, dayan-web-channel]
+        project: [dayan-admin, dayan-channel]
     steps:
       - uses: actions/checkout@v4
 

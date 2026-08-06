@@ -1,5 +1,5 @@
 {
-  "name": "dayan-miniprogram-client",
+  "name": "dayan-client",
   "version": "1.0.0",
   "description": "大雁养老 Client 客户端（uni-app 小程序/H5）",
   "scripts": {

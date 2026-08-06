@@ -1,5 +1,5 @@
 {
-  "name": "dayan-miniprogram-agent",
+  "name": "dayan-agent",
   "version": "1.0.0",
   "description": "大雁养老 Agent 代理人端（uni-app 小程序/H5）",
   "scripts": {

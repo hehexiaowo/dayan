@@ -19,14 +19,14 @@ dayan/
 │   ├── dayan-gateway/         API 网关
 │   ├── dayan-job/             定时任务模块
 │   └── pom.xml                后端父 POM
-├── dayan-web-admin/           Admin 前端
-├── dayan-web-channel/         Channel 前端
-├── dayan-miniprogram-agent/   Agent 小程序/H5
-├── dayan-miniprogram-client/  Client 小程序/H5
+├── dayan-admin/              Admin 前端（Vue3 + Element Plus）
+├── dayan-channel/            Channel 前端（Vue3 + Element Plus）
+├── dayan-agent/              Agent 小程序/H5（uni-app）
+├── dayan-client/             Client 小程序/H5（uni-app）
 ├── db/migration/              数据库 DDL + 种子数据
 ├── docker/                    各服务 Dockerfile
 ├── docs/                      设计文档
-└── .superpowers/              AI 辅助开发规格与计划
+└── .superpowers/              AI 辅助开发规格与计划（本地工作区，不入库）
 ```
 
 ## 快速启动（P0 完成后可用）
@@ -59,6 +59,8 @@ docker compose up -d --build
 - 开发规范：`docs/06项目开发规范.md`
 - P0 设计规格：`.superpowers/specs/2026-08-04-p0-scaffold-design.md`
 
+> 注：`.superpowers/` 为 AI 辅助开发的本地工作区（含规格、计划、SDD 报告），已通过 `.gitignore` 排除，不纳入版本管理；设计文档以 `docs/01-08*.md` 为准。
+
 ## 开发阶段
 
 | 阶段 | 内容 | 状态 |
@@ -77,7 +79,7 @@ docker compose up -d --build
 | **6 启动模块 + 网关 + job** | admin/channel/agent/client/supplier/distributor 独立启动，全量编译通过 |
 | **四端登录接口** | Admin/Channel/Agent/Client 登录闭环，Sa-Token 多端隔离，Agent/Client 选渠道 |
 | **状态机引擎** | 接口 + Redis 实现，6 测试通过 |
-| **4 前端工程** | dayan-web-admin/channel（Vue3+Element Plus）+ 2 uni-app 小程序 |
+| **4 前端工程** | dayan-admin/channel（Vue3+Element Plus）+ dayan-agent/client（uni-app 小程序/H5） |
 | **CI/CD** | GitHub Actions（ci.yml 编译测试 + docker.yml 8 服务推 GHCR） |
 | **Docker 编排** | docker-compose.infra.yml（基础设施）+ docker-compose.yml（全量） |
 
