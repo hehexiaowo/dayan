@@ -1,5 +1,6 @@
-# ZCode 本地工作区配置
+# AI 辅助开发工具链（本地工作区配置，不入库）
 .zcode/
+.superpowers/
 
 # IDE / 编辑器
 .vscode/
