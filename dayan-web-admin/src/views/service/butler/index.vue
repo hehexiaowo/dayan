@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -10,8 +11,7 @@ import {
   deleteButler
 } from '@/api/service'
 import type { ButlerInfo, ButlerInfoQuery } from '@/types/service'
-import { BUTLER_LEVEL_OPTIONS } from '@/types/service'
-import { COMMON_STATUS_OPTIONS } from '@/types/common'
+import { BUTLER_LEVEL_OPTIONS, BUTLER_STATUS_OPTIONS } from '@/types/service'
 import { formatDateTime } from '@/utils/format'
 
 /**
@@ -19,9 +19,11 @@ import { formatDateTime } from '@/utils/format'
  *
  * 字段最少的标准 CRUD 实体（仅 8 个业务字段）。
  * - butlerCode 服务端生成：新增表单不含 butlerCode，编辑时只读。
- * - status：1启用 / 0禁用（共用 COMMON_STATUS_OPTIONS）。
+ * - status：1在职 / 0离职（BUTLER_STATUS_OPTIONS，以 DDL 为准）。
  * - butlerLevel：1初级 / 2中级 / 3高级 / 4专家。
  */
+
+const router = useRouter()
 
 const {
   loading,
@@ -174,13 +176,19 @@ function butlerLevelLabel(level?: number): string {
 }
 
 function statusLabel(status?: number): string {
-  const found = COMMON_STATUS_OPTIONS.find((o) => o.value === status)
+  const found = BUTLER_STATUS_OPTIONS.find((o) => o.value === status)
   return found ? found.label : status != null ? String(status) : '--'
 }
 
-/** 状态 el-tag type：1启用 success / 0禁用 info。 */
+/** 状态 el-tag type：1在职 success / 0离职 info。 */
 function statusTagType(status?: number): 'success' | 'info' {
   return status === 1 ? 'success' : 'info'
+}
+
+/** 跳转管家详情页 */
+function goDetail(row: ButlerInfo) {
+  if (!row.butlerCode) return
+  router.push({ path: `/service/butler/detail/${row.butlerCode}` })
 }
 
 // 初始化加载
@@ -211,7 +219,7 @@ loadPage()
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in COMMON_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+            <el-option v-for="o in BUTLER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -250,8 +258,9 @@ loadPage()
         <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
           </template>
@@ -316,7 +325,7 @@ loadPage()
           <el-col :span="12">
             <el-form-item label="状态">
               <el-select v-model="form.status" placeholder="状态" style="width: 100%">
-                <el-option v-for="o in COMMON_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+                <el-option v-for="o in BUTLER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>

@@ -58,6 +58,12 @@ const routes: RouteRecordRaw[] = [
         name: 'ClientDetail',
         component: () => import('@/views/channel/client/detail/index.vue'),
         meta: { title: '客户详情', hidden: true }
+      },
+      {
+        path: 'service/butler/detail/:butlerCode',
+        name: 'ButlerDetail',
+        component: () => import('@/views/service/butler/detail/index.vue'),
+        meta: { title: '管家详情', hidden: true }
       }
     ]
   },
