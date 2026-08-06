@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { listChannels, treeChannels, getChannel, createChannel, updateChannel, deleteChannel } from '@/api/channel'
 import {
@@ -51,6 +52,14 @@ async function loadTree() {
 
 function handleSearch() {
   loadTree()
+}
+
+const router = useRouter()
+
+/** 跳转渠道详情页 */
+function goDetail(row: ChannelInfo) {
+  if (!row.channelCode) return
+  router.push({ name: 'ChannelDetail', params: { channelCode: row.channelCode } })
 }
 
 function handleReset() {
@@ -384,8 +393,9 @@ loadTree()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openCreate(row)">新增子级</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>

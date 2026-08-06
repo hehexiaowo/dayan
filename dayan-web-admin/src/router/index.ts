@@ -82,6 +82,12 @@ const routes: RouteRecordRaw[] = [
         name: 'SceneDetail',
         component: () => import('@/views/resource/scene/detail/index.vue'),
         meta: { title: '场景详情', hidden: true }
+      },
+      {
+        path: 'channel/info/detail/:channelCode',
+        name: 'ChannelDetail',
+        component: () => import('@/views/channel/info/detail/index.vue'),
+        meta: { title: '渠道详情', hidden: true }
       }
     ]
   },
