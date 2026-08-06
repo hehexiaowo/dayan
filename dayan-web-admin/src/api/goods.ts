@@ -59,7 +59,17 @@ export function updateGoods(goodsCode: string, data: Partial<GoodsInfo>): Promis
 /**
  * 商品上下架：POST /admin-api/goods/info/shelf
  *
- * shelfStatus: 1=上架 / 0=下架（对齐后端 GoodsInfoShelfDTO）。
+ * 后端 GoodsInfoShelfDTO 字段为 goodsStatus（非 shelfStatus），值为：
+ * - 1 = 上架
+ * - 0 = 下架
+ *
+ * 语义偏差（已知遗留，不在前端任务范围修）：
+ * DDL 的 goods_status 是 5 态（0草稿/1待上架/2已上架/3已下架/4已售罄），shelf 接口的 1
+ * 在 DDL 字面是"待上架"，但 shelf 接口语义是"上架"。后端无完整状态机（statemachine 目录为空），
+ * 故前端按 shelf 契约传 0/1；列表按 DDL 5 态展示（2 才是真正的"已上架"）。
+ * 调用方判断当前是否上架用 `goodsStatus === GoodsStatus.ON_SHELF`（即 2），点击时传 1 上架 / 0 下架。
+ *
+ * TODO: 后端状态机补齐后，此处的语义偏差需消除。
  */
 export function shelfGoods(data: GoodsInfoShelfDTO): Promise<void> {
   return request<void>({

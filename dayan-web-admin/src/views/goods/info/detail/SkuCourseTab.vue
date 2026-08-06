@@ -1,0 +1,316 @@
+<script setup lang="ts">
+/**
+ * 商品详情页 - 课程规格 tab（goodsType=3 时显示）。
+ *
+ * 分页模式：useCrud（主键 id 自增 number，传 idKey:'id'，fixedParams:{goodsCode}）。
+ *
+ * 关键约束：
+ * - 主键是自增 id（number），update/delete 都用 id。
+ * - skuCode 服务端生成 GC 前缀，前端不传。
+ * - create 必填：goodsCode（fixedParams 带入）、courseCode。
+ * - courseType 枚举有 DDL 文档（1线上/2线下/3直播），用 el-select。
+ * - salesCount create 硬编码 0，UpdateDTO 无此字段，表单不展示。
+ * - 语义陷阱：stock 字段复用承载"学员上限 maxStudents"语义（表里无 maxStudents 列），
+ *   前端课程 tab 的 stock label 标"库存/学员上限"。
+ * - courseCode 无跨模块选择器文档，暂用 el-input 兜底。
+ */
+import { reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { useCrud } from '@/composables/useCrud'
+import {
+  pageSkuCourses,
+  createSkuCourse,
+  updateSkuCourse,
+  deleteSkuCourse
+} from '@/api/goods-sku'
+import {
+  COURSE_TYPE_OPTIONS,
+  SKU_STATUS_OPTIONS,
+  courseTypeLabel,
+  skuStatusLabel,
+  skuStatusTagType
+} from '@/types/goods'
+import type { GoodsSkuCourse, GoodsSkuCourseQuery } from '@/types/goods'
+import { formatDateTime } from '@/utils/format'
+
+const props = defineProps<{
+  /** 商品编码（从详情页 prop 带入，create 表单隐藏） */
+  goodsCode: string
+}>()
+
+// ---------- 课程规格列表（useCrud，主键 id 自增 number） ----------
+const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
+  useCrud<GoodsSkuCourse, GoodsSkuCourseQuery, number>(
+    {
+      page: pageSkuCourses,
+      create: createSkuCourse,
+      update: (id, data) => updateSkuCourse(id, data),
+      remove: deleteSkuCourse
+    },
+    {
+      initialQuery: { skuName: '', courseCode: '', courseType: undefined, status: undefined },
+      idKey: 'id',
+      fixedParams: { goodsCode: props.goodsCode }
+    }
+  )
+
+loadPage()
+
+// ---------- 新增/编辑弹窗 ----------
+const dialogVisible = ref(false)
+const dialogMode = ref<'create' | 'edit'>('create')
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
+
+const form = reactive<GoodsSkuCourse>({
+  id: undefined,
+  goodsCode: '',
+  skuCode: undefined,
+  skuName: '',
+  courseCode: '',
+  courseType: undefined,
+  skuPrice: undefined,
+  classCount: undefined,
+  validDays: undefined,
+  stock: undefined,
+  sortOrder: 0,
+  status: 1
+})
+
+const rules: FormRules<GoodsSkuCourse> = {
+  courseCode: [{ required: true, message: '请输入课程编码', trigger: 'blur' }]
+}
+
+function resetForm() {
+  Object.assign(form, {
+    id: undefined,
+    goodsCode: '',
+    skuCode: undefined,
+    skuName: '',
+    courseCode: '',
+    courseType: undefined,
+    skuPrice: undefined,
+    classCount: undefined,
+    validDays: undefined,
+    stock: undefined,
+    sortOrder: 0,
+    status: 1
+  })
+}
+
+function openCreate() {
+  dialogMode.value = 'create'
+  resetForm()
+  form.goodsCode = props.goodsCode
+  dialogVisible.value = true
+}
+
+function openEdit(row: GoodsSkuCourse) {
+  dialogMode.value = 'edit'
+  resetForm()
+  Object.assign(form, row)
+  dialogVisible.value = true
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+  submitLoading.value = true
+  try {
+    form.goodsCode = props.goodsCode
+    if (dialogMode.value === 'create') {
+      await createSkuCourse(form)
+      ElMessage.success('新增成功')
+    } else if (form.id) {
+      await updateSkuCourse(form.id, form)
+      ElMessage.success('修改成功')
+    }
+    dialogVisible.value = false
+    loadPage()
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function handleDeleteRow(row: GoodsSkuCourse) {
+  if (!row.id) return
+  await ElMessageBox.confirm('确定删除该课程规格记录？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await deleteSkuCourse(row.id)
+  ElMessage.success('删除成功')
+  loadPage()
+}
+</script>
+
+<template>
+  <div class="sku-tab">
+    <!-- 搜索栏 -->
+    <el-form :inline="true" :model="query" @submit.prevent>
+      <el-form-item label="规格名称">
+        <el-input
+          v-model="query.skuName"
+          placeholder="规格名称"
+          clearable
+          @keyup.enter="handleSearch"
+        />
+      </el-form-item>
+      <el-form-item label="课程编码">
+        <el-input
+          v-model="query.courseCode"
+          placeholder="课程编码"
+          clearable
+          @keyup.enter="handleSearch"
+        />
+      </el-form-item>
+      <el-form-item label="课程类型">
+        <el-select v-model="query.courseType" placeholder="全部" clearable style="width: 140px">
+          <el-option v-for="o in COURSE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
+          <el-option v-for="o in SKU_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
+        <el-button :icon="'Plus'" @click="openCreate">新增课程规格</el-button>
+      </el-form-item>
+    </el-form>
+
+    <!-- 主表格 -->
+    <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
+      <el-table-column prop="skuCode" label="规格编码" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="skuName" label="规格名称" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="courseCode" label="课程编码" min-width="120" show-overflow-tooltip />
+      <el-table-column prop="courseType" label="课程类型" width="110" align="center">
+        <template #default="{ row }">{{ courseTypeLabel(row.courseType) }}</template>
+      </el-table-column>
+      <el-table-column prop="skuPrice" label="SKU 价格" width="110" align="right" />
+      <el-table-column prop="classCount" label="课时数" width="90" align="center" />
+      <el-table-column prop="validDays" label="有效天数" width="100" align="center" />
+      <!-- stock 语义复用：承载"学员上限" -->
+      <el-table-column prop="stock" label="库存/学员上限" width="130" align="center" />
+      <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
+      <el-table-column prop="status" label="状态" width="90" align="center">
+        <template #default="{ row }">
+          <el-tag :type="skuStatusTagType(row.status)" size="small">{{ skuStatusLabel(row.status) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="createdAt" label="创建时间" width="160" align="center">
+        <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="140" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <div class="pagination-wrap">
+      <el-pagination
+        :current-page="query.current"
+        :page-size="query.size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
+      />
+    </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogMode === 'create' ? '新增课程规格' : '编辑课程规格'"
+      width="720px"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="规格名称">
+              <el-input v-model="form.skuName" placeholder="规格名称" maxlength="100" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="课程编码" prop="courseCode">
+              <!-- TODO: courseCode 暂无跨模块选择器文档，先用 input 兜底 -->
+              <el-input
+                v-model="form.courseCode"
+                placeholder="课程编码"
+                maxlength="50"
+                :disabled="dialogMode === 'edit'"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="课程类型">
+              <!-- courseType 有 DDL 文档（1线上/2线下/3直播），用 select -->
+              <el-select v-model="form.courseType" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="o in COURSE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="SKU 价格">
+              <el-input-number v-model="form.skuPrice" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="课时数">
+              <el-input-number v-model="form.classCount" :min="0" :max="9999999" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="有效天数">
+              <el-input-number v-model="form.validDays" :min="0" :max="9999999" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <!-- stock 语义复用：承载"学员上限 maxStudents" -->
+            <el-form-item label="库存/学员上限">
+              <el-input-number v-model="form.stock" :min="0" :max="9999999" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="排序号">
+              <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态">
+              <el-radio-group v-model="form.status">
+                <el-radio :value="1">在售</el-radio>
+                <el-radio :value="0">停售</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.sku-tab {
+  .pagination-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+}
+</style>

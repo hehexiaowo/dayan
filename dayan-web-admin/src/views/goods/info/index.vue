@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -27,12 +28,24 @@ import {
  * - 上下架流：shelf（上架/下架切换）；
  * - 主键 goodsCode 由服务端 CodeGenerator 生成，新增表单不含该字段；
  * - 修改走 PUT path（goodsCode 在 URL 上，与 distributor/supplier 的 query string 不同）。
+ * - 详情入口：操作列「详情」按钮跳转 GoodsDetail（按 goodsType 显示对应 SKU 子表）。
  *
- * 状态约定：
- * - goodsType：1实物 / 2虚拟 / 3服务
- * - goodsStatus：0下架 / 1上架 / 2预览
+ * 状态约定（对齐 DDL，5 态 / 4 值）：
+ * - goodsType：1权益商品 / 2场景商品 / 3课程商品 / 4旅居商品
+ * - goodsStatus：0草稿 / 1待上架 / 2已上架 / 3已下架 / 4已售罄
  * - auditStatus：0待审 / 1通过 / 2驳回
+ *
+ * shelf 接口语义偏差（已知遗留）：shelf 传 0/1（0下架/1上架），DDL 的 1 是"待上架"而非"已上架"。
+ * 前端列表按 DDL 5 态展示，判断是否上架用 `goodsStatus === 2`（ON_SHELF），shelf 按契约传 0/1。
  */
+
+const router = useRouter()
+
+/** 跳转商品详情页（主从详情页 / 动态 tab，按 goodsType 显示对应 SKU 子表） */
+function goDetail(row: GoodsInfo) {
+  if (!row.goodsCode) return
+  router.push({ name: 'GoodsDetail', params: { goodsCode: row.goodsCode } })
+}
 
 const {
   loading,
@@ -67,7 +80,7 @@ const form = reactive<GoodsInfo>({
   goodsCode: undefined,
   goodsName: '',
   goodsShortName: '',
-  goodsType: GoodsType.PHYSICAL,
+  goodsType: GoodsType.EQUITY,
   categoryCode: '',
   brandName: '',
   coverImage: '',
@@ -84,7 +97,7 @@ const form = reactive<GoodsInfo>({
   isNew: 0,
   isRecommend: 0,
   sortOrder: 0,
-  goodsStatus: GoodsStatus.OFF_SHELF,
+  goodsStatus: GoodsStatus.DRAFT,
   remark: ''
 })
 
@@ -98,7 +111,7 @@ function resetForm() {
     goodsCode: undefined,
     goodsName: '',
     goodsShortName: '',
-    goodsType: GoodsType.PHYSICAL,
+    goodsType: GoodsType.EQUITY,
     categoryCode: '',
     brandName: '',
     coverImage: '',
@@ -115,7 +128,7 @@ function resetForm() {
     isNew: 0,
     isRecommend: 0,
     sortOrder: 0,
-    goodsStatus: GoodsStatus.OFF_SHELF,
+    goodsStatus: GoodsStatus.DRAFT,
     remark: ''
   })
 }
@@ -132,7 +145,7 @@ function fillForm(detail: GoodsInfo) {
     goodsCode: detail.goodsCode,
     goodsName: detail.goodsName ?? '',
     goodsShortName: detail.goodsShortName ?? '',
-    goodsType: detail.goodsType ?? GoodsType.PHYSICAL,
+    goodsType: detail.goodsType ?? GoodsType.EQUITY,
     categoryCode: detail.categoryCode ?? '',
     brandName: detail.brandName ?? '',
     coverImage: detail.coverImage ?? '',
@@ -149,7 +162,7 @@ function fillForm(detail: GoodsInfo) {
     isNew: detail.isNew ?? 0,
     isRecommend: detail.isRecommend ?? 0,
     sortOrder: detail.sortOrder ?? 0,
-    goodsStatus: detail.goodsStatus ?? GoodsStatus.OFF_SHELF,
+    goodsStatus: detail.goodsStatus ?? GoodsStatus.DRAFT,
     remark: detail.remark ?? ''
   })
 }
@@ -215,10 +228,14 @@ async function handleDeleteRow(row: GoodsInfo) {
 }
 
 // ---------- 上下架 ----------
+// shelf 接口语义偏差（已知遗留）：判断是否上架用 DDL 的 2（ON_SHELF），
+// 但 shelf 接口传 0/1（0下架/1上架）。详见 api/goods.ts shelfGoods 注释。
 async function handleShelf(row: GoodsInfo) {
   if (!row.goodsCode) return
-  const targetStatus = row.goodsStatus === GoodsStatus.ON_SHELF ? GoodsStatus.OFF_SHELF : GoodsStatus.ON_SHELF
-  const action = targetStatus === GoodsStatus.ON_SHELF ? '上架' : '下架'
+  const isOnShelf = row.goodsStatus === GoodsStatus.ON_SHELF
+  const action = isOnShelf ? '下架' : '上架'
+  // 上架传 1，下架传 0（shelf 接口契约）
+  const targetStatus = isOnShelf ? 0 : 1
   await ElMessageBox.confirm(`确定${action}「${row.goodsName}」吗？`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -226,7 +243,7 @@ async function handleShelf(row: GoodsInfo) {
   })
   await shelfGoods({
     goodsCode: row.goodsCode,
-    shelfStatus: targetStatus
+    goodsStatus: targetStatus
   })
   ElMessage.success(`${action}成功`)
   loadPage()
@@ -248,13 +265,19 @@ function auditStatusLabel(s?: number): string {
   return found ? found.label : s != null ? String(s) : '--'
 }
 
-/** 根据商品状态返回 el-tag type：上架 success / 下架 info / 预览 warning。 */
-function goodsStatusTagType(status?: number): 'success' | 'info' | 'warning' {
+/**
+ * 根据商品状态返回 el-tag type（DDL 5 态）。
+ * 已上架=success / 待上架=warning / 已售罄=danger / 草稿/已下架=info。
+ */
+function goodsStatusTagType(status?: number): 'success' | 'info' | 'warning' | 'danger' {
   switch (status) {
     case GoodsStatus.ON_SHELF:
       return 'success'
-    case GoodsStatus.PREVIEW:
+    case GoodsStatus.PENDING:
       return 'warning'
+    case GoodsStatus.SOLD_OUT:
+      return 'danger'
+    case GoodsStatus.DRAFT:
     case GoodsStatus.OFF_SHELF:
     default:
       return 'info'
@@ -402,8 +425,9 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button
               v-if="row.goodsStatus === GoodsStatus.ON_SHELF"
