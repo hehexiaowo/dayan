@@ -24,8 +24,13 @@ import java.util.List;
 /**
  * 供应商信息服务实现。
  *
- * <p>审核流程：status 1=待审核 / 2=已通过 / 3=已驳回。新建默认 status=1，
- * 审核（{@link #audit}）仅允许当前 status=1 时流转。
+ * <p>审核流程对齐 DDL（db/migration/04_supplier.sql）两字段语义：
+ * <ul>
+ *   <li>{@code status}（合作状态）：0=待审核 / 1=已合作 / 2=已暂停 / 3=已终止。新建默认 0。</li>
+ *   <li>{@code audit_status}（审核状态）：0=待审核 / 1=审核通过 / 2=审核驳回。</li>
+ * </ul>
+ * 审核（{@link #audit}）仅允许当前 status=0（待审核）时流转：通过则 status→1（已合作），
+ * 驳回则 status 维持 0。
  *
  * <p>信用代码唯一校验：{@code unifiedCreditCode} 在同 {@code supplierType} 内唯一。
  */
@@ -36,12 +41,16 @@ public class SupplierInfoServiceImpl implements SupplierInfoService {
 
     /** 供应商编码前缀 */
     private static final String CODE_PREFIX = "SP";
-    /** 初始状态：待审核 */
-    private static final int STATUS_PENDING_AUDIT = 1;
-    /** 审核状态：通过 */
-    private static final int AUDIT_PASS = 2;
-    /** 审核状态：驳回 */
-    private static final int AUDIT_REJECT = 3;
+    // ====== status 字段（合作状态，DDL：0=待审核/1=已合作/2=已暂停/3=已终止）======
+    /** status：待审核 */
+    private static final int STATUS_PENDING_AUDIT = 0;
+    /** status：已合作 */
+    private static final int STATUS_COOPERATING = 1;
+    // ====== audit_status 字段（审核状态，DDL：0=待审核/1=审核通过/2=审核驳回）======
+    /** audit_status：审核通过 */
+    private static final int AUDIT_PASS = 1;
+    /** audit_status：审核驳回 */
+    private static final int AUDIT_REJECT = 2;
 
     private final SupplierInfoMapper supplierInfoMapper;
     private final CodeGenerator codeGenerator;
@@ -183,9 +192,9 @@ public class SupplierInfoServiceImpl implements SupplierInfoService {
         SupplierInfo existing = requireSupplier(dto.getSupplierCode());
         Integer auditStatus = dto.getAuditStatus();
         if (auditStatus == null || (auditStatus != AUDIT_PASS && auditStatus != AUDIT_REJECT)) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "审核状态非法（仅支持 2=通过 / 3=驳回）");
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "审核状态非法（仅支持 1=审核通过 / 2=审核驳回）");
         }
-        // 仅当前 status=1 待审核才能审核
+        // 仅当前 status=0 待审核才能审核
         if (existing.getStatus() == null || existing.getStatus() != STATUS_PENDING_AUDIT) {
             throw new BusinessException(ErrorCode.BUSINESS,
                     "供应商当前状态不可审核（需为待审核状态）: supplierCode=" + dto.getSupplierCode());
@@ -193,11 +202,19 @@ public class SupplierInfoServiceImpl implements SupplierInfoService {
 
         SupplierInfo update = new SupplierInfo();
         update.setId(existing.getId());
-        update.setStatus(auditStatus);
+        // status 与 audit_status 两字段语义分离，各归各位：
+        // - 审核通过 → status 升级为已合作(1)，audit_status 记审核通过(1)
+        // - 审核驳回 → status 维持待审核(0)，audit_status 记审核驳回(2)
+        if (auditStatus == AUDIT_PASS) {
+            update.setStatus(STATUS_COOPERATING);
+        } else {
+            update.setStatus(STATUS_PENDING_AUDIT);
+        }
         update.setAuditStatus(auditStatus);
         update.setAuditRemark(dto.getAuditRemark());
         supplierInfoMapper.updateById(update);
-        log.info("审核供应商完成: supplierCode={}, auditStatus={}", dto.getSupplierCode(), auditStatus);
+        log.info("审核供应商完成: supplierCode={}, auditStatus={}, status={}",
+                dto.getSupplierCode(), auditStatus, update.getStatus());
     }
 
     // ====== 内部方法 ======

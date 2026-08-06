@@ -43,8 +43,8 @@ public class ParkInfoServiceImpl implements ParkInfoService {
 
     /** PARK_SM 状态机域标识（machine_code） */
     private static final String SM_DOMAIN = "PARK_SM";
-    /** 供应商已通过审核的状态值 */
-    private static final int SUPPLIER_STATUS_APPROVED = 2;
+    /** 供应商已合作状态值（对齐 DDL：status=1=已合作；任务 1 修正后语义） */
+    private static final int SUPPLIER_STATUS_APPROVED = 1;
     /** operate_status=已上线 */
     private static final int OPERATE_STATUS_ONLINE = 1;
     /** operate_status 初始值：待审核 */
@@ -245,6 +245,12 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         Integer from = existing.getOperateStatus();
         int currentFrom = from == null ? OPERATE_STATUS_DEFAULT : from;
 
+        // G-10：机构上线（approve）前校验供应商仍为已合作状态，防止供应商被驳回后机构仍能上线。
+        // 仅对 approve 事件校验（其他事件如 offline/online/suspend/resume 不改变机构对外合法性前提）。
+        if ("approve".equals(event)) {
+            validateSupplier(existing.getSupplierCode());
+        }
+
         // 调用状态机引擎校验并取得目标状态（PARK_SM 规则已由 system 模块预热到 Redis）
         int to = stateMachineEngine.transition(SM_DOMAIN, currentFrom, event);
 
@@ -306,7 +312,7 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         return park;
     }
 
-    /** 校验供应商存在且 status=2（已通过） */
+    /** 校验供应商存在且 status=1（已合作） */
     private void validateSupplier(String supplierCode) {
         if (supplierCode == null || supplierCode.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "供应商编码不能为空");
