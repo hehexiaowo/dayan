@@ -23,6 +23,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { getPark } from '@/api/park'
 import { PARK_OPERATE_STATUS_OPTIONS } from '@/types/park'
 import type { ParkInfo } from '@/types/park'
+import BasicTab from './BasicTab.vue'
+import RoomTab from './RoomTab.vue'
+import CareTab from './CareTab.vue'
+import FoodTab from './FoodTab.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,16 +93,16 @@ const tabs = [
 
     <el-divider />
 
-    <!-- tab 区：任务 1/2 填充各 tab 内容 -->
+    <!-- tab 区：基本信息/房型/照护/餐饮 已实现，其余 4 个 tab 占位 -->
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name">
-        <div v-if="t.name === 'basic'" class="tab-placeholder">
-          <!-- TODO 任务1：基本信息编辑表单（复用 ParkInfo 编辑逻辑） -->
-          <el-empty description="基本信息编辑（任务 1 实现）" />
-        </div>
+        <BasicTab v-if="t.name === 'basic'" :park-code="parkCode" />
+        <RoomTab v-else-if="t.name === 'room'" :park-code="parkCode" />
+        <CareTab v-else-if="t.name === 'care'" :park-code="parkCode" />
+        <FoodTab v-else-if="t.name === 'food'" :park-code="parkCode" />
         <div v-else class="tab-placeholder">
-          <!-- TODO 任务1/2：各子表内联 CRUD -->
-          <el-empty :description="`${t.label}管理（任务 1/2 实现）`" />
+          <!-- TODO 任务2：媒体/设施/顾问/周边 各子表内联 CRUD -->
+          <el-empty :description="`${t.label}管理（任务 2 实现）`" />
         </div>
       </el-tab-pane>
     </el-tabs>
