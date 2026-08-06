@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -42,6 +43,14 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
     }
   }
 )
+
+const router = useRouter()
+
+/** 跳转机构详情页（主从详情页 / tab 式，管理子表） */
+function goDetail(row: ParkInfo) {
+  if (!row.parkCode) return
+  router.push({ name: 'ParkDetail', params: { parkCode: row.parkCode } })
+}
 
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -314,8 +323,9 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="380" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button
               v-if="row.operateStatus === ParkOperateStatus.PENDING"
