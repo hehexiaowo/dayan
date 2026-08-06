@@ -76,6 +76,12 @@ const routes: RouteRecordRaw[] = [
         name: 'AgentDetail',
         component: () => import('@/views/channel/agent/detail/index.vue'),
         meta: { title: '代理人详情', hidden: true }
+      },
+      {
+        path: 'resource/scene/detail/:sceneCode',
+        name: 'SceneDetail',
+        component: () => import('@/views/resource/scene/detail/index.vue'),
+        meta: { title: '场景详情', hidden: true }
       }
     ]
   },

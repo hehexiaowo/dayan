@@ -128,3 +128,151 @@ export interface SceneInfoQuery extends PageQuery {
   sceneStatus?: SceneStatus
   auditStatus?: AuditStatus
 }
+
+// ==================== 子表：项目明细（scene_item）====================
+
+/** 场景项目类型：1体验/2讲座/3互动/4餐饮/5检测/6赠品 */
+export const SCENE_ITEM_TYPE_OPTIONS = [
+  { label: '体验项目', value: 1 },
+  { label: '讲座环节', value: 2 },
+  { label: '互动游戏', value: 3 },
+  { label: '餐饮服务', value: 4 },
+  { label: '检测项目', value: 5 },
+  { label: '赠品', value: 6 }
+] as const
+
+/** 通用启用/禁用（item/price/resource 三子表共用） */
+export const COMMON_ENABLE_STATUS_OPTIONS = [
+  { label: '禁用', value: 0 },
+  { label: '启用', value: 1 }
+] as const
+
+/** 场景项目实体（后端 SceneItemVO） */
+export interface SceneItem {
+  id?: number
+  sceneCode: string
+  itemCode: string
+  itemName: string
+  itemType: number
+  itemDescription?: string
+  durationMinutes?: number
+  sortOrder?: number
+  /** 是否必选：1是 0否 */
+  isRequired: number
+  status: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface SceneItemQuery extends PageQuery {
+  sceneCode?: string
+  itemCode?: string
+  itemName?: string
+  itemType?: number
+  status?: number
+}
+
+// ==================== 子表：价格档位（scene_item_price）====================
+
+/** 定价类型：1按人/2按组/3按场 */
+export const SCENE_PRICE_TYPE_OPTIONS = [
+  { label: '按人', value: 1 },
+  { label: '按组', value: 2 },
+  { label: '按场', value: 3 }
+] as const
+
+export interface SceneItemPrice {
+  id?: number
+  sceneCode: string
+  sceneItemCode: string
+  priceType: number
+  /** 原价（表单态可空，提交时由 rules 强制必填） */
+  originalPrice?: number
+  /** 售价（表单态可空，提交时由 rules 强制必填） */
+  salePrice?: number
+  channelPrice?: number
+  priceDescription?: string
+  effectiveDate?: string
+  expireDate?: string
+  status: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface SceneItemPriceQuery extends PageQuery {
+  sceneCode?: string
+  sceneItemCode?: string
+  priceType?: number
+  status?: number
+}
+
+// ==================== 子表：活动日程（scene_schedule）====================
+
+/**
+ * 活动日程状态：0已取消/1可预约/2已约满/3进行中/4已结束。
+ * 权威来源为 DDL 5 态（VO 注释只写了 3 态是过时信息）。
+ */
+export const SCENE_SCHEDULE_STATUS_OPTIONS = [
+  { label: '已取消', value: 0 },
+  { label: '可预约', value: 1 },
+  { label: '已约满', value: 2 },
+  { label: '进行中', value: 3 },
+  { label: '已结束', value: 4 }
+] as const
+
+export interface SceneSchedule {
+  id?: number
+  sceneCode: string
+  scheduleDate: string
+  startTime: string
+  endTime: string
+  maxPerson: number
+  /** 当前已预约人数（与 maxPerson 联动，后端有乐观锁自动状态机，编辑时不手改） */
+  currentPerson: number
+  priceOverride?: number
+  remark?: string
+  status: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface SceneScheduleQuery extends PageQuery {
+  sceneCode?: string
+  status?: number
+  scheduleDate?: string
+}
+
+// ==================== 子表：所需资源（scene_resource）====================
+
+/** 资源类型：1场地/2设备/3物料/4人员/5餐饮 */
+export const SCENE_RESOURCE_TYPE_OPTIONS = [
+  { label: '场地', value: 1 },
+  { label: '设备', value: 2 },
+  { label: '物料', value: 3 },
+  { label: '人员', value: 4 },
+  { label: '餐饮', value: 5 }
+] as const
+
+export interface SceneResource {
+  id?: number
+  sceneCode: string
+  resourceType: number
+  resourceName: string
+  resourceDescription?: string
+  quantity?: number
+  unit?: string
+  unitCost?: number
+  /** 是否由平台提供：1是 0否 */
+  isProvided: number
+  sortOrder?: number
+  status: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface SceneResourceQuery extends PageQuery {
+  sceneCode?: string
+  resourceType?: number
+  resourceName?: string
+  status?: number
+}

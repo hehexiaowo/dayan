@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -384,6 +385,12 @@ function priceLabel(row: SceneInfo): string {
   return row.priceUnit ? `${row.salePrice} ${row.priceUnit}` : String(row.salePrice)
 }
 
+const router = useRouter()
+function goDetail(row: SceneInfo) {
+  if (!row.sceneCode) return
+  router.push({ name: 'SceneDetail', params: { sceneCode: row.sceneCode } })
+}
+
 // 初始化加载
 loadPage()
 </script>
@@ -452,8 +459,9 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="360" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button
               v-if="row.sceneStatus === SceneStatus.DRAFT && row.auditStatus === AuditStatus.PENDING"
