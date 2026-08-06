@@ -524,7 +524,7 @@ DB 验证：`park_info WHERE park_code='PK00002'` → **operate_status=1, is_pub
 #### G-9 负向验证（未审核供应商创建机构被拦截）
 
 ```
-# 新建第二个供应商 SP_BAD，不审核
+# 新建第二个供应商 SP00003，不审核
 POST /admin-api/supplier/info
 { "fullName":"测试驳回供应商", "supplierType":1,
   "unifiedCreditCode":"91110108MA01BAD000",
