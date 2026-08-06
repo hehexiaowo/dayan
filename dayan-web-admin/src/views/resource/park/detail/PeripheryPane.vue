@@ -14,6 +14,7 @@ import {
   updatePeriphery,
   deletePeriphery
 } from '@/api/park-misc'
+import { PERIPHERY_TYPE_OPTIONS, peripheryTypeLabel } from '@/types/park'
 import type { ParkPeriphery, ParkPeripheryQuery } from '@/types/park'
 
 const props = defineProps<{
@@ -147,13 +148,9 @@ defineExpose({ loadPage })
         <el-input v-model="query.placeName" placeholder="地点名称" clearable @keyup.enter="handleSearch" />
       </el-form-item>
       <el-form-item label="周边类型">
-        <el-input-number
-          v-model="query.peripheryType"
-          :min="0"
-          controls-position="right"
-          placeholder="类型"
-          style="width: 120px"
-        />
+        <el-select v-model="query.peripheryType" placeholder="全部" clearable style="width: 140px">
+          <el-option v-for="o in PERIPHERY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
@@ -169,7 +166,9 @@ defineExpose({ loadPage })
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="placeName" label="地点名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="peripheryType" label="类型" width="90" align="center" />
+      <el-table-column prop="peripheryType" label="类型" width="90" align="center">
+        <template #default="{ row }">{{ peripheryTypeLabel(row.peripheryType) }}</template>
+      </el-table-column>
       <el-table-column prop="placeAddress" label="地址" min-width="180" show-overflow-tooltip />
       <el-table-column prop="distance" label="距离" width="120" show-overflow-tooltip />
       <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
@@ -217,12 +216,9 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="周边类型">
-              <el-input-number
-                v-model="form.peripheryType"
-                :min="0"
-                controls-position="right"
-                style="width: 100%"
-              />
+              <el-select v-model="form.peripheryType" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in PERIPHERY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

@@ -14,6 +14,7 @@ import {
   updateMediaFile,
   deleteMediaFile
 } from '@/api/park-media'
+import { FILE_TYPE_OPTIONS, fileTypeLabel, fileSizeLabel } from '@/types/park'
 import type { ParkMediaFile, ParkMediaFileQuery } from '@/types/park'
 
 const props = defineProps<{
@@ -166,8 +167,12 @@ defineExpose({ loadPage })
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="fileName" label="文档名称" min-width="180" show-overflow-tooltip />
       <el-table-column prop="fileFormat" label="格式" width="100" align="center" />
-      <el-table-column prop="fileType" label="类型" width="90" align="center" />
-      <el-table-column prop="fileSize" label="大小(B)" width="110" align="right" />
+      <el-table-column prop="fileType" label="类型" width="90" align="center">
+        <template #default="{ row }">{{ fileTypeLabel(row.fileType) }}</template>
+      </el-table-column>
+      <el-table-column prop="fileSize" label="大小" width="110" align="right">
+        <template #default="{ row }">{{ fileSizeLabel(row.fileSize) }}</template>
+      </el-table-column>
       <el-table-column prop="fileDescription" label="描述" min-width="160" show-overflow-tooltip />
       <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
       <el-table-column prop="status" label="状态" width="90" align="center">
@@ -224,7 +229,9 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="文档类型">
-              <el-input-number v-model="form.fileType" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.fileType" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in FILE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

@@ -18,6 +18,7 @@ import {
   updateFacility,
   deleteFacility
 } from '@/api/park-facility'
+import { FACILITY_CATEGORY_OPTIONS, facilityCategoryLabel } from '@/types/park'
 import type { ParkFacility, ParkFacilityQuery } from '@/types/park'
 
 const props = defineProps<{
@@ -179,13 +180,9 @@ defineExpose({ loadPage })
         <el-input v-model="query.facilityName" placeholder="设施名称" clearable @keyup.enter="handleSearch" />
       </el-form-item>
       <el-form-item label="设施类别">
-        <el-input-number
-          v-model="query.facilityCategory"
-          :min="0"
-          controls-position="right"
-          placeholder="类别"
-          style="width: 120px"
-        />
+        <el-select v-model="query.facilityCategory" placeholder="全部" clearable style="width: 140px">
+          <el-option v-for="o in FACILITY_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
@@ -202,7 +199,9 @@ defineExpose({ loadPage })
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="facilityCode" label="设施编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="facilityName" label="设施名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="facilityCategory" label="类别" width="90" align="center" />
+      <el-table-column prop="facilityCategory" label="类别" width="90" align="center">
+        <template #default="{ row }">{{ facilityCategoryLabel(row.facilityCategory) }}</template>
+      </el-table-column>
       <el-table-column prop="buildingName" label="楼栋" width="120" show-overflow-tooltip />
       <el-table-column prop="floor" label="楼层" width="90" align="center" />
       <el-table-column prop="area" label="面积(㎡)" width="100" align="right" />
@@ -267,12 +266,9 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="设施类别">
-              <el-input-number
-                v-model="form.facilityCategory"
-                :min="0"
-                controls-position="right"
-                style="width: 100%"
-              />
+              <el-select v-model="form.facilityCategory" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in FACILITY_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

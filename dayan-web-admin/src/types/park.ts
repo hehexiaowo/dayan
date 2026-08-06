@@ -825,3 +825,160 @@ export interface ParkServiceItemQuery extends PageQuery {
   isIncluded?: number
   status?: number
 }
+
+// ============================================================================
+// 子表枚举 OPTIONS 与 label 映射（DDL 为准，补全列表页/详情页渲染用）
+// ============================================================================
+
+/** 房型-房间类别（room_category）：1=单人间..5=VIP房 */
+export const ROOM_CATEGORY_OPTIONS = [
+  { label: '单人间', value: 1 },
+  { label: '双人间', value: 2 },
+  { label: '多人间', value: 3 },
+  { label: '套间', value: 4 },
+  { label: 'VIP房', value: 5 }
+] as const
+
+/** 房型-居住类型（stay_type）：1=长居, 2=旅居 */
+export const STAY_TYPE_OPTIONS = [
+  { label: '长居', value: 1 },
+  { label: '旅居', value: 2 }
+] as const
+
+/** 照护-照护等级（care_level）：1=特级护理..5=生活自理 */
+export const CARE_LEVEL_OPTIONS = [
+  { label: '特级护理', value: 1 },
+  { label: '一级护理', value: 2 },
+  { label: '二级护理', value: 3 },
+  { label: '三级护理', value: 4 },
+  { label: '生活自理', value: 5 }
+] as const
+
+/** 餐饮-餐食方案（meal_plan）：1=三餐..4=自选 */
+export const MEAL_PLAN_OPTIONS = [
+  { label: '方案一', value: 1 },
+  { label: '方案二', value: 2 },
+  { label: '方案三', value: 3 },
+  { label: '自选', value: 4 }
+] as const
+
+/** 餐饮-特殊饮食（special_diet）：0=否, 1=是 */
+export const SPECIAL_DIET_OPTIONS = [
+  { label: '否', value: 0 },
+  { label: '是', value: 1 }
+] as const
+
+/** 媒体-图片类型（image_type）：1=外观..11=其他 */
+export const IMAGE_TYPE_OPTIONS = [
+  { label: '外观', value: 1 },
+  { label: '大堂', value: 2 },
+  { label: '房间', value: 3 },
+  { label: '餐厅', value: 4 },
+  { label: '活动区', value: 5 },
+  { label: '花园', value: 6 },
+  { label: '医疗区', value: 7 },
+  { label: '户型', value: 8 },
+  { label: '文娱生活', value: 9 },
+  { label: '康养状况', value: 10 },
+  { label: '其他', value: 11 }
+] as const
+
+/** 媒体-视频类型（video_type）：1=宣传视频, 2=环境展示, 3=活动记录 */
+export const VIDEO_TYPE_OPTIONS = [
+  { label: '宣传视频', value: 1 },
+  { label: '环境展示', value: 2 },
+  { label: '活动记录', value: 3 }
+] as const
+
+/** 媒体-文档类型（file_type）：1=资质文件..5=其他 */
+export const FILE_TYPE_OPTIONS = [
+  { label: '资质文件', value: 1 },
+  { label: '合同文件', value: 2 },
+  { label: '宣传资料', value: 3 },
+  { label: '费用文档', value: 4 },
+  { label: '其他', value: 5 }
+] as const
+
+/** 媒体-VR类型（vr_type）：1=全景VR, 2=3D模型, 3=视频VR */
+export const VR_TYPE_OPTIONS = [
+  { label: '全景VR', value: 1 },
+  { label: '3D模型', value: 2 },
+  { label: '视频VR', value: 3 }
+] as const
+
+/** 设施-类别（facility_category）：1=休闲娱乐..6=安全保障 */
+export const FACILITY_CATEGORY_OPTIONS = [
+  { label: '休闲娱乐', value: 1 },
+  { label: '医疗健康', value: 2 },
+  { label: '运动健身', value: 3 },
+  { label: '文化教育', value: 4 },
+  { label: '生活服务', value: 5 },
+  { label: '安全保障', value: 6 }
+] as const
+
+/** 服务项-类别（service_category）：1=生活照料..6=其他 */
+export const SERVICE_CATEGORY_OPTIONS = [
+  { label: '生活照料', value: 1 },
+  { label: '医疗健康', value: 2 },
+  { label: '康复训练', value: 3 },
+  { label: '文化娱乐', value: 4 },
+  { label: '心理关怀', value: 5 },
+  { label: '其他', value: 6 }
+] as const
+
+/** 周边-类型（periphery_type）：1=交通-公交..8=其他 */
+export const PERIPHERY_TYPE_OPTIONS = [
+  { label: '交通-公交', value: 1 },
+  { label: '交通-地铁', value: 2 },
+  { label: '交通-自驾', value: 3 },
+  { label: '景点', value: 4 },
+  { label: '医疗', value: 5 },
+  { label: '购物', value: 6 },
+  { label: '公园', value: 7 },
+  { label: '其他', value: 8 }
+] as const
+
+/** 通用 0/1 布尔选项（isCurrent / isPromotion / isIncluded 等） */
+export const BOOL_INT_OPTIONS = [
+  { label: '否', value: 0 },
+  { label: '是', value: 1 }
+] as const
+
+/** 通用状态（0=停用, 1=启用）——子表通用 */
+export const SUB_TABLE_STATUS_OPTIONS = [
+  { label: '停用', value: 0 },
+  { label: '启用', value: 1 }
+] as const
+
+// ---- label 映射函数（列表渲染用，找不到回退原始值或 '--'）----
+
+/** 通用：按 OPTIONS 数组查 label */
+function labelOf(options: ReadonlyArray<{ label: string; value: number }>, v?: number): string {
+  if (v == null) return '--'
+  const found = options.find((o) => o.value === v)
+  return found ? found.label : String(v)
+}
+
+export const roomCategoryLabel = (v?: number) => labelOf(ROOM_CATEGORY_OPTIONS, v)
+export const stayTypeLabel = (v?: number) => labelOf(STAY_TYPE_OPTIONS, v)
+export const careLevelLabel = (v?: number) => labelOf(CARE_LEVEL_OPTIONS, v)
+export const mealPlanLabel = (v?: number) => labelOf(MEAL_PLAN_OPTIONS, v)
+export const specialDietLabel = (v?: number) => labelOf(SPECIAL_DIET_OPTIONS, v)
+export const imageTypeLabel = (v?: number) => labelOf(IMAGE_TYPE_OPTIONS, v)
+export const videoTypeLabel = (v?: number) => labelOf(VIDEO_TYPE_OPTIONS, v)
+export const fileTypeLabel = (v?: number) => labelOf(FILE_TYPE_OPTIONS, v)
+export const vrTypeLabel = (v?: number) => labelOf(VR_TYPE_OPTIONS, v)
+export const facilityCategoryLabel = (v?: number) => labelOf(FACILITY_CATEGORY_OPTIONS, v)
+export const serviceCategoryLabel = (v?: number) => labelOf(SERVICE_CATEGORY_OPTIONS, v)
+export const peripheryTypeLabel = (v?: number) => labelOf(PERIPHERY_TYPE_OPTIONS, v)
+/** 0/1 布尔 label：是/否 */
+export const boolIntLabel = (v?: number) => labelOf(BOOL_INT_OPTIONS, v)
+/** 子表状态 label：启用/停用 */
+export const subTableStatusLabel = (v?: number) => labelOf(SUB_TABLE_STATUS_OPTIONS, v)
+/** 文件大小格式化：B → KB/MB 友好显示 */
+export function fileSizeLabel(bytes?: number): string {
+  if (bytes == null) return '--'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}

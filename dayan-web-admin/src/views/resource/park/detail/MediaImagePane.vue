@@ -15,6 +15,7 @@ import {
   updateMediaImage,
   deleteMediaImage
 } from '@/api/park-media'
+import { IMAGE_TYPE_OPTIONS, imageTypeLabel, fileSizeLabel } from '@/types/park'
 import type { ParkMediaImage, ParkMediaImageQuery } from '@/types/park'
 
 const props = defineProps<{
@@ -191,14 +192,18 @@ defineExpose({ loadPage })
         </template>
       </el-table-column>
       <el-table-column prop="imageName" label="图片名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="imageType" label="类型" width="90" align="center" />
+      <el-table-column prop="imageType" label="类型" width="90" align="center">
+        <template #default="{ row }">{{ imageTypeLabel(row.imageType) }}</template>
+      </el-table-column>
       <el-table-column label="尺寸" width="120" align="center">
         <template #default="{ row }">
           <span v-if="row.width || row.height">{{ row.width }}×{{ row.height }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column prop="fileSize" label="大小(B)" width="110" align="right" />
+      <el-table-column prop="fileSize" label="大小" width="110" align="right">
+        <template #default="{ row }">{{ fileSizeLabel(row.fileSize) }}</template>
+      </el-table-column>
       <el-table-column label="封面" width="80" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.isCover === 1" type="warning" size="small">封面</el-tag>
@@ -255,7 +260,9 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="图片类型">
-              <el-input-number v-model="form.imageType" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.imageType" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in IMAGE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

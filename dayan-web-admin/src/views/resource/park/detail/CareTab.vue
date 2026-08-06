@@ -24,7 +24,7 @@ import {
   updateCarePrice,
   deleteCarePrice
 } from '@/api/park-care'
-import { CARE_FOOD_PRICE_TYPE_OPTIONS, careFoodPriceTypeLabel } from '@/types/park'
+import { CARE_FOOD_PRICE_TYPE_OPTIONS, careFoodPriceTypeLabel, CARE_LEVEL_OPTIONS, careLevelLabel } from '@/types/park'
 import type { ParkCareType, ParkCareTypeQuery, ParkCarePrice } from '@/types/park'
 
 const props = defineProps<{
@@ -379,7 +379,9 @@ defineExpose({ loadPage })
       </el-table-column>
       <el-table-column prop="careTypeCode" label="照护编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="careTypeName" label="照护名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="careLevel" label="等级" width="80" align="center" />
+      <el-table-column prop="careLevel" label="等级" width="90" align="center">
+        <template #default="{ row }">{{ careLevelLabel(row.careLevel) }}</template>
+      </el-table-column>
       <el-table-column prop="careTarget" label="照护对象" min-width="140" show-overflow-tooltip />
       <el-table-column prop="careFrequency" label="频次" min-width="120" show-overflow-tooltip />
       <el-table-column prop="nursePatientRatio" label="护患比" width="100" align="center" />
@@ -439,13 +441,9 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="照护等级">
-              <el-input-number
-                v-model="typeForm.careLevel"
-                :min="1"
-                :max="5"
-                controls-position="right"
-                style="width: 100%"
-              />
+              <el-select v-model="typeForm.careLevel" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in CARE_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

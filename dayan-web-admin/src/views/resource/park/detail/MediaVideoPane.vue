@@ -15,6 +15,7 @@ import {
   updateMediaVideo,
   deleteMediaVideo
 } from '@/api/park-media'
+import { VIDEO_TYPE_OPTIONS, videoTypeLabel, fileSizeLabel } from '@/types/park'
 import type { ParkMediaVideo, ParkMediaVideoQuery } from '@/types/park'
 
 const props = defineProps<{
@@ -188,11 +189,15 @@ defineExpose({ loadPage })
         </template>
       </el-table-column>
       <el-table-column prop="videoName" label="视频名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="videoType" label="类型" width="90" align="center" />
+      <el-table-column prop="videoType" label="类型" width="90" align="center">
+        <template #default="{ row }">{{ videoTypeLabel(row.videoType) }}</template>
+      </el-table-column>
       <el-table-column label="时长" width="100" align="center">
         <template #default="{ row }">{{ formatDuration(row.duration) }}</template>
       </el-table-column>
-      <el-table-column prop="fileSize" label="大小(B)" width="110" align="right" />
+      <el-table-column prop="fileSize" label="大小" width="110" align="right">
+        <template #default="{ row }">{{ fileSizeLabel(row.fileSize) }}</template>
+      </el-table-column>
       <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
       <el-table-column prop="status" label="状态" width="90" align="center">
         <template #default="{ row }">
@@ -248,7 +253,9 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="视频类型">
-              <el-input-number v-model="form.videoType" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.videoType" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in VIDEO_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

@@ -31,7 +31,13 @@ import {
   updateRoomPrice,
   deleteRoomPrice
 } from '@/api/park-room'
-import { ROOM_PRICE_TYPE_OPTIONS, roomPriceTypeLabel } from '@/types/park'
+import {
+  ROOM_PRICE_TYPE_OPTIONS,
+  STAY_TYPE_OPTIONS,
+  roomPriceTypeLabel,
+  roomCategoryLabel,
+  stayTypeLabel
+} from '@/types/park'
 import type { ParkRoomType, ParkRoomTypeQuery, ParkRoomPrice } from '@/types/park'
 
 const props = defineProps<{
@@ -460,9 +466,15 @@ defineExpose({ loadPage })
       </el-table-column>
       <el-table-column prop="roomTypeCode" label="房型编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="roomTypeName" label="房型名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="roomCategory" label="分类" width="90" align="center" />
-      <el-table-column prop="stayType" label="居住类型" width="100" align="center" />
-      <el-table-column prop="area" label="面积(㎡)" width="100" align="right" />
+      <el-table-column prop="roomCategory" label="分类" width="90" align="center">
+        <template #default="{ row }">{{ roomCategoryLabel(row.roomCategory) }}</template>
+      </el-table-column>
+      <el-table-column prop="stayType" label="居住类型" width="100" align="center">
+        <template #default="{ row }">{{ stayTypeLabel(row.stayType) }}</template>
+      </el-table-column>
+      <el-table-column prop="area" label="面积(㎡)" width="100" align="right">
+        <template #default="{ row }">{{ row.area != null ? row.area : '--' }}</template>
+      </el-table-column>
       <el-table-column prop="bedCount" label="床位" width="80" align="center" />
       <el-table-column prop="totalRooms" label="总房间" width="90" align="center" />
       <el-table-column prop="availableRooms" label="可用" width="80" align="center" />
@@ -545,13 +557,10 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="房型分类">
-              <el-input-number
-                v-model="typeForm.roomCategory"
-                :min="0"
-                controls-position="right"
-                style="width: 100%"
-              />
+            <el-form-item label="居住类型">
+              <el-select v-model="typeForm.stayType" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in STAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
