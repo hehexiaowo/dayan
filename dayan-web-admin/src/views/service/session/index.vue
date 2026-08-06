@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
   pageSessions,
-  getSession,
   updateSession,
   deleteSession,
   transitionSession
@@ -56,6 +56,13 @@ const {
   }
 )
 
+const router = useRouter()
+
+function goDetail(row: ServiceSession) {
+  if (!row.sessionCode) return
+  router.push({ name: 'SessionDetail', params: { sessionCode: row.sessionCode } })
+}
+
 function handleReset() {
   query.sessionCode = ''
   query.equityCode = ''
@@ -64,20 +71,6 @@ function handleReset() {
   query.serviceType = undefined
   query.sessionStatus = undefined
   handleSearch()
-}
-
-// ---------- 详情弹窗 ----------
-const detailVisible = ref(false)
-const detail = ref<ServiceSession>({})
-
-async function openDetail(row: ServiceSession) {
-  if (!row.sessionCode) return
-  try {
-    detail.value = await getSession(row.sessionCode)
-  } catch {
-    detail.value = row
-  }
-  detailVisible.value = true
 }
 
 // ---------- 编辑弹窗（普通字段） ----------
@@ -341,7 +334,7 @@ loadPage()
         <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip />
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <!-- 按状态动态展示流转按钮（统一走 transition 端点） -->
             <el-button
@@ -426,41 +419,6 @@ loadPage()
         />
       </div>
     </el-card>
-
-    <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="服务会话详情" width="820px" :close-on-click-modal="false">
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="会话编码">{{ detail.sessionCode }}</el-descriptions-item>
-        <el-descriptions-item label="服务类型">{{ serviceTypeLabel(detail.serviceType) }}</el-descriptions-item>
-        <el-descriptions-item label="服务标题">{{ detail.serviceTitle || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="优先级">{{ detail.priority ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="权益编码">{{ detail.equityCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="客户编码">{{ detail.clientCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="管家">{{ detail.butlerFullName || detail.butlerCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="养老机构">{{ detail.parkFullName || detail.parkCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="代理人">{{ detail.agentCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="渠道">{{ detail.channelCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="服务描述" :span="2">{{ detail.serviceDescription || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="会话状态">
-          <el-tag :type="sessionStatusTagType(detail.sessionStatus)">{{ sessionStatusLabel(detail.sessionStatus) }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="子状态">{{ detail.subStatus || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="受理时间">{{ detail.acceptTime || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="完成时间">{{ detail.completeTime || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="关闭时间">{{ detail.closeTime || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="总服务时长(小时)">{{ detail.totalDuration ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="接触次数">{{ detail.touchCount ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="是否满意">{{ detail.isSatisfied ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="综合评分">{{ detail.overallRating ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="关闭原因" :span="2">{{ detail.closeReason || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="备注" :span="2">{{ detail.remark || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detail.createdAt || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ detail.updatedAt || '--' }}</el-descriptions-item>
-      </el-descriptions>
-      <template #footer>
-        <el-button type="primary" @click="detailVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
 
     <!-- 编辑弹窗（普通字段） -->
     <el-dialog v-model="dialogVisible" title="编辑会话" width="620px" :close-on-click-modal="false">

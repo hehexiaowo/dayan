@@ -88,6 +88,12 @@ const routes: RouteRecordRaw[] = [
         name: 'ChannelDetail',
         component: () => import('@/views/channel/info/detail/index.vue'),
         meta: { title: '渠道详情', hidden: true }
+      },
+      {
+        path: 'service/session/detail/:sessionCode',
+        name: 'SessionDetail',
+        component: () => import('@/views/service/session/detail/index.vue'),
+        meta: { title: '会话详情', hidden: true }
       }
     ]
   },

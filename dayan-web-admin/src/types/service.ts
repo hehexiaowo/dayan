@@ -574,3 +574,400 @@ export interface ServiceSessionQuery extends PageQuery {
   subStatus?: string
   sourceType?: number
 }
+
+// ==================== 子表：服务评价（ServiceEvaluation，1:1 一会话一评价）====================
+
+/** 评价状态：0已隐藏/1正常 */
+export const EVALUATION_STATUS_OPTIONS = [
+  { label: '已隐藏', value: 0 },
+  { label: '正常', value: 1 }
+] as const
+
+/** 是否匿名：0否/1是 */
+export const EVALUATION_IS_ANONYMOUS_OPTIONS = [
+  { label: '否', value: 0 },
+  { label: '是', value: 1 }
+] as const
+
+/**
+ * 服务评价实体（后端 ServiceEvaluationVO）。
+ *
+ * 一会话一评价（业务约束，非 upsert）：前端需先 list?sessionCode 判断有无评价，
+ * 有则 PUT /{id}，无则 POST。create 时后端校验已存在则抛业务异常。
+ *
+ * 主键 id 雪花 Long（无业务 code），路径参数用 id。
+ * 4 维评分均 1-5，建议 el-rate。
+ */
+export interface ServiceEvaluation {
+  id?: number
+  sessionCode: string
+  clientCode?: string
+  butlerCode?: string
+  parkCode?: string
+  /** 服务态度评分 1-5 */
+  attitudeRating?: number
+  /** 专业度评分 1-5 */
+  professionalRating?: number
+  /** 响应速度评分 1-5 */
+  responsivenessRating?: number
+  /** 满意度评分 1-5 */
+  satisfactionRating?: number
+  content?: string
+  /** 评价图片（JSON 数组字符串） */
+  imageUrls?: string
+  /** 是否匿名：0否/1是 */
+  isAnonymous?: number
+  /** 回复内容（运营回复） */
+  replyContent?: string
+  replyTime?: string
+  replyByCode?: string
+  /** 状态：0已隐藏/1正常 */
+  status?: number
+  createdAt?: string
+}
+
+export interface ServiceEvaluationQuery extends PageQuery {
+  sessionCode?: string
+  clientCode?: string
+  butlerCode?: string
+  parkCode?: string
+  isAnonymous?: number
+  status?: number
+}
+
+// ==================== 子表：权益需求（ServiceEquityDemand）====================
+
+/** 需求类型：1机构入住/2日间照料/3居家护理/4场景活动/5旅居 */
+export const DEMAND_TYPE_OPTIONS = [
+  { label: '机构入住', value: 1 },
+  { label: '日间照料', value: 2 },
+  { label: '居家护理', value: 3 },
+  { label: '场景活动', value: 4 },
+  { label: '旅居', value: 5 }
+] as const
+
+/** 联系偏好：1电话/2微信/3短信 */
+export const CONTACT_PREFERENCE_OPTIONS = [
+  { label: '电话', value: 1 },
+  { label: '微信', value: 2 },
+  { label: '短信', value: 3 }
+] as const
+
+/** 收集方式：1电话沟通/2上门拜访/3在线填写/4代理人转述 */
+export const COLLECT_METHOD_OPTIONS = [
+  { label: '电话沟通', value: 1 },
+  { label: '上门拜访', value: 2 },
+  { label: '在线填写', value: 3 },
+  { label: '代理人转述', value: 4 }
+] as const
+
+/** 需求状态：0待处理/1已整理/2已确认 */
+export const DEMAND_STATUS_OPTIONS = [
+  { label: '待处理', value: 0 },
+  { label: '已整理', value: 1 },
+  { label: '已确认', value: 2 }
+] as const
+
+/**
+ * 权益需求实体（后端 ServiceEquityDemandVO）。
+ *
+ * 主键 id 雪花 Long，业务键 demandCode（DM+10，服务端生成）。
+ * collectTime 服务端取当前时间（前端不传）；status create 时固定 0。
+ * UpdateDTO 不含 sessionCode/clientCode/butlerCode/demandCode/collectTime。
+ */
+export interface ServiceEquityDemand {
+  id?: number
+  sessionCode: string
+  /** 需求编码（DM+10，服务端生成） */
+  demandCode?: string
+  clientCode: string
+  butlerCode?: string
+  demandType?: number
+  usePersonName?: string
+  usePersonAge?: number
+  usePersonGender?: number
+  healthSummary?: string
+  careLevelNeed?: number
+  /** 城市偏好（JSON 数组） */
+  cityPreference?: string
+  /** 区域偏好（JSON 数组） */
+  areaPreference?: string
+  budgetMin?: number
+  budgetMax?: number
+  /** 房间偏好（JSON 数组） */
+  roomPreference?: string
+  foodPreference?: string
+  specialNeeds?: string
+  expectedTime?: string
+  contactPreference?: number
+  collectMethod?: number
+  /** 收集时间（服务端取当前时间） */
+  collectTime?: string
+  demandSummary?: string
+  /** 需求资料图片（JSON 数组） */
+  demandImages?: string
+  /** 状态：0待处理/1已整理/2已确认（create 固定 0） */
+  status?: number
+  remark?: string
+  createdAt?: string
+}
+
+export interface ServiceEquityDemandQuery extends PageQuery {
+  sessionCode?: string
+  demandCode?: string
+  clientCode?: string
+  butlerCode?: string
+  demandType?: number
+  status?: number
+}
+
+// ==================== 子表：权益方案（ServiceEquitySolution）====================
+
+/** 方案类型：1推荐/2备选 */
+export const SOLUTION_TYPE_OPTIONS = [
+  { label: '推荐方案', value: 1 },
+  { label: '备选方案', value: 2 }
+] as const
+
+/** 呈现方式：1当面/2电话/3文档发送 */
+export const PRESENTATION_METHOD_OPTIONS = [
+  { label: '当面', value: 1 },
+  { label: '电话', value: 2 },
+  { label: '文档发送', value: 3 }
+] as const
+
+/** 客户是否接受：0否/1是/2需调整 */
+export const SOLUTION_IS_ACCEPTED_OPTIONS = [
+  { label: '否', value: 0 },
+  { label: '是', value: 1 },
+  { label: '需调整', value: 2 }
+] as const
+
+/** 方案状态：0制定中/1待呈现/2已呈现/3已确认/4已拒绝/5需调整 */
+export const SOLUTION_STATUS_OPTIONS = [
+  { label: '制定中', value: 0 },
+  { label: '待呈现', value: 1 },
+  { label: '已呈现', value: 2 },
+  { label: '已确认', value: 3 },
+  { label: '已拒绝', value: 4 },
+  { label: '需调整', value: 5 }
+] as const
+
+/**
+ * 权益方案实体（后端 ServiceEquitySolutionVO）。
+ *
+ * 主键 id 雪花 Long，业务键 solutionCode（SO+10，服务端生成）。
+ * demandCode 必填（关联需求，业务链 demand→solution）。
+ * 有独立 /accept 端点（切换 isAccepted，会话 confirm_solution 依赖 isAccepted=1）。
+ * UpdateDTO 不含 sessionCode/demandCode/clientCode/butlerCode/solutionCode/presentationTime/adjustCount。
+ */
+export interface ServiceEquitySolution {
+  id?: number
+  sessionCode: string
+  /** 关联需求编码（外键→demand，必填） */
+  demandCode: string
+  clientCode: string
+  butlerCode?: string
+  /** 方案编码（SO+10，服务端生成） */
+  solutionCode?: string
+  solutionName?: string
+  solutionType?: number
+  /** 推荐机构列表（JSON 数组） */
+  recommendedParks?: string
+  planSummary?: string
+  /** 服务项目明细（JSON 数组） */
+  serviceItems?: string
+  estimatedCost?: number
+  /** 费用明细（JSON） */
+  costBreakdown?: string
+  timeline?: string
+  advantages?: string
+  risks?: string
+  comparison?: string
+  presentationTime?: string
+  presentationMethod?: number
+  clientFeedback?: string
+  /** 客户是否接受：0否/1是/2需调整（通过 /accept 端点切换） */
+  isAccepted?: number
+  /** 调整次数（默认 0） */
+  adjustCount?: number
+  /** 状态：0制定中/1待呈现/2已呈现/3已确认/4已拒绝/5需调整 */
+  status?: number
+  remark?: string
+  createdAt?: string
+}
+
+export interface ServiceEquitySolutionQuery extends PageQuery {
+  sessionCode?: string
+  solutionCode?: string
+  demandCode?: string
+  clientCode?: string
+  butlerCode?: string
+  solutionType?: number
+  isAccepted?: number
+  status?: number
+}
+
+// ==================== 子表：全程安排（ServiceEquityArrange）====================
+
+/** 安排类型：1参观预约/2入住安排/3活动报名/4服务预约/5交通安排/6其他 */
+export const ARRANGE_TYPE_OPTIONS = [
+  { label: '参观预约', value: 1 },
+  { label: '入住安排', value: 2 },
+  { label: '活动报名', value: 3 },
+  { label: '服务预约', value: 4 },
+  { label: '交通安排', value: 5 },
+  { label: '其他', value: 6 }
+] as const
+
+/** 安排状态：0待安排/1已安排/2进行中/3已完成/4已取消 */
+export const ARRANGE_STATUS_OPTIONS = [
+  { label: '待安排', value: 0 },
+  { label: '已安排', value: 1 },
+  { label: '进行中', value: 2 },
+  { label: '已完成', value: 3 },
+  { label: '已取消', value: 4 }
+] as const
+
+/**
+ * 权益安排实体（后端 ServiceEquityArrangeVO）。
+ *
+ * 主键 id 雪花 Long，业务键 arrangeCode（AR+10，服务端生成）。
+ * solutionCode 可空（软关联方案）。有独立 /confirm 端点（isConfirmed=1 时自动写 confirmTime，
+ * 会话 start_service 依赖 isConfirmed=1）。
+ * UpdateDTO 不含 sessionCode/clientCode/butlerCode/arrangeCode/confirmTime/completeTime/isConfirmed。
+ */
+export interface ServiceEquityArrange {
+  id?: number
+  sessionCode: string
+  /** 关联方案编码（外键→solution，可空） */
+  solutionCode?: string
+  clientCode: string
+  butlerCode?: string
+  /** 安排编码（AR+10，服务端生成） */
+  arrangeCode?: string
+  arrangeType?: number
+  parkCode?: string
+  parkFullName?: string
+  arrangeDate?: string
+  arrangeTimeStart?: string
+  arrangeTimeEnd?: string
+  arrangeAddress?: string
+  contactPerson?: string
+  contactPhone?: string
+  participantCount?: number
+  /** 准备事项（JSON 数组） */
+  prepareItems?: string
+  progressNotes?: string
+  confirmTime?: string
+  completeTime?: string
+  /** 是否已确认：0否/1是（通过 /confirm 端点切换，confirm 后自动写 confirmTime） */
+  isConfirmed?: number
+  /** 状态：0待安排/1已安排/2进行中/3已完成/4已取消 */
+  status?: number
+  cancelReason?: string
+  remark?: string
+  createdAt?: string
+}
+
+export interface ServiceEquityArrangeQuery extends PageQuery {
+  sessionCode?: string
+  arrangeCode?: string
+  solutionCode?: string
+  clientCode?: string
+  butlerCode?: string
+  arrangeType?: number
+  isConfirmed?: number
+  status?: number
+}
+
+// ==================== 子表：回访品控（ServiceEquityFollowup）====================
+
+/** 回访类型：1服务后回访/2入住后回访/3定期回访/4投诉回访 */
+export const FOLLOWUP_TYPE_OPTIONS = [
+  { label: '服务后回访', value: 1 },
+  { label: '入住后回访', value: 2 },
+  { label: '定期回访', value: 3 },
+  { label: '投诉回访', value: 4 }
+] as const
+
+/** 回访方式：1电话/2微信/3上门/4问卷 */
+export const FOLLOWUP_METHOD_OPTIONS = [
+  { label: '电话', value: 1 },
+  { label: '微信', value: 2 },
+  { label: '上门', value: 3 },
+  { label: '问卷', value: 4 }
+] as const
+
+/** 回访状态：0待回访/1回访中/2已完成/3需再跟进 */
+export const FOLLOWUP_STATUS_OPTIONS = [
+  { label: '待回访', value: 0 },
+  { label: '回访中', value: 1 },
+  { label: '已完成', value: 2 },
+  { label: '需再跟进', value: 3 }
+] as const
+
+/** 是否（isFollowupNeeded/isResolved 共用 0/1） */
+export const FOLLOWUP_YES_NO_OPTIONS = [
+  { label: '否', value: 0 },
+  { label: '是', value: 1 }
+] as const
+
+/**
+ * 回访品控实体（后端 ServiceEquityFollowupVO）。
+ *
+ * 主键 id 雪花 Long，业务键 followupCode（FU+10，服务端生成）。
+ * arrangeCode 可空（软关联安排）。
+ * 服务端自动逻辑（create 时）：isFollowupNeeded 由满意度算（任一<3 则1）、
+ * nextFollowupDate 自动 +7 天、status 固定 2。前端 create 表单不含这些字段。
+ * 4 维满意度均 1-5，建议 el-rate。
+ * UpdateDTO 不含 sessionCode/arrangeCode/clientCode/butlerCode/followupCode/followupTime。
+ */
+export interface ServiceEquityFollowup {
+  id?: number
+  sessionCode: string
+  /** 关联安排编码（外键→arrange，可空） */
+  arrangeCode?: string
+  clientCode: string
+  butlerCode?: string
+  /** 回访编码（FU+10，服务端生成） */
+  followupCode?: string
+  followupType?: number
+  followupMethod?: number
+  followupDate?: string
+  /** 回访时间（服务端控制） */
+  followupTime?: string
+  /** 服务满意度 1-5 */
+  serviceSatisfaction?: number
+  /** 机构满意度 1-5 */
+  parkSatisfaction?: number
+  /** 管家满意度 1-5 */
+  butlerSatisfaction?: number
+  /** 综合满意度 1-5 */
+  overallSatisfaction?: number
+  serviceEvaluation?: string
+  improvementSuggestions?: string
+  complaints?: string
+  complaintHandle?: string
+  /** 是否需要后续跟进：0否/1是（服务端按满意度自动算，update 可手改） */
+  isFollowupNeeded?: number
+  followupPlan?: string
+  /** 下次回访日期（服务端可能自动 +7 天） */
+  nextFollowupDate?: string
+  /** 问题是否已解决：0否/1是 */
+  isResolved?: number
+  /** 状态：0待回访/1回访中/2已完成/3需再跟进（create 固定 2） */
+  status?: number
+  remark?: string
+  createdAt?: string
+}
+
+export interface ServiceEquityFollowupQuery extends PageQuery {
+  sessionCode?: string
+  followupCode?: string
+  arrangeCode?: string
+  clientCode?: string
+  butlerCode?: string
+  followupType?: number
+  status?: number
+}
