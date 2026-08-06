@@ -83,7 +83,7 @@ const form = reactive<SupplierInfo>({
   logoUrl: '',
   description: '',
   commissionRate: undefined,
-  status: SupplierStatus.ENABLED,
+  status: undefined,
   sortOrder: 0,
   remark: ''
 })
@@ -115,7 +115,7 @@ function resetForm() {
     logoUrl: '',
     description: '',
     commissionRate: undefined,
-    status: SupplierStatus.ENABLED,
+    status: undefined,
     sortOrder: 0,
     remark: ''
   })
@@ -150,7 +150,7 @@ function fillForm(detail: SupplierInfo) {
     logoUrl: detail.logoUrl ?? '',
     description: detail.description ?? '',
     commissionRate: detail.commissionRate,
-    status: detail.status ?? SupplierStatus.ENABLED,
+    status: detail.status,
     sortOrder: detail.sortOrder ?? 0,
     remark: detail.remark ?? ''
   })
@@ -272,10 +272,12 @@ function auditStatusLabel(s?: number): string {
   return found ? found.label : s != null ? String(s) : '--'
 }
 
-/** 根据启用状态返回 el-tag type：启用 success / 禁用 info / 暂停 warning。 */
-function statusTagType(status?: number): 'success' | 'info' | 'warning' {
-  if (status === SupplierStatus.ENABLED) return 'success'
+/** 根据合作状态返回 el-tag type：已合作 success / 待审核 info / 已暂停 warning / 已终止 danger。 */
+function statusTagType(status?: number): 'success' | 'info' | 'warning' | 'danger' {
+  if (status === SupplierStatus.COOPERATING) return 'success'
+  if (status === SupplierStatus.PENDING_AUDIT) return 'info'
   if (status === SupplierStatus.SUSPENDED) return 'warning'
+  if (status === SupplierStatus.TERMINATED) return 'danger'
   return 'info'
 }
 

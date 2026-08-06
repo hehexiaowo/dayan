@@ -27,26 +27,31 @@ export const SUPPLIER_TYPE_OPTIONS = [
 ] as const
 
 /**
- * 供应商启用状态（后端实际取值与通用启用/禁用略有差异）：
- * - 0 = 禁用
- * - 1 = 启用
+ * 供应商合作状态（对齐 DDL supplier_info.status 注释）：
+ * - 0 = 待审核（新建默认，等待平台审核）
+ * - 1 = 已合作（审核通过，正常业务可见）
  * - 2 = 已暂停（冻结，暂时不可合作）
+ * - 3 = 已终止（永久停止合作）
  *
- * 这里单独维护一份选项，便于把 2 一并映射成中文，避免列表出现裸数字。
+ * 注意：status 由后端审核流程驱动（create 强制 0，audit 通过置 1），
+ * 前端表单字段仅作展示，提交后端不会据此覆盖。
  */
 export enum SupplierStatus {
-  /** 禁用 */
-  DISABLED = 0,
-  /** 启用 */
-  ENABLED = 1,
+  /** 待审核 */
+  PENDING_AUDIT = 0,
+  /** 已合作 */
+  COOPERATING = 1,
   /** 已暂停（冻结） */
-  SUSPENDED = 2
+  SUSPENDED = 2,
+  /** 已终止 */
+  TERMINATED = 3
 }
 
 export const SUPPLIER_STATUS_OPTIONS = [
-  { label: '启用', value: SupplierStatus.ENABLED },
-  { label: '禁用', value: SupplierStatus.DISABLED },
-  { label: '已暂停', value: SupplierStatus.SUSPENDED }
+  { label: '待审核', value: SupplierStatus.PENDING_AUDIT },
+  { label: '已合作', value: SupplierStatus.COOPERATING },
+  { label: '已暂停', value: SupplierStatus.SUSPENDED },
+  { label: '已终止', value: SupplierStatus.TERMINATED }
 ] as const
 
 /**
@@ -102,7 +107,7 @@ export interface SupplierInfo {
   description?: string
   /** 默认佣金比例 */
   commissionRate?: number
-  /** 状态：1启用 / 0禁用 / 2已暂停 */
+  /** 状态：0待审核 / 1已合作 / 2已暂停 / 3已终止 */
   status?: number
   /** 审核状态：0待审/1通过/2驳回 */
   auditStatus?: number
