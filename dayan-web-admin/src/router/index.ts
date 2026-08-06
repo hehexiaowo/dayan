@@ -46,6 +46,12 @@ const routes: RouteRecordRaw[] = [
         name: 'SupplierDetail',
         component: () => import('@/views/resource/supplier/detail/index.vue'),
         meta: { title: '供应商详情', hidden: true }
+      },
+      {
+        path: 'resource/supplier/contract',
+        name: 'SupplierContract',
+        component: () => import('@/views/resource/supplier/contract/index.vue'),
+        meta: { title: '供应商合同', hidden: true }
       }
     ]
   },

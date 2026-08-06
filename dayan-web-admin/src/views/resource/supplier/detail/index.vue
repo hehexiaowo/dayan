@@ -5,20 +5,23 @@
  * 从供应商列表页"详情/管理"按钮进入（携带 supplierCode 路由参数）。
  * 顶部展示供应商主信息摘要 + 返回按钮；下方 el-tabs 组织子表。
  *
- * tab 划分（对应 P9 计划）：
- * - 基本信息：SupplierInfo 主表字段编辑
- * - 联系人：SupplierContact
- * - 评价：SupplierEvaluation
- * - 合同：SupplierContract（入口链接，跳转独立合同列表页）
+ * tab 划分（对应 P9 计划，任务 3 实现）：
+ * - 基本信息（basic）：SupplierInfo 主表字段编辑
+ * - 联系人（contact）：SupplierContact CRUD
+ * - 评价（evaluation）：SupplierEvaluation CRUD（综合分/等级后端自动算）
+ * - 合同（contract）：SupplierContract 概览 + 跳转独立合同页（6 态状态流转）
  *
  * 注：供应商 RBAC（role/permission/openplatform）按 TC-E2E-005 裁定跳过（Admin 代录）。
- * 本文件为任务 0 骨架，tab 内容在任务 3 填充。
  */
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getSupplier } from '@/api/supplier'
 import { SUPPLIER_STATUS_OPTIONS } from '@/types/supplier'
 import type { SupplierInfo } from '@/types/supplier'
+import BasicTab from './BasicTab.vue'
+import ContactTab from './ContactTab.vue'
+import EvaluationTab from './EvaluationTab.vue'
+import ContractTab from './ContractTab.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -79,9 +82,10 @@ const tabs = [
 
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name">
-        <div class="tab-placeholder">
-          <el-empty :description="`${t.label}管理（任务 3 实现）`" />
-        </div>
+        <BasicTab v-if="t.name === 'basic'" :supplier-code="supplierCode" />
+        <ContactTab v-else-if="t.name === 'contact'" :supplier-code="supplierCode" />
+        <EvaluationTab v-else-if="t.name === 'evaluation'" :supplier-code="supplierCode" />
+        <ContractTab v-else-if="t.name === 'contract'" :supplier-code="supplierCode" />
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -104,12 +108,6 @@ const tabs = [
 .supplier-summary .title {
   font-size: 18px;
   font-weight: 600;
-}
-.tab-placeholder {
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .ml-8 {
   margin-left: 8px;
