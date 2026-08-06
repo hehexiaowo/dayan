@@ -30,6 +30,22 @@ const routes: RouteRecordRaw[] = [
         name: 'Dashboard',
         component: () => import('@/views/dashboard/index.vue'),
         meta: { title: '首页看板', icon: 'Odometer' }
+      },
+      // ---------- 详情页（静态注册，不进侧边栏——菜单树来自后端，静态路由天然不显示） ----------
+      // 主从详情页：从主列表页"详情/管理"按钮跳转进入，带主实体 code 路由参数。
+      // 各详情页内部用 el-tabs 组织子表，tab 内联 CRUD。
+      {
+        path: 'resource/park/detail/:parkCode',
+        name: 'ParkDetail',
+        component: () => import('@/views/resource/park/detail/index.vue'),
+        // hidden 标记：虽然侧边栏只读后端菜单树不会显示它，但保留 meta.hidden 供守卫/面包屑识别
+        meta: { title: '机构详情', hidden: true }
+      },
+      {
+        path: 'resource/supplier/detail/:supplierCode',
+        name: 'SupplierDetail',
+        component: () => import('@/views/resource/supplier/detail/index.vue'),
+        meta: { title: '供应商详情', hidden: true }
       }
     ]
   },
