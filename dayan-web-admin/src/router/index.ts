@@ -70,6 +70,12 @@ const routes: RouteRecordRaw[] = [
         name: 'GoodsDetail',
         component: () => import('@/views/goods/info/detail/index.vue'),
         meta: { title: '商品详情', hidden: true }
+      },
+      {
+        path: 'channel/agent/detail/:agentCode',
+        name: 'AgentDetail',
+        component: () => import('@/views/channel/agent/detail/index.vue'),
+        meta: { title: '代理人详情', hidden: true }
       }
     ]
   },

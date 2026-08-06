@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import { pageAgents, getAgent, createAgent, updateAgent, deleteAgent } from '@/api/agent'
@@ -7,8 +8,12 @@ import { listChannels } from '@/api/channel'
 import {
   AgentLevel,
   AGENT_LEVEL_OPTIONS,
+  agentLevelLabel,
+  agentLevelTagType,
   AgentStatus,
   AGENT_STATUS_OPTIONS,
+  agentStatusLabel,
+  agentStatusTagType,
   Gender,
   GENDER_OPTIONS,
   CertifiedFlag,
@@ -18,6 +23,8 @@ import {
 } from '@/types/agent'
 import { buildChannelTree, type ChannelInfo } from '@/types/channel'
 import RegionSelect from '@/components/RegionSelect.vue'
+
+const router = useRouter()
 
 /**
  * 代理人管理页。
@@ -83,9 +90,9 @@ const form = reactive<AgentInfo>({
   districtCode: '',
   address: '',
   serviceIntro: '',
-  agentLevel: AgentLevel.INTERN,
+  agentLevel: AgentLevel.NORMAL,
   isCertified: CertifiedFlag.NO,
-  status: AgentStatus.ENABLED,
+  status: AgentStatus.NORMAL,
   remark: ''
 })
 
@@ -120,9 +127,9 @@ function resetForm() {
     districtCode: '',
     address: '',
     serviceIntro: '',
-    agentLevel: AgentLevel.INTERN,
+    agentLevel: AgentLevel.NORMAL,
     isCertified: CertifiedFlag.NO,
-    status: AgentStatus.ENABLED,
+    status: AgentStatus.NORMAL,
     remark: ''
   })
 }
@@ -159,9 +166,9 @@ async function openEdit(row: AgentInfo) {
       districtCode: detail.districtCode ?? '',
       address: detail.address ?? '',
       serviceIntro: detail.serviceIntro ?? '',
-      agentLevel: detail.agentLevel ?? AgentLevel.INTERN,
+      agentLevel: detail.agentLevel ?? AgentLevel.NORMAL,
       isCertified: detail.isCertified ?? CertifiedFlag.NO,
-      status: detail.status ?? AgentStatus.ENABLED,
+      status: detail.status ?? AgentStatus.NORMAL,
       remark: detail.remark ?? ''
     })
   } catch {
@@ -185,9 +192,9 @@ async function openEdit(row: AgentInfo) {
       districtCode: row.districtCode ?? '',
       address: row.address ?? '',
       serviceIntro: row.serviceIntro ?? '',
-      agentLevel: row.agentLevel ?? AgentLevel.INTERN,
+      agentLevel: row.agentLevel ?? AgentLevel.NORMAL,
       isCertified: row.isCertified ?? CertifiedFlag.NO,
-      status: row.status ?? AgentStatus.ENABLED,
+      status: row.status ?? AgentStatus.NORMAL,
       remark: row.remark ?? ''
     })
   }
@@ -248,23 +255,10 @@ function genderText(v?: number): string {
   return '未知'
 }
 
-function agentLevelLabel(l?: number): string {
-  const found = AGENT_LEVEL_OPTIONS.find((o) => o.value === l)
-  return found ? found.label : l != null ? String(l) : '--'
-}
-
-function agentLevelTagType(l?: number): 'success' | 'warning' | 'danger' | 'info' {
-  switch (l) {
-    case AgentLevel.GOLD:
-      return 'danger'
-    case AgentLevel.SENIOR:
-      return 'warning'
-    case AgentLevel.REGULAR:
-      return 'success'
-    case AgentLevel.INTERN:
-    default:
-      return 'info'
-  }
+/** 跳转代理人详情页（主从详情页） */
+function goDetail(row: AgentInfo) {
+  if (!row.agentCode) return
+  router.push({ name: 'AgentDetail', params: { agentCode: row.agentCode } })
 }
 
 onMounted(() => {
@@ -352,13 +346,14 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">
-              {{ row.status === 1 ? '启用' : '禁用' }}
+            <el-tag :type="agentStatusTagType(row.status)" size="small">
+              {{ agentStatusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
           </template>
