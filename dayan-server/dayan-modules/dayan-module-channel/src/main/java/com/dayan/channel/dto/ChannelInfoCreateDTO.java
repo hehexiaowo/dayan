@@ -46,4 +46,7 @@ public class ChannelInfoCreateDTO {
     private String featureConfig;
     private Integer sortOrder;
     private String remark;
+
+    /** 管理配置能力：0=业务型（默认），1=管理型。仅管理型渠道可设 */
+    private Integer canManage;
 }
