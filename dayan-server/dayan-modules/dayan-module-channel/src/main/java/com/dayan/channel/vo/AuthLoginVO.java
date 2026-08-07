@@ -22,4 +22,6 @@ public class AuthLoginVO {
     private String avatar;
     /** 所属渠道编码 */
     private String channelCode;
+    /** 是否渠道超管（channel_account.is_admin，1=超管） */
+    private Integer isAdmin;
 }

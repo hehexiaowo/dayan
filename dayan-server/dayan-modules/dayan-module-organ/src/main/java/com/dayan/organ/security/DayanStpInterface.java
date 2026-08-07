@@ -1,8 +1,8 @@
 package com.dayan.organ.security;
 
-import cn.dev33.satoken.stp.StpInterface;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.common.security.AccountType;
+import com.dayan.common.security.spi.DomainPermissionResolver;
 import com.dayan.organ.entity.OrganAccount;
 import com.dayan.organ.entity.OrganAccountRoleRel;
 import com.dayan.organ.entity.OrganPermission;
@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,10 +24,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Sa-Token 权限/角色查询实现（organ 域，Admin 端）。
+ * Admin 端（organ 域）权限解析器。
  *
- * <p>Sa-Token 在 {@code @SaCheckPermission} / {@code @SaCheckRole} 注解校验时自动回调本实现，
- * 由 {@code loginType} 区分端：仅处理 Admin 端（{@code loginType=admin}），其余端 P1 暂不处理返回空。
+ * <p>实现 {@link DomainPermissionResolver}（SPI 策略 bean），由全局唯一的
+ * {@link com.dayan.common.security.spi.DomainPermissionDispatcher} 按 loginType 分发调用。
+ * 本类不再直接 {@code implements StpInterface}，避免与 channel 域解析器产生多 bean 冲突。
  *
  * <p>查询链路：
  * <ol>
@@ -38,7 +40,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DayanStpInterface implements StpInterface {
+public class DayanStpInterface implements DomainPermissionResolver {
 
     /** 超级管理员角色标识（在角色集合中额外返回，便于 @SaCheckRole("ROLE_SUPER_ADMIN") 兜底） */
     public static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
@@ -51,16 +53,15 @@ public class DayanStpInterface implements StpInterface {
     private final OrganPermissionMapper permissionMapper;
 
     @Override
-    public List<String> getPermissionList(Object loginId, String loginType) {
-        // 仅 Admin 端走 organ 权限体系；其余端 P1 暂不处理
-        if (!isAdminLoginType(loginType)) {
-            return Collections.emptyList();
-        }
-        if (loginId == null) {
-            return Collections.emptyList();
-        }
-        String accountCode = loginId.toString();
+    public List<String> supportLoginTypes() {
+        // 接受 "admin"（AccountType.ADMIN）与 Sa-Token 默认 loginType "login"：
+        // 因为 OrganCodeGeneratorConfig 已将默认 StpLogic 设为 ADMIN，未指定 type 的
+        // @SaCheckPermission 会以 loginType=admin 调用本实现；这里兼容 "login" 以备兜底。
+        return Arrays.asList(AccountType.ADMIN.getLoginType(), "login");
+    }
 
+    @Override
+    public List<String> getPermissionList(String accountCode) {
         // 1. 查账号，超管返回通配权限
         OrganAccount account = accountMapper.selectOne(new LambdaQueryWrapper<OrganAccount>()
                 .eq(OrganAccount::getAccountCode, accountCode)
@@ -104,16 +105,7 @@ public class DayanStpInterface implements StpInterface {
     }
 
     @Override
-    public List<String> getRoleList(Object loginId, String loginType) {
-        // 仅 Admin 端走 organ 权限体系；其余端 P1 暂不处理
-        if (!isAdminLoginType(loginType)) {
-            return Collections.emptyList();
-        }
-        if (loginId == null) {
-            return Collections.emptyList();
-        }
-        String accountCode = loginId.toString();
-
+    public List<String> getRoleList(String accountCode) {
         List<String> roleCodes = new ArrayList<>(listRoleCodes(accountCode));
 
         // 超管额外返回 ROLE_SUPER_ADMIN，便于 @SaCheckRole 兜底
@@ -141,16 +133,5 @@ public class DayanStpInterface implements StpInterface {
                 .map(OrganAccountRoleRel::getRoleCode)
                 .distinct()
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * 判断是否为 Admin 端登录类型。
-     *
-     * <p>接受 "admin"（{@link AccountType#ADMIN}）与 Sa-Token 默认 loginType "login"：
-     * 因为 {@code OrganCodeGeneratorConfig} 已将默认 StpLogic 设为 ADMIN，未指定 type 的
-     * {@code @SaCheckPermission} 会以 loginType=admin 调用本实现；这里兼容 "login" 以备兜底。
-     */
-    private boolean isAdminLoginType(String loginType) {
-        return AccountType.ADMIN.getLoginType().equals(loginType) || "login".equals(loginType);
     }
 }

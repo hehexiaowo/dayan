@@ -3,30 +3,13 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-
-/**
- * 侧边栏静态菜单（Channel 渠道后台业务菜单）。
- *
- * 注：channel 域菜单数据后端尚未 seed，本期在 layout 内硬编码菜单项，
- * 由 el-menu 的 router 模式（index 即跳转 path）驱动路由。
- */
-interface MenuItem {
-  index: string
-  title: string
-  icon: string
-}
-
-const menus: MenuItem[] = [
-  { index: '/dashboard', title: '工作台', icon: 'Odometer' },
-  { index: '/agent', title: '代理人管理', icon: 'User' },
-  { index: '/client', title: '客户管理', icon: 'UserFilled' },
-  { index: '/equity', title: '权益查询', icon: 'Ticket' },
-  { index: '/order', title: '订单查询', icon: 'List' }
-]
+import { usePermissionStore } from '@/stores/permission'
+import SidebarItem from '@/components/SidebarItem.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const permissionStore = usePermissionStore()
 
 const isCollapse = ref(false)
 
@@ -36,16 +19,11 @@ const avatarUrl = computed(() => userStore.userInfo?.avatar || '')
 // 顶部/侧边标题
 const systemTitle = '大雁养老渠道后台'
 
+/** 动态菜单树（来自后端，permissionStore 加载后填充） */
+const menuTree = computed(() => permissionStore.menus)
+
 function toggleCollapse() {
   isCollapse.value = !isCollapse.value
-}
-
-/** el-menu select 回调：使用 vue-router 跳转 */
-function handleMenuSelect(index: string) {
-  if (index === route.path) return
-  router.push(index).catch(() => {
-    // 路由跳转失败忽略（如目标路由不存在，由 404 兜底）
-  })
 }
 
 async function handleLogout() {
@@ -59,6 +37,8 @@ async function handleLogout() {
     return
   }
   await userStore.logout()
+  // 清空动态菜单与路由标记，确保换号登录后守卫重新拉取菜单（loaded 重置）。
+  permissionStore.reset()
   router.replace('/login')
 }
 </script>
@@ -74,16 +54,17 @@ async function handleLogout() {
       <el-menu
         :default-active="route.path"
         :collapse="isCollapse"
+        unique-opened
         router
         background-color="#0c2d57"
         text-color="#c9d1d9"
         active-text-color="#ffffff"
-        @select="handleMenuSelect"
       >
-        <el-menu-item v-for="m in menus" :key="m.index" :index="m.index">
-          <el-icon><component :is="m.icon" /></el-icon>
-          <template #title>{{ m.title }}</template>
-        </el-menu-item>
+        <sidebar-item
+          v-for="menu in menuTree"
+          :key="menu.menuCode"
+          :item="menu"
+        />
       </el-menu>
     </el-aside>
 
