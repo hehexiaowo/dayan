@@ -39,6 +39,7 @@ export const AGENT_STATUS_OPTIONS = [
   { label: '禁用', value: AgentStatus.DISABLED }
 ] as const
 
+/** 代理人实体（渠道视角子集，对齐 AgentInfoVO）。 */
 export interface Agent {
   id?: number
   /** 代理人编码（主键业务码） */

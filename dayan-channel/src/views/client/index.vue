@@ -3,7 +3,6 @@ import { onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { pageClients } from '@/api/client'
 import {
-  CLIENT_TYPE_OPTIONS,
   GENDER_OPTIONS,
   type Client,
   type ClientQuery
@@ -12,8 +11,8 @@ import {
 /**
  * 客户管理页。
  *
- * - 搜索栏：客户名称 / 手机号 / 客户类型；
- * - el-table：clientCode / clientName / phone / clientType / gender；
+ * - 搜索栏：客户编码 / 全名 / 手机号；
+ * - el-table：clientCode / fullName / phone / gender；
  * - 后端 GET /channel-api/clients 未实现，onMounted 失败时降级（空表，不弹 toast）。
  */
 
@@ -25,24 +24,17 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   {
     initialQuery: {
       clientCode: '',
-      clientName: '',
-      phone: '',
-      clientType: undefined
+      fullName: '',
+      phone: ''
     }
   }
 )
 
 function handleReset() {
   query.clientCode = ''
-  query.clientName = ''
+  query.fullName = ''
   query.phone = ''
-  query.clientType = undefined
   handleSearch()
-}
-
-function clientTypeText(v?: number) {
-  const opt = CLIENT_TYPE_OPTIONS.find((o) => o.value === v)
-  return opt ? opt.label : '-'
 }
 
 function genderText(v?: number) {
@@ -67,15 +59,10 @@ onMounted(() => {
           <el-input v-model="query.clientCode" placeholder="客户编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="名称">
-          <el-input v-model="query.clientName" placeholder="客户名称" clearable @keyup.enter="handleSearch" />
+          <el-input v-model="query.fullName" placeholder="客户全名" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="客户类型">
-          <el-select v-model="query.clientType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in CLIENT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
@@ -94,11 +81,8 @@ onMounted(() => {
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="clientCode">
         <el-table-column prop="clientCode" label="客户编码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="clientName" label="客户名称" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="fullName" label="全名" min-width="120" show-overflow-tooltip />
         <el-table-column prop="phone" label="手机号" min-width="120" />
-        <el-table-column prop="clientType" label="客户类型" width="100" align="center">
-          <template #default="{ row }">{{ clientTypeText(row.clientType) }}</template>
-        </el-table-column>
         <el-table-column prop="gender" label="性别" width="80" align="center">
           <template #default="{ row }">{{ genderText(row.gender) }}</template>
         </el-table-column>

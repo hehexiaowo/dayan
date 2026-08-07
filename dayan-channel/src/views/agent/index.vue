@@ -13,8 +13,8 @@ import {
 /**
  * 代理人管理页。
  *
- * - 搜索栏：代理人名称 / 手机号 / 等级 / 状态；
- * - el-table：agentCode / agentName / realName / phone / agentLevel / agentStatus；
+ * - 搜索栏：代理人编码 / 全名 / 手机号 / 等级 / 状态；
+ * - el-table：agentCode / fullName / phone / agentLevel / status；
  * - 后端 GET /channel-api/agents 未实现，onMounted 失败时降级（空表，不弹 toast）。
  */
 
@@ -26,20 +26,20 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   {
     initialQuery: {
       agentCode: '',
-      agentName: '',
+      fullName: '',
       phone: '',
       agentLevel: undefined,
-      agentStatus: undefined
+      status: undefined
     }
   }
 )
 
 function handleReset() {
   query.agentCode = ''
-  query.agentName = ''
+  query.fullName = ''
   query.phone = ''
   query.agentLevel = undefined
-  query.agentStatus = undefined
+  query.status = undefined
   handleSearch()
 }
 
@@ -74,7 +74,7 @@ onMounted(() => {
           <el-input v-model="query.agentCode" placeholder="代理人编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="名称">
-          <el-input v-model="query.agentName" placeholder="代理人名称" clearable @keyup.enter="handleSearch" />
+          <el-input v-model="query.fullName" placeholder="代理人全名" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
@@ -85,7 +85,7 @@ onMounted(() => {
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="query.agentStatus" placeholder="全部" clearable style="width: 120px">
+          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
             <el-option v-for="o in AGENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
         </el-form-item>
@@ -106,16 +106,15 @@ onMounted(() => {
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="agentCode">
         <el-table-column prop="agentCode" label="代理人编码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="agentName" label="代理人名称" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="realName" label="真实姓名" min-width="100" />
+        <el-table-column prop="fullName" label="全名" min-width="120" show-overflow-tooltip />
         <el-table-column prop="phone" label="手机号" min-width="120" />
         <el-table-column prop="agentLevel" label="等级" width="90" align="center">
           <template #default="{ row }">{{ levelText(row.agentLevel) }}</template>
         </el-table-column>
-        <el-table-column prop="agentStatus" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.agentStatus !== undefined && row.agentStatus !== null" :type="statusTagType(row.agentStatus)">
-              {{ statusText(row.agentStatus) }}
+            <el-tag v-if="row.status !== undefined && row.status !== null" :type="statusTagType(row.status)">
+              {{ statusText(row.status) }}
             </el-tag>
             <span v-else>-</span>
           </template>

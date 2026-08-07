@@ -35,31 +35,27 @@ function handleReset() {
 
 function statusTagType(v?: number): 'success' | 'warning' | 'info' | 'danger' | 'primary' {
   switch (v) {
-    case EquityStatus.ACTIVE:
+    case EquityStatus.ACTIVATED:
+    case EquityStatus.IN_USE:
       return 'success'
-    case EquityStatus.PENDING:
+    case EquityStatus.STOCK:
+    case EquityStatus.OUTBOUND:
       return 'warning'
-    case EquityStatus.FROZEN:
-    case EquityStatus.UNSUBSCRIBED:
-    case EquityStatus.EXPIRED:
-      return 'info'
-    case EquityStatus.INVALID:
-    case EquityStatus.REVOKED:
-      return 'danger'
-    default:
+    case EquityStatus.COMPLETED:
       return 'primary'
+    case EquityStatus.EXPIRED:
+    case EquityStatus.VOID:
+      return 'danger'
+    case EquityStatus.CHANGING_HOLDER:
+      return 'info'
+    default:
+      return 'info'
   }
 }
 
 function statusText(v?: number) {
   const opt = EQUITY_STATUS_OPTIONS.find((o) => o.value === v)
   return opt ? opt.label : '-'
-}
-
-/** 分 -> 元（保留 2 位） */
-function yuan(v?: number) {
-  if (v === undefined || v === null) return '--'
-  return (v / 100).toFixed(2)
 }
 
 onMounted(() => {
@@ -113,7 +109,7 @@ onMounted(() => {
         </el-table-column>
         <el-table-column prop="equityType" label="权益类型" min-width="120" show-overflow-tooltip />
         <el-table-column prop="equityValue" label="权益价值（元）" width="130" align="right">
-          <template #default="{ row }">{{ yuan(row.equityValue) }}</template>
+          <template #default="{ row }">{{ row.equityValue != null ? Number(row.equityValue).toFixed(2) : '--' }}</template>
         </el-table-column>
         <el-table-column prop="expireTime" label="到期时间" min-width="160" />
         <el-table-column prop="clientCode" label="客户编码" min-width="140" show-overflow-tooltip />
