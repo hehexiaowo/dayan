@@ -7,9 +7,9 @@ import { ORDER_STATUS_OPTIONS, OrderStatus, type Order, type OrderQuery } from '
 /**
  * 订单查询页。
  *
- * - 搜索栏：订单编码 / 订单状态 / 关联客户编码；
- * - el-table：orderCode / orderStatus / payAmount / totalAmount / orderType / createdAt / clientCode；
- * - 后端 GET /channel-api/orders 未实现，onMounted 失败时降级（空表，不弹 toast）。
+ * - 搜索栏：订单编码 / 订单状态；
+ * - el-table：orderCode / orderStatus / payAmount / totalAmount / createdAt；
+ * - 后端 GET /channel-api/order-equities 未实现，onMounted 失败时降级（空表，不弹 toast）。
  */
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
@@ -20,8 +20,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   {
     initialQuery: {
       orderCode: '',
-      orderStatus: undefined,
-      clientCode: ''
+      orderStatus: undefined
     }
   }
 )
@@ -29,7 +28,6 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 function handleReset() {
   query.orderCode = ''
   query.orderStatus = undefined
-  query.clientCode = ''
   handleSearch()
 }
 
@@ -38,29 +36,26 @@ function statusTagType(v?: number): 'success' | 'warning' | 'info' | 'danger' | 
     case OrderStatus.COMPLETED:
       return 'success'
     case OrderStatus.PENDING_PAY:
-    case OrderStatus.PENDING_SHIP:
       return 'warning'
-    case OrderStatus.SHIPPED:
+    case OrderStatus.PAID:
+    case OrderStatus.DELIVERED:
       return 'primary'
+    case OrderStatus.PARTIAL_DELIVERED:
+      return 'warning'
     case OrderStatus.CANCELLED:
-    case OrderStatus.CLOSED:
       return 'info'
-    case OrderStatus.REFUNDED:
+    case OrderStatus.REFUNDING:
       return 'danger'
+    case OrderStatus.REFUNDED:
+      return 'info'
     default:
-      return 'primary'
+      return 'info'
   }
 }
 
 function statusText(v?: number) {
   const opt = ORDER_STATUS_OPTIONS.find((o) => o.value === v)
   return opt ? opt.label : '-'
-}
-
-/** 分 -> 元（保留 2 位） */
-function yuan(v?: number) {
-  if (v === undefined || v === null) return '--'
-  return (v / 100).toFixed(2)
 }
 
 onMounted(() => {
@@ -83,9 +78,6 @@ onMounted(() => {
           <el-select v-model="query.orderStatus" placeholder="全部" clearable style="width: 140px">
             <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="客户编码">
-          <el-input v-model="query.clientCode" placeholder="关联客户编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
@@ -112,15 +104,13 @@ onMounted(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="orderType" label="订单类型" min-width="120" show-overflow-tooltip />
         <el-table-column prop="payAmount" label="实付金额（元）" width="130" align="right">
-          <template #default="{ row }">{{ yuan(row.payAmount) }}</template>
+          <template #default="{ row }">{{ row.payAmount != null ? Number(row.payAmount).toFixed(2) : '--' }}</template>
         </el-table-column>
         <el-table-column prop="totalAmount" label="订单总额（元）" width="130" align="right">
-          <template #default="{ row }">{{ yuan(row.totalAmount) }}</template>
+          <template #default="{ row }">{{ row.totalAmount != null ? Number(row.totalAmount).toFixed(2) : '--' }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" min-width="160" />
-        <el-table-column prop="clientCode" label="客户编码" min-width="140" show-overflow-tooltip />
         <template #empty>
           <el-empty description="暂无数据" />
         </template>

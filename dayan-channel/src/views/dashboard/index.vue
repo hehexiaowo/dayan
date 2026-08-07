@@ -6,8 +6,7 @@ import { getDashboardStats, type DashboardStats } from '@/api/dashboard'
  * 工作台 - 渠道概览。
  *
  * 展示本渠道 4 项核心指标（代理人/客户/权益/订单）。
- * 后端 GET /channel-api/dashboard/stats 尚未实现，加载失败时卡片显示 "--"，
- * 不弹错误 toast（降级处理）。
+ * 接口已实现，失败时降级显示 --，不弹错误 toast。
  */
 
 interface StatCard {
@@ -81,16 +80,6 @@ onMounted(() => {
         </div>
       </el-card>
     </div>
-
-    <el-card shadow="never" class="tip-card">
-      <el-alert
-        title="业务接口待后端提供"
-        type="info"
-        :closable="false"
-        show-icon
-        description="本期为 UI 框架 + 页面骨架，业务端点（/channel-api/*）由后端后续实现，当前指标加载失败时显示为 --。"
-      />
-    </el-card>
   </div>
 </template>
 

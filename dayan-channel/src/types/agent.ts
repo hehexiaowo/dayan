@@ -39,23 +39,19 @@ export const AGENT_STATUS_OPTIONS = [
   { label: '禁用', value: AgentStatus.DISABLED }
 ] as const
 
-/**
- * 代理人实体（渠道视角子集）。
- */
+/** 代理人实体（渠道视角子集，对齐 AgentInfoVO）。 */
 export interface Agent {
   id?: number
   /** 代理人编码（主键业务码） */
   agentCode?: string
-  /** 代理人名称（昵称/对外展示名） */
-  agentName?: string
-  /** 真实姓名 */
-  realName?: string
+  /** 代理人全名（对齐后端 AgentInfoVO.fullName） */
+  fullName?: string
   /** 手机号 */
   phone?: string
   /** 代理人等级（1-4） */
   agentLevel?: AgentLevel
-  /** 代理人状态（1 启用 / 0 禁用） */
-  agentStatus?: AgentStatus
+  /** 代理人状态（1 启用 / 0 禁用，对齐后端 status 字段） */
+  status?: AgentStatus
   /** 所属渠道编码 */
   channelCode?: string
 }
@@ -64,14 +60,14 @@ export interface Agent {
 export interface AgentQuery {
   /** 代理人编码（模糊匹配，可选） */
   agentCode?: string
-  /** 代理人名称（模糊匹配，可选） */
-  agentName?: string
+  /** 代理人全名（模糊匹配，可选，对齐后端 fullName） */
+  fullName?: string
   /** 手机号（模糊匹配，可选） */
   phone?: string
   /** 代理人等级（可选） */
   agentLevel?: AgentLevel
-  /** 代理人状态（可选） */
-  agentStatus?: AgentStatus
+  /** 代理人状态（可选，对齐后端 status） */
+  status?: AgentStatus
   /** 当前页码 */
   current: number
   /** 每页条数 */
