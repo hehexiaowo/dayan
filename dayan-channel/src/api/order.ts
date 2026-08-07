@@ -59,6 +59,37 @@ export function cancelOrderEquity(orderCode: string, data: OrderCancelData): Pro
   })
 }
 
+/**
+ * 权益商品下单入参（对齐 CreateOrderEquityDTO 前端可见子集）。
+ *
+ * 防篡改/防越权：channelCode/operatorCode 由后端 Controller 强制从 ContextHolder 注入；
+ * unitPrice/goodsName 后端从商品目录权威解析覆盖前端值，故前端只需传 DTO @NotNull/@NotBlank
+ * 要求的非空字段，价格传商品的 salePrice 即可（仅供参考，最终以服务端覆盖值为准）。
+ */
+export interface CreateOrderEquityData {
+  /** 采购来源：1=对公 / 2=个人 */
+  orderSource: number
+  /** 商品编码 */
+  goodsCode: string
+  /** 商品名称（会被后端权威覆盖，但 DTO @NotBlank 需传非空） */
+  goodsName: string
+  /** 购买数量（≥1） */
+  quantity: number
+  /** 单价（会被后端权威覆盖，DTO @NotNull 需传非空，可用 salePrice） */
+  unitPrice: number
+  /** 备注（可选） */
+  remark?: string
+}
+
+/** 权益商品下单：POST /channel-api/order-equities（返回 orderCode） */
+export function createOrderEquity(data: CreateOrderEquityData): Promise<string> {
+  return request<string>({
+    url: '/channel-api/order-equities',
+    method: 'post',
+    data
+  })
+}
+
 // ==================== 场景订单（/channel-api/order-scenes） ====================
 
 /** 场景订单分页：GET /channel-api/order-scenes */
