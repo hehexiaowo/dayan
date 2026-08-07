@@ -5,23 +5,6 @@
  * 渠道后台视角取本渠道客户子集。
  */
 
-/** 客户类型：1 本人 / 2 家属 / 3 老人 */
-export enum ClientType {
-  /** 本人 */
-  SELF = 1,
-  /** 家属 */
-  FAMILY = 2,
-  /** 老人 */
-  ELDER = 3
-}
-
-/** 客户类型选项 */
-export const CLIENT_TYPE_OPTIONS = [
-  { label: '本人', value: ClientType.SELF },
-  { label: '家属', value: ClientType.FAMILY },
-  { label: '老人', value: ClientType.ELDER }
-] as const
-
 /** 性别：1 男 / 2 女 / 0 未知 */
 export enum Gender {
   /** 未知 */
@@ -40,18 +23,16 @@ export const GENDER_OPTIONS = [
 ] as const
 
 /**
- * 客户实体（渠道视角子集）。
+ * 客户实体（渠道视角子集，对齐 ClientInfoVO）。
  */
 export interface Client {
   id?: number
   /** 客户编码（主键业务码） */
   clientCode?: string
-  /** 客户名称 */
-  clientName?: string
+  /** 客户全名（对齐后端 ClientInfoVO.fullName） */
+  fullName?: string
   /** 手机号 */
   phone?: string
-  /** 客户类型（1 本人 / 2 家属 / 3 老人） */
-  clientType?: ClientType
   /** 性别（1 男 / 2 女 / 0 未知） */
   gender?: Gender
   /** 所属渠道编码 */
@@ -62,12 +43,10 @@ export interface Client {
 export interface ClientQuery {
   /** 客户编码（模糊匹配，可选） */
   clientCode?: string
-  /** 客户名称（模糊匹配，可选） */
-  clientName?: string
+  /** 客户全名（模糊匹配，可选，对齐后端 fullName） */
+  fullName?: string
   /** 手机号（模糊匹配，可选） */
   phone?: string
-  /** 客户类型（可选） */
-  clientType?: ClientType
   /** 当前页码 */
   current: number
   /** 每页条数 */

@@ -13,7 +13,7 @@ import type { Order, OrderQuery } from '@/types/order'
 /** 订单分页：GET /channel-api/orders */
 export function pageOrders(query: OrderQuery): Promise<PageResult<Order>> {
   return request<PageResult<Order>>({
-    url: '/channel-api/orders',
+    url: '/channel-api/order-equities',
     method: 'get',
     params: query
   })
