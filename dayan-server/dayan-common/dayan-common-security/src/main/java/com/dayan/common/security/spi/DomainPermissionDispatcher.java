@@ -71,6 +71,10 @@ public class DomainPermissionDispatcher implements StpInterface {
                 return resolver;
             }
         }
+        // 未命中任何 resolver：loginType 可能拼写错误或对应域尚未实现，
+        // 此时返回空权限等价于 @SaCheckPermission 全部拒绝，用 warn 暴露以便定位。
+        log.warn("未找到 loginType={} 的 DomainPermissionResolver，返回空权限。" +
+                "请检查对应业务域是否已注册 Resolver bean。", loginType);
         return null;
     }
 }

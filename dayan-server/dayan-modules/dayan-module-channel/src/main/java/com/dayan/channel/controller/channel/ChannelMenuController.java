@@ -18,6 +18,12 @@ import java.util.List;
  * 前端 getMyMenuTree 复用同一接口名。
  *
  * <p>channel-api 天然就是 channel 端，domainType 在后端写死，不接收前端参数。
+ *
+ * <p><b>为何不像 admin 端那样按角色过滤（treeByRole）：</b>当前 channel 端无"不同角色看不同菜单"
+ * 的真实需求（YAGNI），接口/按钮级权限才是真需求，登录即见本端全量菜单。详见
+ * .superpowers/specs/2026-08-07-p9-channel-full-design.md §3.7 选项 B。
+ * 若后续需要按角色过滤，需新增 channel_role_menu_rel 表与对应查询链路
+ * （SystemMenuService.treeByRole 当前仅查 organ_*_rel 表）。
  */
 @RestController
 @RequestMapping("/menus")

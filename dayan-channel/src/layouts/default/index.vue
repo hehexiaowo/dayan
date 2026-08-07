@@ -37,6 +37,8 @@ async function handleLogout() {
     return
   }
   await userStore.logout()
+  // 清空动态菜单与路由标记，确保换号登录后守卫重新拉取菜单（loaded 重置）。
+  permissionStore.reset()
   router.replace('/login')
 }
 </script>
