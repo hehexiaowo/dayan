@@ -41,3 +41,38 @@ VALUES
   -- 权限只读 channel:permission
   ('channel:permission:list', '权限列表', 'channel:system', 3, '/channel-api/channel-permissions/all', 'GET', 130, 1, NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `id` = `id`;
+
+-- ========== P9 增量3 追加：采购结算域权限码 ==========
+-- 5 节点（1 目录 + 4 子菜单）+ 11 接口码 = 16 条
+-- 覆盖任务1-3 Controller 的 @SaCheckPermission：
+--   订单 3 类（Scene/Course/Sojourn）：channel:order:list/query/cancel（权益订单增量1 无注解，本期 4 类订单均不下单，故无 create）
+--   支付单 ChannelFinanceController：channel:payment:list/query/create
+--   发票 ChannelInvoiceController：channel:invoice:list/query/apply
+--   商品（增量1 复用）：channel:goods:list/query
+INSERT INTO `channel_permission`
+  (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
+   `path`, `method`, `sort_order`, `status`,
+   `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  -- 采购结算目录
+  ('channel:procurement', '采购结算', NULL, 1, NULL, NULL, 70, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 商城节点 channel:goods（复用增量1 goods-infos Controller）
+  ('channel:goods',         '商城',   'channel:procurement', 2, NULL, NULL, 10, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:goods:list',    '商品列表', 'channel:goods',     3, '/channel-api/goods-infos',    'GET', 11, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:goods:query',   '商品详情', 'channel:goods',     3, '/channel-api/goods-infos/*', 'GET', 12, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 订单节点 channel:order（4 类订单共享）
+  ('channel:order',         '订单',   'channel:procurement', 2, NULL, NULL, 20, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:order:list',    '订单列表', 'channel:order',     3, '/channel-api/order-*',           'GET',  21, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:order:query',   '订单详情', 'channel:order',     3, '/channel-api/order-*/**',        'GET',  22, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:order:cancel',  '取消订单', 'channel:order',     3, '/channel-api/order-*/**/cancel', 'POST', 23, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 发票节点 channel:invoice
+  ('channel:invoice',         '发票',     'channel:procurement', 2, NULL, NULL, 30, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:invoice:list',    '发票列表', 'channel:invoice',     3, '/channel-api/finance-invoices',        'GET',  31, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:invoice:query',   '发票详情', 'channel:invoice',     3, '/channel-api/finance-invoices/*',      'GET',  32, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:invoice:apply',   '申请发票', 'channel:invoice',     3, '/channel-api/finance-invoices/apply',  'POST', 33, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 支付节点 channel:payment
+  ('channel:payment',         '支付',       'channel:procurement', 2, NULL, NULL, 40, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:payment:list',    '支付单列表', 'channel:payment',     3, '/channel-api/finance-payments',   'GET',  41, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:payment:query',   '支付单详情', 'channel:payment',     3, '/channel-api/finance-payments/*', 'GET',  42, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:payment:create',  '创建支付',   'channel:payment',     3, '/channel-api/finance-payments',   'POST', 43, 1, NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `id` = `id`;

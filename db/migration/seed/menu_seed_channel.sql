@@ -42,3 +42,23 @@ VALUES
 ('channel_system_role', '角色管理', 'channel_system', 2, '/system/role', 'system/role/index', 'channel:role:list',
  'UserFilled', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `id` = `id`;
+
+-- ========== P9 增量3 追加：采购结算菜单组 ==========
+-- 注：channel_order_manage 与增量0 顶层 channel_order 是不同菜单（后者现属"其他业务"），
+--     二者 menu_code 不同、parent 不同，并存不冲突。
+INSERT INTO system_menu
+(menu_code, menu_name, parent_code, menu_type, path, component, permission_code,
+ icon, sort_order, is_visible, is_external, is_cache, domain_type, status,
+ created_at, updated_at, creator, updater, deleted, deleted_at)
+VALUES
+('channel_procurement', '采购结算', NULL, 1, '/procurement', NULL, NULL,
+ 'ShoppingCart', 70, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_mall', '大雁商城', 'channel_procurement', 2, '/mall', 'mall/index', 'channel:goods:list',
+ 'Goods', 10, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_order_manage', '订单管理', 'channel_procurement', 2, '/order-manage', 'order-manage/index', 'channel:order:list',
+ 'List', 20, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_invoice', '发票管理', 'channel_procurement', 2, '/invoice', 'invoice/index', 'channel:invoice:list',
+ 'Document', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_cashier', '收银台', 'channel_procurement', 2, '/cashier', 'cashier/index', 'channel:payment:list',
+ 'Wallet', 40, 0, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE `id` = `id`;
