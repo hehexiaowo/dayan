@@ -1,6 +1,5 @@
 package com.dayan.channel.security;
 
-import cn.dev33.satoken.stp.StpInterface;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.channel.entity.ChannelAccount;
 import com.dayan.channel.entity.ChannelAccountRoleRel;
@@ -11,6 +10,7 @@ import com.dayan.channel.mapper.ChannelAccountRoleRelMapper;
 import com.dayan.channel.mapper.ChannelPermissionMapper;
 import com.dayan.channel.mapper.ChannelRolePermissionShipMapper;
 import com.dayan.common.security.AccountType;
+import com.dayan.common.security.spi.DomainPermissionResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,10 +23,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Sa-Token 权限/角色查询实现（channel 域，渠道端）。
+ * Channel 端（channel 域）权限解析器。
  *
- * <p>Sa-Token 在 @SaCheckPermission / @SaCheckRole 注解校验时自动回调本实现，
- * 由 loginType 区分端：仅处理 Channel 端（loginType=channel），其余端返回空。
+ * <p>实现 {@link DomainPermissionResolver}（SPI 策略 bean），由全局唯一的
+ * {@link com.dayan.common.security.spi.DomainPermissionDispatcher} 按 loginType 分发调用。
+ * 本类不再直接 {@code implements StpInterface}，避免与 organ 域解析器产生多 bean 冲突。
  *
  * <p>查询链路：
  * <ol>
@@ -35,14 +36,11 @@ import java.util.stream.Collectors;
  *   <li>role_code → channel_role_permission_ship → permission_code 列表（去重）</li>
  *   <li>permission_code → channel_permission(status!=0) 过滤停用权限</li>
  * </ol>
- *
- * <p>与 organ 域的 {@link com.dayan.organ.security.DayanStpInterface} 共存：
- * 两者各自按 loginType 自过滤，Sa-Token 按 loginType 分发，互不干扰。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ChannelStpInterface implements StpInterface {
+public class ChannelStpInterface implements DomainPermissionResolver {
 
     /** 渠道超管角色标识（在角色集合中额外返回，便于 @SaCheckRole 兜底） */
     public static final String ROLE_CHANNEL_ADMIN = "ROLE_CHANNEL_ADMIN";
@@ -55,16 +53,13 @@ public class ChannelStpInterface implements StpInterface {
     private final ChannelPermissionMapper permissionMapper;
 
     @Override
-    public List<String> getPermissionList(Object loginId, String loginType) {
-        // 仅 Channel 端走 channel 权限体系；其余端不处理
-        if (!isChannelLoginType(loginType)) {
-            return Collections.emptyList();
-        }
-        if (loginId == null) {
-            return Collections.emptyList();
-        }
-        String accountCode = loginId.toString();
+    public List<String> supportLoginTypes() {
+        // 仅 Channel 端：channel-api 的 @SaCheckPermission 由 StpKit.CHANNEL 解析，loginType 固定为 "channel"
+        return Collections.singletonList(AccountType.CHANNEL.getLoginType());
+    }
 
+    @Override
+    public List<String> getPermissionList(String accountCode) {
         // 1. 查账号，超管返回通配权限
         ChannelAccount account = accountMapper.selectOne(new LambdaQueryWrapper<ChannelAccount>()
                 .eq(ChannelAccount::getAccountCode, accountCode)
@@ -108,16 +103,7 @@ public class ChannelStpInterface implements StpInterface {
     }
 
     @Override
-    public List<String> getRoleList(Object loginId, String loginType) {
-        // 仅 Channel 端走 channel 权限体系；其余端不处理
-        if (!isChannelLoginType(loginType)) {
-            return Collections.emptyList();
-        }
-        if (loginId == null) {
-            return Collections.emptyList();
-        }
-        String accountCode = loginId.toString();
-
+    public List<String> getRoleList(String accountCode) {
         List<String> roleCodes = new ArrayList<>(listRoleCodes(accountCode));
 
         // 超管额外返回 ROLE_CHANNEL_ADMIN，便于 @SaCheckRole 兜底
@@ -145,15 +131,5 @@ public class ChannelStpInterface implements StpInterface {
                 .map(ChannelAccountRoleRel::getRoleCode)
                 .distinct()
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * 判断是否为 Channel 端登录类型。
-     *
-     * <p>仅接受 "channel"（{@link AccountType#CHANNEL} 的 loginType）。
-     * channel-api 的 @SaCheckPermission 由 StpKit.CHANNEL 解析，loginType 固定为 "channel"。
-     */
-    private boolean isChannelLoginType(String loginType) {
-        return AccountType.CHANNEL.getLoginType().equals(loginType);
     }
 }
