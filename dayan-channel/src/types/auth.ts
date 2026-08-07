@@ -13,7 +13,7 @@ export interface LoginParams {
 /**
  * 登录成功响应（后端 ChannelAuthController AuthLoginVO）。
  *
- * Channel 端额外包含 channelCode。
+ * Channel 端额外包含 channelCode 与 isAdmin。
  */
 export interface LoginResult {
   /** Sa-Token 签发的 Token 值 */
@@ -28,6 +28,8 @@ export interface LoginResult {
   avatar?: string
   /** 所属渠道编码（Channel 端） */
   channelCode?: string
+  /** 是否超管：1是 0否（后端 channel_account.is_admin，超管通配所有权限） */
+  isAdmin?: number
 }
 
 /** 当前登录人信息（同 LoginResult 结构） */

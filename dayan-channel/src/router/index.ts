@@ -1,19 +1,14 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 /**
- * 路由表（Channel 端静态路由）。
+ * 路由表（Channel 端）。
  *
  * - /login   登录页（白名单）
- * - /        后台主框架（DefaultLayout 嵌套，需登录）
- *   - /dashboard 工作台（渠道概览）
- *   - /agent    代理人管理
- *   - /client   客户管理
- *   - /equity   权益查询
- *   - /order    订单查询
+ * - /        后台主框架（DefaultLayout 嵌套，需登录），redirect 到 /dashboard
+ *   - 业务路由（dashboard/agent/client/equity/order）由 permission 守卫从后端菜单动态 addRoute 挂载
  * - /:pathMatch(.*)*  404
  *
- * 注：Channel 菜单数据（domain_type=channel）后端尚未 seed，
- * 故本期采用静态路由（不引入动态菜单）。
+ * 动态路由 name 统一用 menuCode，作为 Layout 路由的 children 挂载（见 permission.ts 守卫）。
  */
 const routes: RouteRecordRaw[] = [
   {
@@ -24,40 +19,12 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
+    name: 'Layout',
     component: () => import('@/layouts/default/index.vue'),
     redirect: '/dashboard',
-    children: [
-      {
-        path: 'dashboard',
-        name: 'Dashboard',
-        component: () => import('@/views/dashboard/index.vue'),
-        meta: { title: '工作台', icon: 'Odometer' }
-      },
-      {
-        path: 'agent',
-        name: 'Agent',
-        component: () => import('@/views/agent/index.vue'),
-        meta: { title: '代理人管理', icon: 'User' }
-      },
-      {
-        path: 'client',
-        name: 'Client',
-        component: () => import('@/views/client/index.vue'),
-        meta: { title: '客户管理', icon: 'UserFilled' }
-      },
-      {
-        path: 'equity',
-        name: 'Equity',
-        component: () => import('@/views/equity/index.vue'),
-        meta: { title: '权益查询', icon: 'Ticket' }
-      },
-      {
-        path: 'order',
-        name: 'Order',
-        component: () => import('@/views/order/index.vue'),
-        meta: { title: '订单查询', icon: 'List' }
-      }
-    ]
+    // children 运行时由 addDynamicRoutes 动态注入（permission 守卫登录后调用）。
+    // 此处声明空数组仅为满足 RouteRecordRaw 类型要求。
+    children: []
   },
   {
     path: '/:pathMatch(.*)*',
@@ -72,5 +39,19 @@ const router = createRouter({
   routes,
   scrollBehavior: () => ({ top: 0 })
 })
+
+/**
+ * 将动态生成的业务路由挂载到布局 / 下。
+ *
+ * Vue Router 的 addRoute(name, route) 形式可向具名路由追加 children，
+ * 这里向 Layout 根路由（name='Layout'）追加。由 permission 守卫在登录后调用一次。
+ *
+ * @param dynamicRoutes 由 buildAsyncRoutes 生成的业务路由
+ */
+export function addDynamicRoutes(dynamicRoutes: RouteRecordRaw[]) {
+  for (const route of dynamicRoutes) {
+    router.addRoute('Layout', route)
+  }
+}
 
 export default router
