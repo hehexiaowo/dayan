@@ -29,15 +29,15 @@ VALUES
   ('channel:account:create',        '新建账号',   'channel:system', 3, '/channel-api/channel-accounts',                   'POST',   112, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:account:update',        '编辑账号',   'channel:system', 3, '/channel-api/channel-accounts/*',                 'PUT',    113, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:account:delete',        '删除账号',   'channel:system', 3, '/channel-api/channel-accounts/*',                 'DELETE', 114, 1, NOW(), NOW(), 'system', 'system', 0),
-  ('channel:account:resetPassword', '重置密码',   'channel:system', 3, '/channel-api/channel-accounts/*/reset-password',  'PUT',    115, 1, NOW(), NOW(), 'system', 'system', 0),
-  ('channel:account:assignRole',    '分配角色',   'channel:system', 3, '/channel-api/channel-account-roles/*/roles',      'PUT',    116, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:account:reset',      '重置密码',   'channel:system', 3, '/channel-api/channel-accounts/*/reset-password',  'PUT',    115, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:account:assign',     '分配角色',   'channel:system', 3, '/channel-api/channel-account-roles/*/roles',      'PUT',    116, 1, NOW(), NOW(), 'system', 'system', 0),
   -- 角色管理 channel:role
   ('channel:role:list',             '角色列表',   'channel:system', 3, '/channel-api/channel-roles',                'GET',    120, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:role:query',            '角色详情',   'channel:system', 3, '/channel-api/channel-roles/*',              'GET',    121, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:role:create',           '新建角色',   'channel:system', 3, '/channel-api/channel-roles',                'POST',   122, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:role:update',           '编辑角色',   'channel:system', 3, '/channel-api/channel-roles/*',              'PUT',    123, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:role:delete',           '删除角色',   'channel:system', 3, '/channel-api/channel-roles/*',              'DELETE', 124, 1, NOW(), NOW(), 'system', 'system', 0),
-  ('channel:role:assignPermission', '角色授权',   'channel:system', 3, '/channel-api/channel-roles/*/permissions',  'PUT',    125, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:role:assign',         '角色授权',   'channel:system', 3, '/channel-api/channel-roles/*/permissions',  'PUT',    125, 1, NOW(), NOW(), 'system', 'system', 0),
   -- 权限只读 channel:permission
   ('channel:permission:list', '权限列表', 'channel:system', 3, '/channel-api/channel-permissions/all', 'GET', 130, 1, NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `id` = `id`;
