@@ -274,6 +274,9 @@ public class FinancePaymentServiceImpl implements FinancePaymentService {
         if (query.getOrderCode() != null && !query.getOrderCode().isEmpty()) {
             wrapper.eq(FinancePayment::getOrderCode, query.getOrderCode());
         }
+        if (query.getOrderCodes() != null && !query.getOrderCodes().isEmpty()) {
+            wrapper.in(FinancePayment::getOrderCode, query.getOrderCodes());
+        }
         if (query.getTradeNo() != null && !query.getTradeNo().isEmpty()) {
             wrapper.eq(FinancePayment::getTradeNo, query.getTradeNo());
         }
