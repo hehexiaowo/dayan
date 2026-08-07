@@ -46,4 +46,10 @@ public interface ChannelInfoService {
      * 删除渠道（校验子渠道存在性）。
      */
     void delete(String channelCode);
+
+    /** 校验当前渠道有管理能力，否则抛 BusinessException */
+    void requireManageCapability();
+
+    /** 校验 targetChannelCode 是当前渠道的后代（ancestors 含当前渠道），否则抛越权异常 */
+    void requireDescendant(String targetChannelCode);
 }

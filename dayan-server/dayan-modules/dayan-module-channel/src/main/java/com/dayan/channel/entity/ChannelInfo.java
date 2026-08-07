@@ -102,6 +102,9 @@ public class ChannelInfo extends BaseEntity {
     /** 审核状态 */
     private Integer auditStatus;
 
+    /** 管理配置能力：0=业务型（仅业务操作），1=管理型（可建删子渠道+配置app） */
+    private Integer canManage;
+
     /** 备注 */
     private String remark;
 }

@@ -11,6 +11,7 @@ import com.dayan.channel.vo.ChannelInfoVO;
 import com.dayan.common.core.code.CodeGenerator;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
+import com.dayan.common.mybatis.context.ContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -267,6 +268,31 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         return channel;
     }
 
+    @Override
+    public void requireManageCapability() {
+        String channelCode = ContextHolder.getChannelCode();
+        ChannelInfo current = requireChannel(channelCode);
+        if (current.getCanManage() == null || current.getCanManage() != 1) {
+            throw new BusinessException(ErrorCode.BUSINESS, "当前渠道无配置权限");
+        }
+    }
+
+    @Override
+    public void requireDescendant(String targetChannelCode) {
+        if (targetChannelCode == null || targetChannelCode.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "目标渠道编码不能为空");
+        }
+        String currentCode = ContextHolder.getChannelCode();
+        if (targetChannelCode.equals(currentCode)) {
+            return; // 自身允许（账号管理本渠道自身）
+        }
+        ChannelInfo target = requireChannel(targetChannelCode);
+        String ancestors = target.getAncestors();
+        if (ancestors == null || !java.util.Arrays.asList(ancestors.split(",")).contains(currentCode)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权操作非本渠道子树的资源");
+        }
+    }
+
     /** 判断 targetCode 是否为 current 的子孙（依据 ancestors 链） */
     private boolean isDescendant(ChannelInfo current, String targetCode) {
         String ancestors = current.getAncestors();
@@ -318,6 +344,7 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         vo.setSortOrder(entity.getSortOrder());
         vo.setStatus(entity.getStatus());
         vo.setAuditStatus(entity.getAuditStatus());
+        vo.setCanManage(entity.getCanManage());
         vo.setRemark(entity.getRemark());
         vo.setCreatedAt(entity.getCreatedAt());
         return vo;

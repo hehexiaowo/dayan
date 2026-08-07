@@ -56,7 +56,12 @@ public class DayanTenantHandler implements TenantLineHandler {
 
     /** 单独忽略的表（平台共享但不匹配前缀） */
     private static final String[] DEFAULT_IGNORE_TABLES = {
-            "channel_info"
+            // 渠道主表：admin 端全局管理；channel 端靠 requireDescendant 业务校验隔离
+            "channel_info",
+            // 权限字典表：全渠道共享同一套权限码，无 channel_code 列
+            "channel_permission",
+            // 角色-权限关联表：通过 role_code 间接归属渠道，本身无 channel_code 列
+            "channel_role_permission_ship"
     };
 
     private final Set<String> ignoreTables;

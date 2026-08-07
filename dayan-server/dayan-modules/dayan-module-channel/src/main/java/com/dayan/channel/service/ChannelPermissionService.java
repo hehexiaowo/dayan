@@ -27,4 +27,7 @@ public interface ChannelPermissionService {
 
     /** 全部启用权限（授权选择用） */
     List<ChannelPermission> listAll();
+
+    /** 权限树（按 parentCode 组装 children，供角色授权 el-tree 用） */
+    List<ChannelPermission> tree();
 }

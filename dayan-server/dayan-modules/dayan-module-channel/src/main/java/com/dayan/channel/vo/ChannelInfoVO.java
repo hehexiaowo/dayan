@@ -42,6 +42,8 @@ public class ChannelInfoVO {
     private Integer sortOrder;
     private Integer status;
     private Integer auditStatus;
+    /** 管理配置能力：0=业务型，1=管理型 */
+    private Integer canManage;
     private String remark;
     private LocalDateTime createdAt;
 

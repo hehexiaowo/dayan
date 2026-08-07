@@ -24,4 +24,21 @@ VALUES
   ('channel_equity', '权益查询', NULL, 2, '/equity', 'equity/index', 'channel:equity:view',
    'Ticket', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
   ('channel_order', '订单查询', NULL, 2, '/order', 'order/index', 'channel:order:view',
-   'List', 50, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL);
+   'List', 50, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE `id` = `id`;
+
+-- ========== P9 增量2 追加：系统管理菜单组 ==========
+INSERT INTO system_menu
+(menu_code, menu_name, parent_code, menu_type, path, component, permission_code,
+ icon, sort_order, is_visible, is_external, is_cache, domain_type, status,
+ created_at, updated_at, creator, updater, deleted, deleted_at)
+VALUES
+('channel_system', '系统管理', NULL, 1, '/system', NULL, NULL,
+ 'Setting', 60, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_system_organ', '架构管理', 'channel_system', 2, '/system/organ', 'system/organ/index', 'channel:info:list',
+ 'OfficeBuilding', 10, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_system_account', '账号管理', 'channel_system', 2, '/system/account', 'system/account/index', 'channel:account:list',
+ 'User', 20, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_system_role', '角色管理', 'channel_system', 2, '/system/role', 'system/role/index', 'channel:role:list',
+ 'UserFilled', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE `id` = `id`;
