@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -46,6 +47,8 @@ import {
  *
  * 查看详情：简化方案，用 ElMessageBox.alert 展示后端 VO 原始 JSON 字段。
  */
+
+const router = useRouter()
 
 type TabKey = 'equity' | 'scene' | 'course' | 'sojourn'
 
@@ -231,6 +234,23 @@ const cancelEquity = makeCancelHandler(cancelOrderEquity, () => equityCrud.loadP
 const cancelScene = makeCancelHandler(cancelOrderScene, () => sceneCrud.loadPage())
 const cancelCourse = makeCancelHandler(cancelOrderCourse, () => courseCrud.loadPage())
 const cancelSojourn = makeCancelHandler(cancelOrderSojourn, () => sojournCrud.loadPage())
+
+// ==================== 去支付（跳收银台） ====================
+
+/**
+ * 生成「去支付」跳转 handler：携带 orderCode + orderType 跳到收银台，
+ * 收银台 onMounted 读 route.query 预填创建支付弹窗。
+ * orderType：1=权益 / 2=场景 / 3=课程 / 4=旅居（与 FinancePaymentQueryDTO 一致）。
+ */
+function makeGoCashierHandler(orderType: number) {
+  return (orderCode: string) => {
+    router.push({ path: '/cashier', query: { orderCode, orderType: String(orderType) } })
+  }
+}
+const goCashierEquity = makeGoCashierHandler(1)
+const goCashierScene = makeGoCashierHandler(2)
+const goCashierCourse = makeGoCashierHandler(3)
+const goCashierSojourn = makeGoCashierHandler(4)
 </script>
 
 <template>
@@ -299,6 +319,15 @@ const cancelSojourn = makeCancelHandler(cancelOrderSojourn, () => sojournCrud.lo
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="viewEquity(row.orderCode)">详情</el-button>
+                  <el-button
+                    v-if="row.orderStatus === OrderStatus.PENDING_PAY"
+                    link
+                    type="primary"
+                    size="small"
+                    @click="goCashierEquity(row.orderCode)"
+                  >
+                    去支付
+                  </el-button>
                   <el-button
                     v-if="isCancellable(row.orderStatus)"
                     link
@@ -393,6 +422,15 @@ const cancelSojourn = makeCancelHandler(cancelOrderSojourn, () => sojournCrud.lo
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="viewScene(row.orderCode)">详情</el-button>
                   <el-button
+                    v-if="row.orderStatus === OrderStatus.PENDING_PAY"
+                    link
+                    type="primary"
+                    size="small"
+                    @click="goCashierScene(row.orderCode)"
+                  >
+                    去支付
+                  </el-button>
+                  <el-button
                     v-if="isCancellable(row.orderStatus)"
                     link
                     type="danger"
@@ -484,6 +522,15 @@ const cancelSojourn = makeCancelHandler(cancelOrderSojourn, () => sojournCrud.lo
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="viewCourse(row.orderCode)">详情</el-button>
+                  <el-button
+                    v-if="row.orderStatus === OrderStatus.PENDING_PAY"
+                    link
+                    type="primary"
+                    size="small"
+                    @click="goCashierCourse(row.orderCode)"
+                  >
+                    去支付
+                  </el-button>
                   <el-button
                     v-if="isCancellable(row.orderStatus)"
                     link
@@ -584,6 +631,15 @@ const cancelSojourn = makeCancelHandler(cancelOrderSojourn, () => sojournCrud.lo
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="viewSojourn(row.orderCode)">详情</el-button>
+                  <el-button
+                    v-if="row.orderStatus === OrderStatus.PENDING_PAY"
+                    link
+                    type="primary"
+                    size="small"
+                    @click="goCashierSojourn(row.orderCode)"
+                  >
+                    去支付
+                  </el-button>
                   <el-button
                     v-if="isCancellable(row.orderStatus)"
                     link
