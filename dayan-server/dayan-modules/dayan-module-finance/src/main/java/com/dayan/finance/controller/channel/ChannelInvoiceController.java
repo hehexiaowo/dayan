@@ -10,11 +10,21 @@ import com.dayan.finance.dto.ApplyInvoiceDTO;
 import com.dayan.finance.dto.FinanceInvoiceQueryDTO;
 import com.dayan.finance.service.FinanceInvoiceService;
 import com.dayan.finance.vo.FinanceInvoiceVO;
+import com.dayan.order.service.OrderCourseService;
+import com.dayan.order.service.OrderEquityService;
+import com.dayan.order.service.OrderSceneService;
+import com.dayan.order.service.OrderSojournService;
+import com.dayan.order.vo.OrderCourseVO;
+import com.dayan.order.vo.OrderEquityVO;
+import com.dayan.order.vo.OrderSceneVO;
+import com.dayan.order.vo.OrderSojournVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 /**
  * Channel 渠道端发票申请接口。
@@ -31,15 +41,32 @@ import org.springframework.web.bind.annotation.*;
 public class ChannelInvoiceController {
 
     private final FinanceInvoiceService financeInvoiceService;
+    private final OrderEquityService orderEquityService;
+    private final OrderSceneService orderSceneService;
+    private final OrderCourseService orderCourseService;
+    private final OrderSojournService orderSojournService;
 
     @Operation(summary = "渠道申请发票")
     @PostMapping("/apply")
     public R<String> apply(@RequestBody @Valid ApplyInvoiceDTO dto) {
-        // 强制注入申请方信息，防止越权；applicantName 为快照字段，取当前登录账号姓名
-        // （渠道登录时由 ChannelAuthServiceImpl 写入 Session = account.realName）
-        dto.setApplicantCode(ContextHolder.getChannelCode());
+        String channelCode = ContextHolder.getChannelCode();
+        // 强制注入申请方信息（防越权），覆盖任何前端传入
+        dto.setApplicantCode(channelCode);
         dto.setApplicantType("channel");
         dto.setApplicantName(ContextHolder.getAccountName());
+        // 发票金额对账：若关联订单，发票金额不得超过该订单已支付金额（防篡改/防超额开票）
+        // 无订单开票场景（orderCode 为空，如结算单维度）本期不加金额上限（产品上金额由其他流程约束）
+        if (dto.getOrderCode() != null && !dto.getOrderCode().isEmpty()) {
+            BigDecimal orderPayAmount = resolveOrderPayAmountForInvoice(dto.getOrderCode(), channelCode);
+            if (orderPayAmount == null) {
+                throw new BusinessException(ErrorCode.NOT_FOUND, "关联订单不存在或无权访问");
+            }
+            if (dto.getInvoiceAmount() != null
+                    && dto.getInvoiceAmount().compareTo(orderPayAmount) > 0) {
+                throw new BusinessException(ErrorCode.BUSINESS,
+                        "发票金额不得超过订单实付金额（" + orderPayAmount + "）");
+            }
+        }
         return R.ok(financeInvoiceService.apply(dto));
     }
 
@@ -66,5 +93,61 @@ public class ChannelInvoiceController {
             throw new BusinessException(ErrorCode.NOT_FOUND, "发票不存在或无权访问");
         }
         return R.ok(vo);
+    }
+
+    // ====== 内部方法：发票金额对账 ======
+
+    /**
+     * 按 orderCode 顺序探测 4 类订单，返回首个命中且属于本渠道的订单实付金额。
+     *
+     * <p>发票 DTO 不携带 orderType（与支付单不同），无法按类型直接路由，只能顺序探测。
+     * {@code OrderXxxService.getDetail} 在订单不存在时<b>抛 BusinessException 而非返回 null</b>
+     * （见 OrderEquityServiceImpl.requireOrder），故对每一类 try/catch 尝试。
+     *
+     * <p>探测顺序：权益→场景→课程→旅居。orderCode 在 4 类订单间理论上唯一（生成规则隔离），
+     * 首个命中的即为目标；若全部不存在或存在但 channelCode 不匹配，返回 null（调用方按无权访问处理）。
+     *
+     * @param orderCode   关联订单编码
+     * @param channelCode 当前渠道编码
+     * @return 订单实付金额（订单存在且属于本渠道）；null=订单不存在/不属于本渠道
+     */
+    private BigDecimal resolveOrderPayAmountForInvoice(String orderCode, String channelCode) {
+        if (orderCode == null || orderCode.isEmpty() || channelCode == null) {
+            return null;
+        }
+        // 权益
+        try {
+            OrderEquityVO o = orderEquityService.getDetail(orderCode);
+            if (o != null && channelCode.equals(o.getChannelCode())) {
+                return o.getPayAmount();
+            }
+        } catch (BusinessException ignore) {
+            // 该类型不存在，继续探测下一类型
+        }
+        // 场景
+        try {
+            OrderSceneVO o = orderSceneService.getDetail(orderCode);
+            if (o != null && channelCode.equals(o.getChannelCode())) {
+                return o.getPayAmount();
+            }
+        } catch (BusinessException ignore) {
+        }
+        // 课程
+        try {
+            OrderCourseVO o = orderCourseService.getDetail(orderCode);
+            if (o != null && channelCode.equals(o.getChannelCode())) {
+                return o.getPayAmount();
+            }
+        } catch (BusinessException ignore) {
+        }
+        // 旅居
+        try {
+            OrderSojournVO o = orderSojournService.getDetail(orderCode);
+            if (o != null && channelCode.equals(o.getChannelCode())) {
+                return o.getPayAmount();
+            }
+        } catch (BusinessException ignore) {
+        }
+        return null;
     }
 }

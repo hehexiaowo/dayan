@@ -29,6 +29,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,15 +59,19 @@ public class ChannelFinanceController {
     @Operation(summary = "创建支付单")
     @PostMapping
     public R<String> create(@RequestBody @Valid CreatePaymentDTO dto) {
-        // 权益订单（orderType=1）：从订单表权威解析 payAmount，防篡改
-        if (Integer.valueOf(1).equals(dto.getOrderType())) {
-            OrderEquityVO order = orderEquityService.getDetail(dto.getOrderCode());
-            if (order == null) {
-                throw new BusinessException(ErrorCode.NOT_FOUND, "订单不存在");
-            }
-            // 覆盖客户端传入的金额（以订单表为准）
-            dto.setPayAmount(order.getPayAmount());
+        String channelCode = ContextHolder.getChannelCode();
+        // 全类型归属校验 + 权威金额覆盖（防越权 + 防篡改），与 getDetail 的 isOrderOwnedByChannel 同源
+        Integer orderType = dto.getOrderType();
+        String orderCode = dto.getOrderCode();
+        if (orderType == null || orderCode == null || orderCode.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "订单类型/订单编码不能为空");
         }
+        BigDecimal authoritativePayAmount = resolveOrderPayAmount(orderCode, orderType, channelCode);
+        if (authoritativePayAmount == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "订单不存在或无权访问");
+        }
+        // 覆盖客户端传入的金额（以订单表为准）
+        dto.setPayAmount(authoritativePayAmount);
         return R.ok(financePaymentService.create(dto));
     }
 
@@ -188,6 +193,49 @@ public class ChannelFinanceController {
         } catch (BusinessException e) {
             // 订单不存在（requireOrder 抛 NOT_FOUND），视为不属于本渠道
             return false;
+        }
+    }
+
+    /**
+     * 按订单类型解析订单的权威实付金额，并校验订单属于本渠道。
+     *
+     * <p>用于创建支付单时的防越权（订单必须属于本渠道）+ 防篡改（金额以订单表为准，忽略前端传入）。
+     * 与 {@link #isOrderOwnedByChannel} 同源，但返回金额而非 boolean，供 create 覆盖 dto.payAmount。
+     * 两者结构相似但职责不同（getDetail 不需要金额，create 需要金额），保留并存优于过度抽象。
+     *
+     * @param orderCode   订单编码
+     * @param orderType   订单类型：1=权益/2=场景/3=课程/4=旅居
+     * @param channelCode 当前渠道编码
+     * @return 订单实付金额（订单存在且属于本渠道）；null=订单不存在/不属于本渠道/orderType 非法
+     */
+    private BigDecimal resolveOrderPayAmount(String orderCode, Integer orderType, String channelCode) {
+        if (orderCode == null || orderCode.isEmpty() || orderType == null || channelCode == null) {
+            return null;
+        }
+        try {
+            switch (orderType) {
+                case 1: { // 权益
+                    OrderEquityVO o = orderEquityService.getDetail(orderCode);
+                    return (o != null && channelCode.equals(o.getChannelCode())) ? o.getPayAmount() : null;
+                }
+                case 2: { // 场景
+                    OrderSceneVO o = orderSceneService.getDetail(orderCode);
+                    return (o != null && channelCode.equals(o.getChannelCode())) ? o.getPayAmount() : null;
+                }
+                case 3: { // 课程
+                    OrderCourseVO o = orderCourseService.getDetail(orderCode);
+                    return (o != null && channelCode.equals(o.getChannelCode())) ? o.getPayAmount() : null;
+                }
+                case 4: { // 旅居
+                    OrderSojournVO o = orderSojournService.getDetail(orderCode);
+                    return (o != null && channelCode.equals(o.getChannelCode())) ? o.getPayAmount() : null;
+                }
+                default:
+                    return null;
+            }
+        } catch (BusinessException e) {
+            // 订单不存在（requireOrder 抛 NOT_FOUND），视为不属于本渠道
+            return null;
         }
     }
 }
