@@ -107,6 +107,29 @@ public class ChannelPermissionServiceImpl implements ChannelPermissionService {
                 .orderByAsc(ChannelPermission::getId));
     }
 
+    @Override
+    public List<ChannelPermission> tree() {
+        List<ChannelPermission> all = listAll();
+        java.util.Map<String, ChannelPermission> codeMap = new java.util.LinkedHashMap<>();
+        for (ChannelPermission node : all) {
+            codeMap.put(node.getPermissionCode(), node);
+        }
+        List<ChannelPermission> roots = new java.util.ArrayList<>();
+        for (ChannelPermission node : all) {
+            String parentCode = node.getParentCode();
+            if (parentCode == null || parentCode.isEmpty() || !codeMap.containsKey(parentCode)) {
+                roots.add(node);
+            } else {
+                ChannelPermission parent = codeMap.get(parentCode);
+                if (parent.getChildren() == null) {
+                    parent.setChildren(new java.util.ArrayList<>());
+                }
+                parent.getChildren().add(node);
+            }
+        }
+        return roots;
+    }
+
     private ChannelPermission requirePermission(String permissionCode) {
         ChannelPermission permission = permissionMapper.selectOne(new LambdaQueryWrapper<ChannelPermission>()
                 .eq(ChannelPermission::getPermissionCode, permissionCode)

@@ -1,11 +1,14 @@
 package com.dayan.channel.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.dayan.common.mybatis.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.util.List;
 /**
  * 表 channel_permission 对应实体。
  */
@@ -42,4 +45,8 @@ public class ChannelPermission extends BaseEntity {
 
     /** 状态 */
     private Integer status;
+
+    /** 子权限（树形组装用，非数据库列） */
+    @TableField(exist = false)
+    private List<ChannelPermission> children;
 }
