@@ -49,6 +49,11 @@ sa-token:
   token-style: uuid
   is-log: false
 
+# 默认 StpLogic：使本进程 @SaCheckPermission 走 admin 命名空间（见 DefaultStpLogicInitializer）
+dayan:
+  security:
+    login-type: admin
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
