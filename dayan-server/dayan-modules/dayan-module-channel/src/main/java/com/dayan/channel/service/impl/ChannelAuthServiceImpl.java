@@ -104,6 +104,7 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
                 .realName(account.getRealName())
                 .avatar(account.getAvatar())
                 .channelCode(account.getChannelCode())
+                .isAdmin(account.getIsAdmin())
                 .build();
     }
 
@@ -132,6 +133,7 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
                 .realName(account.getRealName())
                 .avatar(account.getAvatar())
                 .channelCode(account.getChannelCode())
+                .isAdmin(account.getIsAdmin())
                 .build();
     }
 }
