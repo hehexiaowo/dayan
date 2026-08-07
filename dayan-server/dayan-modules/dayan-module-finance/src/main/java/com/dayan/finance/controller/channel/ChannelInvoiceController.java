@@ -35,9 +35,11 @@ public class ChannelInvoiceController {
     @Operation(summary = "渠道申请发票")
     @PostMapping("/apply")
     public R<String> apply(@RequestBody @Valid ApplyInvoiceDTO dto) {
-        // 强制注入申请方信息，防止越权
+        // 强制注入申请方信息，防止越权；applicantName 为快照字段，取当前登录账号姓名
+        // （渠道登录时由 ChannelAuthServiceImpl 写入 Session = account.realName）
         dto.setApplicantCode(ContextHolder.getChannelCode());
         dto.setApplicantType("channel");
+        dto.setApplicantName(ContextHolder.getAccountName());
         return R.ok(financeInvoiceService.apply(dto));
     }
 
