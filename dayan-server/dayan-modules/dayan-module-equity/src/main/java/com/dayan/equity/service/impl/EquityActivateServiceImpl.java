@@ -71,6 +71,9 @@ public class EquityActivateServiceImpl implements EquityActivateService {
         if (query.getActivateChannel() != null) {
             wrapper.eq(EquityActivate::getActivateChannel, query.getActivateChannel());
         }
+        if (query.getEquityCodes() != null && !query.getEquityCodes().isEmpty()) {
+            wrapper.in(EquityActivate::getEquityCode, query.getEquityCodes());
+        }
         return wrapper;
     }
 

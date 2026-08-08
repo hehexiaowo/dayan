@@ -36,7 +36,8 @@ public class ContentRecordReadServiceImpl implements ContentRecordReadService {
     @Override
     public PageResult<ContentRecordReadVO> page(ContentRecordReadQueryDTO query) {
         LambdaQueryWrapper<ContentRecordRead> wrapper = buildWrapper(
-                query.getContentCode(), query.getReaderCode(), query.getReadSource());
+                query.getContentCode(), query.getReaderCode(), query.getReadSource(),
+                query.getContentCodes());
         Page<ContentRecordRead> page = contentRecordReadMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
         List<ContentRecordReadVO> records = page.getRecords().stream().map(this::toVO).toList();
@@ -93,14 +94,19 @@ public class ContentRecordReadServiceImpl implements ContentRecordReadService {
 
     private LambdaQueryWrapper<ContentRecordRead> buildWrapper(String contentCode,
                                                                String readerCode,
-                                                               Integer readSource) {
-        return new LambdaQueryWrapper<ContentRecordRead>()
+                                                               Integer readSource,
+                                                               java.util.List<String> contentCodes) {
+        LambdaQueryWrapper<ContentRecordRead> wrapper = new LambdaQueryWrapper<ContentRecordRead>()
                 .eq(contentCode != null && !contentCode.isEmpty(),
                         ContentRecordRead::getContentCode, contentCode)
                 .eq(readerCode != null && !readerCode.isEmpty(),
                         ContentRecordRead::getReaderCode, readerCode)
                 .eq(readSource != null, ContentRecordRead::getReadSource, readSource)
                 .orderByDesc(ContentRecordRead::getReadTime);
+        if (contentCodes != null && !contentCodes.isEmpty()) {
+            wrapper.in(ContentRecordRead::getContentCode, contentCodes);
+        }
+        return wrapper;
     }
 
     private ContentRecordReadVO toVO(ContentRecordRead entity) {

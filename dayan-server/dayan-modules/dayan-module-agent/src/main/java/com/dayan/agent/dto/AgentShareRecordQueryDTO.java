@@ -16,4 +16,6 @@ public class AgentShareRecordQueryDTO {
     private Integer shareType;
     /** 接收客户编码 */
     private String clientCode;
+    /** 渠道隔离用：本渠道代理人编码集合 */
+    private java.util.List<String> agentCodes;
 }

@@ -278,7 +278,7 @@ public class SceneInfoServiceImpl implements SceneInfoService {
     }
 
     private LambdaQueryWrapper<SceneInfo> buildQueryWrapper(SceneInfoQueryDTO query) {
-        return new LambdaQueryWrapper<SceneInfo>()
+        LambdaQueryWrapper<SceneInfo> wrapper = new LambdaQueryWrapper<SceneInfo>()
                 .eq(query.getSceneCode() != null && !query.getSceneCode().isEmpty(),
                         SceneInfo::getSceneCode, query.getSceneCode())
                 .like(query.getSceneName() != null && !query.getSceneName().isEmpty(),
@@ -289,6 +289,10 @@ public class SceneInfoServiceImpl implements SceneInfoService {
                 .eq(query.getSceneStatus() != null, SceneInfo::getSceneStatus, query.getSceneStatus())
                 .eq(query.getAuditStatus() != null, SceneInfo::getAuditStatus, query.getAuditStatus())
                 .orderByDesc(SceneInfo::getCreatedAt);
+        if (query.getSceneCodes() != null && !query.getSceneCodes().isEmpty()) {
+            wrapper.in(SceneInfo::getSceneCode, query.getSceneCodes());
+        }
+        return wrapper;
     }
 
     private SceneInfo requireScene(String sceneCode) {

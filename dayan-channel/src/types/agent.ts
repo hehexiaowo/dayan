@@ -1,3 +1,5 @@
+import type { PageQuery } from './common'
+
 /**
  * 代理人相关类型。
  *
@@ -73,3 +75,88 @@ export interface AgentQuery {
   /** 每页条数 */
   size: number
 }
+
+// ==================== 代理人账号 ====================
+
+/** 代理人账号 */
+export interface AgentAccount {
+  id?: number
+  agentCode: string
+  channelCode?: string
+  username?: string
+  realName?: string
+  phone?: string
+  avatar?: string
+  agentLevel?: number
+  isCertified?: number
+  accountStatus?: number
+  lastLoginAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** 代理人账号查询 */
+export interface AgentAccountQuery extends PageQuery {
+  agentCode?: string
+  keyword?: string
+  accountStatus?: number
+}
+
+// ==================== 客户线索（代理人-客户绑定）====================
+
+/** 客户线索 */
+export interface AgentClientRel {
+  id?: number
+  agentCode: string
+  clientCode: string
+  clientName?: string
+  clientPhone?: string
+  bindType?: number
+  bindTime?: string
+  status?: number
+}
+
+/** 客户线索查询 */
+export interface AgentClientRelQuery extends PageQuery {
+  agentCode?: string
+  clientCode?: string
+  bindType?: number
+  status?: number
+}
+
+/** 绑定类型选项 */
+export const BIND_TYPE_OPTIONS = [
+  { value: 1, label: '主动绑定' },
+  { value: 2, label: '邀请绑定' }
+]
+
+// ==================== 分享记录 ====================
+
+/** 分享记录 */
+export interface ShareRecord {
+  id?: number
+  shareCode: string
+  agentCode: string
+  shareType?: number
+  bizCode?: string
+  shareChannel?: number
+  clientCode?: string
+  clientName?: string
+  viewCount?: number
+  shareTime?: string
+}
+
+/** 分享记录查询 */
+export interface ShareRecordQuery extends PageQuery {
+  agentCode?: string
+  shareCode?: string
+  shareType?: number
+  clientCode?: string
+}
+
+/** 分享类型选项 */
+export const SHARE_TYPE_OPTIONS = [
+  { value: 1, label: '内容分享' },
+  { value: 2, label: '场景分享' },
+  { value: 3, label: '权益分享' }
+]

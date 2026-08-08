@@ -62,3 +62,51 @@ VALUES
 ('channel_cashier', '收银台', 'channel_procurement', 2, '/cashier', 'cashier/index', 'channel:payment:list',
  'Wallet', 40, 0, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `id` = `id`;
+
+-- ========== P9 增量4 追加：养老保典 + 客户平台 ==========
+-- channel_agent / channel_client 由叶子（menu_type=2）扩为目录（menu_type=1），
+-- 显式覆盖 menu_type/component/path/permission_code 等字段（方案 C 核心）。
+-- Channel 端登录即见全量（不按角色过滤），故 menu_type 改动无角色重配副作用。
+INSERT INTO system_menu
+(menu_code, menu_name, parent_code, menu_type, path, component, permission_code,
+ icon, sort_order, is_visible, is_external, is_cache, domain_type, status,
+ created_at, updated_at, creator, updater, deleted, deleted_at)
+VALUES
+-- 养老保典目录（原 channel_agent 改为目录）
+('channel_agent', '养老保典', NULL, 1, '/agent', NULL, NULL,
+ 'User', 20, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_agent_account', '代理人账号', 'channel_agent', 2, '/agent/account', 'agent/account/index', 'channel:agent:list',
+ 'UserFilled', 21, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_agent_content', '内容配置', 'channel_agent', 2, '/agent/content', 'content/config/index', 'channel:content:list',
+ 'Document', 22, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_agent_scene', '场景营销', 'channel_agent', 2, '/agent/scene', 'scene/info/index', 'channel:scene:list',
+ 'Location', 23, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_agent_lead', '客户线索', 'channel_agent', 2, '/agent/lead', 'agent/lead/index', 'channel:agentClient:list',
+ 'Connection', 24, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_agent_share', '分享记录', 'channel_agent', 2, '/agent/share', 'agent/share/index', 'channel:shareRecord:list',
+ 'Share', 25, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_agent_read', '阅读记录', 'channel_agent', 2, '/agent/read-record', 'content/read-record/index', 'channel:readRecord:list',
+ 'View', 26, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+-- 客户平台目录（原 channel_client 改为目录）
+('channel_client', '客户平台', NULL, 1, '/client', NULL, NULL,
+ 'UserFilled', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_client_account', '客户账号', 'channel_client', 2, '/client/account', 'client/account/index', 'channel:client:list',
+ 'User', 31, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_client_content', '内容配置', 'channel_client', 2, '/client/content', 'content/config/index', 'channel:content:list',
+ 'Document', 32, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_client_activation', '激活记录', 'channel_client', 2, '/client/activation', 'client/activation/index', 'channel:activate:list',
+ 'Key', 33, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_client_service', '服务记录', 'channel_client', 2, '/client/service', 'service/session/index', 'channel:serviceSession:list',
+ 'Service', 34, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_code = VALUES(parent_code),
+  menu_type = VALUES(menu_type),
+  path = VALUES(path),
+  component = VALUES(component),
+  permission_code = VALUES(permission_code),
+  icon = VALUES(icon),
+  sort_order = VALUES(sort_order),
+  is_visible = VALUES(is_visible),
+  domain_type = VALUES(domain_type),
+  status = VALUES(status);

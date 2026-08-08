@@ -16,4 +16,6 @@ public class AgentClientRelQueryDTO {
     private Integer bindType;
     /** 状态（0=已解绑, 1=服务中） */
     private Integer status;
+    /** 渠道隔离用：本渠道代理人编码集合（Controller 注入，非前端入参） */
+    private java.util.List<String> agentCodes;
 }

@@ -37,6 +37,9 @@ public class AgentShareRecordServiceImpl implements AgentShareRecordService {
         if (query.getAgentCode() != null && !query.getAgentCode().isEmpty()) {
             wrapper.eq(AgentShareRecord::getAgentCode, query.getAgentCode());
         }
+        if (query.getAgentCodes() != null && !query.getAgentCodes().isEmpty()) {
+            wrapper.in(AgentShareRecord::getAgentCode, query.getAgentCodes());
+        }
         if (query.getShareCode() != null && !query.getShareCode().isEmpty()) {
             wrapper.eq(AgentShareRecord::getShareCode, query.getShareCode());
         }
