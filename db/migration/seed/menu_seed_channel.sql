@@ -32,7 +32,7 @@ INSERT INTO system_menu
  created_at, updated_at, creator, updater, deleted, deleted_at)
 VALUES
 ('channel_system', '系统管理', NULL, 1, '/system', NULL, NULL,
- 'Setting', 60, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+ 'Setting', 90, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_system_organ', '架构管理', 'channel_system', 2, '/system/organ', 'system/organ/index', 'channel:info:list',
  'OfficeBuilding', 10, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_system_account', '账号管理', 'channel_system', 2, '/system/account', 'system/account/index', 'channel:account:list',
