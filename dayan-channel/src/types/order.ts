@@ -77,21 +77,78 @@ export const ORDER_STATUS_OPTIONS = [
  * 订单实体（渠道视角子集，对齐 OrderEquityVO）。
  *
  * 注意：金额单位是「元」（后端 DECIMAL），前端直接显示，不要除以 100。
- * OrderEquity 无 clientCode/orderType 字段，已移除。
  */
 export interface Order {
   id?: number
   /** 订单编码（主键业务码） */
   orderCode?: string
-  /** 订单状态（0-7，见 OrderStatus） */
-  orderStatus?: OrderStatus
-  /** 实付金额（单位：元，不要除以100） */
-  payAmount?: number
+  /** 采购来源：1=对公 / 2=个人 */
+  orderSource?: number
+  /** 渠道编码 */
+  channelCode?: string
+  /** 渠道全称 */
+  channelFullName?: string
+  /** 经销商编码 */
+  agentCode?: string
+  /** 经销商全称 */
+  agentFullName?: string
+  /** 分销商编码 */
+  distributorCode?: string
+  /** 分销商全称 */
+  distributorFullName?: string
+  /** 商品编码 */
+  goodsCode?: string
+  /** 商品名称 */
+  goodsName?: string
+  /** 规格编码 */
+  skuCode?: string
+  /** 规格名称 */
+  skuName?: string
+  /** 数量 */
+  quantity?: number
+  /** 单价（元） */
+  unitPrice?: number
   /** 订单总金额（单位：元，不要除以100） */
   totalAmount?: number
+  /** 优惠金额（元） */
+  discountAmount?: number
+  /** 实付金额（单位：元，不要除以100） */
+  payAmount?: number
+  /** 支付方式：1=微信支付 / 2=支付宝 / 3=银行转账 / 4=余额支付 / 5=线下支付 */
+  payType?: number
+  /** 支付时间（yyyy-MM-dd HH:mm:ss） */
+  payTime?: string
+  /** 第三方交易号 */
+  payTradeNo?: string
+  /** 入库方式：1=批量 / 2=逐张 / 3=自动入库 */
+  deliverType?: number
+  /** 发放数量 */
+  deliverCount?: number
+  /** 发放时间（yyyy-MM-dd HH:mm:ss） */
+  deliverTime?: string
+  /** 到期时间（yyyy-MM-dd HH:mm:ss） */
+  expireTime?: string
+  /** 发票状态 */
+  invoiceStatus?: number
+  /** 机构编码 */
+  organCode?: string
+  /** 订单状态（0-7，见 OrderStatus） */
+  orderStatus?: OrderStatus
+  /** 取消原因 */
+  cancelReason?: string
+  /** 备注 */
+  remark?: string
   /** 创建时间（yyyy-MM-dd HH:mm:ss） */
   createdAt?: string
+  /** 更新时间（yyyy-MM-dd HH:mm:ss） */
+  updatedAt?: string
 }
+
+/** 采购来源选项（对公 / 个人，对齐 OrderEquityVO.orderSource） */
+export const ORDER_SOURCE_OPTIONS = [
+  { label: '对公', value: 1 },
+  { label: '个人', value: 2 }
+] as const
 
 /** 订单分页查询参数（对齐 OrderEquityQueryDTO） */
 export interface OrderQuery {

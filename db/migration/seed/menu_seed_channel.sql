@@ -157,3 +157,11 @@ SET `menu_name`='场景管理',
     `sort_order`=37,
     `updated_at`=NOW()
 WHERE `menu_code`='channel_agent_scene' AND `domain_type`='channel';
+
+-- ==================== 隐藏财务收银菜单（采购支付并入订单管理内联弹窗）====================
+-- 订单管理 4 类订单 tab 均支持「支付」内联弹窗（创建支付单 + 标记成功一步完成），
+-- 大雁商城结算下单即生成已支付订单，无需独立收银台页面。
+-- 仅 is_visible=0（从侧边栏隐藏），保留 status=1 + 页面文件 cashier/index.vue，
+-- 路由 /cashier 仍可直达（隐藏备用页，零风险可逆）。
+UPDATE `system_menu` SET `is_visible`=0, `updated_at`=NOW()
+WHERE `menu_code`='channel_cashier' AND `domain_type`='channel';

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -18,7 +17,9 @@ import {
   pageOrders,
   type OrderCancelData
 } from '@/api/order'
+import { createFinancePayment, markFinancePaymentSuccess } from '@/api/finance'
 import {
+  ORDER_SOURCE_OPTIONS,
   ORDER_STATUS_OPTIONS,
   OrderStatus,
   type Order,
@@ -30,6 +31,7 @@ import {
   type OrderSojourn,
   type OrderSojournQuery
 } from '@/types/order'
+import { PAY_TYPE_OPTIONS, type PayType } from '@/types/finance'
 
 /**
  * 订单管理页（采购结算目录 - 4 类订单统一管理）。
@@ -45,10 +47,12 @@ import {
  * 取消订单：仅当 orderStatus ∈ {待支付, 退款中} 时显示「取消」按钮；点击弹 prompt
  * 输入取消原因，调对应 cancelOrderXxx，成功后刷新当前 tab 列表。
  *
+ * 内联支付：待支付订单显示「支付」按钮，点击弹窗选支付方式 + 填交易号，
+ * 一步完成创建支付单 + 标记成功（模拟支付），替代原跳转收银台方案。
+ * 4 个 tab 共用同一个支付弹窗（openPayDialog 传 orderType 区分）。
+ *
  * 查看详情：简化方案，用 ElMessageBox.alert 展示后端 VO 原始 JSON 字段。
  */
-
-const router = useRouter()
 
 type TabKey = 'equity' | 'scene' | 'course' | 'sojourn'
 
@@ -136,6 +140,18 @@ function statusTagType(v?: number): 'success' | 'warning' | 'info' | 'danger' | 
 
 function statusText(v?: number): string {
   const opt = ORDER_STATUS_OPTIONS.find((o) => o.value === v)
+  return opt ? opt.label : '-'
+}
+
+/** 采购来源文案：1=对公 / 2=个人 */
+function orderSourceText(v?: number): string {
+  const opt = ORDER_SOURCE_OPTIONS.find((o) => o.value === v)
+  return opt ? opt.label : '-'
+}
+
+/** 支付方式文案：1微信/2支付宝/3银行转账/4余额/5线下 */
+function payTypeText(v?: number): string {
+  const opt = PAY_TYPE_OPTIONS.find((o) => o.value === v)
   return opt ? opt.label : '-'
 }
 
@@ -235,22 +251,87 @@ const cancelScene = makeCancelHandler(cancelOrderScene, () => sceneCrud.loadPage
 const cancelCourse = makeCancelHandler(cancelOrderCourse, () => courseCrud.loadPage())
 const cancelSojourn = makeCancelHandler(cancelOrderSojourn, () => sojournCrud.loadPage())
 
-// ==================== 去支付（跳收银台） ====================
+// ==================== 内联支付弹窗（4 tab 共用，替代跳转收银台） ====================
 
 /**
- * 生成「去支付」跳转 handler：携带 orderCode + orderType 跳到收银台，
- * 收银台 onMounted 读 route.query 预填创建支付弹窗。
- * orderType：1=权益 / 2=场景 / 3=课程 / 4=旅居（与 FinancePaymentQueryDTO 一致）。
+ * 订单类型 → 文案映射（支付弹窗头部展示用）。
+ * 1=权益 / 2=场景 / 3=课程 / 4=旅居（与 finance_payment.order_type 一致）。
  */
-function makeGoCashierHandler(orderType: number) {
-  return (orderCode: string) => {
-    router.push({ path: '/cashier', query: { orderCode, orderType: String(orderType) } })
+const ORDER_TYPE_LABEL: Record<number, string> = {
+  1: '权益订单',
+  2: '场景订单',
+  3: '课程订单',
+  4: '旅居订单'
+}
+
+/** 支付弹窗状态（4 tab 共享一份） */
+const payDialog = reactive({
+  visible: false,
+  submitting: false,
+  /** 订单类型：1权益/2场景/3课程/4旅居 */
+  orderType: 0 as number,
+  /** 订单编码 */
+  orderCode: '' as string,
+  /** 应付金额（从行数据取，权益订单后端权威覆盖，其余类型传给后端） */
+  payAmount: undefined as number | undefined,
+  /** 支付方式（用户选） */
+  payType: undefined as PayType | undefined,
+  /** 第三方交易号（用户填，模拟支付） */
+  tradeNo: '' as string
+})
+
+/**
+ * 打开支付弹窗（4 tab 统一入口，orderType 区分订单类型）。
+ * row 只取 orderCode + payAmount 两字段，4 类订单行均有。
+ */
+function openPayDialog(row: { orderCode?: string; payAmount?: number }, orderType: number) {
+  payDialog.orderType = orderType
+  payDialog.orderCode = row.orderCode ?? ''
+  payDialog.payAmount = row.payAmount
+  payDialog.payType = undefined
+  payDialog.tradeNo = ''
+  payDialog.visible = true
+}
+
+/**
+ * 提交支付：创建支付单 + 标记成功两步合一（模拟支付）。
+ * - 创建支付单返回 paymentCode（PAY+序号）；
+ * - 标记成功写 tradeNo + payTime，触发订单状态机 0→1（待支付→已支付）+ 记资金流水；
+ * - 权益订单（orderType=1）payAmount 由后端从订单表权威解析覆盖，前端不传。
+ */
+async function handleSubmitPay() {
+  if (!payDialog.payType) {
+    ElMessage.warning('请选择支付方式')
+    return
+  }
+  const tradeNo = payDialog.tradeNo.trim()
+  if (!tradeNo) {
+    ElMessage.warning('请输入第三方交易号')
+    return
+  }
+  payDialog.submitting = true
+  try {
+    // 1. 创建支付单（返回 paymentCode）
+    const paymentCode = await createFinancePayment({
+      orderType: payDialog.orderType,
+      orderCode: payDialog.orderCode,
+      payType: payDialog.payType,
+      // 权益订单由后端权威覆盖；其余类型传表单值
+      payAmount: payDialog.orderType === 1 ? undefined : payDialog.payAmount
+    })
+    // 2. 标记支付成功（写 tradeNo + payTime，触发订单状态机 + 资金流水）
+    await markFinancePaymentSuccess(paymentCode, { tradeNo })
+    ElMessage.success('支付完成')
+    payDialog.visible = false
+    // 刷新当前激活 tab
+    await loadTab(activeTab.value)
+  } catch (err) {
+    // 接口报错已由响应拦截器统一提示；此处静默
+    void err
+  } finally {
+    payDialog.submitting = false
   }
 }
-const goCashierEquity = makeGoCashierHandler(1)
-const goCashierScene = makeGoCashierHandler(2)
-const goCashierCourse = makeGoCashierHandler(3)
-const goCashierSojourn = makeGoCashierHandler(4)
 </script>
 
 <template>
@@ -309,11 +390,35 @@ const goCashierSojourn = makeGoCashierHandler(4)
                   <span v-else>-</span>
                 </template>
               </el-table-column>
+              <el-table-column prop="goodsName" label="商品名称" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="quantity" label="数量" width="80" align="right" />
+              <el-table-column prop="unitPrice" label="单价（元）" width="100" align="right">
+                <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
+              </el-table-column>
+              <el-table-column prop="orderSource" label="采购来源" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag v-if="row.orderSource !== undefined && row.orderSource !== null" type="info" size="small">
+                    {{ orderSourceText(row.orderSource) }}
+                  </el-tag>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
               <el-table-column prop="payAmount" label="实付金额（元）" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.payAmount) }}</template>
               </el-table-column>
               <el-table-column prop="totalAmount" label="订单总额（元）" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
+              </el-table-column>
+              <el-table-column prop="discountAmount" label="优惠（元）" width="100" align="right">
+                <template #default="{ row }">{{ formatAmount(row.discountAmount) }}</template>
+              </el-table-column>
+              <el-table-column prop="payType" label="支付方式" width="110" align="center">
+                <template #default="{ row }">
+                  <el-tag v-if="row.payType !== undefined && row.payType !== null" type="info" size="small">
+                    {{ payTypeText(row.payType) }}
+                  </el-tag>
+                  <span v-else>-</span>
+                </template>
               </el-table-column>
               <el-table-column prop="createdAt" label="创建时间" min-width="160" />
               <el-table-column label="操作" width="160" align="center" fixed="right">
@@ -324,9 +429,9 @@ const goCashierSojourn = makeGoCashierHandler(4)
                     link
                     type="primary"
                     size="small"
-                    @click="goCashierEquity(row.orderCode)"
+                    @click="openPayDialog(row, 1)"
                   >
-                    去支付
+                    支付
                   </el-button>
                   <el-button
                     v-if="isCancellable(row.orderStatus)"
@@ -426,9 +531,9 @@ const goCashierSojourn = makeGoCashierHandler(4)
                     link
                     type="primary"
                     size="small"
-                    @click="goCashierScene(row.orderCode)"
+                    @click="openPayDialog(row, 2)"
                   >
-                    去支付
+                    支付
                   </el-button>
                   <el-button
                     v-if="isCancellable(row.orderStatus)"
@@ -527,9 +632,9 @@ const goCashierSojourn = makeGoCashierHandler(4)
                     link
                     type="primary"
                     size="small"
-                    @click="goCashierCourse(row.orderCode)"
+                    @click="openPayDialog(row, 3)"
                   >
-                    去支付
+                    支付
                   </el-button>
                   <el-button
                     v-if="isCancellable(row.orderStatus)"
@@ -636,9 +741,9 @@ const goCashierSojourn = makeGoCashierHandler(4)
                     link
                     type="primary"
                     size="small"
-                    @click="goCashierSojourn(row.orderCode)"
+                    @click="openPayDialog(row, 4)"
                   >
-                    去支付
+                    支付
                   </el-button>
                   <el-button
                     v-if="isCancellable(row.orderStatus)"
@@ -670,6 +775,44 @@ const goCashierSojourn = makeGoCashierHandler(4)
         </div>
       </el-tab-pane>
     </el-tabs>
+
+    <!-- ==================== 内联支付弹窗（4 tab 共用） ==================== -->
+    <el-dialog
+      v-model="payDialog.visible"
+      :title="`订单支付 · ${ORDER_TYPE_LABEL[payDialog.orderType] ?? ''}`"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="96px" @submit.prevent>
+        <el-form-item label="订单编码">
+          <span class="pay-order-code">{{ payDialog.orderCode }}</span>
+        </el-form-item>
+        <el-form-item label="应付金额">
+          <span class="pay-amount">{{ formatAmount(payDialog.payAmount) }} 元</span>
+        </el-form-item>
+        <el-form-item label="支付方式">
+          <el-select v-model="payDialog.payType" placeholder="请选择支付方式" style="width: 100%">
+            <el-option v-for="o in PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="交易号">
+          <el-input
+            v-model="payDialog.tradeNo"
+            placeholder="模拟支付交易号，如 WX202608071234"
+            maxlength="64"
+          />
+        </el-form-item>
+        <div v-if="payDialog.orderType === 1" class="pay-hint">
+          权益订单以订单实付金额为准，后端将权威解析覆盖。
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button @click="payDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="payDialog.submitting" @click="handleSubmitPay">
+          确认支付
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -707,6 +850,25 @@ const goCashierSojourn = makeGoCashierHandler(4)
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.pay-order-code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  color: #303133;
+}
+
+.pay-amount {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f56c6c;
+}
+
+.pay-hint {
+  margin: -8px 0 0 96px;
+  font-size: 12px;
+  color: #e6a23c;
+  line-height: 1.5;
 }
 </style>
 
