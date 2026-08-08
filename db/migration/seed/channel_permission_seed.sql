@@ -94,11 +94,11 @@ VALUES
   -- 客户线索
   ('channel:agentClient', '客户线索', NULL, 1, NULL, NULL, 90, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:agentClient:list', '客户线索列表', 'channel:agentClient', 3, '/channel-api/agent-client-rels', 'GET', 91, 1, NOW(), NOW(), 'system', 'system', 0),
-  ('channel:agentClient:query', '客户线索详情', 'channel:agentClient', 3, '/channel-api/agent-client-rels/*', 'GET', 92, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 注：本期 AgentClientRel 仅 page（无 getDetail），不配 :query 详情权限码，避免死权限码
   -- 分享记录
   ('channel:shareRecord', '分享记录', NULL, 1, NULL, NULL, 100, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:shareRecord:list', '分享记录列表', 'channel:shareRecord', 3, '/channel-api/agent-share-records', 'GET', 101, 1, NOW(), NOW(), 'system', 'system', 0),
-  ('channel:shareRecord:query', '分享记录详情', 'channel:shareRecord', 3, '/channel-api/agent-share-records/*', 'GET', 102, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 注：本期 AgentShareRecord 仅 page（无 getDetail），不配 :query 详情权限码
   -- 内容（agent+client 共用）
   ('channel:content', '内容', NULL, 1, NULL, NULL, 110, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:content:list', '内容列表', 'channel:content', 3, '/channel-api/contents', 'GET', 111, 1, NOW(), NOW(), 'system', 'system', 0),
@@ -106,7 +106,7 @@ VALUES
   -- 阅读记录
   ('channel:readRecord', '阅读记录', NULL, 1, NULL, NULL, 120, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:readRecord:list', '阅读记录列表', 'channel:readRecord', 3, '/channel-api/content-read-records', 'GET', 121, 1, NOW(), NOW(), 'system', 'system', 0),
-  ('channel:readRecord:query', '阅读记录详情', 'channel:readRecord', 3, '/channel-api/content-read-records/*', 'GET', 122, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 注：本期 ContentReadRecord 仅 page（无 getDetail），不配 :query 详情权限码
   -- 场景营销
   ('channel:scene', '场景营销', NULL, 1, NULL, NULL, 130, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:scene:list', '场景列表', 'channel:scene', 3, '/channel-api/scenes', 'GET', 131, 1, NOW(), NOW(), 'system', 'system', 0),
@@ -114,11 +114,11 @@ VALUES
   -- 客户账号
   ('channel:client', '客户账号', NULL, 1, NULL, NULL, 140, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:client:list', '客户账号列表', 'channel:client', 3, '/channel-api/client-accounts', 'GET', 141, 1, NOW(), NOW(), 'system', 'system', 0),
-  ('channel:client:query', '客户账号详情', 'channel:client', 3, '/channel-api/client-accounts/*', 'GET', 142, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 注：本期 ClientAccount 仅 page（Service 无公开 getDetail），不配 :query 详情权限码
   -- 激活记录
   ('channel:activate', '激活记录', NULL, 1, NULL, NULL, 150, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:activate:list', '激活记录列表', 'channel:activate', 3, '/channel-api/equity-activates', 'GET', 151, 1, NOW(), NOW(), 'system', 'system', 0),
-  ('channel:activate:query', '激活记录详情', 'channel:activate', 3, '/channel-api/equity-activates/*', 'GET', 152, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 注：本期 EquityActivate 仅 page（无 getDetail），不配 :query 详情权限码
   -- 服务记录
   ('channel:serviceSession', '服务记录', NULL, 1, NULL, NULL, 160, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:serviceSession:list', '服务记录列表', 'channel:serviceSession', 3, '/channel-api/service-sessions', 'GET', 161, 1, NOW(), NOW(), 'system', 'system', 0),

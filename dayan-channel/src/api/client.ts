@@ -32,10 +32,4 @@ export function pageClientAccounts(
   })
 }
 
-/** 客户账号详情 */
-export function getClientAccount(clientCode: string): Promise<ClientAccount> {
-  return request<ClientAccount>({
-    url: `/channel-api/client-accounts/${clientCode}`,
-    method: 'get'
-  })
-}
+// 注：本期 ClientAccount 仅 page（后端 Service 无公开 getDetail），不提供 getClientAccount。

@@ -4,6 +4,8 @@ import com.dayan.channel.entity.ChannelConfigContent;
 import com.dayan.channel.entity.ChannelConfigScene;
 import com.dayan.channel.service.ChannelConfigContentService;
 import com.dayan.channel.service.ChannelConfigSceneService;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.mybatis.context.ContextHolder;
 import cn.dev33.satoken.annotation.SaCheckPermission;
@@ -52,8 +54,17 @@ public class ChannelConfigSelfController {
     @PutMapping("/content")
     public R<Void> saveContent(@RequestBody List<ChannelConfigContent> configs) {
         String channelCode = ContextHolder.getChannelCode();
-        // 强制注入 channelCode，防越权（忽略前端传入）
-        configs.forEach(c -> c.setChannelCode(channelCode));
+        if (configs == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "配置列表不能为 null（空列表表示清空）");
+        }
+        // 强制注入 channelCode，防越权（忽略前端传入）；并校验每项关键字段
+        for (ChannelConfigContent c : configs) {
+            if (c.getContentCode() == null || c.getContentCode().isBlank()
+                    || c.getAppType() == null || c.getAppType().isBlank()) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "每项配置必须包含 contentCode 和 appType");
+            }
+            c.setChannelCode(channelCode);
+        }
         channelConfigContentService.saveAll(channelCode, configs);
         return R.ok();
     }
@@ -72,7 +83,15 @@ public class ChannelConfigSelfController {
     @PutMapping("/scene")
     public R<Void> saveScene(@RequestBody List<ChannelConfigScene> configs) {
         String channelCode = ContextHolder.getChannelCode();
-        configs.forEach(c -> c.setChannelCode(channelCode));
+        if (configs == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "配置列表不能为 null（空列表表示清空）");
+        }
+        for (ChannelConfigScene c : configs) {
+            if (c.getSceneCode() == null || c.getSceneCode().isBlank()) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "每项配置必须包含 sceneCode");
+            }
+            c.setChannelCode(channelCode);
+        }
         channelConfigSceneService.saveAll(channelCode, configs);
         return R.ok();
     }
