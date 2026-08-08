@@ -31,6 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
@@ -89,6 +90,16 @@ public class OrderEquityServiceImpl implements OrderEquityService {
     @Override
     public OrderEquityVO getDetail(String orderCode) {
         return toVO(requireOrder(orderCode));
+    }
+
+    @Override
+    public List<OrderEquityVO> listByOrderCodes(Collection<String> orderCodes) {
+        if (orderCodes == null || orderCodes.isEmpty()) {
+            return List.of();
+        }
+        return orderEquityMapper.selectList(new LambdaQueryWrapper<OrderEquity>()
+                        .in(OrderEquity::getOrderCode, orderCodes))
+                .stream().map(this::toVO).collect(Collectors.toList());
     }
 
     @Override

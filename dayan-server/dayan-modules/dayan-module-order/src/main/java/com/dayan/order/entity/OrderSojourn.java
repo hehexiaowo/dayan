@@ -55,6 +55,9 @@ public class OrderSojourn extends BaseEntity {
     /** 商品编码 */
     private String goodsCode;
 
+    /** 商品名称(快照) */
+    private String goodsName;
+
     /** 机构编码 */
     private String parkCode;
 
@@ -66,6 +69,9 @@ public class OrderSojourn extends BaseEntity {
 
     /** SKU编码 */
     private String skuCode;
+
+    /** 规格名称(快照) */
+    private String skuName;
 
     /** 入住日期 */
     private LocalDate checkinDate;

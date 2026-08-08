@@ -23,6 +23,9 @@ public interface GoodsSkuSojournService {
 
     GoodsSkuSojournVO getDetail(Long id);
 
+    /** 按 skuCode 查询单个 SKU（不存在返回 null） */
+    GoodsSkuSojournVO getByCode(String skuCode);
+
     Long create(GoodsSkuSojournCreateDTO dto);
 
     void update(Long id, GoodsSkuSojournUpdateDTO dto);

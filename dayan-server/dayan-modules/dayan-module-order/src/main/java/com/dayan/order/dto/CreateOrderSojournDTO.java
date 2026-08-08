@@ -45,6 +45,8 @@ public class CreateOrderSojournDTO {
 
     /** 商品编码（可空） */
     private String goodsCode;
+    /** 商品名称快照（可空，服务端按 goodsCode 查目录覆盖） */
+    private String goodsName;
     /** 机构编码 */
     @NotBlank(message = "机构编码不能为空")
     private String parkCode;
@@ -54,6 +56,8 @@ public class CreateOrderSojournDTO {
     private String roomTypeCode;
     /** SKU编码（可空） */
     private String skuCode;
+    /** 规格名称快照（可空，服务端按 skuCode 查目录覆盖） */
+    private String skuName;
 
     /** 入住日期 */
     private LocalDate checkinDate;

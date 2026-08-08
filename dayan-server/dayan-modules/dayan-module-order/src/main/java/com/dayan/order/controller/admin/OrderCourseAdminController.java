@@ -3,6 +3,10 @@ package com.dayan.order.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.goods.service.GoodsInfoService;
+import com.dayan.goods.service.GoodsSkuCourseService;
+import com.dayan.goods.vo.GoodsInfoVO;
+import com.dayan.goods.vo.GoodsSkuCourseVO;
 import com.dayan.order.dto.CreateOrderCourseDTO;
 import com.dayan.order.dto.OrderCancelDTO;
 import com.dayan.order.dto.OrderCompleteDTO;
@@ -35,6 +39,8 @@ import java.util.List;
 public class OrderCourseAdminController {
 
     private final OrderCourseService orderCourseService;
+    private final GoodsInfoService goodsInfoService;
+    private final GoodsSkuCourseService goodsSkuCourseService;
 
     @Operation(summary = "课程订单分页列表")
     @SaCheckPermission("order:course:list")
@@ -61,7 +67,27 @@ public class OrderCourseAdminController {
     @SaCheckPermission("order:course:create")
     @PostMapping("/create")
     public R<String> create(@RequestBody @Valid CreateOrderCourseDTO dto) {
+        resolveGoodsSnapshot(dto);
         return R.ok(orderCourseService.create(dto));
+    }
+
+    /**
+     * 按 goodsCode/skuCode 查商品目录，权威覆盖 DTO 中的商品名称/规格名称快照。
+     * goodsCode/skuCode 为空时跳过（课程订单可无商品目录关联）。
+     */
+    private void resolveGoodsSnapshot(CreateOrderCourseDTO dto) {
+        if (dto.getGoodsCode() != null && !dto.getGoodsCode().isBlank()) {
+            GoodsInfoVO goods = goodsInfoService.getDetail(dto.getGoodsCode());
+            if (goods != null) {
+                dto.setGoodsName(goods.getGoodsName());
+            }
+        }
+        if (dto.getSkuCode() != null && !dto.getSkuCode().isBlank()) {
+            GoodsSkuCourseVO sku = goodsSkuCourseService.getByCode(dto.getSkuCode());
+            if (sku != null) {
+                dto.setSkuName(sku.getSkuName());
+            }
+        }
     }
 
     @Operation(summary = "支付回调（0→1 已支付）")

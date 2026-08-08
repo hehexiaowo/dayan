@@ -42,6 +42,8 @@ public class CreateOrderSceneDTO {
 
     /** 商品编码（可空） */
     private String goodsCode;
+    /** 商品名称快照（可空，服务端按 goodsCode 查目录覆盖） */
+    private String goodsName;
     /** 场景编码 */
     @NotBlank(message = "场景编码不能为空")
     private String sceneCode;
@@ -50,6 +52,8 @@ public class CreateOrderSceneDTO {
     private String sceneName;
     /** SKU编码（可空） */
     private String skuCode;
+    /** 规格名称快照（可空，服务端按 skuCode 查目录覆盖） */
+    private String skuName;
     /** 排期编码（可空） */
     private String scheduleCode;
 

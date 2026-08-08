@@ -3,6 +3,10 @@ package com.dayan.order.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.goods.service.GoodsInfoService;
+import com.dayan.goods.service.GoodsSkuSceneService;
+import com.dayan.goods.vo.GoodsInfoVO;
+import com.dayan.goods.vo.GoodsSkuSceneVO;
 import com.dayan.order.dto.CreateOrderSceneDTO;
 import com.dayan.order.dto.OrderCancelDTO;
 import com.dayan.order.dto.OrderCompleteDTO;
@@ -36,6 +40,8 @@ import java.util.List;
 public class OrderSceneAdminController {
 
     private final OrderSceneService orderSceneService;
+    private final GoodsInfoService goodsInfoService;
+    private final GoodsSkuSceneService goodsSkuSceneService;
 
     @Operation(summary = "场景订单分页列表")
     @SaCheckPermission("order:scene:list")
@@ -62,7 +68,27 @@ public class OrderSceneAdminController {
     @SaCheckPermission("order:scene:create")
     @PostMapping("/create")
     public R<String> create(@RequestBody @Valid CreateOrderSceneDTO dto) {
+        resolveGoodsSnapshot(dto);
         return R.ok(orderSceneService.create(dto));
+    }
+
+    /**
+     * 按 goodsCode/skuCode 查商品目录，权威覆盖 DTO 中的商品名称/规格名称快照。
+     * goodsCode/skuCode 为空时跳过（场景订单可无商品目录关联）。
+     */
+    private void resolveGoodsSnapshot(CreateOrderSceneDTO dto) {
+        if (dto.getGoodsCode() != null && !dto.getGoodsCode().isBlank()) {
+            GoodsInfoVO goods = goodsInfoService.getDetail(dto.getGoodsCode());
+            if (goods != null) {
+                dto.setGoodsName(goods.getGoodsName());
+            }
+        }
+        if (dto.getSkuCode() != null && !dto.getSkuCode().isBlank()) {
+            GoodsSkuSceneVO sku = goodsSkuSceneService.getByCode(dto.getSkuCode());
+            if (sku != null) {
+                dto.setSkuName(sku.getSkuName());
+            }
+        }
     }
 
     @Operation(summary = "支付回调（0→1 已支付）")

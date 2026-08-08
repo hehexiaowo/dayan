@@ -25,9 +25,13 @@ public class OrderSceneVO {
     private String clientCode;
     private String clientFullName;
     private String goodsCode;
+    /** 商品名称(快照) */
+    private String goodsName;
     private String sceneCode;
     private String sceneName;
     private String skuCode;
+    /** 规格名称(快照) */
+    private String skuName;
     private String scheduleCode;
     private LocalDate activityDate;
     private Integer participantCount;

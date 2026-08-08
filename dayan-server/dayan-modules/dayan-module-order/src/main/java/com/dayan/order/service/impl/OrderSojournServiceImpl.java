@@ -139,10 +139,12 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         entity.setClientCode(dto.getClientCode());
         entity.setClientFullName(dto.getClientFullName());
         entity.setGoodsCode(dto.getGoodsCode());
+        entity.setGoodsName(dto.getGoodsName());
         entity.setParkCode(dto.getParkCode());
         entity.setParkFullName(dto.getParkFullName());
         entity.setRoomTypeCode(dto.getRoomTypeCode());
         entity.setSkuCode(dto.getSkuCode());
+        entity.setSkuName(dto.getSkuName());
         entity.setCheckinDate(dto.getCheckinDate());
         entity.setCheckoutDate(dto.getCheckoutDate());
         entity.setStayDays(stayDays);
@@ -338,10 +340,12 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         vo.setClientCode(entity.getClientCode());
         vo.setClientFullName(entity.getClientFullName());
         vo.setGoodsCode(entity.getGoodsCode());
+        vo.setGoodsName(entity.getGoodsName());
         vo.setParkCode(entity.getParkCode());
         vo.setParkFullName(entity.getParkFullName());
         vo.setRoomTypeCode(entity.getRoomTypeCode());
         vo.setSkuCode(entity.getSkuCode());
+        vo.setSkuName(entity.getSkuName());
         vo.setCheckinDate(entity.getCheckinDate());
         vo.setCheckoutDate(entity.getCheckoutDate());
         vo.setStayDays(entity.getStayDays());

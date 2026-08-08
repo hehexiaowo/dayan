@@ -54,6 +54,9 @@ public class OrderCourse extends BaseEntity {
     /** 商品编码 */
     private String goodsCode;
 
+    /** 商品名称(快照) */
+    private String goodsName;
+
     /** 课程编码 */
     private String courseCode;
 
@@ -62,6 +65,9 @@ public class OrderCourse extends BaseEntity {
 
     /** SKU编码 */
     private String skuCode;
+
+    /** 规格名称(快照) */
+    private String skuName;
 
     /** 购买数量 */
     private Integer quantity;

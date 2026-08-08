@@ -22,6 +22,9 @@ public interface GoodsSkuSceneService {
 
     GoodsSkuSceneVO getDetail(Long id);
 
+    /** 按 skuCode 查询单个 SKU（不存在返回 null） */
+    GoodsSkuSceneVO getByCode(String skuCode);
+
     Long create(GoodsSkuSceneCreateDTO dto);
 
     void update(Long id, GoodsSkuSceneUpdateDTO dto);

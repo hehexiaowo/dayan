@@ -48,6 +48,10 @@ public class EquityDepotVO {
     private String bindCode;
     private String qrCodeUrl;
     private String orderCode;
+    /** 商品名称（关联 order_equity 快照，orderCode 为空时为 null） */
+    private String goodsName;
+    /** 商品规格（关联 order_equity 快照，orderCode 为空时为 null） */
+    private String skuName;
     /** 权益状态：0=库存中 / 1=已出库 / 2=已激活 / 3=使用中 / 4=已完成 / 5=已过期 / 6=已作废 / 7=更换权益人中 */
     private Integer equityStatus;
     private String voidReason;

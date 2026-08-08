@@ -43,6 +43,30 @@ export const EQUITY_STATUS_OPTIONS = [
 ] as const
 
 /**
+ * 权益类型选项：对齐后端 DDL 10_equity.sql:17。
+ * 1=机构入住权益 / 2=机构参观权益 / 3=场景活动权益 / 4=居家护理权益 /
+ * 5=健康检测权益 / 6=课程学习权益 / 7=旅居体验权益。
+ */
+export const EQUITY_TYPE_OPTIONS = [
+  { label: '机构入住权益', value: 1 },
+  { label: '机构参观权益', value: 2 },
+  { label: '场景活动权益', value: 3 },
+  { label: '居家护理权益', value: 4 },
+  { label: '健康检测权益', value: 5 },
+  { label: '课程学习权益', value: 6 },
+  { label: '旅居体验权益', value: 7 }
+] as const
+
+/**
+ * 载体类型选项：对齐后端运行时校验（EquityDepotServiceImpl 只允许 1/2）。
+ * 1=权益卡 / 2=权益函。
+ */
+export const CARRIER_TYPE_OPTIONS = [
+  { label: '权益卡', value: 1 },
+  { label: '权益函', value: 2 }
+] as const
+
+/**
  * 权益实体（对齐后端 EquityDepotVO，渠道视角）。
  *
  * 后端渠道端 GET /channel-api/equities 返回与管理端相同的 EquityDepotVO，
@@ -82,6 +106,10 @@ export interface Equity {
   allocateTime?: string
   /** 出库时间 */
   outboundTime?: string
+  /** 出库渠道编码 */
+  outboundChannelCode?: string
+  /** 出库代理人编码 */
+  outboundAgentCode?: string
   /** 物流单号 */
   logisticsNo?: string
   /** 激活时间 */
@@ -92,10 +120,25 @@ export interface Equity {
   lastUseTime?: string
   /** 到期时间 */
   expireTime?: string
+  /** 库存到期时间（上架有效期截止） */
+  shelfExpireTime?: string
   /** 已使用次数 */
   useCount?: number
   /** 最大使用次数 */
   maxUseCount?: number
+  // ====== 激活与关联 ======
+  /** 激活码（DY-8位，权益卡专用） */
+  activateCode?: string
+  /** 绑定码（BF-12位，权益函专用） */
+  bindCode?: string
+  /** 二维码 URL */
+  qrCodeUrl?: string
+  /** 关联订单编码 */
+  orderCode?: string
+  /** 商品名称（关联订单快照，orderCode 为空时为空） */
+  goodsName?: string
+  /** 商品规格（关联订单快照，orderCode 为空时为空） */
+  skuName?: string
   // ====== 状态 ======
   /** 权益状态（0-7，见 EquityStatus） */
   equityStatus?: EquityStatus
@@ -113,6 +156,8 @@ export interface EquityQuery {
   equityCode?: string
   /** 权益状态（可选） */
   equityStatus?: EquityStatus
+  /** 载体类型（1权益卡/2权益函，可选） */
+  carrierType?: number
   /** 关联客户编码（模糊匹配，可选） */
   clientCode?: string
   /** 当前页码 */

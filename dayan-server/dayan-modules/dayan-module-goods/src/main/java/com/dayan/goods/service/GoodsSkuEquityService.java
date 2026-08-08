@@ -23,6 +23,9 @@ public interface GoodsSkuEquityService {
 
     GoodsSkuEquityVO getDetail(Long id);
 
+    /** 按 skuCode 查询单个 SKU（不存在返回 null） */
+    GoodsSkuEquityVO getByCode(String skuCode);
+
     Long create(GoodsSkuEquityCreateDTO dto);
 
     void update(Long id, GoodsSkuEquityUpdateDTO dto);

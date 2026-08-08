@@ -136,11 +136,13 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         entity.setClientCode(dto.getClientCode());
         entity.setClientFullName(dto.getClientFullName());
         entity.setGoodsCode(dto.getGoodsCode());
+        entity.setGoodsName(dto.getGoodsName());
         entity.setSceneCode(dto.getSceneCode());
         entity.setSceneName(dto.getSceneName());
         // sku_code 为 NOT NULL 列，DTO 未提供时用 goodsCode 兜底
         entity.setSkuCode(dto.getSkuCode() != null && !dto.getSkuCode().isEmpty()
                 ? dto.getSkuCode() : dto.getGoodsCode());
+        entity.setSkuName(dto.getSkuName());
         entity.setScheduleCode(dto.getScheduleCode());
         entity.setActivityDate(dto.getActivityDate());
         entity.setParticipantCount(participantCount);
@@ -380,9 +382,11 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         vo.setClientCode(entity.getClientCode());
         vo.setClientFullName(entity.getClientFullName());
         vo.setGoodsCode(entity.getGoodsCode());
+        vo.setGoodsName(entity.getGoodsName());
         vo.setSceneCode(entity.getSceneCode());
         vo.setSceneName(entity.getSceneName());
         vo.setSkuCode(entity.getSkuCode());
+        vo.setSkuName(entity.getSkuName());
         vo.setScheduleCode(entity.getScheduleCode());
         vo.setActivityDate(entity.getActivityDate());
         vo.setParticipantCount(entity.getParticipantCount());

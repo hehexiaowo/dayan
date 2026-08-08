@@ -25,10 +25,14 @@ public class OrderSojournVO {
     private String clientCode;
     private String clientFullName;
     private String goodsCode;
+    /** 商品名称(快照) */
+    private String goodsName;
     private String parkCode;
     private String parkFullName;
     private String roomTypeCode;
     private String skuCode;
+    /** 规格名称(快照) */
+    private String skuName;
     private LocalDate checkinDate;
     private LocalDate checkoutDate;
     private Integer stayDays;

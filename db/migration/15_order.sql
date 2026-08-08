@@ -218,3 +218,17 @@ CREATE TABLE `order_sojourn` (
   KEY `idx_checkin_date` (`checkin_date`),
   KEY `idx_order_status` (`order_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='旅居房间订单';
+
+-- ========== 追加：3 类订单补商品名称/规格快照列（对齐 order_equity 已有字段） ==========
+-- goods_name/sku_name 可空，兼容历史数据；新订单创建时由后端按 goodsCode/skuCode 查目录权威覆盖。
+ALTER TABLE order_scene
+  ADD COLUMN goods_name VARCHAR(200) DEFAULT NULL COMMENT '商品名称快照' AFTER goods_code,
+  ADD COLUMN sku_name   VARCHAR(200) DEFAULT NULL COMMENT '规格名称快照' AFTER sku_code;
+
+ALTER TABLE order_course
+  ADD COLUMN goods_name VARCHAR(200) DEFAULT NULL COMMENT '商品名称快照' AFTER goods_code,
+  ADD COLUMN sku_name   VARCHAR(200) DEFAULT NULL COMMENT '规格名称快照' AFTER sku_code;
+
+ALTER TABLE order_sojourn
+  ADD COLUMN goods_name VARCHAR(200) DEFAULT NULL COMMENT '商品名称快照' AFTER goods_code,
+  ADD COLUMN sku_name   VARCHAR(200) DEFAULT NULL COMMENT '规格名称快照' AFTER sku_code;

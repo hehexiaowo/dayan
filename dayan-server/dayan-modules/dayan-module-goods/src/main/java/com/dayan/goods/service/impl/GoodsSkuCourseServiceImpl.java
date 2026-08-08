@@ -66,6 +66,14 @@ public class GoodsSkuCourseServiceImpl implements GoodsSkuCourseService {
     }
 
     @Override
+    public GoodsSkuCourseVO getByCode(String skuCode) {
+        GoodsSkuCourse entity = skuCourseMapper.selectOne(new LambdaQueryWrapper<GoodsSkuCourse>()
+                .eq(GoodsSkuCourse::getSkuCode, skuCode)
+                .last("LIMIT 1"));
+        return entity != null ? toVO(entity) : null;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(GoodsSkuCourseCreateDTO dto) {
         GoodsSkuCourse entity = new GoodsSkuCourse();

@@ -3,6 +3,10 @@ package com.dayan.order.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.goods.service.GoodsInfoService;
+import com.dayan.goods.service.GoodsSkuSojournService;
+import com.dayan.goods.vo.GoodsInfoVO;
+import com.dayan.goods.vo.GoodsSkuSojournVO;
 import com.dayan.order.dto.CreateOrderSojournDTO;
 import com.dayan.order.dto.OrderCancelDTO;
 import com.dayan.order.dto.OrderCompleteDTO;
@@ -35,6 +39,8 @@ import java.util.List;
 public class OrderSojournAdminController {
 
     private final OrderSojournService orderSojournService;
+    private final GoodsInfoService goodsInfoService;
+    private final GoodsSkuSojournService goodsSkuSojournService;
 
     @Operation(summary = "旅居订单分页列表")
     @SaCheckPermission("order:sojourn:list")
@@ -61,7 +67,27 @@ public class OrderSojournAdminController {
     @SaCheckPermission("order:sojourn:create")
     @PostMapping("/create")
     public R<String> create(@RequestBody @Valid CreateOrderSojournDTO dto) {
+        resolveGoodsSnapshot(dto);
         return R.ok(orderSojournService.create(dto));
+    }
+
+    /**
+     * 按 goodsCode/skuCode 查商品目录，权威覆盖 DTO 中的商品名称/规格名称快照。
+     * goodsCode/skuCode 为空时跳过（旅居订单可无商品目录关联）。
+     */
+    private void resolveGoodsSnapshot(CreateOrderSojournDTO dto) {
+        if (dto.getGoodsCode() != null && !dto.getGoodsCode().isBlank()) {
+            GoodsInfoVO goods = goodsInfoService.getDetail(dto.getGoodsCode());
+            if (goods != null) {
+                dto.setGoodsName(goods.getGoodsName());
+            }
+        }
+        if (dto.getSkuCode() != null && !dto.getSkuCode().isBlank()) {
+            GoodsSkuSojournVO sku = goodsSkuSojournService.getByCode(dto.getSkuCode());
+            if (sku != null) {
+                dto.setSkuName(sku.getSkuName());
+            }
+        }
     }
 
     @Operation(summary = "支付回调（0→1 已支付）")

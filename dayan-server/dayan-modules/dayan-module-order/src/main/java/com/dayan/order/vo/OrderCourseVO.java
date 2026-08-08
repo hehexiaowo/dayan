@@ -24,9 +24,13 @@ public class OrderCourseVO {
     private String clientCode;
     private String clientFullName;
     private String goodsCode;
+    /** 商品名称(快照) */
+    private String goodsName;
     private String courseCode;
     private String courseName;
     private String skuCode;
+    /** 规格名称(快照) */
+    private String skuName;
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalAmount;

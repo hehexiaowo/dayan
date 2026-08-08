@@ -2,17 +2,24 @@
 import { computed, onMounted, ref } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { pageEquities } from '@/api/equity'
-import { EQUITY_STATUS_OPTIONS, EquityStatus, type Equity, type EquityQuery } from '@/types/equity'
+import {
+  CARRIER_TYPE_OPTIONS,
+  EQUITY_STATUS_OPTIONS,
+  EQUITY_TYPE_OPTIONS,
+  EquityStatus,
+  type Equity,
+  type EquityQuery
+} from '@/types/equity'
 
 /**
  * 权益管理页（业务运营目录）。
  *
  * 综合查询本渠道每个权益的完整生命周期流转信息：
- * - 搜索栏：权益编码 / 权益状态 / 关联客户编码；
- * - el-table：equityCode / equityStatus / equityType / equityValue / batchCode /
- *   useCount+maxUseCount / activateTime / expireTime / 操作（查看详情）；
- * - 详情抽屉（el-drawer + el-timeline）：基本信息 + 生命周期时间轴，
- *   仅展示有值的时间节点（过滤 null），数据直接取列表 row（后端 VO 字段齐全，无需额外请求）。
+ * - 搜索栏：权益编码 / 权益状态 / 载体类型 / 关联客户编码；
+ * - el-table：equityCode / equityStatus / equityType(label) / carrierType / equityValue /
+ *   clientCode / useCount+maxUseCount / activateTime / expireTime / 操作（查看详情）；
+ * - 详情抽屉（el-drawer + el-descriptions + el-timeline）：基本信息 / 分配与客户 /
+ *   激活与物流 / 流转时间轴，数据直接取列表 row（后端 VO 字段齐全，无需额外请求）。
  */
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
@@ -24,6 +31,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
     initialQuery: {
       equityCode: '',
       equityStatus: undefined,
+      carrierType: undefined,
       clientCode: ''
     }
   }
@@ -32,6 +40,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 function handleReset() {
   query.equityCode = ''
   query.equityStatus = undefined
+  query.carrierType = undefined
   query.clientCode = ''
   handleSearch()
 }
@@ -61,15 +70,14 @@ function statusText(v?: number) {
   return opt ? opt.label : '-'
 }
 
+function equityTypeLabel(v?: number) {
+  const opt = EQUITY_TYPE_OPTIONS.find((o) => o.value === v)
+  return opt ? opt.label : '-'
+}
+
 function carrierText(v?: number) {
-  switch (v) {
-    case 1:
-      return '权益卡'
-    case 2:
-      return '权益函'
-    default:
-      return '-'
-  }
+  const opt = CARRIER_TYPE_OPTIONS.find((o) => o.value === v)
+  return opt ? opt.label : '-'
 }
 
 onMounted(() => {
@@ -126,6 +134,11 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             <el-option v-for="o in EQUITY_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
         </el-form-item>
+        <el-form-item label="载体类型">
+          <el-select v-model="query.carrierType" placeholder="全部" clearable style="width: 140px">
+            <el-option v-for="o in CARRIER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="客户编码">
           <el-input v-model="query.clientCode" placeholder="关联客户编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
@@ -154,11 +167,28 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="equityType" label="权益类型" min-width="100" show-overflow-tooltip />
+        <el-table-column prop="equityType" label="权益类型" min-width="120" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.equityType != null" type="info">{{ equityTypeLabel(row.equityType) }}</el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="商品名称" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span v-if="row.goodsName">{{ row.goodsName }}</span>
+            <span v-else class="text-muted">未关联订单</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="skuName" label="规格" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.skuName || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="carrierType" label="载体类型" width="100" align="center">
+          <template #default="{ row }">{{ carrierText(row.carrierType) }}</template>
+        </el-table-column>
         <el-table-column prop="equityValue" label="权益价值（元）" width="130" align="right">
           <template #default="{ row }">{{ row.equityValue != null ? Number(row.equityValue).toFixed(2) : '--' }}</template>
         </el-table-column>
-        <el-table-column prop="batchCode" label="批次编码" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="clientCode" label="客户编码" min-width="130" show-overflow-tooltip />
         <el-table-column label="使用次数" width="110" align="center">
           <template #default="{ row }">
             <span v-if="row.useCount != null || row.maxUseCount != null">
@@ -193,8 +223,8 @@ const timelineNodes = computed<TimelineNode[]>(() => {
       </div>
     </el-card>
 
-    <!-- 详情抽屉：基本信息 + 生命周期时间轴 -->
-    <el-drawer v-model="detailVisible" title="权益生命周期" size="480px" direction="rtl">
+    <!-- 详情抽屉：基本信息 / 分配与客户 / 激活与物流 / 流转时间轴 -->
+    <el-drawer v-model="detailVisible" title="权益生命周期" size="560px" direction="rtl">
       <template v-if="currentEquity">
         <!-- 基本信息 -->
         <div class="detail-section">
@@ -207,27 +237,57 @@ const timelineNodes = computed<TimelineNode[]>(() => {
               </el-tag>
               <span v-else>-</span>
             </el-descriptions-item>
-            <el-descriptions-item label="权益类型">{{ currentEquity.equityType || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="卡号">{{ currentEquity.equityNo || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="权益类型">
+              <el-tag v-if="currentEquity.equityType != null" type="info">{{ equityTypeLabel(currentEquity.equityType) }}</el-tag>
+              <span v-else>-</span>
+            </el-descriptions-item>
             <el-descriptions-item label="载体类型">{{ carrierText(currentEquity.carrierType) }}</el-descriptions-item>
+            <el-descriptions-item label="使用次数">
+              {{ currentEquity.useCount ?? 0 }} / {{ currentEquity.maxUseCount ?? '-' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="商品名称">
+              {{ currentEquity.goodsName || '-' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="规格">
+              {{ currentEquity.skuName || '-' }}
+            </el-descriptions-item>
             <el-descriptions-item label="权益价值">
               {{ currentEquity.equityValue != null ? `¥${Number(currentEquity.equityValue).toFixed(2)}` : '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="成本价">
               {{ currentEquity.costPrice != null ? `¥${Number(currentEquity.costPrice).toFixed(2)}` : '-' }}
             </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- 分配与客户 -->
+        <div class="detail-section">
+          <h4 class="detail-section-title">分配与客户</h4>
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="渠道编码">{{ currentEquity.channelCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="代理人编码">{{ currentEquity.agentCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="客户编码">{{ currentEquity.clientCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="关联订单">{{ currentEquity.orderCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="批次编码">{{ currentEquity.batchCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="模板编码">{{ currentEquity.templateCode || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="客户编码">{{ currentEquity.clientCode || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="代理人编码">{{ currentEquity.agentCode || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="使用次数">
-              {{ currentEquity.useCount ?? 0 }} / {{ currentEquity.maxUseCount ?? '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="到期时间">{{ currentEquity.expireTime || '-' }}</el-descriptions-item>
-            <el-descriptions-item v-if="currentEquity.voidReason" label="作废原因" :span="2">
-              {{ currentEquity.voidReason }}
-            </el-descriptions-item>
-            <el-descriptions-item v-if="currentEquity.remark" label="备注" :span="2">
-              {{ currentEquity.remark }}
+            <el-descriptions-item label="出库渠道">{{ currentEquity.outboundChannelCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="出库代理人">{{ currentEquity.outboundAgentCode || '-' }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- 激活与物流 -->
+        <div class="detail-section">
+          <h4 class="detail-section-title">激活与物流</h4>
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="激活码">{{ currentEquity.activateCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="绑定码">{{ currentEquity.bindCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="物流单号">{{ currentEquity.logisticsNo || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="库存到期">{{ currentEquity.shelfExpireTime || '-' }}</el-descriptions-item>
+            <el-descriptions-item v-if="currentEquity.qrCodeUrl" label="二维码" :span="2">
+              <el-link type="primary" :href="currentEquity.qrCodeUrl" target="_blank">
+                {{ currentEquity.qrCodeUrl }}
+              </el-link>
             </el-descriptions-item>
           </el-descriptions>
         </div>
@@ -248,6 +308,18 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             </el-timeline-item>
           </el-timeline>
           <el-empty v-else description="暂无流转记录" :image-size="60" />
+        </div>
+
+        <!-- 作废原因 / 备注（仅在有值时展示） -->
+        <div v-if="currentEquity.voidReason || currentEquity.remark" class="detail-section">
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item v-if="currentEquity.voidReason" label="作废原因">
+              {{ currentEquity.voidReason }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentEquity.remark" label="备注">
+              {{ currentEquity.remark }}
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
       </template>
     </el-drawer>
@@ -277,6 +349,11 @@ const timelineNodes = computed<TimelineNode[]>(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.text-muted {
+  color: var(--el-text-color-placeholder);
+  font-size: 12px;
 }
 
 .detail-section {

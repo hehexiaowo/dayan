@@ -64,6 +64,14 @@ public class GoodsSkuSceneServiceImpl implements GoodsSkuSceneService {
     }
 
     @Override
+    public GoodsSkuSceneVO getByCode(String skuCode) {
+        GoodsSkuScene entity = skuSceneMapper.selectOne(new LambdaQueryWrapper<GoodsSkuScene>()
+                .eq(GoodsSkuScene::getSkuCode, skuCode)
+                .last("LIMIT 1"));
+        return entity != null ? toVO(entity) : null;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(GoodsSkuSceneCreateDTO dto) {
         GoodsSkuScene entity = new GoodsSkuScene();

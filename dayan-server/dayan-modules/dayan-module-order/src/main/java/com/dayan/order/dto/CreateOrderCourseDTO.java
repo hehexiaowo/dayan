@@ -44,6 +44,8 @@ public class CreateOrderCourseDTO {
 
     /** 商品编码（可空） */
     private String goodsCode;
+    /** 商品名称快照（可空，服务端按 goodsCode 查目录覆盖） */
+    private String goodsName;
     /** 课程编码 */
     @NotBlank(message = "课程编码不能为空")
     private String courseCode;
@@ -52,6 +54,8 @@ public class CreateOrderCourseDTO {
     private String courseName;
     /** SKU编码（可空） */
     private String skuCode;
+    /** 规格名称快照（可空，服务端按 skuCode 查目录覆盖） */
+    private String skuName;
 
     /** 购买数量 */
     @NotNull(message = "购买数量不能为空")

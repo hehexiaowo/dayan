@@ -55,6 +55,9 @@ public class OrderScene extends BaseEntity {
     /** 商品编码 */
     private String goodsCode;
 
+    /** 商品名称(快照) */
+    private String goodsName;
+
     /** 场景编码 */
     private String sceneCode;
 
@@ -63,6 +66,9 @@ public class OrderScene extends BaseEntity {
 
     /** SKU编码 */
     private String skuCode;
+
+    /** 规格名称(快照) */
+    private String skuName;
 
     /** 排期编码 */
     private String scheduleCode;

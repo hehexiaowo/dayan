@@ -11,6 +11,7 @@ import com.dayan.order.dto.RefundApplyDTO;
 import com.dayan.order.entity.OrderEquity;
 import com.dayan.order.vo.OrderEquityVO;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -27,6 +28,9 @@ public interface OrderEquityService {
     List<OrderEquityVO> list(OrderEquityQueryDTO query);
 
     OrderEquityVO getDetail(String orderCode);
+
+    /** 按订单编码批量查询（orderCode 唯一，返回结果与入参一一对应；空集合返回空列表）。 */
+    List<OrderEquityVO> listByOrderCodes(Collection<String> orderCodes);
 
     /** 查询实体（不存在抛业务异常） */
     OrderEquity requireOrder(String orderCode);

@@ -128,9 +128,11 @@ public class OrderCourseServiceImpl implements OrderCourseService {
         entity.setClientCode(dto.getClientCode());
         entity.setClientFullName(dto.getClientFullName());
         entity.setGoodsCode(dto.getGoodsCode());
+        entity.setGoodsName(dto.getGoodsName());
         entity.setCourseCode(dto.getCourseCode());
         entity.setCourseName(dto.getCourseName());
         entity.setSkuCode(dto.getSkuCode());
+        entity.setSkuName(dto.getSkuName());
         entity.setQuantity(quantity);
         entity.setUnitPrice(unitPrice);
         entity.setTotalAmount(totalAmount);
@@ -303,9 +305,11 @@ public class OrderCourseServiceImpl implements OrderCourseService {
         vo.setClientCode(entity.getClientCode());
         vo.setClientFullName(entity.getClientFullName());
         vo.setGoodsCode(entity.getGoodsCode());
+        vo.setGoodsName(entity.getGoodsName());
         vo.setCourseCode(entity.getCourseCode());
         vo.setCourseName(entity.getCourseName());
         vo.setSkuCode(entity.getSkuCode());
+        vo.setSkuName(entity.getSkuName());
         vo.setQuantity(entity.getQuantity());
         vo.setUnitPrice(entity.getUnitPrice());
         vo.setTotalAmount(entity.getTotalAmount());

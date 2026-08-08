@@ -65,6 +65,14 @@ public class GoodsSkuSojournServiceImpl implements GoodsSkuSojournService {
     }
 
     @Override
+    public GoodsSkuSojournVO getByCode(String skuCode) {
+        GoodsSkuSojourn entity = skuSojournMapper.selectOne(new LambdaQueryWrapper<GoodsSkuSojourn>()
+                .eq(GoodsSkuSojourn::getSkuCode, skuCode)
+                .last("LIMIT 1"));
+        return entity != null ? toVO(entity) : null;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(GoodsSkuSojournCreateDTO dto) {
         validateDayRange(dto.getMinDays(), dto.getMaxDays());

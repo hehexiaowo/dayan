@@ -33,6 +33,7 @@ import com.dayan.equity.service.EquityTemplateService;
 import com.dayan.equity.vo.EquityDepotVO;
 import com.dayan.order.dto.EquityDeliverDTO;
 import com.dayan.order.service.OrderEquityService;
+import com.dayan.order.vo.OrderEquityVO;
 import com.dayan.service.dto.ServiceSessionCreateDTO;
 import com.dayan.service.service.ServiceSessionService;
 import lombok.extern.slf4j.Slf4j;
@@ -41,9 +42,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -145,20 +149,24 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         LambdaQueryWrapper<EquityDepot> wrapper = buildQueryWrapper(query);
         Page<EquityDepot> page = depotMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
+        Map<String, OrderEquityVO> orderMap = buildOrderNameMap(page.getRecords());
         List<EquityDepotVO> records = page.getRecords().stream()
-                .map(this::toVO).collect(Collectors.toList());
+                .map(e -> toVO(e, orderMap)).collect(Collectors.toList());
         return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), records);
     }
 
     @Override
     public List<EquityDepotVO> list(EquityDepotQueryDTO query) {
-        return depotMapper.selectList(buildQueryWrapper(query)).stream()
-                .map(this::toVO).collect(Collectors.toList());
+        List<EquityDepot> records = depotMapper.selectList(buildQueryWrapper(query));
+        Map<String, OrderEquityVO> orderMap = buildOrderNameMap(records);
+        return records.stream().map(e -> toVO(e, orderMap)).collect(Collectors.toList());
     }
 
     @Override
     public EquityDepotVO getDetail(String equityCode) {
-        return toVO(requireEquity(equityCode));
+        EquityDepot entity = requireEquity(equityCode);
+        Map<String, OrderEquityVO> orderMap = buildOrderNameMap(List.of(entity));
+        return toVO(entity, orderMap);
     }
 
     @Override
@@ -791,7 +799,27 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         return wrapper;
     }
 
+    /**
+     * 批量查询权益关联的权益订单，构建 orderCode → OrderEquityVO 映射。
+     * 仅对 orderCode 非空的记录做一次 IN 查询（N+1 安全）。订单快照携带商品名称/规格。
+     */
+    private Map<String, OrderEquityVO> buildOrderNameMap(List<EquityDepot> records) {
+        Set<String> orderCodes = records.stream()
+                .map(EquityDepot::getOrderCode)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (orderCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return orderEquityService.listByOrderCodes(orderCodes).stream()
+                .collect(Collectors.toMap(OrderEquityVO::getOrderCode, o -> o, (a, b) -> a));
+    }
+
     private EquityDepotVO toVO(EquityDepot entity) {
+        return toVO(entity, Collections.emptyMap());
+    }
+
+    private EquityDepotVO toVO(EquityDepot entity, Map<String, OrderEquityVO> orderMap) {
         EquityDepotVO vo = new EquityDepotVO();
         vo.setId(entity.getId());
         vo.setEquityCode(entity.getEquityCode());
@@ -824,6 +852,12 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         vo.setBindCode(entity.getBindCode());
         vo.setQrCodeUrl(entity.getQrCodeUrl());
         vo.setOrderCode(entity.getOrderCode());
+        // 关联订单商品快照（orderCode 为空时为 null）
+        OrderEquityVO order = entity.getOrderCode() != null ? orderMap.get(entity.getOrderCode()) : null;
+        if (order != null) {
+            vo.setGoodsName(order.getGoodsName());
+            vo.setSkuName(order.getSkuName());
+        }
         vo.setEquityStatus(entity.getEquityStatus());
         vo.setVoidReason(entity.getVoidReason());
         vo.setRemark(entity.getRemark());
