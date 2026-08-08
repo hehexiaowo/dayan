@@ -18,6 +18,8 @@ import {
   SceneType
 } from '@/types/scene'
 import type { SceneInfo } from '@/types/scene'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
   /** 场景编码（从详情页路由 prop 带入） */
@@ -187,7 +189,14 @@ defineExpose({ loadDetail })
           {{ sceneInfo.targetAudience ?? '--' }}
         </el-descriptions-item>
         <el-descriptions-item label="封面图" :span="3">
-          <span class="url-cell">{{ sceneInfo.coverImage || '--' }}</span>
+          <el-image
+            v-if="sceneInfo.coverImage"
+            :src="formatFileUrl(sceneInfo.coverImage)"
+            :preview-src-list="[formatFileUrl(sceneInfo.coverImage)]"
+            fit="cover"
+            style="width: 80px; height: 80px"
+          />
+          <span v-else>--</span>
         </el-descriptions-item>
         <el-descriptions-item label="活动亮点" :span="3">
           <span class="multiline">{{ sceneInfo.highlight ?? '--' }}</span>
@@ -265,7 +274,7 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <el-input v-model="form.coverImage" placeholder="封面图 URL" />
+              <FileUploader v-model="form.coverImage" type="image" module="scene" />
             </el-form-item>
           </el-col>
           <el-col :span="8">

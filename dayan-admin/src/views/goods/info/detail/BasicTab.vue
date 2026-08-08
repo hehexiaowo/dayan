@@ -24,6 +24,8 @@ import {
 } from '@/types/goods'
 import type { GoodsInfo } from '@/types/goods'
 import { formatDate, formatDateTime } from '@/utils/format'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
   /** 商品编码（从详情页路由 prop 带入） */
@@ -181,7 +183,16 @@ defineExpose({ loadDetail })
         <el-descriptions-item label="排序号">{{ goodsInfo.sortOrder ?? 0 }}</el-descriptions-item>
         <el-descriptions-item label="开售时间">{{ goodsInfo.saleStartTime ? formatDate(goodsInfo.saleStartTime) : '--' }}</el-descriptions-item>
         <el-descriptions-item label="结束时间">{{ goodsInfo.saleEndTime ? formatDate(goodsInfo.saleEndTime) : '--' }}</el-descriptions-item>
-        <el-descriptions-item label="封面图" :span="3">{{ goodsInfo.coverImage ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="封面图" :span="3">
+          <el-image
+            v-if="goodsInfo.coverImage"
+            :src="formatFileUrl(goodsInfo.coverImage)"
+            :preview-src-list="[formatFileUrl(goodsInfo.coverImage)]"
+            fit="cover"
+            style="width: 80px; height: 80px"
+          />
+          <span v-else>--</span>
+        </el-descriptions-item>
         <el-descriptions-item label="视频" :span="3">{{ goodsInfo.videoUrl ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="摘要" :span="3">{{ goodsInfo.summary ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="商品描述" :span="3">{{ goodsInfo.goodsDescription ?? '--' }}</el-descriptions-item>
@@ -287,7 +298,7 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <el-input v-model="form.coverImage" placeholder="封面图 URL" maxlength="255" />
+              <FileUploader v-model="form.coverImage" type="image" module="goods" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

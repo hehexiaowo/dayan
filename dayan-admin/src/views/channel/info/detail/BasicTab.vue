@@ -20,6 +20,8 @@ import {
 } from '@/types/channel'
 import type { ChannelInfo } from '@/types/channel'
 import RegionSelect from '@/components/RegionSelect.vue'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
   /** 渠道编码（从详情页路由 prop 带入） */
@@ -182,9 +184,10 @@ defineExpose({ loadDetail })
         <el-descriptions-item label="Logo">
           <el-image
             v-if="channelInfo.logoUrl"
-            :src="channelInfo.logoUrl"
-            style="width: 60px; height: 60px"
+            :src="formatFileUrl(channelInfo.logoUrl)"
+            :preview-src-list="[formatFileUrl(channelInfo.logoUrl)]"
             fit="cover"
+            style="width: 60px; height: 60px"
           />
           <span v-else>--</span>
         </el-descriptions-item>
@@ -296,8 +299,8 @@ defineExpose({ loadDetail })
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="Logo地址">
-              <el-input v-model="form.logoUrl" placeholder="Logo 地址" />
+            <el-form-item label="Logo">
+              <FileUploader v-model="form.logoUrl" type="image" module="channel" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

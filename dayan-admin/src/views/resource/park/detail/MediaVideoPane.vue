@@ -17,6 +17,8 @@ import {
 } from '@/api/park-media'
 import { VIDEO_TYPE_OPTIONS, videoTypeLabel, fileSizeLabel } from '@/types/park'
 import type { ParkMediaVideo, ParkMediaVideoQuery } from '@/types/park'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
   parkCode: string
@@ -179,8 +181,8 @@ defineExpose({ loadPage })
         <template #default="{ row }">
           <el-image
             v-if="row.coverUrl"
-            :src="row.coverUrl"
-            :preview-src-list="[row.coverUrl]"
+            :src="formatFileUrl(row.coverUrl)"
+            :preview-src-list="[formatFileUrl(row.coverUrl)]"
             preview-teleported
             fit="cover"
             style="width: 64px; height: 48px"
@@ -242,8 +244,8 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="封面URL">
-              <el-input v-model="form.coverUrl" placeholder="封面图 URL" />
+            <el-form-item label="封面">
+              <FileUploader v-model="form.coverUrl" type="image" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

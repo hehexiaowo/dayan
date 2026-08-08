@@ -27,6 +27,7 @@ import {
 } from '@/api/park-food'
 import { CARE_FOOD_PRICE_TYPE_OPTIONS, careFoodPriceTypeLabel } from '@/types/park'
 import type { ParkFoodType, ParkFoodTypeQuery, ParkFoodPrice } from '@/types/park'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
   parkCode: string
@@ -498,8 +499,8 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="封面图URL">
-              <el-input v-model="typeForm.coverImage" placeholder="封面图 URL" />
+            <el-form-item label="封面图">
+              <FileUploader v-model="typeForm.coverImage" type="image" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

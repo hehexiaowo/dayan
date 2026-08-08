@@ -15,6 +15,8 @@ import {
   deleteMediaVr
 } from '@/api/park-media'
 import type { ParkMediaVr, ParkMediaVrQuery } from '@/types/park'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 /** VR 类型选项：1全景图 / 2 3D 模型 / 3视频 */
 const VR_TYPE_OPTIONS = [
@@ -176,8 +178,8 @@ defineExpose({ loadPage })
         <template #default="{ row }">
           <el-image
             v-if="row.thumbnailUrl"
-            :src="row.thumbnailUrl"
-            :preview-src-list="[row.thumbnailUrl]"
+            :src="formatFileUrl(row.thumbnailUrl)"
+            :preview-src-list="[formatFileUrl(row.thumbnailUrl)]"
             preview-teleported
             fit="cover"
             style="width: 64px; height: 48px"
@@ -256,8 +258,8 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="缩略图URL">
-              <el-input v-model="form.thumbnailUrl" placeholder="缩略图 URL" />
+            <el-form-item label="缩略图">
+              <FileUploader v-model="form.thumbnailUrl" type="image" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

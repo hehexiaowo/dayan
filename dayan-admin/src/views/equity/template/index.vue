@@ -18,6 +18,7 @@ import {
 } from '@/types/equity'
 import { COMMON_STATUS_OPTIONS } from '@/types/common'
 import { formatMoney } from '@/utils/format'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 权益模板管理页（标准 CRUD）。
@@ -444,12 +445,12 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="封面图">
-              <el-input v-model="form.coverImage" placeholder="封面图 URL" />
+              <FileUploader v-model="form.coverImage" type="image" module="equity" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="卡面设计图">
-              <el-input v-model="form.cardDesignUrl" placeholder="卡面设计图 URL" />
+              <FileUploader v-model="form.cardDesignUrl" type="image" module="equity" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

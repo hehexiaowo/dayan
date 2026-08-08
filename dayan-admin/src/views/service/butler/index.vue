@@ -13,6 +13,8 @@ import {
 import type { ButlerInfo, ButlerInfoQuery } from '@/types/service'
 import { BUTLER_LEVEL_OPTIONS, BUTLER_STATUS_OPTIONS } from '@/types/service'
 import { formatDateTime } from '@/utils/format'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 /**
  * 管家信息管理页。
@@ -242,7 +244,18 @@ loadPage()
         <el-table-column prop="butlerCode" label="管家编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="fullName" label="姓名" min-width="100" show-overflow-tooltip />
         <el-table-column prop="phone" label="手机号" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="avatar" label="头像" min-width="120" show-overflow-tooltip />
+        <el-table-column label="头像" min-width="90" align="center">
+          <template #default="{ row }">
+            <el-image
+              v-if="row.avatar"
+              :src="formatFileUrl(row.avatar)"
+              :preview-src-list="[formatFileUrl(row.avatar)]"
+              fit="cover"
+              style="width: 48px; height: 48px; border-radius: 50%"
+            />
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="organCode" label="所属组织" min-width="130" show-overflow-tooltip />
         <el-table-column prop="butlerLevel" label="等级" width="100" align="center">
           <template #default="{ row }">
@@ -306,8 +319,8 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="头像URL">
-              <el-input v-model="form.avatar" placeholder="头像图片地址" />
+            <el-form-item label="头像">
+              <FileUploader v-model="form.avatar" type="image" module="service" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

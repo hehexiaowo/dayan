@@ -17,6 +17,7 @@ import {
   CourseStatus,
   COURSE_STATUS_OPTIONS
 } from '@/types/course'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 课程管理页。
@@ -333,7 +334,7 @@ loadPage()
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <el-input v-model="form.coverImage" placeholder="封面图地址" />
+              <FileUploader v-model="form.coverImage" type="image" module="course" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

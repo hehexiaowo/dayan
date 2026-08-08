@@ -22,6 +22,8 @@ import {
 } from '@/types/service'
 import type { ButlerInfo } from '@/types/service'
 import { formatDateTime } from '@/utils/format'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
   /** 管家编码（从详情页路由 prop 带入） */
@@ -133,7 +135,16 @@ defineExpose({ loadDetail })
         <el-descriptions-item label="姓名">{{ butlerInfo.fullName }}</el-descriptions-item>
         <el-descriptions-item label="手机号">{{ butlerInfo.phone ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="所属组织">{{ butlerInfo.organCode ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="头像URL" :span="2">{{ butlerInfo.avatar ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="头像" :span="2">
+          <el-image
+            v-if="butlerInfo.avatar"
+            :src="formatFileUrl(butlerInfo.avatar)"
+            :preview-src-list="[formatFileUrl(butlerInfo.avatar)]"
+            fit="cover"
+            style="width: 60px; height: 60px; border-radius: 50%"
+          />
+          <span v-else>--</span>
+        </el-descriptions-item>
         <el-descriptions-item label="管家等级">
           <el-tag size="small" :type="butlerLevelTagType(butlerInfo.butlerLevel)">
             {{ butlerLevelLabel(butlerInfo.butlerLevel) }}
@@ -176,8 +187,8 @@ defineExpose({ loadDetail })
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="头像URL">
-              <el-input v-model="form.avatar" placeholder="头像图片地址" />
+            <el-form-item label="头像">
+              <FileUploader v-model="form.avatar" type="image" module="service" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

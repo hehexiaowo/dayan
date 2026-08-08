@@ -20,6 +20,7 @@ import {
 } from '@/api/park-facility'
 import { FACILITY_CATEGORY_OPTIONS, facilityCategoryLabel } from '@/types/park'
 import type { ParkFacility, ParkFacilityQuery } from '@/types/park'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
   parkCode: string
@@ -320,8 +321,8 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="封面图URL">
-              <el-input v-model="form.coverImage" placeholder="封面图 URL" />
+            <el-form-item label="封面图">
+              <FileUploader v-model="form.coverImage" type="image" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

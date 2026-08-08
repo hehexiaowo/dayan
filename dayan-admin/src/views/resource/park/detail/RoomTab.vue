@@ -39,6 +39,7 @@ import {
   stayTypeLabel
 } from '@/types/park'
 import type { ParkRoomType, ParkRoomTypeQuery, ParkRoomPrice } from '@/types/park'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
   /** 机构编码（从详情页 prop 带入，create 表单隐藏） */
@@ -625,13 +626,13 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="封面图URL">
-              <el-input v-model="typeForm.coverImage" placeholder="封面图 URL" />
+            <el-form-item label="封面图">
+              <FileUploader v-model="typeForm.coverImage" type="image" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="设计图URL">
-              <el-input v-model="typeForm.designImage" placeholder="设计图 URL" />
+            <el-form-item label="设计图">
+              <FileUploader v-model="typeForm.designImage" type="image" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

@@ -25,6 +25,7 @@ import {
   SCENE_STATUS_OPTIONS,
   AUDIT_STATUS_OPTIONS
 } from '@/types/scene'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 场景活动管理页。
@@ -589,7 +590,7 @@ loadPage()
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <el-input v-model="form.coverImage" placeholder="封面图 URL" />
+              <FileUploader v-model="form.coverImage" type="image" module="scene" />
             </el-form-item>
           </el-col>
           <el-col :span="8">

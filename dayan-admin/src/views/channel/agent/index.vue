@@ -23,6 +23,7 @@ import {
 } from '@/types/agent'
 import { buildChannelTree, type ChannelInfo } from '@/types/channel'
 import RegionSelect from '@/components/RegionSelect.vue'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const router = useRouter()
 
@@ -411,8 +412,8 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="头像 URL">
-              <el-input v-model="form.avatar" placeholder="头像地址" />
+            <el-form-item label="头像">
+              <FileUploader v-model="form.avatar" type="image" module="channel" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

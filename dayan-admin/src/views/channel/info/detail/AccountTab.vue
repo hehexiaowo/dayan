@@ -22,6 +22,7 @@ import {
 } from '@/api/channel-sub'
 import { CHANNEL_ACCOUNT_STATUS_OPTIONS, CHANNEL_IS_ADMIN_OPTIONS } from '@/types/channel'
 import type { ChannelAccount, ChannelAccountQuery } from '@/types/channel'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
   /** 渠道编码（路由参数） */
@@ -355,8 +356,8 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="头像URL">
-              <el-input v-model="form.avatar" placeholder="头像 URL" />
+            <el-form-item label="头像">
+              <FileUploader v-model="form.avatar" type="image" module="channel" />
             </el-form-item>
           </el-col>
           <el-col v-if="dialogMode === 'edit'" :span="24">

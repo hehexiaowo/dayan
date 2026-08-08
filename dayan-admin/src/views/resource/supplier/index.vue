@@ -20,6 +20,7 @@ import {
   SUPPLIER_STATUS_OPTIONS,
   SUPPLIER_AUDIT_STATUS_OPTIONS
 } from '@/types/supplier'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 供应商管理页。
@@ -540,7 +541,7 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="Logo">
-              <el-input v-model="form.logoUrl" placeholder="Logo URL" maxlength="255" />
+              <FileUploader v-model="form.logoUrl" type="image" module="supplier" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

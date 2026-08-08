@@ -15,6 +15,7 @@ import {
   type ChannelInfoQuery
 } from '@/types/channel'
 import RegionSelect from '@/components/RegionSelect.vue'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 渠道管理页（树形表格）。
@@ -499,8 +500,8 @@ loadTree()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="Logo URL">
-              <el-input v-model="form.logoUrl" placeholder="Logo 地址" />
+            <el-form-item label="Logo">
+              <FileUploader v-model="form.logoUrl" type="image" module="channel" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

@@ -20,6 +20,7 @@ import {
   GOODS_STATUS_OPTIONS,
   GOODS_AUDIT_STATUS_OPTIONS
 } from '@/types/goods'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 商品管理页。
@@ -534,7 +535,7 @@ loadPage()
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <el-input v-model="form.coverImage" placeholder="封面图 URL" maxlength="255" />
+              <FileUploader v-model="form.coverImage" type="image" module="goods" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

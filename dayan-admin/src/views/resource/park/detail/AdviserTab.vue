@@ -18,6 +18,7 @@ import {
   deleteAdviser
 } from '@/api/park-adviser'
 import type { ParkAdviser, ParkAdviserQuery } from '@/types/park'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
   parkCode: string
@@ -260,8 +261,8 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="头像URL">
-              <el-input v-model="form.adviserImage" placeholder="顾问头像 URL" />
+            <el-form-item label="头像">
+              <FileUploader v-model="form.adviserImage" type="image" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
