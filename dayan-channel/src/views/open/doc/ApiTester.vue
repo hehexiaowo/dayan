@@ -105,16 +105,20 @@ const requestBody = computed(() => {
 
 const hasBody = computed(() => props.api.method === 'POST' || props.api.method === 'PUT')
 
+// curl 单引号转义：值里的 ' 转成 '\''（闭合→转义→重开），避免截断命令
+const sq = (s: string) => `'${s.replace(/'/g, `'"'"'`)}'`
+
 // 代码生成
 const codeContent = computed(() => {
   const allHeaders = [...authHeaders.value, ...extraHeaders.value]
   if (codeLang.value === 'curl') {
-    let cmd = `curl -X ${props.api.method} '${fullUrl.value}'`
+    let cmd = `curl -X ${props.api.method} ${sq(fullUrl.value)}`
     for (const h of allHeaders) {
-      if (h.value) cmd += ` \\\n  -H '${h.name}: ${h.value}'`
+      if (h.value) cmd += ` \\\n  -H ${sq(`${h.name}: ${h.value}`)}`
     }
     if (hasBody.value && requestBody.value) {
-      cmd += ` \\\n  -d '${requestBody.value.replace(/\n/g, ' ')}'`
+      cmd += ` \\\n  -H ${sq('Content-Type: application/json')}`
+      cmd += ` \\\n  -d ${sq(requestBody.value.replace(/\n/g, ' '))}`
     }
     return cmd
   }
