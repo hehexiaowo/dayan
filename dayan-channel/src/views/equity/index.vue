@@ -5,7 +5,7 @@ import { pageEquities } from '@/api/equity'
 import { EQUITY_STATUS_OPTIONS, EquityStatus, type Equity, type EquityQuery } from '@/types/equity'
 
 /**
- * 权益查询页。
+ * 权益综合页（业务运营目录）。
  *
  * - 搜索栏：权益编码 / 权益状态 / 关联客户编码；
  * - el-table：equityCode / equityStatus / equityType / equityValue / expireTime / clientCode；

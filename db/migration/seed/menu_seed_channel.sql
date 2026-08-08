@@ -22,9 +22,7 @@ VALUES
   ('channel_client', '客户管理', NULL, 2, '/client', 'client/index', 'channel:client:view',
    'UserFilled', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
   ('channel_equity', '权益查询', NULL, 2, '/equity', 'equity/index', 'channel:equity:view',
-   'Ticket', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
-  ('channel_order', '订单查询', NULL, 2, '/order', 'order/index', 'channel:order:view',
-   'List', 50, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+   'Ticket', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
 -- ========== P9 增量2 追加：系统管理菜单组 ==========
@@ -125,3 +123,24 @@ VALUES
 ('channel_open_guide', '接入指南', 'channel_open', 2, '/open/guide', 'open/guide/index', NULL,
  'Guide', 83, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `id` = `id`;
+
+-- ==================== 调整：新建业务运营目录 + 权益综合迁移 + 删除订单查询 ====================
+-- 订单查询(channel_order)与采购结算的订单管理(channel_order_manage)功能重叠
+-- （订单管理 4 类订单全覆盖且含操作列，订单查询仅权益订单子集），删除订单查询页。
+-- 权益查询改名"权益综合"，从顶级移入新建的"业务运营"目录。
+INSERT INTO `system_menu` (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`,
+ `icon`, `sort_order`, `is_visible`, `is_external`, `is_cache`, `domain_type`, `status`,
+ `created_at`, `updated_at`, `creator`, `updater`, `deleted`, `deleted_at`)
+VALUES
+('channel_operation', '业务运营', NULL, 1, '/operation', NULL, NULL,
+ 'Briefcase', 35, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_equity', '权益综合', 'channel_operation', 2, '/equity', 'equity/index', 'channel:equity:view',
+ 'Ticket', 36, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE `menu_name`=VALUES(`menu_name`), `parent_code`=VALUES(`parent_code`),
+ `menu_type`=VALUES(`menu_type`), `path`=VALUES(`path`), `component`=VALUES(`component`),
+ `permission_code`=VALUES(`permission_code`), `icon`=VALUES(`icon`), `sort_order`=VALUES(`sort_order`),
+ `is_visible`=VALUES(`is_visible`), `status`=VALUES(`status`);
+
+-- 软删除订单查询菜单（页面已删，菜单同步下线）
+UPDATE `system_menu` SET `status`=0, `is_visible`=0, `deleted_at`=NOW()
+WHERE `menu_code`='channel_order' AND `domain_type`='channel';
