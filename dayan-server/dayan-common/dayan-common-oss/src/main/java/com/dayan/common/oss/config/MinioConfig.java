@@ -3,14 +3,13 @@ package com.dayan.common.oss.config;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * MinIO 客户端配置。启动时自动创建 bucket（若不存在）。
+ * MinIO 客户端配置。创建 MinioClient bean 时自动创建 bucket（若不存在）。
  * 因全仓用 @ComponentScan(basePackages="com.dayan")，此类放本包即可被各 starter 扫到。
  */
 @Slf4j
@@ -22,16 +21,19 @@ public class MinioConfig {
 
     @Bean
     public MinioClient minioClient() {
-        return MinioClient.builder()
+        MinioClient client = MinioClient.builder()
                 .endpoint(properties.getEndpoint())
                 .credentials(properties.getAccessKey(), properties.getSecretKey())
                 .build();
+        initBucket(client);
+        return client;
     }
 
-    @PostConstruct
-    public void initBucket() {
+    /**
+     * 启动时自动创建 bucket（若不存在）。失败仅告警，不阻止启动（上传时再报错）。
+     */
+    private void initBucket(MinioClient client) {
         try {
-            MinioClient client = minioClient();
             boolean exists = client.bucketExists(
                     BucketExistsArgs.builder().bucket(properties.getBucket()).build());
             if (!exists) {
@@ -41,7 +43,6 @@ public class MinioConfig {
                 log.info("MinIO bucket [{}] 已存在", properties.getBucket());
             }
         } catch (Exception e) {
-            // 建 bucket 失败仅告警，不阻止启动（上传时再报错）
             log.error("MinIO bucket 初始化失败，endpoint={}, bucket={}，上传功能将不可用",
                     properties.getEndpoint(), properties.getBucket(), e);
         }
