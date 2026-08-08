@@ -240,7 +240,7 @@ defineExpose({ loadPage })
         <el-row :gutter="16">
           <el-col :span="24">
             <el-form-item label="视频URL" prop="videoUrl">
-              <el-input v-model="form.videoUrl" placeholder="视频 URL（必填）" />
+              <FileUploader v-model="form.videoUrl" type="video" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

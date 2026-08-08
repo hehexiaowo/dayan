@@ -326,7 +326,7 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="24">
             <el-form-item label="视频">
-              <el-input v-model="form.videoUrl" placeholder="视频 URL" maxlength="255" />
+              <FileUploader v-model="form.videoUrl" type="video" module="goods" />
             </el-form-item>
           </el-col>
           <el-col :span="8">

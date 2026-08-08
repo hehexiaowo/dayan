@@ -16,6 +16,7 @@ import {
 } from '@/api/park-media'
 import { FILE_TYPE_OPTIONS, fileTypeLabel, fileSizeLabel } from '@/types/park'
 import type { ParkMediaFile, ParkMediaFileQuery } from '@/types/park'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
   parkCode: string
@@ -214,7 +215,7 @@ defineExpose({ loadPage })
         <el-row :gutter="16">
           <el-col :span="24">
             <el-form-item label="文档URL" prop="fileUrl">
-              <el-input v-model="form.fileUrl" placeholder="文档 URL（必填）" />
+              <FileUploader v-model="form.fileUrl" type="file" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

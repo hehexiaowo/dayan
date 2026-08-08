@@ -23,6 +23,7 @@ import {
   INVOICE_STATUS_OPTIONS
 } from '@/types/finance'
 import { formatDateTime } from '@/utils/format'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 发票（FinanceInvoice）管理页。
@@ -791,7 +792,7 @@ loadPage()
           <el-input v-model="issueForm.invoiceNo" placeholder="税务发票号码" maxlength="50" />
         </el-form-item>
         <el-form-item label="发票文件URL">
-          <el-input v-model="issueForm.invoiceUrl" placeholder="发票文件 URL（可选）" />
+          <FileUploader v-model="issueForm.invoiceUrl" type="file" module="finance" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input

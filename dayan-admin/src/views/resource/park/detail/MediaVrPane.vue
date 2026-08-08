@@ -232,7 +232,7 @@ defineExpose({ loadPage })
         <el-row :gutter="16">
           <el-col :span="24">
             <el-form-item label="VR URL" prop="vrUrl">
-              <el-input v-model="form.vrUrl" placeholder="VR URL（必填）" />
+              <FileUploader v-model="form.vrUrl" type="vr" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
