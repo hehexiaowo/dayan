@@ -110,3 +110,18 @@ ON DUPLICATE KEY UPDATE
   is_visible = VALUES(is_visible),
   domain_type = VALUES(domain_type),
   status = VALUES(status);
+
+-- ==================== 增量5 开放平台（1 目录 + 3 子菜单）====================
+INSERT INTO `system_menu` (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`,
+ `icon`, `sort_order`, `is_visible`, `is_external`, `is_cache`, `domain_type`, `status`,
+ `created_at`, `updated_at`, `creator`, `updater`, `deleted`, `deleted_at`)
+VALUES
+('channel_open', '开放平台', NULL, 1, '/open', NULL, NULL,
+ 'Connection', 80, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_open_app', '应用管理', 'channel_open', 2, '/open/app', 'open/app/index', 'channel:openApp:list',
+ 'Setting', 81, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_open_doc', '接口文档', 'channel_open', 2, '/open/doc', 'open/doc/index', NULL,
+ 'Document', 82, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
+('channel_open_guide', '接入指南', 'channel_open', 2, '/open/guide', 'open/guide/index', NULL,
+ 'Guide', 83, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE `id` = `id`;

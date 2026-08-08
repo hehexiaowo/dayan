@@ -13,3 +13,12 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+declare module '*.md' {
+  const src: string
+  export default src
+}
+declare module '*.md?raw' {
+  const src: string
+  export default src
+}
