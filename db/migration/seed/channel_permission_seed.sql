@@ -76,3 +76,55 @@ VALUES
   ('channel:payment:query',   '支付单详情', 'channel:payment',     3, '/channel-api/finance-payments/*', 'GET',  42, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:payment:create',  '创建支付',   'channel:payment',     3, '/channel-api/finance-payments',   'POST', 43, 1, NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `id` = `id`;
+
+-- ========== P9 增量4 追加：养老保典 + 客户平台 权限码 ==========
+-- 10 组权限码（含 9 个一级目录 + 各自 list/query，外加 contentConfig 3 条）= 31 条
+-- 覆盖任务1-3 Controller 的 @SaCheckPermission：
+--   代理人账号 / 客户线索 / 分享记录 / 内容 / 阅读记录 / 场景营销 / 客户账号 / 激活记录 / 服务记录 / 配置自管
+-- 注：channel:agent / channel:client 若增量1 已 seed，ON DUPLICATE KEY UPDATE id=id 是空更新，保留原值。
+INSERT INTO `channel_permission`
+  (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
+   `path`, `method`, `sort_order`, `status`,
+   `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  -- 代理人账号
+  ('channel:agent', '代理人账号', NULL, 1, NULL, NULL, 80, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:agent:list', '代理人账号列表', 'channel:agent', 3, '/channel-api/agent-accounts', 'GET', 81, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:agent:query', '代理人账号详情', 'channel:agent', 3, '/channel-api/agent-accounts/*', 'GET', 82, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 客户线索
+  ('channel:agentClient', '客户线索', NULL, 1, NULL, NULL, 90, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:agentClient:list', '客户线索列表', 'channel:agentClient', 3, '/channel-api/agent-client-rels', 'GET', 91, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:agentClient:query', '客户线索详情', 'channel:agentClient', 3, '/channel-api/agent-client-rels/*', 'GET', 92, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 分享记录
+  ('channel:shareRecord', '分享记录', NULL, 1, NULL, NULL, 100, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:shareRecord:list', '分享记录列表', 'channel:shareRecord', 3, '/channel-api/agent-share-records', 'GET', 101, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:shareRecord:query', '分享记录详情', 'channel:shareRecord', 3, '/channel-api/agent-share-records/*', 'GET', 102, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 内容（agent+client 共用）
+  ('channel:content', '内容', NULL, 1, NULL, NULL, 110, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:content:list', '内容列表', 'channel:content', 3, '/channel-api/contents', 'GET', 111, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:content:query', '内容详情', 'channel:content', 3, '/channel-api/contents/*', 'GET', 112, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 阅读记录
+  ('channel:readRecord', '阅读记录', NULL, 1, NULL, NULL, 120, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:readRecord:list', '阅读记录列表', 'channel:readRecord', 3, '/channel-api/content-read-records', 'GET', 121, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:readRecord:query', '阅读记录详情', 'channel:readRecord', 3, '/channel-api/content-read-records/*', 'GET', 122, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 场景营销
+  ('channel:scene', '场景营销', NULL, 1, NULL, NULL, 130, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:scene:list', '场景列表', 'channel:scene', 3, '/channel-api/scenes', 'GET', 131, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:scene:query', '场景详情', 'channel:scene', 3, '/channel-api/scenes/*', 'GET', 132, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 客户账号
+  ('channel:client', '客户账号', NULL, 1, NULL, NULL, 140, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:client:list', '客户账号列表', 'channel:client', 3, '/channel-api/client-accounts', 'GET', 141, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:client:query', '客户账号详情', 'channel:client', 3, '/channel-api/client-accounts/*', 'GET', 142, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 激活记录
+  ('channel:activate', '激活记录', NULL, 1, NULL, NULL, 150, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:activate:list', '激活记录列表', 'channel:activate', 3, '/channel-api/equity-activates', 'GET', 151, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:activate:query', '激活记录详情', 'channel:activate', 3, '/channel-api/equity-activates/*', 'GET', 152, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 服务记录
+  ('channel:serviceSession', '服务记录', NULL, 1, NULL, NULL, 160, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:serviceSession:list', '服务记录列表', 'channel:serviceSession', 3, '/channel-api/service-sessions', 'GET', 161, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:serviceSession:query', '服务记录详情', 'channel:serviceSession', 3, '/channel-api/service-sessions/*', 'GET', 162, 1, NOW(), NOW(), 'system', 'system', 0),
+  -- 内容配置自管
+  ('channel:contentConfig', '配置自管', NULL, 1, NULL, NULL, 170, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:contentConfig:list', '查配置', 'channel:contentConfig', 3, '/channel-api/channel-configs/*', 'GET', 171, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:contentConfig:save', '保存配置', 'channel:contentConfig', 3, '/channel-api/channel-configs/*', 'PUT', 172, 1, NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `id` = `id`;
