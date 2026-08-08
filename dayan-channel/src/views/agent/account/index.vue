@@ -73,7 +73,7 @@ onMounted(() => {
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>代理人账号</span>
+          <span>代理账号</span>
         </div>
       </template>
 

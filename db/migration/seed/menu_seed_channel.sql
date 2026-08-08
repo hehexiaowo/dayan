@@ -15,7 +15,7 @@ INSERT INTO `system_menu`
    `icon`, `sort_order`, `is_visible`, `is_external`, `is_cache`, `domain_type`, `status`,
    `created_at`, `updated_at`, `creator`, `updater`, `deleted`, `deleted_at`)
 VALUES
-  ('channel_dashboard', '工作台', NULL, 2, '/dashboard', 'dashboard/index', 'channel:dashboard:view',
+  ('channel_dashboard', '首页看板', NULL, 2, '/dashboard', 'dashboard/index', 'channel:dashboard:view',
    'Odometer', 10, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
   ('channel_agent', '代理人管理', NULL, 2, '/agent', 'agent/index', 'channel:agent:view',
    'User', 20, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
@@ -59,7 +59,7 @@ VALUES
  'List', 20, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_invoice', '发票管理', 'channel_procurement', 2, '/invoice', 'invoice/index', 'channel:invoice:list',
  'Document', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
-('channel_cashier', '收银台', 'channel_procurement', 2, '/cashier', 'cashier/index', 'channel:payment:list',
+('channel_cashier', '财务收银', 'channel_procurement', 2, '/cashier', 'cashier/index', 'channel:payment:list',
  'Wallet', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
@@ -75,7 +75,7 @@ VALUES
 -- 养老保典目录（原 channel_agent 改为目录）
 ('channel_agent', '养老保典', NULL, 1, '/agent', NULL, NULL,
  'User', 20, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
-('channel_agent_account', '代理人账号', 'channel_agent', 2, '/agent/account', 'agent/account/index', 'channel:agent:list',
+('channel_agent_account', '代理账号', 'channel_agent', 2, '/agent/account', 'agent/account/index', 'channel:agent:list',
  'UserFilled', 21, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_agent_content', '内容配置', 'channel_agent', 2, '/agent/content', 'content/config/index', 'channel:content:list',
  'Document', 22, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
+import { getChannelInfoCurrent } from '@/api/channel-sub'
 import SidebarItem from '@/components/SidebarItem.vue'
 
 const route = useRoute()
@@ -16,8 +17,21 @@ const isCollapse = ref(false)
 const userName = computed(() => userStore.userInfo?.realName || userStore.userInfo?.accountCode || '渠道用户')
 const avatarUrl = computed(() => userStore.userInfo?.avatar || '')
 
-// 顶部/侧边标题
-const systemTitle = '大雁养老渠道后台'
+/**
+ * 侧边栏顶部标题：显示本渠道简称。
+ * 后端 /channel-infos/current 返回 shortName；取不到时回退固定文案。
+ * layout 常驻只挂载一次，此处取一次即可，无需进 store。
+ */
+const channelTitle = ref('渠道后台')
+onMounted(async () => {
+  try {
+    const current = await getChannelInfoCurrent()
+    channelTitle.value = current?.shortName ? `${current.shortName}渠道后台` : '渠道后台'
+  } catch (err) {
+    // 接口未实现或鉴权失败时降级：保持默认文案
+    console.warn('[layout] 获取当前渠道简称失败:', err)
+  }
+})
 
 /** 动态菜单树（来自后端，permissionStore 加载后填充） */
 const menuTree = computed(() => permissionStore.menus)
@@ -48,8 +62,8 @@ async function handleLogout() {
     <!-- 侧边栏 -->
     <el-aside :width="isCollapse ? '64px' : '220px'" class="layout-aside">
       <div class="logo">
-        <span v-if="!isCollapse" class="logo-text">{{ systemTitle }}</span>
-        <span v-else class="logo-text">大雁</span>
+        <span v-if="!isCollapse" class="logo-text">{{ channelTitle }}</span>
+        <span v-else class="logo-text">渠道</span>
       </div>
       <el-menu
         :default-active="route.path"

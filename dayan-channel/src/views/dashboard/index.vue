@@ -61,7 +61,7 @@ onMounted(() => {
         <el-icon class="welcome-icon"><Odometer /></el-icon>
         <div class="welcome-text">
           <h2>欢迎使用大雁养老渠道管理后台</h2>
-          <p>工作台 · 渠道核心指标概览</p>
+          <p>首页看板 · 渠道核心指标概览</p>
         </div>
       </div>
     </el-card>
