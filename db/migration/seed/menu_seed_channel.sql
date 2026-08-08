@@ -127,14 +127,14 @@ ON DUPLICATE KEY UPDATE `id` = `id`;
 -- ==================== 调整：新建业务运营目录 + 权益综合迁移 + 删除订单查询 ====================
 -- 订单查询(channel_order)与采购结算的订单管理(channel_order_manage)功能重叠
 -- （订单管理 4 类订单全覆盖且含操作列，订单查询仅权益订单子集），删除订单查询页。
--- 权益查询改名"权益综合"，从顶级移入新建的"业务运营"目录。
+-- 权益综合 改名 权益管理（综合查询每个权益的完整生命周期流转），移入新建的"业务运营"目录。
 INSERT INTO `system_menu` (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`,
  `icon`, `sort_order`, `is_visible`, `is_external`, `is_cache`, `domain_type`, `status`,
  `created_at`, `updated_at`, `creator`, `updater`, `deleted`, `deleted_at`)
 VALUES
 ('channel_operation', '业务运营', NULL, 1, '/operation', NULL, NULL,
  'Briefcase', 35, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
-('channel_equity', '权益综合', 'channel_operation', 2, '/equity', 'equity/index', 'channel:equity:view',
+('channel_equity', '权益管理', 'channel_operation', 2, '/equity', 'equity/index', 'channel:equity:view',
  'Ticket', 36, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `menu_name`=VALUES(`menu_name`), `parent_code`=VALUES(`parent_code`),
  `menu_type`=VALUES(`menu_type`), `path`=VALUES(`path`), `component`=VALUES(`component`),
@@ -144,3 +144,16 @@ ON DUPLICATE KEY UPDATE `menu_name`=VALUES(`menu_name`), `parent_code`=VALUES(`p
 -- 软删除订单查询菜单（页面已删，菜单同步下线）
 UPDATE `system_menu` SET `status`=0, `is_visible`=0, `deleted_at`=NOW()
 WHERE `menu_code`='channel_order' AND `domain_type`='channel';
+
+-- ==================== 调整：场景营销 从养老保典迁移至业务运营 → 场景管理 ====================
+-- 原养老保典下的"场景营销"(channel_agent_scene)只读浏览平台场景目录，定位偏弱。
+-- 改为业务运营目录下的"场景管理"，管本渠道场景活动日程(scene_schedule)的记录+流转。
+-- path/component 改指向新建的 scene/schedule/index.vue；parent_code 移到 channel_operation。
+UPDATE `system_menu`
+SET `menu_name`='场景管理',
+    `parent_code`='channel_operation',
+    `path`='/operation/scene-schedule',
+    `component`='scene/schedule/index',
+    `sort_order`=37,
+    `updated_at`=NOW()
+WHERE `menu_code`='channel_agent_scene' AND `domain_type`='channel';

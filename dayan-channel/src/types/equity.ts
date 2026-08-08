@@ -43,7 +43,11 @@ export const EQUITY_STATUS_OPTIONS = [
 ] as const
 
 /**
- * 权益实体（渠道视角子集，对齐 EquityDepotVO）。
+ * 权益实体（对齐后端 EquityDepotVO，渠道视角）。
+ *
+ * 后端渠道端 GET /channel-api/equities 返回与管理端相同的 EquityDepotVO，
+ * 字段覆盖完整生命周期（入库/分配/出库/激活/使用/到期时间轴 + 批次/物流/使用计数），
+ * channelCode 由后端 ContextHolder 强制注入防越权。
  *
  * 注意：equityValue 单位是「元」（后端 DECIMAL(12,2)），前端直接显示，不要除以 100。
  */
@@ -51,16 +55,56 @@ export interface Equity {
   id?: number
   /** 权益编码（主键业务码） */
   equityCode?: string
-  /** 权益状态（0-7，见 EquityStatus） */
-  equityStatus?: EquityStatus
-  /** 权益类型（int，对齐后端 equity_type） */
+  /** 权益卡号（入库时 = equityCode） */
+  equityNo?: string
+  /** 关联模板编码 */
+  templateCode?: string
+  /** 关联批次编码 */
+  batchCode?: string
+  /** 权益类型 */
   equityType?: number
   /** 权益价值（单位：元，不要除以100） */
   equityValue?: number
-  /** 到期时间（yyyy-MM-dd HH:mm:ss） */
-  expireTime?: string
-  /** 关联客户编码 */
+  /** 成本价 */
+  costPrice?: number
+  /** 载体类型（1权益卡/2权益函） */
+  carrierType?: number
+  /** 分配渠道编码（后端强制注入） */
+  channelCode?: string
+  /** 分配代理人编码 */
+  agentCode?: string
+  /** 领取客户编码 */
   clientCode?: string
+  // ====== 生命周期时间轴 ======
+  /** 入库时间 */
+  produceTime?: string
+  /** 分配时间 */
+  allocateTime?: string
+  /** 出库时间 */
+  outboundTime?: string
+  /** 物流单号 */
+  logisticsNo?: string
+  /** 激活时间 */
+  activateTime?: string
+  /** 首次使用时间 */
+  firstUseTime?: string
+  /** 最近使用时间 */
+  lastUseTime?: string
+  /** 到期时间 */
+  expireTime?: string
+  /** 已使用次数 */
+  useCount?: number
+  /** 最大使用次数 */
+  maxUseCount?: number
+  // ====== 状态 ======
+  /** 权益状态（0-7，见 EquityStatus） */
+  equityStatus?: EquityStatus
+  /** 作废原因 */
+  voidReason?: string
+  /** 备注 */
+  remark?: string
+  /** 创建时间 */
+  createdAt?: string
 }
 
 /** 权益分页查询参数 */

@@ -234,6 +234,8 @@ public class SceneScheduleServiceImpl implements SceneScheduleService {
 
     private LambdaQueryWrapper<SceneSchedule> buildQueryWrapper(SceneScheduleQueryDTO query) {
         return new LambdaQueryWrapper<SceneSchedule>()
+                .in(query.getSceneCodes() != null && !query.getSceneCodes().isEmpty(),
+                        SceneSchedule::getSceneCode, query.getSceneCodes())
                 .eq(query.getSceneCode() != null && !query.getSceneCode().isEmpty(),
                         SceneSchedule::getSceneCode, query.getSceneCode())
                 .eq(query.getScheduleDate() != null,

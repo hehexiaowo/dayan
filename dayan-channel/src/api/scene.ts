@@ -1,6 +1,6 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
-import type { SceneInfo, SceneInfoQuery } from '@/types/scene'
+import type { SceneInfo, SceneInfoQuery, SceneSchedule, SceneScheduleQuery } from '@/types/scene'
 
 /**
  * 场景域接口（渠道端）。
@@ -20,6 +20,25 @@ export function pageScenes(query: SceneInfoQuery): Promise<PageResult<SceneInfo>
 export function getScene(sceneCode: string): Promise<SceneInfo> {
   return request<SceneInfo>({
     url: `/channel-api/scenes/${sceneCode}`,
+    method: 'get'
+  })
+}
+
+// ==================== 场景活动日程（/channel-api/scenes/schedules）====================
+
+/** 场景日程分页：GET /channel-api/scenes/schedules */
+export function pageSceneSchedules(query: SceneScheduleQuery): Promise<PageResult<SceneSchedule>> {
+  return request<PageResult<SceneSchedule>>({
+    url: '/channel-api/scenes/schedules',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 场景日程详情：GET /channel-api/scenes/schedules/{id} */
+export function getSceneSchedule(id: number): Promise<SceneSchedule> {
+  return request<SceneSchedule>({
+    url: `/channel-api/scenes/schedules/${id}`,
     method: 'get'
   })
 }

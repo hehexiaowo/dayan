@@ -15,6 +15,11 @@ public class SceneScheduleVO {
 
     private Long id;
     private String sceneCode;
+    /**
+     * 场景名称（渠道端回填，非 scene_schedule 原生字段）。
+     * 由 Controller 分页后按 sceneCode 批量查 scene_info 组装 Map 回填。
+     */
+    private String sceneName;
     private LocalDate scheduleDate;
     private LocalTime startTime;
     private LocalTime endTime;
@@ -22,7 +27,9 @@ public class SceneScheduleVO {
     private Integer currentPerson;
     private BigDecimal priceOverride;
     private String remark;
-    /** 状态：1开放 / 2已约满 / 3关闭 */
+    /**
+     * 状态（DDL 权威：0=已取消 / 1=可预约 / 2=已约满 / 3=进行中 / 4=已结束）。
+     */
     private Integer status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
