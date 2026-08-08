@@ -18,4 +18,6 @@ public class SceneInfoQueryDTO {
     private String parkCode;
     private Integer sceneStatus;
     private Integer auditStatus;
+    /** 渠道隔离用：本渠道已配置的场景编码集合 */
+    private java.util.List<String> sceneCodes;
 }

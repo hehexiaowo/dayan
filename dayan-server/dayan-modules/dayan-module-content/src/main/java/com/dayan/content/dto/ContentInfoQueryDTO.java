@@ -20,4 +20,6 @@ public class ContentInfoQueryDTO {
     private Integer auditStatus;
     private Integer isTop;
     private Integer isRecommend;
+    /** 渠道隔离用：本渠道已配置的内容编码集合 */
+    private java.util.List<String> contentCodes;
 }

@@ -45,6 +45,9 @@ public class AgentClientRelServiceImpl implements AgentClientRelService {
         if (query.getAgentCode() != null && !query.getAgentCode().isEmpty()) {
             wrapper.eq(AgentClientRel::getAgentCode, query.getAgentCode());
         }
+        if (query.getAgentCodes() != null && !query.getAgentCodes().isEmpty()) {
+            wrapper.in(AgentClientRel::getAgentCode, query.getAgentCodes());
+        }
         if (query.getClientCode() != null && !query.getClientCode().isEmpty()) {
             wrapper.eq(AgentClientRel::getClientCode, query.getClientCode());
         }

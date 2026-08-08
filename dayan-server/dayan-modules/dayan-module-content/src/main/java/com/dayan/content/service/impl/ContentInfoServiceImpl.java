@@ -74,6 +74,9 @@ public class ContentInfoServiceImpl implements ContentInfoService {
                 .eq(query.getIsTop() != null, ContentInfo::getIsTop, query.getIsTop())
                 .eq(query.getIsRecommend() != null, ContentInfo::getIsRecommend, query.getIsRecommend())
                 .orderByDesc(ContentInfo::getCreatedAt);
+        if (query.getContentCodes() != null && !query.getContentCodes().isEmpty()) {
+            wrapper.in(ContentInfo::getContentCode, query.getContentCodes());
+        }
         Page<ContentInfo> page = contentInfoMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
         List<ContentInfoVO> records = page.getRecords().stream().map(this::toVO).toList();
