@@ -6,6 +6,10 @@ server:
 spring:
   application:
     name: dayan-channel
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/dayan?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
@@ -52,6 +56,12 @@ sa-token:
 dayan:
   security:
     login-type: channel
+  storage:
+    endpoint: http://localhost:9000
+    access-key: dayan
+    secret-key: dayan12345
+    bucket: dayan-public
+    max-size: 10485760
 
 springdoc:
   swagger-ui:
