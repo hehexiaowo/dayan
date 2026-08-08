@@ -19,6 +19,7 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-security</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-log</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-swagger</artifactId></dependency>
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-oss</artifactId></dependency>
         <!-- 菜单数据权限（RBAC）：listByRole 需联查 organ_role_menu_rel / organ_account_role_rel -->
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-organ</artifactId></dependency>
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
