@@ -60,7 +60,7 @@ VALUES
 ('channel_invoice', '发票管理', 'channel_procurement', 2, '/invoice', 'invoice/index', 'channel:invoice:list',
  'Document', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_cashier', '收银台', 'channel_procurement', 2, '/cashier', 'cashier/index', 'channel:payment:list',
- 'Wallet', 40, 0, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ 'Wallet', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
 -- ========== P9 增量4 追加：养老保典 + 客户平台 ==========

@@ -119,7 +119,15 @@ const rules: FormRules = {
   fullName: [{ required: true, message: '请输入渠道全称', trigger: 'blur' }],
   channelType: [{ required: true, message: '请选择渠道类型', trigger: 'change' }],
   canManage: [{ required: true, message: '请选择渠道属性', trigger: 'change' }],
-  status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
+  // 联系电话：选填，但填写时必须是合法手机号或座机（支持 11 位手机 / 区号-座机 / 400 号）
+  contactPhone: [
+    {
+      pattern: /^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8}|400-?\d{3}-?\d{4})$/,
+      message: '请输入正确的手机号或座机号',
+      trigger: 'blur'
+    }
+  ]
 }
 
 /** 重置表单到默认值 */
@@ -439,7 +447,7 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="联系电话">
+            <el-form-item label="联系电话" prop="contactPhone">
               <el-input v-model="form.contactPhone" placeholder="联系电话" maxlength="20" />
             </el-form-item>
           </el-col>
