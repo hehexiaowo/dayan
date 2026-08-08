@@ -16,4 +16,7 @@ public class EquityActivateQueryDTO {
     private String templateCode;
     private String clientCode;
     private Integer activateChannel;
+
+    /** 渠道隔离用：本渠道权益编码集合 */
+    private java.util.List<String> equityCodes;
 }
