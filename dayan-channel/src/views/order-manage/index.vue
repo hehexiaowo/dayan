@@ -19,6 +19,7 @@ import {
 } from '@/api/order'
 import { createFinancePayment, markFinancePaymentSuccess } from '@/api/finance'
 import {
+  ORDER_SOURCE_OPTIONS,
   ORDER_STATUS_OPTIONS,
   OrderStatus,
   type Order,
@@ -50,7 +51,8 @@ import { PAY_TYPE_OPTIONS, type PayType } from '@/types/finance'
  * 一步完成创建支付单 + 标记成功（模拟支付），替代原跳转收银台方案。
  * 4 个 tab 共用同一个支付弹窗（openPayDialog 传 orderType 区分）。
  *
- * 查看详情：简化方案，用 ElMessageBox.alert 展示后端 VO 原始 JSON 字段。
+ * 查看详情：el-drawer + el-descriptions 结构化展示 4 类订单完整字段，
+ * 4 tab 共用同一抽屉，按 detailKind 切换渲染分支。
  */
 
 type TabKey = 'equity' | 'scene' | 'course' | 'sojourn'
@@ -142,6 +144,32 @@ function statusText(v?: number): string {
   return opt ? opt.label : '-'
 }
 
+/** 采购来源文案：1=对公 / 2=个人（详情抽屉用） */
+function orderSourceText(v?: number): string {
+  const opt = ORDER_SOURCE_OPTIONS.find((o) => o.value === v)
+  return opt ? opt.label : '-'
+}
+
+/** 支付方式文案：1微信/2支付宝/3银行转账/4余额/5线下（详情抽屉用） */
+function payTypeText(v?: number): string {
+  const opt = PAY_TYPE_OPTIONS.find((o) => o.value === v)
+  return opt ? opt.label : '-'
+}
+
+/** 入库方式文案：1=批量 / 2=逐张 / 3=自动入库（权益订单详情用） */
+function deliverTypeText(v?: number): string {
+  const map: Record<number, string> = { 1: '批量入库', 2: '逐张入库', 3: '自动入库' }
+  return v != null ? (map[v] ?? '-') : '-'
+}
+
+/** 详情抽屉标题：TabKey → 订单类型文案 */
+const ORDER_TYPE_LABEL_DETAIL: Record<TabKey, string> = {
+  equity: '权益订单',
+  scene: '场景订单',
+  course: '课程订单',
+  sojourn: '旅居订单'
+}
+
 /** 是否可取消（仅待支付 / 退款中可取消） */
 function isCancellable(status?: number): boolean {
   return status === OrderStatus.PENDING_PAY || status === OrderStatus.REFUNDING
@@ -161,51 +189,47 @@ function resetSearch(query: { orderCode?: string; orderStatus?: OrderStatus }, s
   search()
 }
 
-// ==================== 查看详情（工厂，简化：alert JSON） ====================
+// ==================== 查看详情（el-drawer + el-descriptions 结构化展示） ====================
 
-/** HTML 转义，防止 JSON 字段在 dangerouslyUseHTMLString 下注入 */
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => {
-    switch (c) {
-      case '&':
-        return '&amp;'
-      case '<':
-        return '&lt;'
-      case '>':
-        return '&gt;'
-      case '"':
-        return '&quot;'
-      default:
-        return '&#39;'
-    }
-  })
+/**
+ * 详情抽屉状态。detailKind 区分 4 类订单，控制模板渲染分支；
+ * detailData 存放后端 VO（类型联合，模板内按 detailKind 切换断言取字段）。
+ */
+const detailVisible = ref(false)
+const detailLoading = ref(false)
+const detailKind = ref<TabKey>('equity')
+const detailData = ref<Order | OrderScene | OrderCourse | OrderSojourn | null>(null)
+
+/** 各 tab 对应的详情 getter + 抽屉标题 */
+const detailGetter: Record<TabKey, (code: string) => Promise<unknown>> = {
+  equity: getOrderEquity,
+  scene: getOrderScene,
+  course: getOrderCourse,
+  sojourn: getOrderSojourn
 }
 
-function makeViewHandler<T>(getter: (code: string) => Promise<T>, title: string) {
-  return async (orderCode: string) => {
-    if (!orderCode) return
-    try {
-      const vo = await getter(orderCode)
-      await ElMessageBox.alert(
-        `<pre class="order-detail-pre">${escapeHtml(JSON.stringify(vo, null, 2))}</pre>`,
-        `${title} · ${orderCode}`,
-        {
-          confirmButtonText: '关闭',
-          dangerouslyUseHTMLString: true,
-          customClass: 'order-detail-msgbox'
-        }
-      )
-    } catch (err) {
-      // 用户关闭弹窗或接口报错：静默（错误已由响应拦截器统一提示）
-      void err
-    }
+/**
+ * 打开详情抽屉：调对应 getter 拉取完整 VO，设置 kind + data 后展开。
+ * 失败时静默（响应拦截器统一提示），不展开抽屉。
+ */
+async function openDetail(row: { orderCode?: string }, kind: TabKey) {
+  const code = row.orderCode
+  if (!code) return
+  detailKind.value = kind
+  detailData.value = null
+  detailLoading.value = true
+  detailVisible.value = true
+  try {
+    const vo = await detailGetter[kind](code)
+    detailData.value = vo as Order | OrderScene | OrderCourse | OrderSojourn
+  } catch (err) {
+    // 接口报错已由拦截器统一提示；关闭抽屉
+    void err
+    detailVisible.value = false
+  } finally {
+    detailLoading.value = false
   }
 }
-
-const viewEquity = makeViewHandler(getOrderEquity, '权益订单详情')
-const viewScene = makeViewHandler(getOrderScene, '场景订单详情')
-const viewCourse = makeViewHandler(getOrderCourse, '课程订单详情')
-const viewSojourn = makeViewHandler(getOrderSojourn, '旅居订单详情')
 
 // ==================== 取消订单（工厂：prompt 输入原因 → cancel → 刷新） ====================
 
@@ -385,7 +409,7 @@ async function handleSubmitPay() {
               <el-table-column prop="createdAt" label="创建时间" min-width="160" />
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
-                  <el-button link type="primary" size="small" @click="viewEquity(row.orderCode)">详情</el-button>
+                  <el-button link type="primary" size="small" @click="openDetail(row, 'equity')">详情</el-button>
                   <el-button
                     v-if="row.orderStatus === OrderStatus.PENDING_PAY"
                     link
@@ -487,7 +511,7 @@ async function handleSubmitPay() {
               <el-table-column prop="createdAt" label="创建时间" min-width="160" />
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
-                  <el-button link type="primary" size="small" @click="viewScene(row.orderCode)">详情</el-button>
+                  <el-button link type="primary" size="small" @click="openDetail(row, 'scene')">详情</el-button>
                   <el-button
                     v-if="row.orderStatus === OrderStatus.PENDING_PAY"
                     link
@@ -588,7 +612,7 @@ async function handleSubmitPay() {
               <el-table-column prop="createdAt" label="创建时间" min-width="160" />
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
-                  <el-button link type="primary" size="small" @click="viewCourse(row.orderCode)">详情</el-button>
+                  <el-button link type="primary" size="small" @click="openDetail(row, 'course')">详情</el-button>
                   <el-button
                     v-if="row.orderStatus === OrderStatus.PENDING_PAY"
                     link
@@ -697,7 +721,7 @@ async function handleSubmitPay() {
               <el-table-column prop="createdAt" label="创建时间" min-width="160" />
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
-                  <el-button link type="primary" size="small" @click="viewSojourn(row.orderCode)">详情</el-button>
+                  <el-button link type="primary" size="small" @click="openDetail(row, 'sojourn')">详情</el-button>
                   <el-button
                     v-if="row.orderStatus === OrderStatus.PENDING_PAY"
                     link
@@ -775,6 +799,152 @@ async function handleSubmitPay() {
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- ==================== 详情抽屉（4 tab 共用，按 detailKind 切换字段） ==================== -->
+    <el-drawer
+      v-model="detailVisible"
+      :title="`${ORDER_TYPE_LABEL_DETAIL[detailKind]}详情`"
+      size="560px"
+      direction="rtl"
+    >
+      <div v-loading="detailLoading">
+        <template v-if="detailData">
+          <!-- ==================== 权益订单详情 ==================== -->
+          <div v-if="detailKind === 'equity'" class="detail-section">
+            <h4 class="detail-section-title">基本信息</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="订单编码">{{ (detailData as Order).orderCode || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="订单状态">
+                <el-tag v-if="(detailData as Order).orderStatus !== undefined" :type="statusTagType((detailData as Order).orderStatus)">
+                  {{ statusText((detailData as Order).orderStatus) }}
+                </el-tag>
+                <span v-else>-</span>
+              </el-descriptions-item>
+              <el-descriptions-item label="商品名称">{{ (detailData as Order).goodsName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="规格">{{ (detailData as Order).skuName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="数量">{{ (detailData as Order).quantity ?? '-' }}</el-descriptions-item>
+              <el-descriptions-item label="单价">{{ formatAmount((detailData as Order).unitPrice) }}</el-descriptions-item>
+              <el-descriptions-item label="采购来源">{{ orderSourceText((detailData as Order).orderSource) }}</el-descriptions-item>
+              <el-descriptions-item label="支付方式">{{ payTypeText((detailData as Order).payType) }}</el-descriptions-item>
+              <el-descriptions-item label="实付金额">{{ formatAmount((detailData as Order).payAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="订单总额">{{ formatAmount((detailData as Order).totalAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as Order).discountAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="交易号">{{ (detailData as Order).payTradeNo || '-' }}</el-descriptions-item>
+            </el-descriptions>
+
+            <h4 class="detail-section-title">渠道信息</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="渠道">{{ (detailData as Order).channelFullName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="经销商">{{ (detailData as Order).agentFullName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="分销商">{{ (detailData as Order).distributorFullName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="机构编码">{{ (detailData as Order).organCode || '-' }}</el-descriptions-item>
+            </el-descriptions>
+
+            <h4 class="detail-section-title">发放与时间</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="入库方式">{{ deliverTypeText((detailData as Order).deliverType) }}</el-descriptions-item>
+              <el-descriptions-item label="发放数量">{{ (detailData as Order).deliverCount ?? '-' }}</el-descriptions-item>
+              <el-descriptions-item label="支付时间">{{ (detailData as Order).payTime || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="发放时间">{{ (detailData as Order).deliverTime || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="到期时间">{{ (detailData as Order).expireTime || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间">{{ (detailData as Order).createdAt || '-' }}</el-descriptions-item>
+              <el-descriptions-item v-if="(detailData as Order).cancelReason" label="取消原因" :span="2">
+                {{ (detailData as Order).cancelReason }}
+              </el-descriptions-item>
+              <el-descriptions-item v-if="(detailData as Order).remark" label="备注" :span="2">
+                {{ (detailData as Order).remark }}
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- ==================== 场景订单详情 ==================== -->
+          <div v-else-if="detailKind === 'scene'" class="detail-section">
+            <h4 class="detail-section-title">基本信息</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="订单编码">{{ (detailData as OrderScene).orderCode || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="订单状态">
+                <el-tag v-if="(detailData as OrderScene).orderStatus !== undefined" :type="statusTagType((detailData as OrderScene).orderStatus)">
+                  {{ statusText((detailData as OrderScene).orderStatus) }}
+                </el-tag>
+                <span v-else>-</span>
+              </el-descriptions-item>
+              <el-descriptions-item label="场景名称" :span="2">{{ (detailData as OrderScene).sceneName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="活动日期">{{ (detailData as OrderScene).activityDate || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="参与人数">{{ (detailData as OrderScene).participantCount ?? '-' }}</el-descriptions-item>
+              <el-descriptions-item label="客户姓名">{{ (detailData as OrderScene).clientFullName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="单价">{{ formatAmount((detailData as OrderScene).unitPrice) }}</el-descriptions-item>
+              <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderScene).payAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderScene).totalAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderScene).discountAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间" :span="2">{{ (detailData as OrderScene).createdAt || '-' }}</el-descriptions-item>
+              <el-descriptions-item v-if="(detailData as OrderScene).cancelReason" label="取消原因" :span="2">
+                {{ (detailData as OrderScene).cancelReason }}
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- ==================== 课程订单详情 ==================== -->
+          <div v-else-if="detailKind === 'course'" class="detail-section">
+            <h4 class="detail-section-title">基本信息</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="订单编码">{{ (detailData as OrderCourse).orderCode || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="订单状态">
+                <el-tag v-if="(detailData as OrderCourse).orderStatus !== undefined" :type="statusTagType((detailData as OrderCourse).orderStatus)">
+                  {{ statusText((detailData as OrderCourse).orderStatus) }}
+                </el-tag>
+                <span v-else>-</span>
+              </el-descriptions-item>
+              <el-descriptions-item label="课程名称" :span="2">{{ (detailData as OrderCourse).courseName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="客户姓名">{{ (detailData as OrderCourse).clientFullName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="数量">{{ (detailData as OrderCourse).quantity ?? '-' }}</el-descriptions-item>
+              <el-descriptions-item label="单价">{{ formatAmount((detailData as OrderCourse).unitPrice) }}</el-descriptions-item>
+              <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderCourse).payAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderCourse).totalAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderCourse).discountAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间" :span="2">{{ (detailData as OrderCourse).createdAt || '-' }}</el-descriptions-item>
+              <el-descriptions-item v-if="(detailData as OrderCourse).cancelReason" label="取消原因" :span="2">
+                {{ (detailData as OrderCourse).cancelReason }}
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- ==================== 旅居订单详情 ==================== -->
+          <div v-else-if="detailKind === 'sojourn'" class="detail-section">
+            <h4 class="detail-section-title">基本信息</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="订单编码">{{ (detailData as OrderSojourn).orderCode || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="订单状态">
+                <el-tag v-if="(detailData as OrderSojourn).orderStatus !== undefined" :type="statusTagType((detailData as OrderSojourn).orderStatus)">
+                  {{ statusText((detailData as OrderSojourn).orderStatus) }}
+                </el-tag>
+                <span v-else>-</span>
+              </el-descriptions-item>
+              <el-descriptions-item label="机构" :span="2">{{ (detailData as OrderSojourn).parkFullName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="入住日期">{{ (detailData as OrderSojourn).checkinDate || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="退房日期">{{ (detailData as OrderSojourn).checkoutDate || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="入住天数">{{ (detailData as OrderSojourn).stayDays ?? '-' }}</el-descriptions-item>
+              <el-descriptions-item label="入住人数">{{ (detailData as OrderSojourn).residentCount ?? '-' }}</el-descriptions-item>
+            </el-descriptions>
+
+            <h4 class="detail-section-title">费用明细</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="房费">{{ formatAmount((detailData as OrderSojourn).roomFee) }}</el-descriptions-item>
+              <el-descriptions-item label="护理费">{{ formatAmount((detailData as OrderSojourn).careFee) }}</el-descriptions-item>
+              <el-descriptions-item label="餐费">{{ formatAmount((detailData as OrderSojourn).foodFee) }}</el-descriptions-item>
+              <el-descriptions-item label="其他费用">{{ formatAmount((detailData as OrderSojourn).otherFee) }}</el-descriptions-item>
+              <el-descriptions-item label="押金">{{ formatAmount((detailData as OrderSojourn).depositAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderSojourn).discountAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderSojourn).totalAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderSojourn).payAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间" :span="2">{{ (detailData as OrderSojourn).createdAt || '-' }}</el-descriptions-item>
+              <el-descriptions-item v-if="(detailData as OrderSojourn).cancelReason" label="取消原因" :span="2">
+                {{ (detailData as OrderSojourn).cancelReason }}
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+        </template>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -832,24 +1002,20 @@ async function handleSubmitPay() {
   color: #e6a23c;
   line-height: 1.5;
 }
-</style>
 
-<!-- 详情 MessageBox 用到的 <pre> 样式（非 scoped：MessageBox 渲染在 body 末尾，scoped 不生效） -->
-<style lang="scss">
-.order-detail-msgbox {
-  .order-detail-pre {
-    margin: 0;
-    max-height: 60vh;
-    overflow: auto;
-    padding: 12px;
-    background: #f5f7fa;
-    border-radius: 4px;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 12px;
-    line-height: 1.6;
-    color: #303133;
-    white-space: pre-wrap;
-    word-break: break-all;
+/* ==================== 详情抽屉 ==================== */
+.detail-section {
+  margin-bottom: 24px;
+
+  &:last-child {
+    margin-bottom: 0;
   }
+}
+
+.detail-section-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
 }
 </style>
