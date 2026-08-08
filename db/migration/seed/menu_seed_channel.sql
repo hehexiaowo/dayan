@@ -73,7 +73,7 @@ VALUES
 -- 养老保典目录（原 channel_agent 改为目录）
 ('channel_agent', '养老保典', NULL, 1, '/agent', NULL, NULL,
  'User', 20, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
-('channel_agent_account', '代理账号', 'channel_agent', 2, '/agent/account', 'agent/account/index', 'channel:agent:list',
+('channel_agent_account', '账号管理', 'channel_agent', 2, '/agent/account', 'agent/account/index', 'channel:agent:list',
  'UserFilled', 21, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_agent_content', '内容配置', 'channel_agent', 2, '/agent/content', 'content/config/index', 'channel:content:list',
  'Document', 22, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
@@ -88,7 +88,7 @@ VALUES
 -- 客户平台目录（原 channel_client 改为目录）
 ('channel_client', '客户平台', NULL, 1, '/client', NULL, NULL,
  'UserFilled', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
-('channel_client_account', '客户账号', 'channel_client', 2, '/client/account', 'client/account/index', 'channel:client:list',
+('channel_client_account', '账号管理', 'channel_client', 2, '/client/account', 'client/account/index', 'channel:client:list',
  'User', 31, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_client_content', '内容配置', 'channel_client', 2, '/client/content', 'content/config/index', 'channel:content:list',
  'Document', 32, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
