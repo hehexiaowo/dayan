@@ -1,3 +1,5 @@
+import type { PageQuery } from './common'
+
 /**
  * 客户相关类型。
  *
@@ -51,4 +53,30 @@ export interface ClientQuery {
   current: number
   /** 每页条数 */
   size: number
+}
+
+// ==================== 客户账号 ====================
+
+/** 客户账号 */
+export interface ClientAccount {
+  id?: number
+  clientCode: string
+  channelCode?: string
+  username?: string
+  realName?: string
+  phone?: string
+  avatar?: string
+  gender?: number
+  accountStatus?: number
+  lastLoginAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** 客户账号查询 */
+export interface ClientAccountQuery extends PageQuery {
+  clientCode?: string
+  username?: string
+  phone?: string
+  accountStatus?: number
 }

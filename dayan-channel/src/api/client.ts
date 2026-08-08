@@ -1,6 +1,6 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
-import type { Client, ClientQuery } from '@/types/client'
+import type { Client, ClientQuery, ClientAccount, ClientAccountQuery } from '@/types/client'
 
 /**
  * 客户接口封装。
@@ -16,5 +16,26 @@ export function pageClients(query: ClientQuery): Promise<PageResult<Client>> {
     url: '/channel-api/clients',
     method: 'get',
     params: query
+  })
+}
+
+// ==================== 客户账号（/channel-api/client-accounts）====================
+
+/** 客户账号分页 */
+export function pageClientAccounts(
+  query: ClientAccountQuery
+): Promise<PageResult<ClientAccount>> {
+  return request<PageResult<ClientAccount>>({
+    url: '/channel-api/client-accounts',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 客户账号详情 */
+export function getClientAccount(clientCode: string): Promise<ClientAccount> {
+  return request<ClientAccount>({
+    url: `/channel-api/client-accounts/${clientCode}`,
+    method: 'get'
   })
 }

@@ -1,3 +1,5 @@
+import type { PageQuery } from './common'
+
 /**
  * 权益相关类型。
  *
@@ -73,4 +75,32 @@ export interface EquityQuery {
   current: number
   /** 每页条数 */
   size: number
+}
+
+// ==================== 权益激活记录 ====================
+
+/** 激活记录 */
+export interface EquityActivate {
+  id?: number
+  activateCode: string
+  equityCode: string
+  templateCode?: string
+  clientCode?: string
+  clientFullName?: string
+  clientPhone?: string
+  activateChannel?: number
+  activateSourceCode?: string
+  activateTime?: string
+  expireTime?: string
+  isIdCardVerified?: number
+  isAgreementSigned?: number
+}
+
+/** 激活记录查询 */
+export interface EquityActivateQuery extends PageQuery {
+  activateCode?: string
+  equityCode?: string
+  templateCode?: string
+  clientCode?: string
+  activateChannel?: number
 }

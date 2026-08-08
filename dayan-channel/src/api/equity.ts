@@ -1,6 +1,6 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
-import type { Equity, EquityQuery } from '@/types/equity'
+import type { Equity, EquityQuery, EquityActivate, EquityActivateQuery } from '@/types/equity'
 
 /**
  * 权益接口封装。
@@ -14,6 +14,19 @@ import type { Equity, EquityQuery } from '@/types/equity'
 export function pageEquities(query: EquityQuery): Promise<PageResult<Equity>> {
   return request<PageResult<Equity>>({
     url: '/channel-api/equities',
+    method: 'get',
+    params: query
+  })
+}
+
+// ==================== 激活记录（/channel-api/equity-activates）====================
+
+/** 激活记录分页 */
+export function pageEquityActivates(
+  query: EquityActivateQuery
+): Promise<PageResult<EquityActivate>> {
+  return request<PageResult<EquityActivate>>({
+    url: '/channel-api/equity-activates',
     method: 'get',
     params: query
   })
