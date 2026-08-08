@@ -58,7 +58,7 @@ const formRef = ref<FormInstance>()
 const form = reactive<EquityTemplate>({
   templateCode: undefined,
   templateName: '',
-  equityType: EquityType.SERVICE_CARD,
+  equityType: EquityType.INSTITUTION_STAY,
   equityLevel: EquityLevel.NORMAL,
   equityValue: undefined,
   costPrice: undefined,
@@ -89,7 +89,7 @@ function resetForm() {
   Object.assign(form, {
     templateCode: undefined,
     templateName: '',
-    equityType: EquityType.SERVICE_CARD,
+    equityType: EquityType.INSTITUTION_STAY,
     equityLevel: EquityLevel.NORMAL,
     equityValue: undefined,
     costPrice: undefined,
@@ -126,7 +126,7 @@ async function openEdit(row: EquityTemplate) {
     Object.assign(form, {
       templateCode: detail.templateCode,
       templateName: detail.templateName ?? '',
-      equityType: detail.equityType ?? EquityType.SERVICE_CARD,
+      equityType: detail.equityType ?? EquityType.INSTITUTION_STAY,
       equityLevel: detail.equityLevel ?? EquityLevel.NORMAL,
       equityValue: detail.equityValue,
       costPrice: detail.costPrice,
@@ -150,7 +150,7 @@ async function openEdit(row: EquityTemplate) {
     Object.assign(form, {
       templateCode: row.templateCode,
       templateName: row.templateName ?? '',
-      equityType: row.equityType ?? EquityType.SERVICE_CARD,
+      equityType: row.equityType ?? EquityType.INSTITUTION_STAY,
       equityLevel: row.equityLevel ?? EquityLevel.NORMAL,
       equityValue: row.equityValue,
       costPrice: row.costPrice,

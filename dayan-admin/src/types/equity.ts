@@ -10,27 +10,37 @@ import type { PageQuery } from '@/types/common'
 
 // ---------------- 权益类型（模板/仓库共用） ----------------
 
-/** 权益类型：1服务卡 / 2体验券 / 3折扣券 / 4储值卡 / 5礼品卡 */
+/**
+ * 权益类型：对齐后端 DDL 10_equity.sql:17。
+ * 1=机构入住权益 / 2=机构参观权益 / 3=场景活动权益 / 4=居家护理权益 /
+ * 5=健康检测权益 / 6=课程学习权益 / 7=旅居体验权益。
+ */
 export enum EquityType {
-  /** 服务卡 */
-  SERVICE_CARD = 1,
-  /** 体验券 */
-  EXPERIENCE_COUPON = 2,
-  /** 折扣券 */
-  DISCOUNT_COUPON = 3,
-  /** 储值卡 */
-  STORED_CARD = 4,
-  /** 礼品卡 */
-  GIFT_CARD = 5
+  /** 机构入住权益 */
+  INSTITUTION_STAY = 1,
+  /** 机构参观权益 */
+  INSTITUTION_VISIT = 2,
+  /** 场景活动权益 */
+  SCENE_ACTIVITY = 3,
+  /** 居家护理权益 */
+  HOME_CARE = 4,
+  /** 健康检测权益 */
+  HEALTH_CHECK = 5,
+  /** 课程学习权益 */
+  COURSE_LEARNING = 6,
+  /** 旅居体验权益 */
+  SOJOURN_EXPERIENCE = 7
 }
 
 /** 权益类型选项 */
 export const EQUITY_TYPE_OPTIONS = [
-  { label: '服务卡', value: EquityType.SERVICE_CARD },
-  { label: '体验券', value: EquityType.EXPERIENCE_COUPON },
-  { label: '折扣券', value: EquityType.DISCOUNT_COUPON },
-  { label: '储值卡', value: EquityType.STORED_CARD },
-  { label: '礼品卡', value: EquityType.GIFT_CARD }
+  { label: '机构入住权益', value: EquityType.INSTITUTION_STAY },
+  { label: '机构参观权益', value: EquityType.INSTITUTION_VISIT },
+  { label: '场景活动权益', value: EquityType.SCENE_ACTIVITY },
+  { label: '居家护理权益', value: EquityType.HOME_CARE },
+  { label: '健康检测权益', value: EquityType.HEALTH_CHECK },
+  { label: '课程学习权益', value: EquityType.COURSE_LEARNING },
+  { label: '旅居体验权益', value: EquityType.SOJOURN_EXPERIENCE }
 ] as const
 
 /** 权益等级：1普通 / 2银卡 / 3金卡 / 4钻石 */
@@ -111,21 +121,21 @@ export const EQUITY_STATUS_OPTIONS = [
 
 // ---------------- 载体类型 ----------------
 
-/** 载体类型：1实体卡 / 2电子卡 / 3二维码 */
+/**
+ * 载体类型：对齐后端运行时校验（EquityDepotServiceImpl 只允许 1/2）。
+ * 1=权益卡 / 2=权益函。
+ */
 export enum CarrierType {
-  /** 实体卡 */
-  PHYSICAL_CARD = 1,
-  /** 电子卡 */
-  ELECTRONIC_CARD = 2,
-  /** 二维码 */
-  QR_CODE = 3
+  /** 权益卡 */
+  EQUITY_CARD = 1,
+  /** 权益函 */
+  EQUITY_LETTER = 2
 }
 
 /** 载体类型选项 */
 export const CARRIER_TYPE_OPTIONS = [
-  { label: '实体卡', value: CarrierType.PHYSICAL_CARD },
-  { label: '电子卡', value: CarrierType.ELECTRONIC_CARD },
-  { label: '二维码', value: CarrierType.QR_CODE }
+  { label: '权益卡', value: CarrierType.EQUITY_CARD },
+  { label: '权益函', value: CarrierType.EQUITY_LETTER }
 ] as const
 
 // ---------------- 权益模板 ----------------
