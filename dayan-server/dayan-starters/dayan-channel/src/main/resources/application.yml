@@ -57,10 +57,10 @@ dayan:
   security:
     login-type: channel
   storage:
-    endpoint: http://localhost:9000
-    access-key: dayan
-    secret-key: dayan12345
-    bucket: dayan-public
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:dayan}
+    secret-key: ${MINIO_SECRET_KEY:dayan12345}
+    bucket: ${MINIO_BUCKET:dayan-public}
     max-size: 10485760
 
 springdoc:

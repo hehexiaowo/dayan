@@ -1,7 +1,8 @@
-# 大雁养老 - 基础设施编排（仅 MySQL + Redis + Nacos）
+# 大雁养老 - 基础设施编排（MySQL + Redis + Nacos + MinIO）
 #
 # 用途：开发期只启动依赖中间件，应用在 IDE 本地运行（便于调试）。
 # MySQL 容器启动时自动执行 db/migration/*.sql 建表与种子数据初始化。
+# MinIO Console: http://localhost:9001（dayan / dayan12345）
 #
 # 启动：docker compose -f docker-compose.infra.yml up -d
 # 停止：docker compose -f docker-compose.infra.yml down
@@ -83,6 +84,12 @@ services:
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
 volumes:
   mysql_data:

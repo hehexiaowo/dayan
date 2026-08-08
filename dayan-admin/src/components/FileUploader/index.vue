@@ -122,7 +122,7 @@ function fileName(key: string): string {
 
   <!-- 多图 -->
   <div v-else-if="type === 'image' && multiple" class="uploader-multi-image">
-    <div v-for="(key, i) in multiValue" :key="i" class="image-preview">
+    <div v-for="(key, i) in multiValue" :key="key" class="image-preview">
       <el-image :src="formatFileUrl(key)" fit="cover" class="preview-img" :preview-src-list="multiValue.map(formatFileUrl)" :initial-index="i" />
       <div v-if="!disabled" class="image-actions">
         <el-icon class="action-btn" @click="removeMulti(i)"><Delete /></el-icon>
@@ -155,7 +155,7 @@ function fileName(key: string): string {
       <span class="media-name">{{ fileName(singleValue) }}</span>
       <el-icon v-if="!disabled" class="action-btn" @click="removeSingle"><Delete /></el-icon>
     </div>
-    <div v-for="(key, i) in (multiple ? multiValue : [])" :key="i" class="media-item">
+    <div v-for="(key, i) in (multiple ? multiValue : [])" :key="key" class="media-item">
       <el-icon class="media-icon"><Document /></el-icon>
       <span class="media-name">{{ fileName(key) }}</span>
       <el-icon v-if="!disabled" class="action-btn" @click="removeMulti(i)"><Delete /></el-icon>

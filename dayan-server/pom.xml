@@ -44,6 +44,7 @@
         <lombok.version>1.18.34</lombok.version>
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <redisson.version>3.34.1</redisson.version>
+        <minio.version>8.5.12</minio.version>
 
         <!-- 插件 -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -177,6 +178,13 @@
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson-spring-boot-starter</artifactId>
                 <version>${redisson.version}</version>
+            </dependency>
+
+            <!-- MinIO -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * 文件上传/预览 Controller（admin 端）。
@@ -41,6 +42,15 @@ public class FileAdminController {
             "jpg", "jpeg", "png", "gif", "webp",
             "mp4", "webm",
             "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt");
+
+    /** 合法 key 字符集（字母/数字/_-/. /），防止日志注入与异常输入 */
+    private static final Pattern KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9_/\\-.]+$");
+
+    /** preview 允许内联渲染的 contentType（其余强制下载，避免 XSS） */
+    private static final Set<String> INLINE_CONTENT_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "video/mp4", "video/webm",
+            "application/pdf");
 
     @Operation(summary = "上传文件")
     @PostMapping("/upload")
@@ -92,7 +102,7 @@ public class FileAdminController {
         String uri = request.getRequestURI();
         String prefix = "/admin-api/v1/files/preview/";
         String key = uri.substring(uri.indexOf(prefix) + prefix.length());
-        if (StrUtil.isBlank(key)) {
+        if (StrUtil.isBlank(key) || !KEY_PATTERN.matcher(key).matches()) {
             response.setStatus(404);
             return;
         }
@@ -100,7 +110,13 @@ public class FileAdminController {
             response.setStatus(404);
             return;
         }
-        response.setContentType(storageService.contentType(key));
+        // 非图片/视频/PDF 类型强制下载，防止同源 XSS（key 后缀可伪造）
+        String contentType = storageService.contentType(key);
+        if (!INLINE_CONTENT_TYPES.contains(contentType)) {
+            contentType = "application/octet-stream";
+            response.setHeader("Content-Disposition", "attachment; filename=\"" + key.substring(key.lastIndexOf('/') + 1) + "\"");
+        }
+        response.setContentType(contentType);
         response.setHeader("Cache-Control", "max-age=86400");
         try (InputStream is = storageService.download(key);
              OutputStream os = response.getOutputStream()) {

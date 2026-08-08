@@ -13,7 +13,7 @@
 
     <artifactId>dayan-common-oss</artifactId>
     <name>dayan-common-oss</name>
-    <description>大雁养老 - 公共模块（预留，P0 空壳）</description>
+    <description>大雁养老 - 公共模块（MinIO 对象存储）</description>
 
     <dependencies>
         <dependency>
@@ -23,7 +23,6 @@
         <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
-            <version>8.5.12</version>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>
