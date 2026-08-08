@@ -9,6 +9,8 @@
 import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 import {
   pageMediaImages,
   createMediaImage,
@@ -182,8 +184,8 @@ defineExpose({ loadPage })
         <template #default="{ row }">
           <el-image
             v-if="row.imageUrl"
-            :src="row.imageUrl"
-            :preview-src-list="[row.imageUrl]"
+            :src="formatFileUrl(row.imageUrl)"
+            :preview-src-list="[formatFileUrl(row.imageUrl)]"
             preview-teleported
             fit="cover"
             style="width: 64px; height: 48px"
@@ -249,8 +251,8 @@ defineExpose({ loadPage })
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="24">
-            <el-form-item label="图片URL" prop="imageUrl">
-              <el-input v-model="form.imageUrl" placeholder="图片 URL（必填）" />
+            <el-form-item label="图片" prop="imageUrl">
+              <FileUploader v-model="form.imageUrl" type="image" module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
