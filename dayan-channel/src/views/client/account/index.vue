@@ -1,39 +1,45 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
-import { pageClients } from '@/api/client'
-import {
-  GENDER_OPTIONS,
-  type Client,
-  type ClientQuery
-} from '@/types/client'
+import { pageClientAccounts } from '@/api/client'
+import { GENDER_OPTIONS, type ClientAccount, type ClientAccountQuery } from '@/types/client'
+import { statusTagType } from '@/utils/format'
 
 /**
- * 客户管理页。
+ * 客户账号页。
  *
- * - 搜索栏：客户编码 / 全名 / 手机号；
- * - el-table：clientCode / fullName / phone / gender；
- * - 后端 GET /channel-api/clients 未实现，onMounted 失败时降级（空表，不弹 toast）。
+ * - 数据源：pageClientAccounts（/channel-api/client-accounts，任务 6 新建）。
+ * - 搜索：用户名 / 手机号 / 账号状态。
+ * - 表格：clientCode / username / realName / phone / gender / accountStatus(tag) / createdAt。
+ * - 后端端点未实现时降级（空表 + 控制台 warn，不弹 toast）。
+ *
+ * 说明：useCrud 不返回 handleReset（已核实 composables/useCrud.ts），
+ * 故在本页面内自定义 handleReset（与现有 client/index.vue 等页面一致）。
  */
 
+const ACCOUNT_STATUS_OPTIONS = [
+  { value: 1, label: '正常' },
+  { value: 0, label: '禁用' }
+]
+
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
-  Client,
-  ClientQuery
+  ClientAccount,
+  ClientAccountQuery
 >(
-  { page: pageClients },
+  { page: pageClientAccounts },
   {
     initialQuery: {
-      clientCode: '',
-      fullName: '',
-      phone: ''
+      username: '',
+      phone: '',
+      accountStatus: undefined
     }
   }
 )
 
 function handleReset() {
-  query.clientCode = ''
-  query.fullName = ''
+  query.username = ''
   query.phone = ''
+  query.accountStatus = undefined
   handleSearch()
 }
 
@@ -45,7 +51,7 @@ function genderText(v?: number) {
 onMounted(() => {
   loadPage().catch((err) => {
     // 后端端点未实现，降级：留空 + 控制台 warn（不弹 toast）
-    console.warn('[client] 加载客户列表失败（接口可能未实现）:', err)
+    console.warn('[client/account] 加载客户账号列表失败（接口可能未实现）:', err)
   })
 })
 </script>
@@ -55,14 +61,16 @@ onMounted(() => {
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
       <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="客户编码">
-          <el-input v-model="query.clientCode" placeholder="客户编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="名称">
-          <el-input v-model="query.fullName" placeholder="客户全名" clearable @keyup.enter="handleSearch" />
+        <el-form-item label="用户名">
+          <el-input v-model="query.username" placeholder="用户名" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
+        </el-form-item>
+        <el-form-item label="账号状态">
+          <el-select v-model="query.accountStatus" placeholder="全部" clearable style="width: 120px">
+            <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
@@ -75,17 +83,24 @@ onMounted(() => {
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>客户列表</span>
+          <span>客户账号</span>
         </div>
       </template>
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="clientCode">
-        <el-table-column prop="clientCode" label="客户编码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="fullName" label="全名" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="clientCode" label="账号编码" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="realName" label="姓名" min-width="100" />
         <el-table-column prop="phone" label="手机号" min-width="120" />
         <el-table-column prop="gender" label="性别" width="80" align="center">
           <template #default="{ row }">{{ genderText(row.gender) }}</template>
         </el-table-column>
+        <el-table-column prop="accountStatus" label="状态" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="statusTagType(row.accountStatus)">{{ row.accountStatus === 1 ? '正常' : '禁用' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="创建时间" min-width="160" />
         <template #empty>
           <el-empty description="暂无数据" />
         </template>
