@@ -5,6 +5,7 @@ import { ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
 import { getChannelInfoCurrent } from '@/api/channel-sub'
+import { formatFileUrl } from '@/utils/file'
 import SidebarItem from '@/components/SidebarItem.vue'
 
 const route = useRoute()
@@ -15,7 +16,7 @@ const permissionStore = usePermissionStore()
 const isCollapse = ref(false)
 
 const userName = computed(() => userStore.userInfo?.realName || userStore.userInfo?.accountCode || '渠道用户')
-const avatarUrl = computed(() => userStore.userInfo?.avatar || '')
+const avatarUrl = computed(() => formatFileUrl(userStore.userInfo?.avatar))
 
 /**
  * 侧边栏顶部标题：显示本渠道简称。

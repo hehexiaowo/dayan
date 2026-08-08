@@ -10,6 +10,7 @@ import {
   type Equity,
   type EquityQuery
 } from '@/types/equity'
+import { formatFileUrl } from '@/utils/file'
 
 /**
  * 权益管理页（业务运营目录）。
@@ -285,8 +286,8 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             <el-descriptions-item label="物流单号">{{ currentEquity.logisticsNo || '-' }}</el-descriptions-item>
             <el-descriptions-item label="库存到期">{{ currentEquity.shelfExpireTime || '-' }}</el-descriptions-item>
             <el-descriptions-item v-if="currentEquity.qrCodeUrl" label="二维码" :span="2">
-              <el-link type="primary" :href="currentEquity.qrCodeUrl" target="_blank">
-                {{ currentEquity.qrCodeUrl }}
+              <el-link type="primary" :href="formatFileUrl(currentEquity.qrCodeUrl)" target="_blank">
+                {{ formatFileUrl(currentEquity.qrCodeUrl) }}
               </el-link>
             </el-descriptions-item>
           </el-descriptions>

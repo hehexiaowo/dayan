@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { Picture, ShoppingCart, Delete } from '@element-plus/icons-vue'
 import { GOODS_TYPE_OPTIONS, pageGoodsInfos, type GoodsInfo } from '@/api/goods'
 import { createOrderEquity } from '@/api/order'
+import { formatFileUrl } from '@/utils/file'
 
 /**
  * 大雁商城页（采购结算目录 - 卡片商城 + 本地购物车）。
@@ -247,7 +248,7 @@ onMounted(() => {
             <el-card shadow="hover" class="goods-card" :body-style="{ padding: '0' }">
               <!-- 商品图片 -->
               <div class="goods-image">
-                <img v-if="goods.coverImage" :src="goods.coverImage" :alt="goods.goodsName" />
+                <img v-if="goods.coverImage" :src="formatFileUrl(goods.coverImage)" :alt="goods.goodsName" />
                 <div v-else class="goods-image-placeholder">
                   <el-icon :size="40"><Picture /></el-icon>
                   <span>暂无图片</span>
