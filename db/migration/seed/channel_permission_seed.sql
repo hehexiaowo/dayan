@@ -128,3 +128,12 @@ VALUES
   ('channel:contentConfig:list', '查配置', 'channel:contentConfig', 3, '/channel-api/channel-configs/*', 'GET', 171, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:contentConfig:save', '保存配置', 'channel:contentConfig', 3, '/channel-api/channel-configs/*', 'PUT', 172, 1, NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `id` = `id`;
+
+-- ==================== 增量5 开放平台（1 组 2 条）====================
+INSERT INTO `channel_permission` (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
+ `path`, `method`, `sort_order`, `status`,
+ `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+('channel:openApp', '应用管理', NULL, 1, NULL, NULL, 180, 1, NOW(), NOW(), 'system', 'system', 0),
+('channel:openApp:list', '应用配置查看', 'channel:openApp', 3, '/channel-api/open-platforms', 'GET', 181, 1, NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `id` = `id`;
