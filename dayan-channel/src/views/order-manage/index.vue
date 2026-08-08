@@ -19,7 +19,6 @@ import {
 } from '@/api/order'
 import { createFinancePayment, markFinancePaymentSuccess } from '@/api/finance'
 import {
-  ORDER_SOURCE_OPTIONS,
   ORDER_STATUS_OPTIONS,
   OrderStatus,
   type Order,
@@ -140,18 +139,6 @@ function statusTagType(v?: number): 'success' | 'warning' | 'info' | 'danger' | 
 
 function statusText(v?: number): string {
   const opt = ORDER_STATUS_OPTIONS.find((o) => o.value === v)
-  return opt ? opt.label : '-'
-}
-
-/** 采购来源文案：1=对公 / 2=个人 */
-function orderSourceText(v?: number): string {
-  const opt = ORDER_SOURCE_OPTIONS.find((o) => o.value === v)
-  return opt ? opt.label : '-'
-}
-
-/** 支付方式文案：1微信/2支付宝/3银行转账/4余额/5线下 */
-function payTypeText(v?: number): string {
-  const opt = PAY_TYPE_OPTIONS.find((o) => o.value === v)
   return opt ? opt.label : '-'
 }
 
@@ -392,33 +379,8 @@ async function handleSubmitPay() {
               </el-table-column>
               <el-table-column prop="goodsName" label="商品名称" min-width="160" show-overflow-tooltip />
               <el-table-column prop="quantity" label="数量" width="80" align="right" />
-              <el-table-column prop="unitPrice" label="单价（元）" width="100" align="right">
-                <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
-              </el-table-column>
-              <el-table-column prop="orderSource" label="采购来源" width="100" align="center">
-                <template #default="{ row }">
-                  <el-tag v-if="row.orderSource !== undefined && row.orderSource !== null" type="info" size="small">
-                    {{ orderSourceText(row.orderSource) }}
-                  </el-tag>
-                  <span v-else>-</span>
-                </template>
-              </el-table-column>
               <el-table-column prop="payAmount" label="实付金额（元）" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.payAmount) }}</template>
-              </el-table-column>
-              <el-table-column prop="totalAmount" label="订单总额（元）" width="130" align="right">
-                <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
-              </el-table-column>
-              <el-table-column prop="discountAmount" label="优惠（元）" width="100" align="right">
-                <template #default="{ row }">{{ formatAmount(row.discountAmount) }}</template>
-              </el-table-column>
-              <el-table-column prop="payType" label="支付方式" width="110" align="center">
-                <template #default="{ row }">
-                  <el-tag v-if="row.payType !== undefined && row.payType !== null" type="info" size="small">
-                    {{ payTypeText(row.payType) }}
-                  </el-tag>
-                  <span v-else>-</span>
-                </template>
               </el-table-column>
               <el-table-column prop="createdAt" label="创建时间" min-width="160" />
               <el-table-column label="操作" width="160" align="center" fixed="right">
