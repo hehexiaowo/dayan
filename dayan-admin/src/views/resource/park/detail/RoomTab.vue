@@ -18,7 +18,7 @@
  * - has*(10 设施) / isCurrent / isPromotion 提交 0/1 非 true/false
  * - JSON 字符串字段（facilities/images/includesItems）用 textarea 原文编辑
  */
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -119,6 +119,42 @@ const typeRules: FormRules<ParkRoomType> = {
     { max: 200, message: '不超过 200 个字符', trigger: 'blur' }
   ]
 }
+
+/** images：后端是 string（逗号分隔或 JSON 数组），FileUploader 多图用 string[] */
+const imagesModel = computed<string[]>({
+  get() {
+    const raw = typeForm.images
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    typeForm.images = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
+
+/** additionalImages：后端是 string（逗号分隔或 JSON 数组），FileUploader 多图用 string[] */
+const additionalImagesModel = computed<string[]>({
+  get() {
+    const raw = typeForm.additionalImages
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    typeForm.additionalImages = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
 
 function resetTypeForm() {
   Object.assign(typeForm, {
@@ -637,12 +673,12 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="图片列表(JSON)">
-              <el-input v-model="typeForm.images" type="textarea" :rows="2" placeholder="图片列表 JSON 原文" />
+              <FileUploader v-model="imagesModel" type="image" multiple module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="附加图片(JSON)">
-              <el-input v-model="typeForm.additionalImages" type="textarea" :rows="2" placeholder="附加图片 JSON 原文" />
+              <FileUploader v-model="additionalImagesModel" type="image" multiple module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

@@ -14,7 +14,7 @@
  * - budgetMin/Max/usePersonAge/careLevelNeed 才用 el-input-number
  * - status create 时由后端固定为 0，表单不展示
  */
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -30,6 +30,7 @@ import {
   DEMAND_STATUS_OPTIONS
 } from '@/types/service'
 import type { ServiceEquityDemand, ServiceEquityDemandQuery } from '@/types/service'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
   sessionCode: string
@@ -96,6 +97,24 @@ const rules: FormRules<ServiceEquityDemand> = {
   contactPreference: [{ required: true, message: '请选择联系偏好', trigger: 'change' }],
   collectMethod: [{ required: true, message: '请选择收集方式', trigger: 'change' }]
 }
+
+/** demandImages：后端是 string（JSON 数组），FileUploader 多图用 string[] */
+const demandImagesModel = computed<string[]>({
+  get() {
+    const raw = form.demandImages
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    form.demandImages = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
 
 function resetForm() {
   Object.assign(form, {
@@ -388,7 +407,7 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="需求图片">
-              <el-input v-model="form.demandImages" placeholder="图片 URL JSON 数组（可选）" />
+              <FileUploader v-model="demandImagesModel" type="image" multiple module="service" />
             </el-form-item>
           </el-col>
           <el-col v-if="dialogMode === 'edit'" :span="24">

@@ -9,7 +9,7 @@
  *
  * 红线：主键 Long id；编码字段 update 不可改；parkCode 从 prop 带入 create 表单隐藏。
  */
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -82,6 +82,24 @@ const rules: FormRules<ParkFacility> = {
     { max: 200, message: '不超过 200 个字符', trigger: 'blur' }
   ]
 }
+
+/** images：后端是 string（逗号分隔或 JSON 数组），FileUploader 多图用 string[] */
+const imagesModel = computed<string[]>({
+  get() {
+    const raw = form.images
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    form.images = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
 
 function resetForm() {
   Object.assign(form, {
@@ -327,7 +345,7 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="图片(JSON)">
-              <el-input v-model="form.images" type="textarea" :rows="2" placeholder="图片列表 JSON 原文" />
+              <FileUploader v-model="imagesModel" type="image" multiple module="park" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

@@ -36,6 +36,7 @@ import {
   SETTLEMENT_CYCLE_OPTIONS
 } from '@/types/supplier'
 import type { SupplierContract, SupplierContractQuery } from '@/types/supplier'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 // 从详情页"前往合同管理"跳转时可携带 supplierCode / contractCode 作为初始过滤（路由 query）
 const route = useRoute()
@@ -102,6 +103,24 @@ const rules: FormRules<SupplierContract> = {
   contractName: [{ required: true, message: '请输入合同名称', trigger: 'blur' }],
   supplierCode: [{ required: true, message: '请输入供应商编码', trigger: 'blur' }]
 }
+
+/** attachmentUrls：后端是 string（JSON 数组），FileUploader 多图用 string[] */
+const attachmentUrlsModel = computed<string[]>({
+  get() {
+    const raw = form.attachmentUrls
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    form.attachmentUrls = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
 
 function resetForm() {
   Object.assign(form, {
@@ -497,8 +516,8 @@ const isEdit = computed(() => dialogMode.value === 'edit')
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="附件(JSON)">
-              <el-input v-model="form.attachmentUrls" type="textarea" :rows="2" placeholder="附件 URL 列表 JSON 原文，如 [&quot;a.pdf&quot;]" />
+            <el-form-item label="附件">
+              <FileUploader v-model="attachmentUrlsModel" type="image" multiple module="supplier" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

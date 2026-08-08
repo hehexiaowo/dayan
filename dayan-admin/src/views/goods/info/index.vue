@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
@@ -106,6 +106,24 @@ const rules: FormRules<GoodsInfo> = {
   goodsName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   goodsType: [{ required: true, message: '请选择商品类型', trigger: 'change' }]
 }
+
+/** imageUrls：后端是 string（逗号分隔或 JSON 数组），FileUploader 多图用 string[] */
+const imageUrlsModel = computed<string[]>({
+  get() {
+    const raw = form.imageUrls
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    form.imageUrls = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
 
 function resetForm() {
   Object.assign(form, {
@@ -540,7 +558,7 @@ loadPage()
           </el-col>
           <el-col :span="24">
             <el-form-item label="图集">
-              <el-input v-model="form.imageUrls" type="textarea" :rows="2" placeholder="图集 URL（逗号分隔或 JSON）" />
+              <FileUploader v-model="imageUrlsModel" type="image" multiple module="goods" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

@@ -12,7 +12,7 @@
  * 主键 id 雪花 Long（无业务 code），路径参数用 id。
  * 4 维评分均 1-5，用 el-rate。
  */
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
   listServiceEvaluations,
@@ -25,6 +25,7 @@ import {
   EVALUATION_IS_ANONYMOUS_OPTIONS
 } from '@/types/service'
 import type { ServiceEvaluation } from '@/types/service'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
   sessionCode: string
@@ -90,6 +91,24 @@ const form = reactive<ServiceEvaluation>({
 const rules: FormRules<ServiceEvaluation> = {
   content: [{ required: true, message: '请输入评价内容', trigger: 'blur' }]
 }
+
+/** imageUrls：后端是 string（JSON 数组），FileUploader 多图用 string[] */
+const imageUrlsModel = computed<string[]>({
+  get() {
+    const raw = form.imageUrls
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    form.imageUrls = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
 
 function resetForm() {
   Object.assign(form, {
@@ -253,7 +272,7 @@ defineExpose({ loadEvaluation })
           <el-input v-model="form.content" type="textarea" :rows="4" placeholder="评价内容" maxlength="500" show-word-limit />
         </el-form-item>
         <el-form-item label="评价图片">
-          <el-input v-model="form.imageUrls" placeholder="图片 URL JSON 数组（可选）" />
+          <FileUploader v-model="imageUrlsModel" type="image" multiple module="service" />
         </el-form-item>
         <el-form-item label="是否匿名">
           <el-select v-model="form.isAnonymous" style="width: 160px">

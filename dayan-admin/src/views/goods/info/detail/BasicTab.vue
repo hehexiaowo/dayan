@@ -11,7 +11,7 @@
  * - goodsStatus 由 shelf 接口控制（列表页上下架按钮），编辑表单不含该字段；
  *   auditStatus / isHot / isNew / isRecommend 用 el-select / el-switch。
  */
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { getGoods, updateGoods } from '@/api/goods'
 import {
@@ -90,6 +90,24 @@ const form = reactive<GoodsInfo>({
 const rules: FormRules<GoodsInfo> = {
   goodsName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }]
 }
+
+/** imageUrls：后端是 string（逗号分隔或 JSON 数组），FileUploader 多图用 string[] */
+const imageUrlsModel = computed<string[]>({
+  get() {
+    const raw = form.imageUrls
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    form.imageUrls = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
 
 function openEdit() {
   if (!goodsInfo.value) return
@@ -303,7 +321,7 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="24">
             <el-form-item label="图集">
-              <el-input v-model="form.imageUrls" type="textarea" :rows="2" placeholder="图集 URL（逗号分隔或 JSON）" />
+              <FileUploader v-model="imageUrlsModel" type="image" multiple module="goods" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
