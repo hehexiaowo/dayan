@@ -17,7 +17,6 @@ export function uploadFile(file: File, module?: string): Promise<FileUploadDTO> 
     url: '/admin-api/v1/files/upload',
     method: 'post',
     data: formData,
-    headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 60000
   })
 }
