@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { useCrud } from '@/composables/useCrud'
-import { GOODS_TYPE_OPTIONS, pageGoodsInfos, type GoodsInfo, type GoodsInfoQuery } from '@/api/goods'
+import { computed, onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Picture, ShoppingCart, Delete } from '@element-plus/icons-vue'
+import { GOODS_TYPE_OPTIONS, pageGoodsInfos, type GoodsInfo } from '@/api/goods'
 import { createOrderEquity } from '@/api/order'
 
 /**
- * 大雁商城页（采购结算目录 - 商品浏览 + 权益下单）。
+ * 大雁商城页（采购结算目录 - 卡片商城 + 本地购物车）。
  *
- * 产品裁定（任务1）：本页只支持权益类商品（goodsType=1）下单，
- * 其他类型（场景/课程/旅居）按钮 disabled + tooltip 提示「请联系平台下单」。
+ * 左右分栏布局：
+ * - 左侧：商品卡片网格（搜索栏 + 响应式卡片列表），仅权益商品(goodsType=1)可加入购物车；
+ * - 右侧：购物车面板（sticky 固定），显示已选商品 + 数量调整 + 结算下单。
  *
- * 后端 GET /channel-api/goods-infos 返回 List<GoodsInfoVO>（非分页，已按
- * 渠道白名单 + 上架状态过滤），由 api/goods.ts 的 pageGoodsInfos 包装为 PageResult。
- *
- * 商品列表用 useCrud 管理（只读，仅传 page）；下单逻辑独立实现（不进 useCrud.create），
- * 成功后不刷新列表（商品目录与订单解耦）。
+ * 购物车用 localStorage 持久化（key: dayan_channel_cart），无需后端建表/接口。
+ * 下单循环调用 createOrderEquity（每个商品一个独立订单，后端只支持单商品下单）。
+ * 后端防篡改：goodsName/unitPrice 会被服务端权威覆盖。
  */
 
 /** 商品类型 tag 颜色映射：1=primary(权益) / 2=success(场景) / 3=warning(课程) / 4=info(旅居) */
@@ -26,327 +25,578 @@ const GOODS_TYPE_TAG: Record<number, 'primary' | 'success' | 'warning' | 'info'>
   4: 'info'
 }
 
-const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
-  GoodsInfo,
-  GoodsInfoQuery
->(
-  { page: pageGoodsInfos },
-  {
-    initialQuery: {
-      // 默认只查上架商品（goodsStatus=1），符合商城页只卖上架商品的语义
-      goodsStatus: 1,
-      goodsName: '',
-      goodsType: undefined
-    }
-  }
-)
-
-function handleReset() {
-  query.goodsName = ''
-  query.goodsType = undefined
-  // 保留 goodsStatus=1（上架商品），避免重置后看到下架商品
-  query.goodsStatus = 1
-  handleSearch()
+/** 是否权益商品（决定可否加购/下单） */
+function isEquity(g: GoodsInfo): boolean {
+  return g.goodsType === 1
 }
 
-/** 商品类型文案（用于 tag / 空值回退） */
 function goodsTypeText(v?: number): string {
   const opt = GOODS_TYPE_OPTIONS.find((o) => o.value === v)
   return opt ? opt.label : '-'
 }
 
-/** 是否权益商品（决定下单按钮是否可点） */
-function isEquity(row: GoodsInfo): boolean {
-  return row.goodsType === 1
-}
+// ==================== 商品列表 ====================
 
-// ==================== 下单弹窗 ====================
+const loading = ref(false)
+const allGoods = ref<GoodsInfo[]>([])
 
-/** 下单弹窗可见性 */
-const orderDialogVisible = ref(false)
-const submitting = ref(false)
-const orderFormRef = ref<FormInstance>()
+/** 搜索条件 */
+const searchName = ref('')
+const searchType = ref<number | undefined>(undefined)
 
-/** 当前正在下单的商品（用于弹窗内展示） */
-const currentGoods = ref<GoodsInfo | null>(null)
-
-/** 下单表单 */
-interface OrderForm {
-  /** 采购来源：1=对公 / 2=个人 */
-  orderSource: number
-  /** 购买数量 */
-  quantity: number
-  /** 备注 */
-  remark: string
-}
-
-const orderForm = reactive<OrderForm>({
-  orderSource: 1,
-  quantity: 1,
-  remark: ''
+/** 前端过滤后的商品列表 */
+const filteredGoods = computed(() => {
+  return allGoods.value.filter((g) => {
+    if (searchName.value && g.goodsName && !g.goodsName.includes(searchName.value)) return false
+    if (searchType.value !== undefined && g.goodsType !== searchType.value) return false
+    return true
+  })
 })
 
-const orderRules: FormRules<OrderForm> = {
-  orderSource: [{ required: true, message: '请选择采购来源', trigger: 'change' }],
-  quantity: [
-    { required: true, message: '请输入购买数量', trigger: 'blur' },
-    {
-      validator: (_rule, value: number, callback) => {
-        if (!Number.isInteger(value) || value < 1) {
-          callback(new Error('数量必须为不小于 1 的整数'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
-  ]
-}
-
-/** 重置下单表单到默认值 */
-function resetOrderForm() {
-  orderForm.orderSource = 1
-  orderForm.quantity = 1
-  orderForm.remark = ''
-  orderFormRef.value?.clearValidate()
-}
-
-/** 打开下单弹窗（仅权益商品可调用） */
-function openOrderDialog(row: GoodsInfo) {
-  if (!isEquity(row)) return
-  currentGoods.value = row
-  resetOrderForm()
-  orderDialogVisible.value = true
-}
-
-/** 关闭下单弹窗 */
-function closeOrderDialog() {
-  orderDialogVisible.value = false
-  currentGoods.value = null
-}
-
-/** 提交下单 */
-async function handleSubmitOrder() {
-  if (!orderFormRef.value || !currentGoods.value) return
-  // 校验失败直接返回（错误信息由 el-form 自动显示）
+async function loadGoods() {
+  loading.value = true
   try {
-    await orderFormRef.value.validate()
-  } catch {
-    return
-  }
-
-  const goods = currentGoods.value
-  // 防御性校验：商品编码/名称/售价缺失时不可下单
-  if (!goods.goodsCode || !goods.goodsName) {
-    ElMessage.error('商品信息不完整，无法下单')
-    return
-  }
-  const unitPrice = goods.salePrice ?? goods.originalPrice
-  if (unitPrice == null || unitPrice < 0) {
-    ElMessage.error('商品未配置价格，无法下单')
-    return
-  }
-
-  submitting.value = true
-  try {
-    const orderCode = await createOrderEquity({
-      orderSource: orderForm.orderSource,
-      goodsCode: goods.goodsCode,
-      // goodsName/unitPrice 会被后端权威覆盖，此处仅满足 DTO @NotBlank/@NotNull
-      goodsName: goods.goodsName,
-      quantity: orderForm.quantity,
-      unitPrice,
-      remark: orderForm.remark || undefined
+    const result = await pageGoodsInfos({
+      goodsStatus: 1,
+      goodsName: '',
+      goodsType: undefined,
+      current: 1,
+      size: 100
     })
-    ElMessage.success(`下单成功，订单号：${orderCode}`)
-    closeOrderDialog()
-    // 不刷新商品列表：商品目录与订单解耦，下单不影响可购商品集合
+    allGoods.value = result.records
   } catch (err) {
-    // 错误消息已由响应拦截器统一提示，此处不再重复 ElMessage
-    void err
+    console.warn('[mall] 加载商品列表失败:', err)
   } finally {
-    submitting.value = false
+    loading.value = false
   }
 }
+
+function handleReset() {
+  searchName.value = ''
+  searchType.value = undefined
+}
+
+// ==================== 购物车（localStorage 持久化）====================
+
+interface CartItem {
+  goodsCode: string
+  goodsName: string
+  goodsType: number
+  salePrice: number
+  quantity: number
+}
+
+const CART_KEY = 'dayan_channel_cart'
+const cart = ref<CartItem[]>([])
+
+/** 从 localStorage 恢复购物车 */
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY)
+    if (raw) {
+      cart.value = JSON.parse(raw)
+    }
+  } catch {
+    cart.value = []
+  }
+}
+
+/** 写回 localStorage */
+function saveCart() {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart.value))
+  } catch {
+    // localStorage 不可用时静默降级（仅内存购物车）
+  }
+}
+
+/** 查找购物车项索引 */
+function cartIndex(goodsCode: string): number {
+  return cart.value.findIndex((c) => c.goodsCode === goodsCode)
+}
+
+/** 加入购物车（默认数量 1） */
+function addToCart(g: GoodsInfo) {
+  if (!isEquity(g) || !g.goodsCode) return
+  const idx = cartIndex(g.goodsCode)
+  if (idx >= 0) {
+    cart.value[idx].quantity += 1
+  } else {
+    cart.value.push({
+      goodsCode: g.goodsCode,
+      goodsName: g.goodsName ?? g.goodsCode,
+      goodsType: g.goodsType ?? 1,
+      salePrice: g.salePrice ?? g.originalPrice ?? 0,
+      quantity: 1
+    })
+  }
+  saveCart()
+  ElMessage.success(`已加入购物车：${g.goodsName}`)
+}
+
+/** 修改数量 */
+function updateQuantity(goodsCode: string, qty: number) {
+  const idx = cartIndex(goodsCode)
+  if (idx >= 0) {
+    if (qty < 1) {
+      // 数量减到 0 则移除
+      cart.value.splice(idx, 1)
+    } else {
+      cart.value[idx].quantity = qty
+    }
+    saveCart()
+  }
+}
+
+/** 移除购物车项 */
+function removeFromCart(goodsCode: string) {
+  const idx = cartIndex(goodsCode)
+  if (idx >= 0) {
+    cart.value.splice(idx, 1)
+    saveCart()
+  }
+}
+
+/** 合计金额 */
+const totalPrice = computed(() => {
+  return cart.value.reduce((sum, item) => sum + item.salePrice * item.quantity, 0)
+})
+
+// ==================== 结算下单 ====================
+
+const submitting = ref(false)
+/** 采购来源：1=对公 / 2=个人 */
+const orderSource = ref(1)
+
+async function handleCheckout() {
+  if (cart.value.length === 0 || submitting.value) return
+  submitting.value = true
+  const successCodes: string[] = []
+  const failedItems: string[] = []
+
+  for (const item of cart.value) {
+    try {
+      const orderCode = await createOrderEquity({
+        orderSource: orderSource.value,
+        goodsCode: item.goodsCode,
+        goodsName: item.goodsName,
+        quantity: item.quantity,
+        unitPrice: item.salePrice,
+        remark: undefined
+      })
+      successCodes.push(item.goodsCode)
+      ElMessage.success(`${item.goodsName} 下单成功：${orderCode}`)
+    } catch {
+      failedItems.push(item.goodsName)
+    }
+  }
+
+  // 移除下单成功的项，保留失败的
+  if (successCodes.length > 0) {
+    cart.value = cart.value.filter((c) => !successCodes.includes(c.goodsCode))
+  }
+  saveCart()
+
+  if (failedItems.length > 0) {
+    ElMessage.warning(`以下商品下单失败：${failedItems.join('、')}`)
+  }
+
+  submitting.value = false
+}
+
+// ==================== 生命周期 ====================
 
 onMounted(() => {
-  loadPage().catch((err) => {
-    // 后端端点未实现或渠道未配置白名单时，降级：留空 + 控制台 warn（不弹 toast）
-    console.warn('[mall] 加载商品列表失败（接口可能未实现或本渠道未配置白名单）:', err)
-  })
+  loadGoods()
+  loadCart()
 })
 </script>
 
 <template>
-  <div class="page-container">
-    <!-- 搜索栏 -->
-    <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="商品名称">
-          <el-input v-model="query.goodsName" placeholder="商品名称" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="商品类型">
-          <el-select v-model="query.goodsType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+  <div class="mall-container">
+    <!-- 左侧：商品区 -->
+    <div class="goods-section">
+      <!-- 搜索栏 -->
+      <el-card shadow="never" class="search-card">
+        <el-form :inline="true" @submit.prevent>
+          <el-form-item label="商品名称">
+            <el-input v-model="searchName" placeholder="商品名称" clearable />
+          </el-form-item>
+          <el-form-item label="商品类型">
+            <el-select v-model="searchType" placeholder="全部" clearable style="width: 120px">
+              <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
 
-    <!-- 表格 -->
-    <el-card shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span>商品列表</span>
-          <span class="card-header-hint">仅权益类商品支持渠道下单，其他类型请联系平台</span>
-        </div>
-      </template>
+      <!-- 商品卡片网格 -->
+      <div v-loading="loading" class="goods-grid">
+        <el-row v-if="filteredGoods.length" :gutter="16">
+          <el-col
+            v-for="goods in filteredGoods"
+            :key="goods.goodsCode"
+            :xs="24"
+            :sm="12"
+            :md="8"
+            :lg="6"
+          >
+            <el-card shadow="hover" class="goods-card" :body-style="{ padding: '0' }">
+              <!-- 商品图片 -->
+              <div class="goods-image">
+                <img v-if="goods.coverImage" :src="goods.coverImage" :alt="goods.goodsName" />
+                <div v-else class="goods-image-placeholder">
+                  <el-icon :size="40"><Picture /></el-icon>
+                  <span>暂无图片</span>
+                </div>
+                <!-- 类型 tag 叠加在图片右上 -->
+                <el-tag
+                  v-if="goods.goodsType !== undefined"
+                  :type="GOODS_TYPE_TAG[goods.goodsType] ?? 'info'"
+                  class="goods-type-tag"
+                  effect="dark"
+                >
+                  {{ goodsTypeText(goods.goodsType) }}
+                </el-tag>
+              </div>
 
-      <el-table v-loading="loading" :data="tableData" border stripe row-key="goodsCode">
-        <el-table-column prop="goodsCode" label="商品编码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="goodsName" label="商品名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="goodsType" label="类型" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag v-if="row.goodsType !== undefined && row.goodsType !== null" :type="GOODS_TYPE_TAG[row.goodsType] ?? 'info'">
-              {{ goodsTypeText(row.goodsType) }}
-            </el-tag>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="salePrice" label="售价（元）" width="130" align="right">
-          <template #default="{ row }">{{ row.salePrice != null ? Number(row.salePrice).toFixed(2) : '--' }}</template>
-        </el-table-column>
-        <el-table-column prop="stock" label="库存" width="100" align="right">
-          <template #default="{ row }">{{ row.stock != null ? row.stock : '--' }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="130" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-tooltip
-              v-if="!isEquity(row)"
-              content="非权益商品请联系平台下单"
-              placement="top"
-            >
-              <span>
-                <!-- 用 span 包裹 disabled 按钮，使 tooltip 能在 disabled 状态下触发 -->
-                <el-button type="primary" size="small" disabled>下单</el-button>
-              </span>
-            </el-tooltip>
-            <el-button v-else type="primary" size="small" @click="openOrderDialog(row)">下单</el-button>
-          </template>
-        </el-table-column>
-        <template #empty>
-          <el-empty description="暂无可购商品" />
-        </template>
-      </el-table>
+              <!-- 商品信息 -->
+              <div class="goods-info">
+                <h4 class="goods-name" :title="goods.goodsName">{{ goods.goodsName }}</h4>
+                <p v-if="goods.summary" class="goods-summary">{{ goods.summary }}</p>
+                <div class="goods-price">
+                  <span class="price-sale">
+                    ¥{{ goods.salePrice != null ? Number(goods.salePrice).toFixed(2) : '--' }}
+                  </span>
+                  <span
+                    v-if="goods.originalPrice != null && goods.salePrice != null && goods.originalPrice > goods.salePrice"
+                    class="price-original"
+                  >
+                    ¥{{ Number(goods.originalPrice).toFixed(2) }}
+                  </span>
+                  <span v-if="goods.priceUnit" class="price-unit">/ {{ goods.priceUnit }}</span>
+                </div>
 
-      <div class="pagination-wrap">
-        <el-pagination
-          :current-page="query.current"
-          :page-size="query.size"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          background
-          @current-change="handlePageChange"
-          @size-change="handleSizeChange"
-        />
+                <!-- 操作区 -->
+                <div class="goods-actions">
+                  <template v-if="isEquity(goods)">
+                    <!-- 已在购物车：显示数量调整 -->
+                    <template v-if="cartIndex(goods.goodsCode!) >= 0">
+                      <el-input-number
+                        :model-value="cart[cartIndex(goods.goodsCode!)].quantity"
+                        :min="1"
+                        :step="1"
+                        :precision="0"
+                        size="small"
+                        controls-position="right"
+                        @change="(v: number) => updateQuantity(goods.goodsCode!, v)"
+                      />
+                    </template>
+                    <!-- 未在购物车：显示加购按钮 -->
+                    <el-button v-else type="primary" size="small" @click="addToCart(goods)">
+                      加入购物车
+                    </el-button>
+                  </template>
+                  <el-tooltip v-else content="非权益商品请联系平台下单" placement="top">
+                    <span>
+                      <el-button size="small" disabled>联系平台</el-button>
+                    </span>
+                  </el-tooltip>
+                </div>
+              </div>
+            </el-card>
+          </el-col>
+        </el-row>
+        <el-empty v-else-if="!loading" description="暂无商品" />
       </div>
-    </el-card>
+    </div>
 
-    <!-- 下单弹窗 -->
-    <el-dialog
-      v-model="orderDialogVisible"
-      title="权益商品下单"
-      width="480px"
-      :close-on-click-modal="false"
-      @closed="resetOrderForm"
-    >
-      <el-form
-        ref="orderFormRef"
-        :model="orderForm"
-        :rules="orderRules"
-        label-width="96px"
-        @submit.prevent
-      >
-        <el-form-item label="商品名称">
-          <span class="dialog-static">{{ currentGoods?.goodsName ?? '-' }}</span>
-        </el-form-item>
-        <el-form-item label="单价">
-          <span class="dialog-static">
-            {{ currentGoods?.salePrice != null ? `¥ ${Number(currentGoods.salePrice).toFixed(2)}` : '-' }}
-            <span v-if="currentGoods?.priceUnit" class="dialog-unit">/ {{ currentGoods.priceUnit }}</span>
-          </span>
-        </el-form-item>
-        <el-form-item label="采购来源" prop="orderSource">
-          <el-radio-group v-model="orderForm.orderSource">
-            <el-radio :value="1">对公</el-radio>
-            <el-radio :value="2">个人</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="购买数量" prop="quantity">
-          <el-input-number v-model="orderForm.quantity" :min="1" :step="1" :precision="0" controls-position="right" />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input
-            v-model="orderForm.remark"
-            type="textarea"
-            :rows="2"
-            maxlength="200"
-            show-word-limit
-            placeholder="选填"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="closeOrderDialog">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmitOrder">提交订单</el-button>
-      </template>
-    </el-dialog>
+    <!-- 右侧：购物车面板 -->
+    <div class="cart-section">
+      <el-card shadow="never" class="cart-card">
+        <template #header>
+          <div class="cart-header">
+            <el-icon :size="18"><ShoppingCart /></el-icon>
+            <span>购物车</span>
+            <el-badge v-if="cart.length" :value="cart.length" type="primary" />
+          </div>
+        </template>
+
+        <!-- 空购物车 -->
+        <el-empty v-if="cart.length === 0" description="购物车空空如也" :image-size="80" />
+
+        <!-- 购物车列表 -->
+        <template v-else>
+          <div class="cart-list">
+            <div v-for="item in cart" :key="item.goodsCode" class="cart-item">
+              <div class="cart-item-info">
+                <div class="cart-item-name" :title="item.goodsName">{{ item.goodsName }}</div>
+                <div class="cart-item-price">
+                  ¥{{ Number(item.salePrice).toFixed(2) }} ×
+                  <el-input-number
+                    :model-value="item.quantity"
+                    :min="1"
+                    :step="1"
+                    :precision="0"
+                    size="small"
+                    controls-position="right"
+                    style="width: 110px"
+                    @change="(v: number) => updateQuantity(item.goodsCode, v)"
+                  />
+                </div>
+                <div class="cart-item-subtotal">
+                  小计 ¥{{ (item.salePrice * item.quantity).toFixed(2) }}
+                </div>
+              </div>
+              <el-button
+                type="danger"
+                link
+                size="small"
+                :icon="Delete"
+                @click="removeFromCart(item.goodsCode)"
+              />
+            </div>
+          </div>
+
+          <!-- 结算区 -->
+          <el-divider />
+          <div class="checkout-section">
+            <div class="checkout-total">
+              <span>合计</span>
+              <span class="checkout-amount">¥{{ totalPrice.toFixed(2) }}</span>
+            </div>
+            <el-form-item label="采购来源" label-width="72px" style="margin: 12px 0">
+              <el-select v-model="orderSource" style="width: 100%">
+                <el-option :value="1" label="对公" />
+                <el-option :value="2" label="个人" />
+              </el-select>
+            </el-form-item>
+            <el-button
+              type="primary"
+              class="checkout-btn"
+              :loading="submitting"
+              :disabled="cart.length === 0"
+              @click="handleCheckout"
+            >
+              结算下单（{{ cart.length }} 种）
+            </el-button>
+          </div>
+        </template>
+      </el-card>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.page-container {
+.mall-container {
   display: flex;
-  flex-direction: column;
   gap: 16px;
+  align-items: flex-start;
+}
+
+.goods-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-section {
+  width: 320px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 16px;
 }
 
 .search-card {
+  margin-bottom: 16px;
+
   :deep(.el-card__body) {
     padding-bottom: 2px;
   }
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+// ==================== 商品卡片 ====================
 
-  .card-header-hint {
-    font-size: 12px;
-    color: #909399;
-    font-weight: normal;
+.goods-grid {
+  min-height: 200px;
+}
+
+.goods-card {
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
   }
 }
 
-.pagination-wrap {
+.goods-image {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  background: #f5f7fa;
   display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #c0c4cc;
+
+    span {
+      font-size: 12px;
+    }
+  }
 }
 
-.dialog-static {
-  font-size: 14px;
-  color: #303133;
+.goods-type-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
 
-  .dialog-unit {
+.goods-info {
+  padding: 12px;
+}
+
+.goods-name {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 42px;
+}
+
+.goods-summary {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goods-price {
+  margin-bottom: 12px;
+
+  .price-sale {
+    font-size: 20px;
+    font-weight: 700;
+    color: #f56c6c;
+  }
+
+  .price-original {
+    margin-left: 6px;
+    font-size: 13px;
+    color: #c0c4cc;
+    text-decoration: line-through;
+  }
+
+  .price-unit {
+    font-size: 12px;
     color: #909399;
-    margin-left: 4px;
+    margin-left: 2px;
+  }
+}
+
+.goods-actions {
+  display: flex;
+  justify-content: center;
+}
+
+// ==================== 购物车 ====================
+
+.cart-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.cart-list {
+  max-height: calc(100vh - 460px);
+  overflow-y: auto;
+}
+
+.cart-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-name {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &-price {
+    font-size: 12px;
+    color: #606266;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  &-subtotal {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #f56c6c;
+    font-weight: 600;
+  }
+}
+
+.checkout-section {
+  .checkout-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #303133;
+  }
+
+  .checkout-amount {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f56c6c;
+  }
+
+  .checkout-btn {
+    width: 100%;
+    margin-top: 4px;
   }
 }
 </style>
