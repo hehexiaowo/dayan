@@ -43,4 +43,10 @@ public class ServiceSessionCreateDTO {
     private String agentCode;
     private String channelCode;
     private String remark;
+
+    /** 最大使用次数（权益激活时从 rel.quantity 快照，默认1） */
+    private Integer maxUseCount;
+
+    /** 配额周期（1=终身,2=年度，默认2） */
+    private Integer quotaType;
 }

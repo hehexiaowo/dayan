@@ -11,6 +11,8 @@ export interface ServiceItemRel {
   itemCategory?: number
   itemSubtype?: number
   quantity: number
+  /** 配额周期（1=终身总量,2=年度配额） */
+  quotaType?: number
   sortOrder?: number
   createdAt?: string
 }
@@ -41,5 +43,5 @@ export interface GoodsEquitySaveDTO {
   description?: string
   sortOrder?: number
   status?: number
-  serviceItems: { itemCode: string; quantity: number; sortOrder?: number }[]
+  serviceItems: { itemCode: string; quantity: number; quotaType?: number; sortOrder?: number }[]
 }

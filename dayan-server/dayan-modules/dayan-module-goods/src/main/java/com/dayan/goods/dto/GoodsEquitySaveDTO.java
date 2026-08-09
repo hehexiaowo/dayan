@@ -53,6 +53,8 @@ public class GoodsEquitySaveDTO {
         /** 数量 */
         @NotNull(message = "数量不能为空")
         private Integer quantity;
+        /** 配额周期（1=终身总量,2=年度配额），默认2=年度 */
+        private Integer quotaType;
         /** 排序号 */
         private Integer sortOrder;
     }

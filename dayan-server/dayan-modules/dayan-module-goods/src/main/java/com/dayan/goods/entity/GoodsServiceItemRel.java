@@ -27,6 +27,9 @@ public class GoodsServiceItemRel extends BaseEntity {
     /** 数量 */
     private Integer quantity;
 
+    /** 配额周期（1=终身总量,2=年度配额） */
+    private Integer quotaType;
+
     /** 排序号 */
     private Integer sortOrder;
 }

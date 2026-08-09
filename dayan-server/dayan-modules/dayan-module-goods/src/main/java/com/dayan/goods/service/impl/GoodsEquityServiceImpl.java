@@ -98,6 +98,7 @@ public class GoodsEquityServiceImpl implements GoodsEquityService {
                 rel.setGoodsCode(dto.getGoodsCode());
                 rel.setItemCode(relDto.getItemCode());
                 rel.setQuantity(relDto.getQuantity());
+                rel.setQuotaType(relDto.getQuotaType() != null ? relDto.getQuotaType() : 2);
                 rel.setSortOrder(relDto.getSortOrder() != null ? relDto.getSortOrder() : 0);
                 relMapper.insert(rel);
             }
@@ -157,6 +158,7 @@ public class GoodsEquityServiceImpl implements GoodsEquityService {
                 vo.setItemSubtype(item.getItemSubtype());
             }
             vo.setQuantity(rel.getQuantity());
+            vo.setQuotaType(rel.getQuotaType());
             vo.setSortOrder(rel.getSortOrder());
             vo.setCreatedAt(rel.getCreatedAt());
             return vo;

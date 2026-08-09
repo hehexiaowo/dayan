@@ -128,6 +128,12 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         entity.setAgentCode(dto.getAgentCode());
         entity.setChannelCode(dto.getChannelCode());
         entity.setTouchCount(0);
+        // 配额快照（权益激活时从 rel.quantity/quota_type 带入，默认值兼容非权益场景）
+        entity.setMaxUseCount(dto.getMaxUseCount() != null ? dto.getMaxUseCount() : 1);
+        entity.setUsedCount(0);
+        int quotaType = dto.getQuotaType() != null ? dto.getQuotaType() : 2;
+        entity.setQuotaType(quotaType);
+        entity.setQuotaResetYear(quotaType == 2 ? java.time.LocalDate.now().getYear() : null);
         // 初始状态：待分配 + normal
         entity.setSessionStatus(ServiceSessionEvent.STATUS_PENDING_ASSIGN);
         entity.setSubStatus(ServiceSessionEvent.SUB_NORMAL);

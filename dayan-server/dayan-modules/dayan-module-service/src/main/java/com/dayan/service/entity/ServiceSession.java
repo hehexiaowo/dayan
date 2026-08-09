@@ -83,6 +83,18 @@ public class ServiceSession extends BaseEntity {
     /** 服务接触次数 */
     private Integer touchCount;
 
+    /** 最大使用次数（激活时从 rel.quantity 快照） */
+    private Integer maxUseCount;
+
+    /** 已使用次数 */
+    private Integer usedCount;
+
+    /** 配额周期（1=终身,2=年度） */
+    private Integer quotaType;
+
+    /** 年度配额当前已重置年份（仅 quota_type=2 使用） */
+    private Integer quotaResetYear;
+
     /** 是否满意 */
     private Integer isSatisfied;
 

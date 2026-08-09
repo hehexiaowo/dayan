@@ -24,6 +24,17 @@ export const ITEM_SUBTYPE_OPTIONS = [
   { label: '照护长居', value: ItemSubtype.CARE_LONG_STAY },
 ]
 
+/** 配额周期 */
+export enum QuotaType {
+  LIFETIME = 1, // 终身总量
+  ANNUAL = 2,   // 年度配额
+}
+
+export const QUOTA_TYPE_OPTIONS = [
+  { label: '年度配额', value: QuotaType.ANNUAL, tagType: 'primary' as const },
+  { label: '终身总量', value: QuotaType.LIFETIME, tagType: 'info' as const },
+]
+
 export interface ServiceItem {
   id?: number
   itemCode?: string

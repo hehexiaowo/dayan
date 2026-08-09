@@ -38,6 +38,8 @@ public class GoodsEquityVO {
         private Integer itemCategory;
         private Integer itemSubtype;
         private Integer quantity;
+        /** 配额周期（1=终身总量,2=年度配额） */
+        private Integer quotaType;
         private Integer sortOrder;
         private LocalDateTime createdAt;
     }
