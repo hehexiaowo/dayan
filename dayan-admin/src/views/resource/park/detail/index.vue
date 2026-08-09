@@ -7,16 +7,17 @@
  * 每个 tab 内是该子表的内联 CRUD（自动携带 parkCode 过滤）。
  *
  * tab 划分（对应 P9 计划）：
- * - 基本信息：ParkInfo 主表字段编辑（复用主列表页编辑表单逻辑）
- * - 房型：ParkRoomType + ParkRoomPrice（type 列表 + 展开行 price 内联）
- * - 照护：ParkCareType + ParkCarePrice
- * - 餐饮：ParkFoodType + ParkFoodPrice
- * - 媒体库：ParkMediaImage/Video/File/Vr（单 tab 内 el-tabs 切 4 子类）
- * - 设施：ParkFacility
- * - 顾问：ParkAdviser
- * - 周边/服务项：ParkPeriphery + ParkServiceItem（单 tab 内 el-tabs 切 2 子区）
+ * - 基本信息：ParkInfo 主表字段编辑（复用主列表页编辑表单逻辑）+ ParkScore 评分
+ * - 房型价格：ParkRoomType + ParkPricing（chargeType=1，展开行定价内联）
+ * - 照护价格：ParkCareType + ParkPricing（chargeType=2）
+ * - 餐饮价格：ParkFoodType + ParkPricing（chargeType=3）
+ * - 素材文件：ParkMediaImage/Video/File/Vr（单 tab 内 el-tabs 切 4 子类）
+ * - 基础设施：ParkFacility + ParkPricing（chargeType=5）
+ * - 联系顾问：ParkAdviser
+ * - 周边相关：ParkPeriphery
+ * - 服务项目：ParkServiceItem + ParkPricing（chargeType=6）
  *
- * 注：8 个 tab 内容均已实现（任务 0 骨架 + 任务 1 前 4 tab + 任务 2 后 4 tab）。
+ * 注：各 tab 内容均已实现（任务 0 骨架 + 任务 1 前 4 tab + 任务 2 后 4 tab）。
  */
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -30,7 +31,9 @@ import FoodTab from './FoodTab.vue'
 import MediaTab from './MediaTab.vue'
 import FacilityTab from './FacilityTab.vue'
 import AdviserTab from './AdviserTab.vue'
-import PeripheryTab from './PeripheryTab.vue'
+import PeripheryPane from './PeripheryPane.vue'
+import ServiceItemPane from './ServiceItemPane.vue'
+import DisplayPane from './DisplayPane.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,13 +68,15 @@ function operateStatusText(s?: number): string {
 
 const tabs = [
   { name: 'basic', label: '基本信息' },
-  { name: 'room', label: '房型' },
-  { name: 'care', label: '照护' },
-  { name: 'food', label: '餐饮' },
-  { name: 'media', label: '媒体库' },
-  { name: 'facility', label: '设施' },
-  { name: 'adviser', label: '顾问' },
-  { name: 'periphery', label: '周边/服务项' }
+  { name: 'room', label: '房型价格' },
+  { name: 'care', label: '照护价格' },
+  { name: 'food', label: '餐饮价格' },
+  { name: 'media', label: '素材文件' },
+  { name: 'facility', label: '基础设施' },
+  { name: 'adviser', label: '联系顾问' },
+  { name: 'periphery', label: '周边相关' },
+  { name: 'service', label: '服务项目' },
+  { name: 'display', label: '展示板块' }
 ] as const
 </script>
 
@@ -89,6 +94,13 @@ const tabs = [
         <span class="meta" v-if="parkInfo.city || parkInfo.district">
           {{ parkInfo.province }}{{ parkInfo.city }}{{ parkInfo.district }}
         </span>
+        <el-divider direction="vertical" v-if="parkInfo.totalBeds != null || parkInfo.minPriceDisplay != null" />
+        <span class="meta" v-if="parkInfo.totalBeds != null">
+          床位 {{ parkInfo.availableBeds ?? '--' }}/{{ parkInfo.totalBeds }}
+        </span>
+        <span class="meta highlight" v-if="parkInfo.minPriceDisplay != null">
+          ¥{{ parkInfo.minPriceDisplay }}{{ parkInfo.maxPriceDisplay ? `~${parkInfo.maxPriceDisplay}` : '' }}<template v-if="parkInfo.priceUnit"> {{ parkInfo.priceUnit }}</template>
+        </span>
       </div>
       <div v-else-if="!detailLoading" class="park-summary">
         <span class="title">未找到机构（parkCode={{ parkCode }}）</span>
@@ -97,9 +109,9 @@ const tabs = [
 
     <el-divider />
 
-    <!-- tab 区：8 个子表 tab 均已实现 -->
+    <!-- tab 区：9 个子表 tab -->
     <el-tabs v-model="activeTab" type="border-card">
-      <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name">
+      <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name" lazy>
         <BasicTab v-if="t.name === 'basic'" :park-code="parkCode" />
         <RoomTab v-else-if="t.name === 'room'" :park-code="parkCode" />
         <CareTab v-else-if="t.name === 'care'" :park-code="parkCode" />
@@ -107,7 +119,9 @@ const tabs = [
         <MediaTab v-else-if="t.name === 'media'" :park-code="parkCode" />
         <FacilityTab v-else-if="t.name === 'facility'" :park-code="parkCode" />
         <AdviserTab v-else-if="t.name === 'adviser'" :park-code="parkCode" />
-        <PeripheryTab v-else-if="t.name === 'periphery'" :park-code="parkCode" />
+        <PeripheryPane v-else-if="t.name === 'periphery'" :park-code="parkCode" />
+        <ServiceItemPane v-else-if="t.name === 'service'" :park-code="parkCode" />
+        <DisplayPane v-else-if="t.name === 'display'" :park-code="parkCode" />
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -135,6 +149,10 @@ const tabs = [
   color: var(--el-text-color-secondary);
   font-size: 13px;
   margin-left: 8px;
+}
+.park-summary .meta.highlight {
+  color: var(--el-color-success);
+  font-weight: 600;
 }
 .ml-8 {
   margin-left: 8px;

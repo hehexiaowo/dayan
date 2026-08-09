@@ -34,12 +34,6 @@ public class ParkServiceItem extends BaseEntity {
     /** 服务详细描述 */
     private String serviceDescription;
 
-    /** 是否包含在基础费用中 */
-    private Integer isIncluded;
-
-    /** 收费标准说明 */
-    private String feeStandard;
-
     /** 服务频次 */
     private String serviceFrequency;
 

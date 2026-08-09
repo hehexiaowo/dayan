@@ -11,8 +11,6 @@ public class ParkServiceItemUpdateDTO {
     private String serviceName;
     private Integer serviceCategory;
     private String serviceDescription;
-    private Integer isIncluded;
-    private String feeStandard;
     private String serviceFrequency;
     private String serviceDuration;
     private String coverImage;

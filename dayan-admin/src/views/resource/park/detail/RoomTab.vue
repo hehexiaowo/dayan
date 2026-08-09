@@ -18,27 +18,29 @@
  * - has*(10 设施) / isCurrent / isPromotion 提交 0/1 非 true/false
  * - JSON 字符串字段（facilities/images/includesItems）用 textarea 原文编辑
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
   pageRoomTypes,
   createRoomType,
   updateRoomType,
-  deleteRoomType,
-  listRoomPrices,
-  createRoomPrice,
-  updateRoomPrice,
-  deleteRoomPrice
+  deleteRoomType
 } from '@/api/park-room'
 import {
-  ROOM_PRICE_TYPE_OPTIONS,
+  listPricingsByRef,
+  createPricing,
+  updatePricing,
+  deletePricing
+} from '@/api/park-pricing'
+import {
+  BILLING_CYCLE_OPTIONS,
   STAY_TYPE_OPTIONS,
-  roomPriceTypeLabel,
+  billingCycleLabel,
   roomCategoryLabel,
   stayTypeLabel
 } from '@/types/park'
-import type { ParkRoomType, ParkRoomTypeQuery, ParkRoomPrice } from '@/types/park'
+import type { ParkRoomType, ParkRoomTypeQuery, ParkPricing } from '@/types/park'
 import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
@@ -244,7 +246,7 @@ async function handleDeleteType(row: ParkRoomType) {
 
 // ---------- 展开行 price 管理 ----------
 /** 各展开行的 price 列表缓存，key=roomTypeCode */
-const priceMap = ref<Map<string, ParkRoomPrice[]>>(new Map())
+const priceMap = ref<Map<string, ParkPricing[]>>(new Map())
 /** price 加载状态 */
 const priceLoadingMap = ref<Map<string, boolean>>(new Map())
 
@@ -252,7 +254,7 @@ async function loadPrices(parkCode: string, row: ParkRoomType) {
   if (!row.roomTypeCode) return
   priceLoadingMap.value.set(row.roomTypeCode, true)
   try {
-    const list = await listRoomPrices(parkCode, row.roomTypeCode)
+    const list = await listPricingsByRef(parkCode, 'room_type', row.roomTypeCode)
     priceMap.value.set(row.roomTypeCode, list)
   } catch {
     priceMap.value.set(row.roomTypeCode, [])
@@ -269,19 +271,80 @@ function handleExpandChange(row: ParkRoomType, expanded: ParkRoomType[], parkCod
   }
 }
 
+// ---------- 主表"当前价"列：分页加载后并行批量取当前价（避免 N+1 串行）----------
+/** key=roomTypeCode → 当前价展示文本，无当前价则无 key */
+const currentPriceMap = ref<Map<string, string>>(new Map())
+
+/** 取一条 price 的展示文本 */
+function formatPriceText(p: ParkPricing): string {
+  const unit = p.billingCycle != null ? `/${billingCycleLabel(p.billingCycle)}` : ''
+  return `¥${p.salePrice}${unit}`
+}
+
+/** 分页数据变化后，批量拉取每行当前价（Promise.all 并行，单页最多 size 条） */
+async function loadCurrentPrices(rows: ParkRoomType[]) {
+  const codes = rows.filter((r) => r.roomTypeCode).map((r) => r.roomTypeCode)
+  if (codes.length === 0) {
+    currentPriceMap.value.clear()
+    return
+  }
+  const results = await Promise.all(
+    codes.map(async (code) => {
+      try {
+        const list = await listPricingsByRef(props.parkCode, 'room_type', code)
+        return [code, list] as const
+      } catch {
+        return [code, []] as const
+      }
+    })
+  )
+  const m = new Map<string, string>()
+  for (const [code, list] of results) {
+    const cur = (list as ParkPricing[]).find((p) => p.isCurrent === 1)
+    if (cur) m.set(code, formatPriceText(cur))
+  }
+  currentPriceMap.value = m
+}
+
+/** price 增删改后同步刷新当前价（复用已加载的 priceMap，避免重复请求） */
+function refreshCurrentPrice(roomTypeCode: string) {
+  const list = priceMap.value.get(roomTypeCode)
+  if (!list) {
+    currentPriceMap.value.delete(roomTypeCode)
+    return
+  }
+  const cur = list.find((p) => p.isCurrent === 1)
+  if (cur) {
+    currentPriceMap.value.set(roomTypeCode, formatPriceText(cur))
+  } else {
+    currentPriceMap.value.delete(roomTypeCode)
+  }
+}
+
+/** 监听分页数据变化，自动加载当前价 */
+watch(
+  () => tableData.value,
+  (rows) => {
+    if (rows && rows.length > 0) loadCurrentPrices(rows)
+  }
+)
+
 // ---------- price 新增/编辑弹窗 ----------
 const priceDialogVisible = ref(false)
 const priceDialogMode = ref<'create' | 'edit'>('create')
 const priceSubmitLoading = ref(false)
 const priceFormRef = ref<FormInstance>()
 /** 当前 price 所属的房型上下文（roomTypeCode + parkCode） */
-const priceContext = reactive({ parkCode: '', roomTypeCode: '' })
+const priceContext = reactive({ parkCode: '', roomTypeCode: '', refName: '' })
 
-const priceForm = reactive<ParkRoomPrice>({
+const priceForm = reactive<ParkPricing>({
   id: undefined,
   parkCode: '',
-  roomTypeCode: '',
-  priceType: undefined,
+  chargeType: 1,
+  refType: 'room_type',
+  refCode: '',
+  refName: '',
+  billingCycle: undefined,
   originalPrice: undefined,
   salePrice: undefined,
   discountRate: undefined,
@@ -289,7 +352,7 @@ const priceForm = reactive<ParkRoomPrice>({
   includesItems: '',
   effectiveDate: '',
   expireDate: '',
-  isCurrent: 0,
+  isCurrent: 1,
   isPromotion: 0,
   promotionDescription: '',
   priceChangeReason: '',
@@ -297,17 +360,35 @@ const priceForm = reactive<ParkRoomPrice>({
   status: 1
 })
 
-const priceRules: FormRules<ParkRoomPrice> = {
+const priceRules: FormRules<ParkPricing> = {
   salePrice: [{ required: true, message: '请输入售价', trigger: 'blur' }],
   effectiveDate: [{ required: true, message: '请选择生效日期', trigger: 'change' }]
 }
+
+/** 折扣率是否被用户手动修改过——手动改过则不再自动算 */
+let discountEdited = false
+/** 原价/售价变化时自动算折扣率 = 售价/原价*100，保留 2 位 */
+watch(
+  () => [priceForm.originalPrice, priceForm.salePrice],
+  ([orig, sale]) => {
+    if (discountEdited) return
+    if (orig && sale && orig > 0) {
+      priceForm.discountRate = Math.round((sale / orig) * 10000) / 100
+    } else {
+      priceForm.discountRate = undefined
+    }
+  }
+)
 
 function resetPriceForm() {
   Object.assign(priceForm, {
     id: undefined,
     parkCode: '',
-    roomTypeCode: '',
-    priceType: undefined,
+    chargeType: 1,
+    refType: 'room_type',
+    refCode: '',
+    refName: '',
+    billingCycle: undefined,
     originalPrice: undefined,
     salePrice: undefined,
     discountRate: undefined,
@@ -315,26 +396,29 @@ function resetPriceForm() {
     includesItems: '',
     effectiveDate: '',
     expireDate: '',
-    isCurrent: 0,
+    isCurrent: 1,
     isPromotion: 0,
     promotionDescription: '',
     priceChangeReason: '',
     sortOrder: 0,
     status: 1
   })
+  discountEdited = false
 }
 
-function openCreatePrice(parkCode: string, roomTypeCode: string) {
+function openCreatePrice(parkCode: string, roomTypeCode: string, roomTypeName?: string) {
   priceDialogMode.value = 'create'
   resetPriceForm()
   priceContext.parkCode = parkCode
   priceContext.roomTypeCode = roomTypeCode
+  priceContext.refName = roomTypeName || ''
   priceForm.parkCode = parkCode
-  priceForm.roomTypeCode = roomTypeCode
+  priceForm.refCode = roomTypeCode
+  priceForm.refName = roomTypeName || ''
   priceDialogVisible.value = true
 }
 
-function openEditPrice(row: ParkRoomPrice, parkCode: string, roomTypeCode: string) {
+function openEditPrice(row: ParkPricing, parkCode: string, roomTypeCode: string) {
   priceDialogMode.value = 'edit'
   resetPriceForm()
   Object.assign(priceForm, row)
@@ -352,34 +436,39 @@ async function handlePriceSubmit() {
   }
   priceSubmitLoading.value = true
   try {
-    // 确保 parkCode + roomTypeCode 从上下文带入（编辑时也不可改外键）
+    // 确保 parkCode + refCode 从上下文带入（编辑时也不可改外键）
     priceForm.parkCode = priceContext.parkCode
-    priceForm.roomTypeCode = priceContext.roomTypeCode
+    priceForm.refCode = priceContext.roomTypeCode
+    priceForm.refType = 'room_type'
+    priceForm.chargeType = 1
     if (priceDialogMode.value === 'create') {
-      await createRoomPrice(priceForm)
+      await createPricing(priceForm)
       ElMessage.success('新增成功')
     } else if (priceForm.id) {
-      await updateRoomPrice(priceForm.id, priceForm)
+      await updatePricing(priceForm.id, priceForm)
       ElMessage.success('修改成功')
     }
     priceDialogVisible.value = false
     // 刷新该展开行 price（用上下文 roomTypeCode）
     loadPrices(priceContext.parkCode, { roomTypeCode: priceContext.roomTypeCode } as ParkRoomType)
+    // 同步主表"当前价"列
+    refreshCurrentPrice(priceContext.roomTypeCode)
   } finally {
     priceSubmitLoading.value = false
   }
 }
 
-async function handleDeletePrice(row: ParkRoomPrice, parkCode: string, roomTypeCode: string) {
+async function handleDeletePrice(row: ParkPricing, parkCode: string, roomTypeCode: string) {
   if (!row.id) return
   await ElMessageBox.confirm('确定删除该价格记录？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteRoomPrice(row.id)
+  await deletePricing(row.id)
   ElMessage.success('删除成功')
   loadPrices(parkCode, { roomTypeCode } as ParkRoomType)
+  refreshCurrentPrice(roomTypeCode)
 }
 
 // ---------- 辅助渲染 ----------
@@ -447,15 +536,15 @@ defineExpose({ loadPage })
                 type="primary"
                 size="small"
                 :icon="'Plus'"
-                @click="openCreatePrice(parkCode, row.roomTypeCode)"
+                @click="openCreatePrice(parkCode, row.roomTypeCode, row.roomTypeName)"
               >
                 新增价格
               </el-button>
             </div>
-            <el-table :data="priceMap.get(row.roomTypeCode) || []" border size="small">
-              <el-table-column prop="priceType" label="价格类型" width="100" align="center">
+            <el-table v-if="(priceMap.get(row.roomTypeCode) || []).length > 0" :data="priceMap.get(row.roomTypeCode) || []" border size="small">
+              <el-table-column prop="billingCycle" label="计费周期" width="100" align="center">
                 <template #default="{ row: p }">
-                  {{ roomPriceTypeLabel(p.priceType) }}
+                  {{ billingCycleLabel(p.billingCycle) }}
                 </template>
               </el-table-column>
               <el-table-column prop="originalPrice" label="原价" width="100" align="right" />
@@ -498,11 +587,24 @@ defineExpose({ loadPage })
                 </template>
               </el-table-column>
             </el-table>
+            <el-empty
+              v-else-if="!priceLoadingMap.get(row.roomTypeCode)"
+              description="暂无价格记录，点击右上角新增"
+              :image-size="60"
+            />
           </div>
         </template>
       </el-table-column>
       <el-table-column prop="roomTypeCode" label="房型编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="roomTypeName" label="房型名称" min-width="160" show-overflow-tooltip />
+      <el-table-column label="当前价" width="130" align="center">
+        <template #default="{ row }">
+          <span v-if="currentPriceMap.get(row.roomTypeCode)" class="current-price">
+            {{ currentPriceMap.get(row.roomTypeCode) }}
+          </span>
+          <span v-else class="price-empty">—</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="roomCategory" label="分类" width="90" align="center">
         <template #default="{ row }">{{ roomCategoryLabel(row.roomCategory) }}</template>
       </el-table-column>
@@ -717,9 +819,9 @@ defineExpose({ loadPage })
       <el-form ref="priceFormRef" :model="priceForm" :rules="priceRules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="价格类型">
-              <el-select v-model="priceForm.priceType" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="o in ROOM_PRICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+            <el-form-item label="计费周期">
+              <el-select v-model="priceForm.billingCycle" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="o in BILLING_CYCLE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -759,7 +861,9 @@ defineExpose({ loadPage })
                 :precision="2"
                 controls-position="right"
                 style="width: 100%"
+                @change="discountEdited = true"
               />
+              <div class="form-tip">按 售价÷原价 自动计算，可手动覆盖</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -852,6 +956,19 @@ defineExpose({ loadPage })
   .price-title {
     font-weight: 600;
     color: var(--el-text-color-primary);
+  }
+  .current-price {
+    font-weight: 600;
+    color: var(--el-color-success);
+  }
+  .price-empty {
+    color: var(--el-text-color-placeholder);
+  }
+  .form-tip {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.4;
+    margin-top: 2px;
   }
   .fac-cell {
     margin-right: 6px;

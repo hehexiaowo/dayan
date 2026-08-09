@@ -56,6 +56,28 @@ export const NATURE_TYPE_OPTIONS = [
   { label: '合资', value: 4 }
 ] as const
 
+/** 合同期限选项（contractPeriod 字段） */
+export const CONTRACT_PERIOD_OPTIONS = [
+  { label: '月签', value: 1 },
+  { label: '季签', value: 2 },
+  { label: '半年签', value: 3 },
+  { label: '年签', value: 4 }
+] as const
+
+/** 平台评级选项（isHot 字段，注意 1/2 不是 0/1） */
+export const IS_HOT_OPTIONS = [
+  { label: '付费广告', value: 1 },
+  { label: '热门', value: 2 }
+] as const
+
+/** 首页角标选项（subScript 字段） */
+export const SUB_SCRIPT_OPTIONS = [
+  { label: '最新', value: '1' },
+  { label: '最热', value: '2' },
+  { label: '优惠', value: '3' },
+  { label: '店庆', value: '4' }
+] as const
+
 /**
  * 机构主信息实体（后端 ParkInfoVO）。
  *
@@ -117,10 +139,60 @@ export interface ParkInfo {
   totalBeds?: number
   /** 可用床位数 */
   availableBeds?: number
+  /** 绿化率 */
+  greenAreaRate?: string
+  /** 入住率 */
+  occupancyRate?: string
+  /** 护患比（如 1:5） */
+  nursePatientRatio?: string
+  /** 最低价展示（元，列表/详情头部展示用） */
+  minPriceDisplay?: number
+  /** 最高价展示（元） */
+  maxPriceDisplay?: number
+  /** 价格单位（如 元/月，与 minPriceDisplay 配合展示） */
+  priceUnit?: string
+  /** 入住最低年龄 */
+  checkInAgeMin?: number
+  /** 入住最高年龄 */
+  checkInAgeMax?: number
+  /** 入住说明 */
+  checkInDescription?: string
+  /** 押金金额（元） */
+  depositAmount?: number
+  /** 押金说明 */
+  depositDescription?: string
+  /** 合同期限：1月签/2季签/3半年/4年签 */
+  contractPeriod?: number
   /** 员工总数 */
   staffCount?: number
   /** 护理员数量 */
   nurseCount?: number
+  /** 运营主体 */
+  operationSubject?: string
+  /** 运营主体介绍 */
+  operationSubjectDescription?: string
+  /** 重要股东 */
+  importantShareholders?: string
+  /** 合作公司 */
+  partnerCompany?: string
+  /** 营业执照号 */
+  businessLicenseNo?: string
+  /** 商务 BD */
+  businessBd?: string
+  /** 机构类型描述 */
+  abilityTypeDescription?: string
+  /** 机构性质描述 */
+  natureTypeDescription?: string
+  /** 平台评级：1=付费广告/2=热门 */
+  isHot?: number
+  /** 首页角标：1=最新/2=最热/3=优惠/4=店庆 */
+  subScript?: string
+  /** 开业时间 */
+  openingTime?: string
+  /** 浏览次数 */
+  viewCount?: number
+  /** 收藏次数 */
+  collectCount?: number
   /** 机构运营状态（PARK_SM 驱动，不可直接修改） */
   operateStatus?: ParkOperateStatus
   /** 是否已发布：1=已发布 / 0=未发布 */
@@ -153,7 +225,7 @@ export interface ParkInfoQuery extends PageQuery {
 }
 
 // ============================================================================
-// 房型（ParkRoomType / ParkRoomPrice）
+// 房型（ParkRoomType）
 // ============================================================================
 
 /**
@@ -238,59 +310,9 @@ export interface ParkRoomTypeQuery extends PageQuery {
   status?: number
 }
 
-/**
- * 机构房型价格实体（后端 ParkRoomPriceVO）。
- *
- * 外键 parkCode + roomTypeCode；展开行场景用 /list 按 (parkCode, roomTypeCode) 加载。
- */
-export interface ParkRoomPrice {
-  id?: number
-  parkCode?: string
-  /** 房型编码（外键，从展开行上下文带入） */
-  roomTypeCode: string
-  /** 价格类型：1月/2季/3半年/4年/5押金 */
-  priceType?: number
-  /** 原价 */
-  originalPrice?: number
-  /** 售价（业务必填） */
-  salePrice?: number
-  /** 折扣率 */
-  discountRate?: number
-  /** 价格说明 */
-  priceDescription?: string
-  /** 包含项目（JSON 字符串原文，房型独有） */
-  includesItems?: string
-  /** 生效日期（业务必填） */
-  effectiveDate?: string
-  /** 失效日期 */
-  expireDate?: string
-  /** 是否当前价：1是 / 0否 */
-  isCurrent?: number
-  /** 是否促销：1是 / 0否 */
-  isPromotion?: number
-  /** 促销说明 */
-  promotionDescription?: string
-  /** 价格变更原因（房型独有） */
-  priceChangeReason?: string
-  /** 排序号 */
-  sortOrder?: number
-  /** 状态：1启用 / 0停售 */
-  status?: number
-  /** 创建时间 */
-  createdAt?: string
-}
-
-/** 房型价格分页查询参数 */
-export interface ParkRoomPriceQuery extends PageQuery {
-  parkCode?: string
-  roomTypeCode?: string
-  priceType?: number
-  isCurrent?: number
-  status?: number
-}
 
 // ============================================================================
-// 照护（ParkCareType / ParkCarePrice）
+// 照护（ParkCareType）
 // ============================================================================
 
 /**
@@ -336,49 +358,8 @@ export interface ParkCareTypeQuery extends PageQuery {
   status?: number
 }
 
-/**
- * 机构照护价格实体（后端 ParkCarePriceVO）。
- *
- * 与 ParkRoomPrice 字段集相同，但外键是 careTypeCode，且无 includesItems / priceChangeReason。
- */
-export interface ParkCarePrice {
-  id?: number
-  parkCode?: string
-  /** 照护编码（外键，从展开行上下文带入） */
-  careTypeCode: string
-  /** 价格类型：1月/2季/3半年/4年 */
-  priceType?: number
-  originalPrice?: number
-  /** 售价（业务必填） */
-  salePrice?: number
-  discountRate?: number
-  priceDescription?: string
-  /** 生效日期（业务必填） */
-  effectiveDate?: string
-  expireDate?: string
-  /** 是否当前价：1是 / 0否 */
-  isCurrent?: number
-  /** 是否促销：1是 / 0否 */
-  isPromotion?: number
-  promotionDescription?: string
-  sortOrder?: number
-  /** 状态：1启用 / 0停售 */
-  status?: number
-  /** 创建时间 */
-  createdAt?: string
-}
-
-/** 照护价格分页查询参数 */
-export interface ParkCarePriceQuery extends PageQuery {
-  parkCode?: string
-  careTypeCode?: string
-  priceType?: number
-  isCurrent?: number
-  status?: number
-}
-
 // ============================================================================
-// 餐饮（ParkFoodType / ParkFoodPrice）
+// 餐饮（ParkFoodType）
 // ============================================================================
 
 /**
@@ -424,78 +405,130 @@ export interface ParkFoodTypeQuery extends PageQuery {
   status?: number
 }
 
+// ============================================================================
+// 统一定价（ParkPricing / ParkPricingItem）
+// ============================================================================
+
+/** 费类 */
+export type ChargeType = 1 | 2 | 3 | 4 | 5 | 6 | 9
+
+/** 费类选项（1=房间费 2=照护费 3=餐费 4=押金 5=设施费 6=服务费 9=其他） */
+export const CHARGE_TYPE_OPTIONS = [
+  { label: '房间费', value: 1 },
+  { label: '照护费', value: 2 },
+  { label: '餐费', value: 3 },
+  { label: '押金', value: 4 },
+  { label: '设施费', value: 5 },
+  { label: '服务费', value: 6 },
+  { label: '其他', value: 9 }
+] as const
+
+/** 计费周期选项（billing_cycle） */
+export const BILLING_CYCLE_OPTIONS = [
+  { label: '月费', value: 1 },
+  { label: '季费', value: 2 },
+  { label: '半年费', value: 3 },
+  { label: '年费', value: 4 },
+  { label: '一次性', value: 5 }
+] as const
+
+/** 费类 label 映射 */
+export function chargeTypeLabel(v?: number): string {
+  const found = CHARGE_TYPE_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : v != null ? String(v) : '--'
+}
+
+/** 计费周期 label 映射 */
+export function billingCycleLabel(v?: number): string {
+  const found = BILLING_CYCLE_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : v != null ? String(v) : '--'
+}
+
 /**
- * 机构餐饮价格实体（后端 ParkFoodPriceVO）。
+ * 机构统一定价实体（后端 ParkPricingVO）。
  *
- * 与 ParkCarePrice 完全一致，仅外键换为 foodTypeCode。
+ * 合并原 room/care/food/facility/service 5 张 price 表。
+ * chargeType 标识费类（押金/房间/照护/餐费/设施/服务）；
+ * refType+refCode 关联具体 type 表。
  */
-export interface ParkFoodPrice {
+export interface ParkPricing {
   id?: number
   parkCode?: string
-  /** 餐饮编码（外键，从展开行上下文带入） */
-  foodTypeCode: string
-  /** 价格类型：1月/2季/3半年/4年 */
-  priceType?: number
+  /** 方案名称 */
+  planName?: string
+  /** 费类（1房间 2照护 3餐费 4押金 5设施 6服务 9其他） */
+  chargeType?: number
+  /** 关联类型（room_type/care_type/food_type/facility/service_item/park） */
+  refType?: string
+  /** 关联编码 */
+  refCode?: string
+  /** 关联名称（冗余） */
+  refName?: string
+  /** 计费周期（1月 2季 3半年 4年 5一次性） */
+  billingCycle?: number
+  /** 自由文本计费单位（设施/服务的 次/小时/场） */
+  priceUnit?: string
+  /** 原价 */
   originalPrice?: number
   /** 售价（业务必填） */
   salePrice?: number
+  /** 折扣率 */
   discountRate?: number
+  /** 价格说明 */
   priceDescription?: string
+  /** 包含项目（JSON 字符串原文） */
+  includesItems?: string
   /** 生效日期（业务必填） */
   effectiveDate?: string
+  /** 失效日期 */
   expireDate?: string
   /** 是否当前价：1是 / 0否 */
   isCurrent?: number
   /** 是否促销：1是 / 0否 */
   isPromotion?: number
+  /** 促销说明 */
   promotionDescription?: string
+  /** 价格变更原因 */
+  priceChangeReason?: string
+  /** 排序号 */
   sortOrder?: number
-  /** 状态：1启用 / 0停售 */
+  /** 状态：1启用 / 0停用 */
   status?: number
+  /** 乐观锁版本 */
+  version?: number
   /** 创建时间 */
   createdAt?: string
 }
 
-/** 餐饮价格分页查询参数 */
-export interface ParkFoodPriceQuery extends PageQuery {
+/** 定价分页查询参数 */
+export interface ParkPricingQuery extends PageQuery {
   parkCode?: string
-  foodTypeCode?: string
-  priceType?: number
+  chargeType?: number
+  refType?: string
+  refCode?: string
+  billingCycle?: number
   isCurrent?: number
   status?: number
 }
 
 // ============================================================================
-// 通用字典选项（房型/照护/餐饮枚举，供 el-select 使用）
+// 机构评分（ParkScore，从 park_info 拆出）
 // ============================================================================
 
-/** 房型价格类型选项（priceType）：含 5押金（房型独有） */
-export const ROOM_PRICE_TYPE_OPTIONS = [
-  { label: '月', value: 1 },
-  { label: '季', value: 2 },
-  { label: '半年', value: 3 },
-  { label: '年', value: 4 },
-  { label: '押金', value: 5 }
-] as const
-
-/** 照护/餐饮价格类型选项（priceType）：不含押金 */
-export const CARE_FOOD_PRICE_TYPE_OPTIONS = [
-  { label: '月', value: 1 },
-  { label: '季', value: 2 },
-  { label: '半年', value: 3 },
-  { label: '年', value: 4 }
-] as const
-
-/** 价格类型 label 映射（房型场景，含押金） */
-export function roomPriceTypeLabel(v?: number): string {
-  const found = ROOM_PRICE_TYPE_OPTIONS.find((o) => o.value === v)
-  return found ? found.label : v != null ? String(v) : '--'
-}
-
-/** 价格类型 label 映射（照护/餐饮场景） */
-export function careFoodPriceTypeLabel(v?: number): string {
-  const found = CARE_FOOD_PRICE_TYPE_OPTIONS.find((o) => o.value === v)
-  return found ? found.label : v != null ? String(v) : '--'
+/** 机构评分实体（后端 ParkScoreVO） */
+export interface ParkScore {
+  id?: number
+  parkCode?: string
+  scoreTotal?: number
+  scoreEnvironment?: number
+  scoreRecreation?: number
+  scoreNursing?: number
+  scoreFood?: number
+  scoreService?: number
+  scorePrice?: number
+  scoreDescription?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 // ============================================================================
@@ -683,10 +716,6 @@ export interface ParkFacility {
   coverImage?: string
   /** 图片列表（JSON 字符串原文） */
   images?: string
-  /** 是否免费：1免费 / 0收费 */
-  isFree?: number
-  /** 收费说明 */
-  feeDescription?: string
   /** 排序号 */
   sortOrder?: number
   /** 状态：1启用 / 0停用 */
@@ -798,10 +827,6 @@ export interface ParkServiceItem {
   serviceCategory?: number
   /** 服务描述 */
   serviceDescription?: string
-  /** 是否包含：1包含 / 0不包含 */
-  isIncluded?: number
-  /** 收费标准 */
-  feeStandard?: string
   /** 服务频次 */
   serviceFrequency?: string
   /** 服务时长 */
@@ -822,7 +847,6 @@ export interface ParkServiceItemQuery extends PageQuery {
   serviceCode?: string
   serviceName?: string
   serviceCategory?: number
-  isIncluded?: number
   status?: number
 }
 
@@ -981,4 +1005,49 @@ export function fileSizeLabel(bytes?: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}
+
+// ==================== 展示板块 ====================
+
+/** 展示板块类型选项 */
+export const DISPLAY_BLOCK_TYPE_OPTIONS = [
+  { label: '品牌介绍', value: 'brand_intro' },
+  { label: '运营主体', value: 'operation_intro' },
+  { label: '缴费方式', value: 'payment_way' },
+  { label: '居住环境', value: 'live_env' },
+  { label: '餐饮服务', value: 'catering' },
+  { label: '文娱生活', value: 'entertainment' },
+  { label: '康养状况', value: 'health_status' },
+  { label: '入住指南', value: 'checkin_guide' },
+  { label: '费用说明', value: 'fee_explain' },
+  { label: '自定义', value: 'custom' }
+] as const
+
+export const displayBlockTypeLabel = (v?: string) =>
+  DISPLAY_BLOCK_TYPE_OPTIONS.find((o) => o.value === v)?.label ?? (v || '--')
+
+/** 机构展示板块实体 */
+export interface ParkDisplayBlock {
+  id?: number
+  parkCode?: string
+  /** 板块类型（brand_intro/payment_way/live_env/catering/entertainment/health_status/checkin_guide/fee_explain/custom） */
+  blockType: string
+  /** 板块标题（C端展示用） */
+  blockTitle?: string
+  /** 富文本内容（HTML） */
+  content?: string
+  /** 图片key列表（JSON数组字符串，后端存 TEXT） */
+  images?: string
+  /** 图片描述列表（JSON数组字符串） */
+  imageDescriptions?: string
+  sortOrder?: number
+  status?: number
+  createdAt?: string
+}
+
+/** 展示板块查询入参 */
+export interface ParkDisplayBlockQuery extends PageQuery {
+  parkCode?: string
+  blockType?: string
+  status?: number
 }

@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 05_park.sql  养老机构域（park_）
 -- 域说明：养老机构核心资产——主信息、媒体资源、设施、服务、顾问、周边、房型/照护/餐饮类型与费用
--- 表数：15
+-- 表数：16（park_info + 4 media + facility + service_item + adviser + periphery + room_type + care_type + food_type + pricing + pricing_item + score + display_block）
 -- 生成依据：docs/02数据库设计文档_v4.1.md §3.5
 -- 主键策略：全部为平台共享表（AUTO_INCREMENT）
 -- =====================================================================
@@ -38,8 +38,8 @@ CREATE TABLE `park_info` (
   `district` VARCHAR(16) DEFAULT NULL COMMENT '区',
   `district_code` VARCHAR(20) DEFAULT NULL COMMENT '区编码',
   `address` VARCHAR(256) DEFAULT NULL COMMENT '具体地址',
-  `longitude` VARCHAR(64) DEFAULT NULL COMMENT '经度',
-  `latitude` VARCHAR(20) DEFAULT NULL COMMENT '纬度',
+  `longitude` DECIMAL(10,6) DEFAULT NULL COMMENT '经度',
+  `latitude` DECIMAL(10,6) DEFAULT NULL COMMENT '纬度',
   `service_hotline` VARCHAR(32) DEFAULT NULL COMMENT '客服电话',
   `base_description` TEXT DEFAULT NULL COMMENT '机构介绍',
   `specialty_description` VARCHAR(512) DEFAULT NULL COMMENT '机构特色',
@@ -61,14 +61,6 @@ CREATE TABLE `park_info` (
   `deposit_amount` DECIMAL(12,2) DEFAULT NULL COMMENT '押金金额',
   `deposit_description` VARCHAR(500) DEFAULT NULL COMMENT '押金说明',
   `contract_period` TINYINT(2) DEFAULT NULL COMMENT '合同期限（1=月签, 2=季签, 3=半年, 4=年签）',
-  `score_total` INT(11) DEFAULT NULL COMMENT '总评分',
-  `score_environment` INT(11) DEFAULT NULL COMMENT '环境评分',
-  `score_recreation` INT(11) DEFAULT NULL COMMENT '文娱评分',
-  `score_nursing` INT(11) DEFAULT NULL COMMENT '医养护理评分',
-  `score_food` INT(11) DEFAULT NULL COMMENT '餐食精细评分',
-  `score_service` INT(11) DEFAULT NULL COMMENT '服务品质评分',
-  `score_price` INT(11) DEFAULT NULL COMMENT '价格评分',
-  `score_description` VARCHAR(255) DEFAULT NULL COMMENT '评分描述',
   `sort_order` INT(11) DEFAULT 0 COMMENT '排序号',
   `is_hot` TINYINT(2) DEFAULT NULL COMMENT '平台内评级（1=付费广告, 2=热门）',
   `sub_script` VARCHAR(11) DEFAULT NULL COMMENT '首页角标（1=最新, 2=最热, 3=优惠, 4=店庆）',
@@ -230,8 +222,6 @@ CREATE TABLE `park_facility` (
   `facility_description` TEXT DEFAULT NULL COMMENT '设施详细描述',
   `cover_image` VARCHAR(500) DEFAULT NULL COMMENT '封面图URL',
   `images` TEXT DEFAULT NULL COMMENT '设施图片URL列表（JSON数组）',
-  `is_free` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否免费使用（0=收费, 1=免费）',
-  `fee_description` VARCHAR(500) DEFAULT NULL COMMENT '收费说明',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
   `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=停用, 1=启用）',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -258,8 +248,6 @@ CREATE TABLE `park_service_item` (
   `service_name` VARCHAR(100) NOT NULL COMMENT '服务名称（如"24小时护理"、"康复训练"、"心理疏导"）',
   `service_category` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '服务类别（1=生活照料, 2=医疗健康, 3=康复训练, 4=文化娱乐, 5=心理关怀, 6=其他）',
   `service_description` TEXT DEFAULT NULL COMMENT '服务详细描述',
-  `is_included` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否包含在基础费用中（0=额外收费, 1=已包含）',
-  `fee_standard` VARCHAR(200) DEFAULT NULL COMMENT '收费标准说明',
   `service_frequency` VARCHAR(100) DEFAULT NULL COMMENT '服务频次（如"每日3次"、"按需"）',
   `service_duration` VARCHAR(50) DEFAULT NULL COMMENT '服务时长（如"每次1小时"）',
   `cover_image` VARCHAR(500) DEFAULT NULL COMMENT '服务图片URL',
@@ -381,27 +369,73 @@ CREATE TABLE `park_room_type` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='养老机构房间类型';
 
 -- ---------------------------------------------------------------------
--- 3.5.11 park_room_price 养老机构房间费用
+-- 3.5.11 park_pricing 机构统一定价方案
 -- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_room_price`;
-CREATE TABLE `park_room_price` (
+-- 合并原 park_room_price / park_care_price / park_food_price / park_facility_price / park_service_price 五张表。
+-- 养老机构定价四要素：押金(charge_type=4)、房间费(1)、照护等级费(2)、餐费(3)，外加设施费(5)/服务费(6)。
+-- charge_type 统一费类；ref_type+ref_code 关联具体 type 表（room_type/care_type/food_type/facility/service_item）。
+-- billing_cycle（枚举：月/季/半年/年/一次性）兼容 room/care/food；price_unit（自由文本）兼容 facility/service。
+-- current_key 生成列 + uk_current 唯一索引 = DB 级保证 is_current=1 在同维度下唯一。
+-- version 字段 + @Version 注解 = MyBatis-Plus 乐观锁。
+DROP TABLE IF EXISTS `park_pricing`;
+CREATE TABLE `park_pricing` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `room_type_code` VARCHAR(64) NOT NULL COMMENT '房间类型编码',
-  `price_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '价格类型（1=月费, 2=季费, 3=半年费, 4=年费, 5=押金）',
-  `original_price` DECIMAL(12,2) NOT NULL COMMENT '原价（元）',
-  `sale_price` DECIMAL(12,2) NOT NULL COMMENT '售价（元）',
-  `discount_rate` DECIMAL(5,2) DEFAULT NULL COMMENT '折扣率（如0.90表示9折）',
-  `price_description` VARCHAR(200) DEFAULT NULL COMMENT '价格说明',
+  `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
+  `plan_name` VARCHAR(100) DEFAULT NULL COMMENT '方案名称（如"豪华单人间·月费"）',
+  `charge_type` TINYINT NOT NULL COMMENT '费类（1=房间费 2=照护费 3=餐费 4=押金 5=设施费 6=服务费 9=其他）',
+  `ref_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility/service_item/park）',
+  `ref_code` VARCHAR(64) NOT NULL COMMENT '关联编码',
+  `ref_name` VARCHAR(100) DEFAULT NULL COMMENT '关联名称（冗余）',
+  `billing_cycle` TINYINT DEFAULT NULL COMMENT '计费周期（1=月 2=季 3=半年 4=年 5=一次性）',
+  `price_unit` VARCHAR(50) DEFAULT NULL COMMENT '自由文本计费单位（设施/服务的 次/小时/场）',
+  `original_price` DECIMAL(12,2) DEFAULT NULL COMMENT '原价',
+  `sale_price` DECIMAL(12,2) NOT NULL COMMENT '售价',
+  `discount_rate` DECIMAL(5,2) DEFAULT NULL COMMENT '折扣率',
+  `price_description` VARCHAR(500) DEFAULT NULL COMMENT '价格说明',
   `includes_items` TEXT DEFAULT NULL COMMENT '包含项目（JSON数组）',
   `effective_date` DATE NOT NULL COMMENT '生效日期',
   `expire_date` DATE DEFAULT NULL COMMENT '失效日期（NULL=长期有效）',
-  `is_current` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否当前生效价格（0=历史价格, 1=当前价格）',
-  `is_promotion` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否促销价（0=否, 1=是）',
+  `is_current` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否当前生效价格（0=历史 1=当前）',
+  `is_promotion` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否促销价',
   `promotion_description` VARCHAR(200) DEFAULT NULL COMMENT '促销说明',
   `price_change_reason` VARCHAR(500) DEFAULT NULL COMMENT '价格变更原因',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
-  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=禁用, 1=启用）',
+  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=停用 1=启用）',
+  `version` BIGINT(20) NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
+  `updater` VARCHAR(64) DEFAULT 'system' COMMENT '更新人',
+  `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
+  `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
+  `current_key` VARCHAR(200) GENERATED ALWAYS AS
+    (CASE WHEN `is_current` = 1 AND `deleted` = 0
+     THEN CONCAT(`park_code`, '|', `charge_type`, '|', `ref_code`, '|', COALESCE(CAST(`billing_cycle` AS CHAR), '0'))
+     ELSE NULL END) STORED COMMENT '当前价唯一键（生成列）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_current` (`current_key`),
+  KEY `idx_park_code` (`park_code`),
+  KEY `idx_charge_type` (`charge_type`),
+  KEY `idx_ref` (`ref_type`, `ref_code`),
+  KEY `idx_is_current` (`is_current`),
+  KEY `idx_effective_date` (`effective_date`),
+  KEY `idx_park_charge` (`park_code`, `charge_type`, `billing_cycle`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构统一定价方案';
+
+-- ---------------------------------------------------------------------
+-- 3.5.11b park_pricing_item 机构定价明细行（套餐关联）
+-- ---------------------------------------------------------------------
+-- 每条 pricing 创建时自动创建一条 pricing_item（主行，item_type/ref_code 与 pricing 冗余一致）。
+-- 套餐场景：一条 pricing 关联多条 pricing_item（如"全包月套餐"→ room_type + care_type + food_type）。
+DROP TABLE IF EXISTS `park_pricing_item`;
+CREATE TABLE `park_pricing_item` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `pricing_id` BIGINT NOT NULL COMMENT 'FK→park_pricing.id',
+  `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
+  `item_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility/service_item）',
+  `item_code` VARCHAR(64) NOT NULL COMMENT '关联编码',
+  `item_name` VARCHAR(100) DEFAULT NULL COMMENT '关联名称（冗余）',
+  `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
@@ -409,13 +443,36 @@ CREATE TABLE `park_room_price` (
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
   `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
-  KEY `idx_park_code` (`park_code`),
-  KEY `idx_room_type_code` (`room_type_code`),
-  KEY `idx_price_type` (`price_type`),
-  KEY `idx_effective_date` (`effective_date`),
-  KEY `idx_is_current` (`is_current`),
-  KEY `idx_park_room_price` (`park_code`, `room_type_code`, `effective_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='养老机构房间费用';
+  KEY `idx_pricing_id` (`pricing_id`),
+  KEY `idx_item` (`park_code`, `item_type`, `item_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构定价明细行（套餐关联）';
+
+-- ---------------------------------------------------------------------
+-- 3.5.11c park_score 机构评分（独立表，避免写热点）
+-- ---------------------------------------------------------------------
+-- 从 park_info 拆出：评分字段高频写（用户评价），与机构主信息低频编辑分离。
+DROP TABLE IF EXISTS `park_score`;
+CREATE TABLE `park_score` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
+  `score_total` INT(11) DEFAULT NULL COMMENT '总评分',
+  `score_environment` INT(11) DEFAULT NULL COMMENT '环境评分',
+  `score_recreation` INT(11) DEFAULT NULL COMMENT '文娱评分',
+  `score_nursing` INT(11) DEFAULT NULL COMMENT '医养护理评分',
+  `score_food` INT(11) DEFAULT NULL COMMENT '餐食精细评分',
+  `score_service` INT(11) DEFAULT NULL COMMENT '服务品质评分',
+  `score_price` INT(11) DEFAULT NULL COMMENT '价格评分',
+  `score_description` VARCHAR(255) DEFAULT NULL COMMENT '评分描述',
+  `version` BIGINT(20) NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
+  `updater` VARCHAR(64) DEFAULT 'system' COMMENT '更新人',
+  `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
+  `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_park_code` (`park_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构评分（独立表）';
 
 -- ---------------------------------------------------------------------
 -- 3.5.12 park_care_type 养老机构照护类型
@@ -448,39 +505,8 @@ CREATE TABLE `park_care_type` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='养老机构照护类型';
 
 -- ---------------------------------------------------------------------
--- 3.5.13 park_care_price 养老机构照护费用
+-- 3.5.13 (deleted) park_care_price → 已合并入 park_pricing（charge_type=2）
 -- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_care_price`;
-CREATE TABLE `park_care_price` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `care_type_code` VARCHAR(64) NOT NULL COMMENT '照护类型编码',
-  `price_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '价格类型（1=月费, 2=季费, 3=半年费, 4=年费）',
-  `original_price` DECIMAL(12,2) NOT NULL COMMENT '原价（元）',
-  `sale_price` DECIMAL(12,2) NOT NULL COMMENT '售价（元）',
-  `discount_rate` DECIMAL(5,2) DEFAULT NULL COMMENT '折扣率',
-  `price_description` VARCHAR(200) DEFAULT NULL COMMENT '价格说明',
-  `includes_items` TEXT DEFAULT NULL COMMENT '包含项目（JSON数组）',
-  `effective_date` DATE NOT NULL COMMENT '生效日期',
-  `expire_date` DATE DEFAULT NULL COMMENT '失效日期',
-  `is_current` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否当前生效价格（0=历史, 1=当前）',
-  `is_promotion` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否促销价',
-  `promotion_description` VARCHAR(200) DEFAULT NULL COMMENT '促销说明',
-  `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
-  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=禁用, 1=启用）',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
-  `updater` VARCHAR(64) DEFAULT 'system' COMMENT '更新人',
-  `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
-  `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_park_code` (`park_code`),
-  KEY `idx_care_type_code` (`care_type_code`),
-  KEY `idx_price_type` (`price_type`),
-  KEY `idx_effective_date` (`effective_date`),
-  KEY `idx_is_current` (`is_current`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='养老机构照护费用';
 
 -- ---------------------------------------------------------------------
 -- 3.5.14 park_food_type 养老机构餐饮类型
@@ -513,25 +539,33 @@ CREATE TABLE `park_food_type` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='养老机构餐饮类型';
 
 -- ---------------------------------------------------------------------
--- 3.5.15 park_food_price 养老机构餐饮费用
+-- 3.5.15 (deleted) park_food_price → 已合并入 park_pricing（charge_type=3）
 -- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_food_price`;
-CREATE TABLE `park_food_price` (
+
+-- ---------------------------------------------------------------------
+-- 3.5.16 (deleted) park_facility_price → 已合并入 park_pricing（charge_type=5）
+-- ---------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------
+-- 3.5.17 (deleted) park_service_price → 已合并入 park_pricing（charge_type=6）
+-- ---------------------------------------------------------------------
+
+-- 3.5.18 park_display_block 机构展示内容板块（C端详情页）
+-- 替代远程 wkb_yl 主表/ext 表散落的 40+ 展示列（entertainment_life_*/health_status_*/live_env_*/catering_* 等）。
+-- 一个机构 = N 个板块，每个板块 = 类型 + 标题 + 富文本正文 + 图片列表(JSON) + 图片描述(JSON)。
+-- block_type 词库：brand_intro/payment_way/live_env/catering/entertainment/health_status/checkin_guide/fee_explain/custom，
+-- 新增板块类型只加数据，不需要改表结构。
+DROP TABLE IF EXISTS `park_display_block`;
+CREATE TABLE `park_display_block` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `food_type_code` VARCHAR(64) NOT NULL COMMENT '餐饮类型编码',
-  `price_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '价格类型（1=月费, 2=季费, 3=半年费, 4=年费）',
-  `original_price` DECIMAL(12,2) NOT NULL COMMENT '原价（元）',
-  `sale_price` DECIMAL(12,2) NOT NULL COMMENT '售价（元）',
-  `discount_rate` DECIMAL(5,2) DEFAULT NULL COMMENT '折扣率',
-  `price_description` VARCHAR(200) DEFAULT NULL COMMENT '价格说明',
-  `effective_date` DATE NOT NULL COMMENT '生效日期',
-  `expire_date` DATE DEFAULT NULL COMMENT '失效日期',
-  `is_current` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否当前生效价格（0=历史, 1=当前）',
-  `is_promotion` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否促销价',
-  `promotion_description` VARCHAR(200) DEFAULT NULL COMMENT '促销说明',
+  `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
+  `block_type` VARCHAR(50) NOT NULL COMMENT '板块类型（brand_intro/payment_way/live_env/catering/entertainment/health_status/checkin_guide/fee_explain/custom）',
+  `block_title` VARCHAR(100) DEFAULT NULL COMMENT '板块标题（C端展示用，如"居住环境"）',
+  `content` TEXT DEFAULT NULL COMMENT '富文本内容（HTML）',
+  `images` TEXT DEFAULT NULL COMMENT '图片key列表（JSON数组，如["park/a.jpg","park/b.jpg"]）',
+  `image_descriptions` TEXT DEFAULT NULL COMMENT '图片描述列表（JSON数组，与images一一对应）',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
-  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=禁用, 1=启用）',
+  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=隐藏, 1=显示）',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
@@ -540,8 +574,5 @@ CREATE TABLE `park_food_price` (
   `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
   KEY `idx_park_code` (`park_code`),
-  KEY `idx_food_type_code` (`food_type_code`),
-  KEY `idx_price_type` (`price_type`),
-  KEY `idx_effective_date` (`effective_date`),
-  KEY `idx_is_current` (`is_current`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='养老机构餐饮费用';
+  KEY `idx_park_type` (`park_code`, `block_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构展示内容板块（C端详情页）';

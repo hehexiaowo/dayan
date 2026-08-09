@@ -71,8 +71,6 @@ public class ParkServiceItemServiceImpl implements ParkServiceItemService {
         entity.setServiceName(dto.getServiceName());
         entity.setServiceCategory(dto.getServiceCategory());
         entity.setServiceDescription(dto.getServiceDescription());
-        entity.setIsIncluded(dto.getIsIncluded() == null ? 0 : dto.getIsIncluded());
-        entity.setFeeStandard(dto.getFeeStandard());
         entity.setServiceFrequency(dto.getServiceFrequency());
         entity.setServiceDuration(dto.getServiceDuration());
         entity.setCoverImage(dto.getCoverImage());
@@ -93,8 +91,6 @@ public class ParkServiceItemServiceImpl implements ParkServiceItemService {
         if (dto.getServiceName() != null) update.setServiceName(dto.getServiceName());
         if (dto.getServiceCategory() != null) update.setServiceCategory(dto.getServiceCategory());
         if (dto.getServiceDescription() != null) update.setServiceDescription(dto.getServiceDescription());
-        if (dto.getIsIncluded() != null) update.setIsIncluded(dto.getIsIncluded());
-        if (dto.getFeeStandard() != null) update.setFeeStandard(dto.getFeeStandard());
         if (dto.getServiceFrequency() != null) update.setServiceFrequency(dto.getServiceFrequency());
         if (dto.getServiceDuration() != null) update.setServiceDuration(dto.getServiceDuration());
         if (dto.getCoverImage() != null) update.setCoverImage(dto.getCoverImage());
@@ -130,9 +126,6 @@ public class ParkServiceItemServiceImpl implements ParkServiceItemService {
         if (query.getServiceCategory() != null) {
             wrapper.eq(ParkServiceItem::getServiceCategory, query.getServiceCategory());
         }
-        if (query.getIsIncluded() != null) {
-            wrapper.eq(ParkServiceItem::getIsIncluded, query.getIsIncluded());
-        }
         if (query.getStatus() != null) {
             wrapper.eq(ParkServiceItem::getStatus, query.getStatus());
         }
@@ -155,8 +148,6 @@ public class ParkServiceItemServiceImpl implements ParkServiceItemService {
         vo.setServiceName(entity.getServiceName());
         vo.setServiceCategory(entity.getServiceCategory());
         vo.setServiceDescription(entity.getServiceDescription());
-        vo.setIsIncluded(entity.getIsIncluded());
-        vo.setFeeStandard(entity.getFeeStandard());
         vo.setServiceFrequency(entity.getServiceFrequency());
         vo.setServiceDuration(entity.getServiceDuration());
         vo.setCoverImage(entity.getCoverImage());

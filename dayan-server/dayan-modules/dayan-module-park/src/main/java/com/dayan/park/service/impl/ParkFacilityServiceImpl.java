@@ -78,8 +78,6 @@ public class ParkFacilityServiceImpl implements ParkFacilityService {
         entity.setFacilityDescription(dto.getFacilityDescription());
         entity.setCoverImage(dto.getCoverImage());
         entity.setImages(dto.getImages());
-        entity.setIsFree(dto.getIsFree() == null ? 1 : dto.getIsFree());
-        entity.setFeeDescription(dto.getFeeDescription());
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
         entity.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
         facilityMapper.insert(entity);
@@ -104,8 +102,6 @@ public class ParkFacilityServiceImpl implements ParkFacilityService {
         if (dto.getFacilityDescription() != null) update.setFacilityDescription(dto.getFacilityDescription());
         if (dto.getCoverImage() != null) update.setCoverImage(dto.getCoverImage());
         if (dto.getImages() != null) update.setImages(dto.getImages());
-        if (dto.getIsFree() != null) update.setIsFree(dto.getIsFree());
-        if (dto.getFeeDescription() != null) update.setFeeDescription(dto.getFeeDescription());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
         facilityMapper.updateById(update);
@@ -167,8 +163,6 @@ public class ParkFacilityServiceImpl implements ParkFacilityService {
         vo.setFacilityDescription(entity.getFacilityDescription());
         vo.setCoverImage(entity.getCoverImage());
         vo.setImages(entity.getImages());
-        vo.setIsFree(entity.getIsFree());
-        vo.setFeeDescription(entity.getFeeDescription());
         vo.setSortOrder(entity.getSortOrder());
         vo.setStatus(entity.getStatus());
         vo.setCreatedAt(entity.getCreatedAt());

@@ -1,17 +1,26 @@
-package com.dayan.park.dto;
+package com.dayan.park.vo;
 
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
- * 房型价格（park_room_price）更新入参。
+ * 机构统一定价方案 VO。
  */
 @Data
-public class ParkRoomPriceUpdateDTO {
+public class ParkPricingVO {
 
-    private Integer priceType;
+    private Long id;
+    private String parkCode;
+    private String planName;
+    private Integer chargeType;
+    private String refType;
+    private String refCode;
+    private String refName;
+    private Integer billingCycle;
+    private String priceUnit;
     private BigDecimal originalPrice;
     private BigDecimal salePrice;
     private BigDecimal discountRate;
@@ -25,4 +34,6 @@ public class ParkRoomPriceUpdateDTO {
     private String priceChangeReason;
     private Integer sortOrder;
     private Integer status;
+    private Long version;
+    private LocalDateTime createdAt;
 }

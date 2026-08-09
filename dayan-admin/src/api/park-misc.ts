@@ -16,6 +16,7 @@ import type {
  * - 主键为自增 id（Long），useCrud 传 idKey:'id'。
  * - periphery 的 placeName 必填；service-item 的 serviceCode（必填，update 不可改）/ serviceName 必填。
  * - /list 只接 parkCode 一参，返回数组非分页。
+ * - 服务价格已迁移至统一定价表（ParkPricing），见 api/park-pricing.ts。
  */
 
 // ---------------- 周边配套（periphery）----------------

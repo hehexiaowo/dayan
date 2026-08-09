@@ -40,8 +40,8 @@ public class ParkInfoVO {
     private String district;
     private String districtCode;
     private String address;
-    private String longitude;
-    private String latitude;
+    private BigDecimal longitude;
+    private BigDecimal latitude;
 
     private String serviceHotline;
     private String baseDescription;
@@ -68,15 +68,6 @@ public class ParkInfoVO {
     private BigDecimal depositAmount;
     private String depositDescription;
     private Integer contractPeriod;
-
-    private Integer scoreTotal;
-    private Integer scoreEnvironment;
-    private Integer scoreRecreation;
-    private Integer scoreNursing;
-    private Integer scoreFood;
-    private Integer scoreService;
-    private Integer scorePrice;
-    private String scoreDescription;
 
     private Integer sortOrder;
     private Integer isHot;

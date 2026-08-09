@@ -11,6 +11,7 @@ import type { ParkFacility, ParkFacilityQuery } from '@/types/park'
  * - 主键为自增 id（Long），useCrud 传 idKey:'id'。
  * - facilityCode 为业务编码（必填），update 时不可改。
  * - /list 只接 parkCode 一参，返回数组非分页。
+ * - 价格已迁移至统一定价表（ParkPricing），见 api/park-pricing.ts。
  */
 
 /** 设施分页：GET /admin-api/park/facility/page */

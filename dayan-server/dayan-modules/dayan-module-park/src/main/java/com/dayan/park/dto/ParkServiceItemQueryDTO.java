@@ -14,6 +14,5 @@ public class ParkServiceItemQueryDTO {
     private String serviceCode;
     private String serviceName;
     private Integer serviceCategory;
-    private Integer isIncluded;
     private Integer status;
 }

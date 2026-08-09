@@ -1,31 +1,33 @@
-package com.dayan.park.vo;
+package com.dayan.park.dto;
 
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
- * 餐饮价格 VO。
+ * 机构统一定价更新入参（按字段非空更新）。
+ *
+ * <p>parkCode / chargeType / refType / refCode 不可变（创建后锁定）。
  */
 @Data
-public class ParkFoodPriceVO {
+public class ParkPricingUpdateDTO {
 
-    private Long id;
-    private String parkCode;
-    private String foodTypeCode;
-    private Integer priceType;
+    private String planName;
+    private String refName;
+    private Integer billingCycle;
+    private String priceUnit;
     private BigDecimal originalPrice;
     private BigDecimal salePrice;
     private BigDecimal discountRate;
     private String priceDescription;
+    private String includesItems;
     private LocalDate effectiveDate;
     private LocalDate expireDate;
     private Integer isCurrent;
     private Integer isPromotion;
     private String promotionDescription;
+    private String priceChangeReason;
     private Integer sortOrder;
     private Integer status;
-    private LocalDateTime createdAt;
 }

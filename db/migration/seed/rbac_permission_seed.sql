@@ -42,36 +42,28 @@ VALUES
   ('park:room-type:create', '新增房型', 'park:room-type', 3, '/admin-api/park/room-type', 'POST',    112, 1, '机构房型', NOW(), NOW(), 'system', 'system', 0),
   ('park:room-type:update', '修改房型', 'park:room-type', 3, '/admin-api/park/room-type/*', 'PUT',    113, 1, '机构房型', NOW(), NOW(), 'system', 'system', 0),
   ('park:room-type:delete', '删除房型', 'park:room-type', 3, '/admin-api/park/room-type/*', 'DELETE', 114, 1, '机构房型', NOW(), NOW(), 'system', 'system', 0),
-  -- park:room-price（房型价格）
-  ('park:room-price:list',   '房型价格列表', 'park:room-price', 3, '/admin-api/park/room-price', 'GET',     120, 1, '机构房型价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:room-price:query',  '房型价格详情', 'park:room-price', 3, '/admin-api/park/room-price/*', 'GET',    121, 1, '机构房型价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:room-price:create', '新增房型价格', 'park:room-price', 3, '/admin-api/park/room-price', 'POST',    122, 1, '机构房型价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:room-price:update', '修改房型价格', 'park:room-price', 3, '/admin-api/park/room-price/*', 'PUT',    123, 1, '机构房型价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:room-price:delete', '删除房型价格', 'park:room-price', 3, '/admin-api/park/room-price/*', 'DELETE', 124, 1, '机构房型价格', NOW(), NOW(), 'system', 'system', 0),
+  -- park:pricing（统一定价，合并原 room/care/food/facility/service 5 个 price 权限组）
+  ('park:pricing:list',   '定价列表',     'park:pricing', 3, '/admin-api/park/pricing/page',          'GET',     120, 1, '机构定价', NOW(), NOW(), 'system', 'system', 0),
+  ('park:pricing:list',   '定价列表(按关联)', 'park:pricing', 3, '/admin-api/park/pricing/list',     'GET',     121, 1, '机构定价', NOW(), NOW(), 'system', 'system', 0),
+  ('park:pricing:list',   '定价列表(按费类)', 'park:pricing', 3, '/admin-api/park/pricing/charge-type/*', 'GET', 122, 1, '机构定价', NOW(), NOW(), 'system', 'system', 0),
+  ('park:pricing:query',  '定价详情',     'park:pricing', 3, '/admin-api/park/pricing/*',             'GET',     123, 1, '机构定价', NOW(), NOW(), 'system', 'system', 0),
+  ('park:pricing:create', '新增定价',     'park:pricing', 3, '/admin-api/park/pricing',               'POST',    124, 1, '机构定价', NOW(), NOW(), 'system', 'system', 0),
+  ('park:pricing:update', '修改定价',     'park:pricing', 3, '/admin-api/park/pricing/*',             'PUT',     125, 1, '机构定价', NOW(), NOW(), 'system', 'system', 0),
+  ('park:pricing:delete', '删除定价',     'park:pricing', 3, '/admin-api/park/pricing/*',             'DELETE',  126, 1, '机构定价', NOW(), NOW(), 'system', 'system', 0),
   -- park:care-type（照护类型）
   ('park:care-type:list',   '照护类型列表', 'park:care-type', 3, '/admin-api/park/care-type', 'GET',     130, 1, '机构照护类型', NOW(), NOW(), 'system', 'system', 0),
   ('park:care-type:query',  '照护类型详情', 'park:care-type', 3, '/admin-api/park/care-type/*', 'GET',    131, 1, '机构照护类型', NOW(), NOW(), 'system', 'system', 0),
   ('park:care-type:create', '新增照护类型', 'park:care-type', 3, '/admin-api/park/care-type', 'POST',    132, 1, '机构照护类型', NOW(), NOW(), 'system', 'system', 0),
   ('park:care-type:update', '修改照护类型', 'park:care-type', 3, '/admin-api/park/care-type/*', 'PUT',    133, 1, '机构照护类型', NOW(), NOW(), 'system', 'system', 0),
   ('park:care-type:delete', '删除照护类型', 'park:care-type', 3, '/admin-api/park/care-type/*', 'DELETE', 134, 1, '机构照护类型', NOW(), NOW(), 'system', 'system', 0),
-  -- park:care-price（照护价格）
-  ('park:care-price:list',   '照护价格列表', 'park:care-price', 3, '/admin-api/park/care-price', 'GET',     140, 1, '机构照护价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:care-price:query',  '照护价格详情', 'park:care-price', 3, '/admin-api/park/care-price/*', 'GET',    141, 1, '机构照护价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:care-price:create', '新增照护价格', 'park:care-price', 3, '/admin-api/park/care-price', 'POST',    142, 1, '机构照护价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:care-price:update', '修改照护价格', 'park:care-price', 3, '/admin-api/park/care-price/*', 'PUT',    143, 1, '机构照护价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:care-price:delete', '删除照护价格', 'park:care-price', 3, '/admin-api/park/care-price/*', 'DELETE', 144, 1, '机构照护价格', NOW(), NOW(), 'system', 'system', 0),
+  -- park:care-price（已合并入 park:pricing，charge_type=2）
   -- park:food-type（餐饮类型）
   ('park:food-type:list',   '餐饮类型列表', 'park:food-type', 3, '/admin-api/park/food-type', 'GET',     150, 1, '机构餐饮类型', NOW(), NOW(), 'system', 'system', 0),
   ('park:food-type:query',  '餐饮类型详情', 'park:food-type', 3, '/admin-api/park/food-type/*', 'GET',    151, 1, '机构餐饮类型', NOW(), NOW(), 'system', 'system', 0),
   ('park:food-type:create', '新增餐饮类型', 'park:food-type', 3, '/admin-api/park/food-type', 'POST',    152, 1, '机构餐饮类型', NOW(), NOW(), 'system', 'system', 0),
   ('park:food-type:update', '修改餐饮类型', 'park:food-type', 3, '/admin-api/park/food-type/*', 'PUT',    153, 1, '机构餐饮类型', NOW(), NOW(), 'system', 'system', 0),
   ('park:food-type:delete', '删除餐饮类型', 'park:food-type', 3, '/admin-api/park/food-type/*', 'DELETE', 154, 1, '机构餐饮类型', NOW(), NOW(), 'system', 'system', 0),
-  -- park:food-price（餐饮价格）
-  ('park:food-price:list',   '餐饮价格列表', 'park:food-price', 3, '/admin-api/park/food-price', 'GET',     160, 1, '机构餐饮价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:food-price:query',  '餐饮价格详情', 'park:food-price', 3, '/admin-api/park/food-price/*', 'GET',    161, 1, '机构餐饮价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:food-price:create', '新增餐饮价格', 'park:food-price', 3, '/admin-api/park/food-price', 'POST',    162, 1, '机构餐饮价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:food-price:update', '修改餐饮价格', 'park:food-price', 3, '/admin-api/park/food-price/*', 'PUT',    163, 1, '机构餐饮价格', NOW(), NOW(), 'system', 'system', 0),
-  ('park:food-price:delete', '删除餐饮价格', 'park:food-price', 3, '/admin-api/park/food-price/*', 'DELETE', 164, 1, '机构餐饮价格', NOW(), NOW(), 'system', 'system', 0),
+  -- park:food-price（已合并入 park:pricing，charge_type=3）
   -- park:service-item（服务项）
   ('park:service-item:list',   '服务项列表', 'park:service-item', 3, '/admin-api/park/service-item', 'GET',     170, 1, '机构服务项', NOW(), NOW(), 'system', 'system', 0),
   ('park:service-item:query',  '服务项详情', 'park:service-item', 3, '/admin-api/park/service-item/*', 'GET',    171, 1, '机构服务项', NOW(), NOW(), 'system', 'system', 0),
@@ -119,7 +111,18 @@ VALUES
   ('park:media-file:query',  '机构文件详情', 'park:media-file', 3, '/admin-api/park/media-file/*', 'GET',    241, 1, '机构文件', NOW(), NOW(), 'system', 'system', 0),
   ('park:media-file:create', '新增机构文件', 'park:media-file', 3, '/admin-api/park/media-file', 'POST',    242, 1, '机构文件', NOW(), NOW(), 'system', 'system', 0),
   ('park:media-file:update', '修改机构文件', 'park:media-file', 3, '/admin-api/park/media-file/*', 'PUT',    243, 1, '机构文件', NOW(), NOW(), 'system', 'system', 0),
-  ('park:media-file:delete', '删除机构文件', 'park:media-file', 3, '/admin-api/park/media-file/*', 'DELETE', 244, 1, '机构文件', NOW(), NOW(), 'system', 'system', 0)
+  ('park:media-file:delete', '删除机构文件', 'park:media-file', 3, '/admin-api/park/media-file/*', 'DELETE', 244, 1, '机构文件', NOW(), NOW(), 'system', 'system', 0),
+  -- park:facility-price（已合并入 park:pricing，charge_type=5）
+  -- park:service-price（已合并入 park:pricing，charge_type=6）
+  -- park:score（机构评分，从 park_info 拆出）
+  ('park:score:query',  '评分查看', 'park:score', 3, '/admin-api/park/score/*', 'GET', 250, 1, '机构评分', NOW(), NOW(), 'system', 'system', 0),
+  ('park:score:update', '评分更新', 'park:score', 3, '/admin-api/park/score/*', 'PUT', 251, 1, '机构评分', NOW(), NOW(), 'system', 'system', 0),
+  -- park:display-block（展示板块）
+  ('park:display-block:list',   '展示板块列表', 'park:display-block', 3, '/admin-api/park/display-block', 'GET',     270, 1, '机构展示板块', NOW(), NOW(), 'system', 'system', 0),
+  ('park:display-block:query',  '展示板块详情', 'park:display-block', 3, '/admin-api/park/display-block/*', 'GET',    271, 1, '机构展示板块', NOW(), NOW(), 'system', 'system', 0),
+  ('park:display-block:create', '新增展示板块', 'park:display-block', 3, '/admin-api/park/display-block', 'POST',    272, 1, '机构展示板块', NOW(), NOW(), 'system', 'system', 0),
+  ('park:display-block:update', '修改展示板块', 'park:display-block', 3, '/admin-api/park/display-block/*', 'PUT',    273, 1, '机构展示板块', NOW(), NOW(), 'system', 'system', 0),
+  ('park:display-block:delete', '删除展示板块', 'park:display-block', 3, '/admin-api/park/display-block/*', 'DELETE', 274, 1, '机构展示板块', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
 -- ============================================================
@@ -343,31 +346,21 @@ VALUES
   ('ROLE_OPERATOR', 'park:room-type:create', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:room-type:update', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:room-type:delete', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:room-price:list',   NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:room-price:query',  NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:room-price:create', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:room-price:update', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:room-price:delete', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:pricing:list',   NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:pricing:query',  NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:pricing:create', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:pricing:update', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:pricing:delete', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:care-type:list',   NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:care-type:query',  NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:care-type:create', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:care-type:update', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:care-type:delete', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:care-price:list',   NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:care-price:query',  NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:care-price:create', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:care-price:update', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:care-price:delete', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:food-type:list',   NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:food-type:query',  NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:food-type:create', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:food-type:update', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:food-type:delete', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:food-price:list',   NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:food-price:query',  NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:food-price:create', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:food-price:update', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:food-price:delete', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:service-item:list',   NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:service-item:query',  NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:service-item:create', NOW(), NOW(), 'system', 'system', 0),
@@ -408,6 +401,15 @@ VALUES
   ('ROLE_OPERATOR', 'park:media-file:create', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:media-file:update', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:media-file:delete', NOW(), NOW(), 'system', 'system', 0),
+  -- park:score（机构评分）
+  ('ROLE_OPERATOR', 'park:score:query',  NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:score:update', NOW(), NOW(), 'system', 'system', 0),
+  -- park:display-block（5 条）
+  ('ROLE_OPERATOR', 'park:display-block:list',   NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:display-block:query',  NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:display-block:create', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:display-block:update', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'park:display-block:delete', NOW(), NOW(), 'system', 'system', 0),
   -- Scene 域（31 条）
   ('ROLE_OPERATOR', 'scene:info:list',     NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'scene:info:query',    NOW(), NOW(), 'system', 'system', 0),

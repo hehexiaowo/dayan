@@ -2,14 +2,22 @@
 /**
  * 机构详情页 - 设施 tab。
  *
- * 单表 CRUD：useCrud（idKey:'id', fixedParams:{parkCode}）。
- * 搜索：facilityName + facilityCategory + status。
- * facilityCode 必填（业务编码，编辑时 disabled，update 不可改）；facilityName 必填。
- * isFree 布尔提交 0/1；images 字段用 textarea 原文编辑（JSON 字符串）。
+ * 架构（facility 主表 + price 子表双层，仿 RoomTab 模式）：
+ * 1. 搜索条（facilityName + facilityCategory + status）+ 新增设施按钮
+ * 2. 主表格设施列表，useCrud（idKey:'id', fixedParams:{parkCode}）
+ * 3. 展开行：展开时调 listFacilityPrices(parkCode, facilityCode) 加载价格，
+ *    内联小表格 + 新增/编辑/删除（独立 ref + Map 缓存按需加载）
+ * 4. 设施新增/编辑 el-dialog，必填 facilityCode(≤50)/facilityName(≤200)，parkCode 隐藏
+ * 5. 价格新增/编辑 el-dialog，业务必填 salePrice/effectiveDate，
+ *    facilityCode+parkCode 从展开行上下文带入不显示；priceUnit 自由文本（次/月/场/小时）
  *
- * 红线：主键 Long id；编码字段 update 不可改；parkCode 从 prop 带入 create 表单隐藏。
+ * 红线遵守：
+ * - 主键 Long id，useCrud 传 idKey:'id'
+ * - facilityCode 用户填写非系统生成；update 时不可改（编辑弹窗内 disabled）
+ * - price 展开行用 /list 端点（parkCode+facilityCode 两参）
+ * - isCurrent / isPromotion 提交 0/1 非 true/false
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -18,14 +26,19 @@ import {
   updateFacility,
   deleteFacility
 } from '@/api/park-facility'
+import {
+  listPricingsByRef,
+  createPricing,
+  updatePricing,
+  deletePricing
+} from '@/api/park-pricing'
 import { FACILITY_CATEGORY_OPTIONS, facilityCategoryLabel } from '@/types/park'
-import type { ParkFacility, ParkFacilityQuery } from '@/types/park'
+import type { ParkFacility, ParkFacilityQuery, ParkPricing } from '@/types/park'
 import FileUploader from '@/components/FileUploader/index.vue'
 
-const props = defineProps<{
-  parkCode: string
-}>()
+const props = defineProps<{ parkCode: string }>()
 
+// ---------- 设施 列表（useCrud，主键 id） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   ParkFacility,
   ParkFacilityQuery,
@@ -46,7 +59,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 
 loadPage()
 
-// ---------- 新增/编辑弹窗 ----------
+// ---------- 设施 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
@@ -66,8 +79,6 @@ const form = reactive<ParkFacility>({
   facilityDescription: '',
   coverImage: '',
   images: '',
-  isFree: 0,
-  feeDescription: '',
   sortOrder: 0,
   status: 1
 })
@@ -116,8 +127,6 @@ function resetForm() {
     facilityDescription: '',
     coverImage: '',
     images: '',
-    isFree: 0,
-    feeDescription: '',
     sortOrder: 0,
     status: 1
   })
@@ -162,14 +171,236 @@ async function handleSubmit() {
 
 async function handleDelete(row: ParkFacility) {
   if (!row.id) return
-  await ElMessageBox.confirm('确定删除该设施记录？', '提示', {
+  await ElMessageBox.confirm(
+    '确定删除该设施吗？删除前请先删除该设施下所有价格记录（不级联删除）。',
+    '提示',
+    { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+  )
+  await deleteFacility(row.id)
+  ElMessage.success('删除成功')
+  loadPage()
+}
+
+// ---------- 展开行 price 管理 ----------
+/** 各展开行的 price 列表缓存，key=facilityCode */
+const priceMap = ref<Map<string, ParkPricing[]>>(new Map())
+/** price 加载状态 */
+const priceLoadingMap = ref<Map<string, boolean>>(new Map())
+
+async function loadPrices(parkCode: string, row: ParkFacility) {
+  if (!row.facilityCode) return
+  priceLoadingMap.value.set(row.facilityCode, true)
+  try {
+    const list = await listPricingsByRef(parkCode, 'facility', row.facilityCode)
+    priceMap.value.set(row.facilityCode, list)
+  } catch {
+    priceMap.value.set(row.facilityCode, [])
+  } finally {
+    priceLoadingMap.value.set(row.facilityCode, false)
+  }
+}
+
+/** 展开行 toggle：展开时按需加载 price */
+function handleExpandChange(row: ParkFacility, expanded: ParkFacility[], parkCode: string) {
+  const isExpanded = expanded.some((r) => r.id === row.id)
+  if (isExpanded && row.facilityCode) {
+    loadPrices(parkCode, row)
+  }
+}
+
+// ---------- 主表"当前价"列：分页加载后并行批量取当前价（避免 N+1 串行）----------
+/** key=facilityCode → 当前价展示文本（如 "¥150/次"），无当前价则无 key */
+const currentPriceMap = ref<Map<string, string>>(new Map())
+
+/** 取一条 price 的展示文本 */
+function formatPriceText(p: ParkPricing): string {
+  const unit = p.priceUnit ? `/${p.priceUnit}` : ''
+  return `¥${p.salePrice}${unit}`
+}
+
+/** 分页数据变化后，批量拉取每行当前价（Promise.all 并行，单页最多 size 条） */
+async function loadCurrentPrices(rows: ParkFacility[]) {
+  const codes = rows.filter((r) => r.facilityCode).map((r) => r.facilityCode)
+  if (codes.length === 0) {
+    currentPriceMap.value.clear()
+    return
+  }
+  const results = await Promise.all(
+    codes.map(async (code) => {
+      try {
+        const list = await listPricingsByRef(props.parkCode, 'facility', code)
+        return [code, list] as const
+      } catch {
+        return [code, []] as const
+      }
+    })
+  )
+  const m = new Map<string, string>()
+  for (const [code, list] of results) {
+    const cur = (list as ParkPricing[]).find((p) => p.isCurrent === 1)
+    if (cur) m.set(code, formatPriceText(cur))
+  }
+  currentPriceMap.value = m
+}
+
+/** price 增删改后同步刷新当前价（复用已加载的 priceMap，避免重复请求） */
+function refreshCurrentPrice(facilityCode: string) {
+  const list = priceMap.value.get(facilityCode)
+  if (!list) {
+    currentPriceMap.value.delete(facilityCode)
+    return
+  }
+  const cur = list.find((p) => p.isCurrent === 1)
+  if (cur) {
+    currentPriceMap.value.set(facilityCode, formatPriceText(cur))
+  } else {
+    currentPriceMap.value.delete(facilityCode)
+  }
+}
+
+/** 监听分页数据变化，自动加载当前价 */
+watch(
+  () => tableData.value,
+  (rows) => {
+    if (rows && rows.length > 0) loadCurrentPrices(rows)
+  }
+)
+
+// ---------- price 新增/编辑弹窗 ----------
+const priceDialogVisible = ref(false)
+const priceDialogMode = ref<'create' | 'edit'>('create')
+const priceSubmitLoading = ref(false)
+const priceFormRef = ref<FormInstance>()
+/** 当前 price 所属的设施上下文（facilityCode + parkCode） */
+const priceContext = reactive({ parkCode: '', facilityCode: '' })
+
+const priceForm = reactive<ParkPricing>({
+  id: undefined,
+  parkCode: '',
+  chargeType: 5,
+  refType: 'facility',
+  refCode: '',
+  refName: '',
+  priceUnit: '',
+  originalPrice: undefined,
+  salePrice: undefined,
+  discountRate: undefined,
+  priceDescription: '',
+  effectiveDate: '',
+  expireDate: '',
+  isCurrent: 1,
+  isPromotion: 0,
+  promotionDescription: '',
+  sortOrder: 0,
+  status: 1
+})
+
+const priceRules: FormRules<ParkPricing> = {
+  salePrice: [{ required: true, message: '请输入售价', trigger: 'blur' }],
+  effectiveDate: [{ required: true, message: '请选择生效日期', trigger: 'change' }]
+}
+
+/** 折扣率是否被用户手动修改过——手动改过则不再自动算 */
+let discountEdited = false
+/** 原价/售价变化时自动算折扣率 = 售价/原价*100，保留 2 位 */
+watch(
+  () => [priceForm.originalPrice, priceForm.salePrice],
+  ([orig, sale]) => {
+    if (discountEdited) return
+    if (orig && sale && orig > 0) {
+      priceForm.discountRate = Math.round((sale / orig) * 10000) / 100
+    } else {
+      priceForm.discountRate = undefined
+    }
+  }
+)
+
+function resetPriceForm() {
+  Object.assign(priceForm, {
+    id: undefined,
+    parkCode: '',
+    chargeType: 5,
+    refType: 'facility',
+    refCode: '',
+    refName: '',
+    priceUnit: '',
+    originalPrice: undefined,
+    salePrice: undefined,
+    discountRate: undefined,
+    priceDescription: '',
+    effectiveDate: '',
+    expireDate: '',
+    isCurrent: 1,
+    isPromotion: 0,
+    promotionDescription: '',
+    sortOrder: 0,
+    status: 1
+  })
+  discountEdited = false
+}
+
+function openCreatePrice(parkCode: string, facilityCode: string, facilityName?: string) {
+  priceDialogMode.value = 'create'
+  resetPriceForm()
+  priceContext.parkCode = parkCode
+  priceContext.facilityCode = facilityCode
+  priceForm.parkCode = parkCode
+  priceForm.refCode = facilityCode
+  priceForm.refName = facilityName || ''
+  priceDialogVisible.value = true
+}
+
+function openEditPrice(row: ParkPricing, parkCode: string, facilityCode: string) {
+  priceDialogMode.value = 'edit'
+  resetPriceForm()
+  Object.assign(priceForm, row)
+  priceContext.parkCode = parkCode
+  priceContext.facilityCode = facilityCode
+  priceDialogVisible.value = true
+}
+
+async function handlePriceSubmit() {
+  if (!priceFormRef.value) return
+  try {
+    await priceFormRef.value.validate()
+  } catch {
+    return
+  }
+  priceSubmitLoading.value = true
+  try {
+    // 确保 parkCode + refCode 从上下文带入（编辑时也不可改外键）
+    priceForm.parkCode = priceContext.parkCode
+    priceForm.refCode = priceContext.facilityCode
+    priceForm.refType = 'facility'
+    priceForm.chargeType = 5
+    if (priceDialogMode.value === 'create') {
+      await createPricing(priceForm)
+      ElMessage.success('新增成功')
+    } else if (priceForm.id) {
+      await updatePricing(priceForm.id, priceForm)
+      ElMessage.success('修改成功')
+    }
+    priceDialogVisible.value = false
+    // 刷新该展开行 price（用上下文 facilityCode）
+    loadPrices(priceContext.parkCode, { facilityCode: priceContext.facilityCode } as ParkFacility)
+    // 同步主表"当前价"列
+    refreshCurrentPrice(priceContext.facilityCode)
+  } finally {
+    priceSubmitLoading.value = false
+  }
+}
+
+async function handleDeletePrice(row: ParkPricing, parkCode: string, facilityCode: string) {
+  if (!row.id) return
+  await ElMessageBox.confirm('确定删除该价格记录？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteFacility(row.id)
+  await deletePricing(row.id)
   ElMessage.success('删除成功')
-  loadPage()
+  loadPrices(parkCode, { facilityCode } as ParkFacility)
+  refreshCurrentPrice(facilityCode)
 }
 
 // ---------- 辅助渲染 ----------
@@ -178,12 +409,6 @@ function statusLabel(v?: number): string {
 }
 function statusTagType(v?: number): 'success' | 'info' {
   return v === 1 ? 'success' : 'info'
-}
-function freeLabel(v?: number): string {
-  return v === 1 ? '免费' : '收费'
-}
-function freeTagType(v?: number): 'success' | 'warning' {
-  return v === 1 ? 'success' : 'warning'
 }
 function formatDate(s?: string): string {
   if (!s) return '--'
@@ -194,6 +419,7 @@ defineExpose({ loadPage })
 
 <template>
   <div class="facility-tab">
+    <!-- 搜索栏 -->
     <el-form :inline="true" :model="query" @submit.prevent>
       <el-form-item label="设施名称">
         <el-input v-model="query.facilityName" placeholder="设施名称" clearable @keyup.enter="handleSearch" />
@@ -215,9 +441,91 @@ defineExpose({ loadPage })
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
+    <!-- 主表格（含展开行 price） -->
+    <el-table
+      v-loading="loading"
+      :data="tableData"
+      border
+      stripe
+      row-key="id"
+      @expand-change="(row: ParkFacility, expanded: ParkFacility[]) => handleExpandChange(row, expanded, parkCode)"
+    >
+      <el-table-column type="expand">
+        <template #default="{ row }">
+          <div class="price-block" v-loading="priceLoadingMap.get(row.facilityCode)">
+            <div class="price-toolbar">
+              <span class="price-title">价格记录（{{ row.facilityName }}）</span>
+              <el-button
+                type="primary"
+                size="small"
+                :icon="'Plus'"
+                @click="openCreatePrice(parkCode, row.facilityCode, row.facilityName)"
+              >
+                新增价格
+              </el-button>
+            </div>
+            <el-table v-if="(priceMap.get(row.facilityCode) || []).length > 0" :data="priceMap.get(row.facilityCode) || []" border size="small">
+              <el-table-column prop="priceUnit" label="计费单位" width="100" align="center">
+                <template #default="{ row: p }">{{ p.priceUnit || '--' }}</template>
+              </el-table-column>
+              <el-table-column prop="originalPrice" label="原价" width="100" align="right" />
+              <el-table-column prop="salePrice" label="售价" width="100" align="right" />
+              <el-table-column prop="discountRate" label="折扣率" width="90" align="right" />
+              <el-table-column prop="effectiveDate" label="生效日期" width="110" align="center">
+                <template #default="{ row: p }">{{ formatDate(p.effectiveDate) }}</template>
+              </el-table-column>
+              <el-table-column prop="expireDate" label="失效日期" width="110" align="center">
+                <template #default="{ row: p }">{{ formatDate(p.expireDate) }}</template>
+              </el-table-column>
+              <el-table-column prop="isCurrent" label="当前价" width="80" align="center">
+                <template #default="{ row: p }">
+                  <el-tag v-if="p.isCurrent === 1" type="success" size="small">当前</el-tag>
+                  <span v-else>—</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="isPromotion" label="促销" width="80" align="center">
+                <template #default="{ row: p }">
+                  <el-tag v-if="p.isPromotion === 1" type="warning" size="small">促销</el-tag>
+                  <span v-else>—</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="status" label="状态" width="80" align="center">
+                <template #default="{ row: p }">
+                  <el-tag :type="statusTagType(p.status)" size="small">{{ statusLabel(p.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="createdAt" label="创建时间" width="110" align="center">
+                <template #default="{ row: p }">{{ formatDate(p.createdAt) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="140" fixed="right">
+                <template #default="{ row: p }">
+                  <el-button link type="primary" size="small" @click="openEditPrice(p, parkCode, row.facilityCode)">
+                    编辑
+                  </el-button>
+                  <el-button link type="danger" size="small" @click="handleDeletePrice(p, parkCode, row.facilityCode)">
+                    删除
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-empty
+              v-else-if="!priceLoadingMap.get(row.facilityCode)"
+              description="暂无价格记录，点击右上角新增"
+              :image-size="60"
+            />
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column prop="facilityCode" label="设施编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="facilityName" label="设施名称" min-width="160" show-overflow-tooltip />
+      <el-table-column label="当前价" width="130" align="center">
+        <template #default="{ row }">
+          <span v-if="currentPriceMap.get(row.facilityCode)" class="current-price">
+            {{ currentPriceMap.get(row.facilityCode) }}
+          </span>
+          <span v-else class="price-empty">—</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="facilityCategory" label="类别" width="90" align="center">
         <template #default="{ row }">{{ facilityCategoryLabel(row.facilityCategory) }}</template>
       </el-table-column>
@@ -225,11 +533,6 @@ defineExpose({ loadPage })
       <el-table-column prop="floor" label="楼层" width="90" align="center" />
       <el-table-column prop="area" label="面积(㎡)" width="100" align="right" />
       <el-table-column prop="capacity" label="容纳人数" width="100" align="right" />
-      <el-table-column label="收费" width="90" align="center">
-        <template #default="{ row }">
-          <el-tag :type="freeTagType(row.isFree)" size="small">{{ freeLabel(row.isFree) }}</el-tag>
-        </template>
-      </el-table-column>
       <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
       <el-table-column prop="status" label="状态" width="90" align="center">
         <template #default="{ row }">
@@ -260,6 +563,7 @@ defineExpose({ loadPage })
       />
     </div>
 
+    <!-- 设施 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogMode === 'create' ? '新增设施' : '编辑设施'"
@@ -321,21 +625,11 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="是否免费">
-              <el-switch v-model="form.isFree" :active-value="1" :inactive-value="0" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="状态">
               <el-radio-group v-model="form.status">
                 <el-radio :value="1">启用</el-radio>
                 <el-radio :value="0">停用</el-radio>
               </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="收费说明">
-              <el-input v-model="form.feeDescription" placeholder="收费说明" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -360,6 +654,119 @@ defineExpose({ loadPage })
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 价格 新增/编辑弹窗 -->
+    <el-dialog
+      v-model="priceDialogVisible"
+      :title="priceDialogMode === 'create' ? '新增价格' : '编辑价格'"
+      width="640px"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="priceFormRef" :model="priceForm" :rules="priceRules" label-width="100px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="计费单位">
+              <el-input v-model="priceForm.priceUnit" placeholder="如 次/月/场/小时" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="排序号">
+              <el-input-number v-model="priceForm.sortOrder" :min="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="原价">
+              <el-input-number
+                v-model="priceForm.originalPrice"
+                :min="0"
+                :precision="2"
+                controls-position="right"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="售价" prop="salePrice">
+              <el-input-number
+                v-model="priceForm.salePrice"
+                :min="0"
+                :precision="2"
+                controls-position="right"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="折扣率">
+              <el-input-number
+                v-model="priceForm.discountRate"
+                :min="0"
+                :max="100"
+                :precision="2"
+                controls-position="right"
+                style="width: 100%"
+                @change="discountEdited = true"
+              />
+              <div class="form-tip">按 售价÷原价 自动计算，可手动覆盖</div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="生效日期" prop="effectiveDate">
+              <el-date-picker
+                v-model="priceForm.effectiveDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="失效日期">
+              <el-date-picker
+                v-model="priceForm.expireDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="是否当前价">
+              <el-switch v-model="priceForm.isCurrent" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="是否促销">
+              <el-switch v-model="priceForm.isPromotion" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="促销说明">
+              <el-input v-model="priceForm.promotionDescription" placeholder="促销说明" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="价格说明">
+              <el-input v-model="priceForm.priceDescription" type="textarea" :rows="2" placeholder="价格说明" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态">
+              <el-radio-group v-model="priceForm.status">
+                <el-radio :value="1">启用</el-radio>
+                <el-radio :value="0">停用</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <el-button @click="priceDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="priceSubmitLoading" @click="handlePriceSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -369,6 +776,33 @@ defineExpose({ loadPage })
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
+  }
+  .price-block {
+    padding: 12px 16px;
+    background: var(--el-fill-color-light);
+  }
+  .price-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .price-title {
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+  .current-price {
+    font-weight: 600;
+    color: var(--el-color-success);
+  }
+  .price-empty {
+    color: var(--el-text-color-placeholder);
+  }
+  .form-tip {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.4;
+    margin-top: 2px;
   }
 }
 </style>

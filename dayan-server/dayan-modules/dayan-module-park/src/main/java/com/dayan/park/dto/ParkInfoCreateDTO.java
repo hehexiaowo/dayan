@@ -51,10 +51,10 @@ public class ParkInfoCreateDTO {
     private String districtCode;
     private String address;
 
-    /** 经度（字符串，范围 -180~180） */
-    private String longitude;
-    /** 纬度（字符串，范围 -90~90） */
-    private String latitude;
+    /** 经度（范围 -180~180） */
+    private BigDecimal longitude;
+    /** 纬度（范围 -90~90） */
+    private BigDecimal latitude;
 
     private String serviceHotline;
     private String baseDescription;

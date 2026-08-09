@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 /**
  * 机构主信息（park_info）服务实现。
@@ -328,33 +329,24 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         }
     }
 
-    /** 坐标校验：经度 -180~180，纬度 -90~90（字符串解析） */
-    private void validateCoordinate(String longitude, String latitude) {
+    /** 坐标校验：经度 -180~180，纬度 -90~90 */
+    private void validateCoordinate(BigDecimal longitude, BigDecimal latitude) {
         if (longitude == null && latitude == null) {
             return;
         }
-        Double lon = parseCoordinate(longitude, "经度", -180d, 180d);
-        Double lat = parseCoordinate(latitude, "纬度", -90d, 90d);
-        // 任一非空则两者均须提供（避免半坐标）
-        if (lon == null || lat == null) {
+        if (longitude == null || latitude == null) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "经度与纬度必须同时提供");
         }
+        validateRange(longitude, "经度", -180, 180);
+        validateRange(latitude, "纬度", -90, 90);
     }
 
-    private Double parseCoordinate(String value, String label, double min, double max) {
-        if (value == null || value.isEmpty()) {
-            return null;
-        }
-        double v;
-        try {
-            v = Double.parseDouble(value);
-        } catch (NumberFormatException e) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, label + "格式非法: " + value);
-        }
+    private void validateRange(BigDecimal value, String label, double min, double max) {
+        double v = value.doubleValue();
         if (v < min || v > max) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, label + "超出范围(" + min + "~" + max + "): " + value);
+            throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    label + "超出范围(" + min + "~" + max + "): " + v);
         }
-        return v;
     }
 
     private ParkInfoVO toVO(ParkInfo entity) {
@@ -409,14 +401,6 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         vo.setDepositAmount(entity.getDepositAmount());
         vo.setDepositDescription(entity.getDepositDescription());
         vo.setContractPeriod(entity.getContractPeriod());
-        vo.setScoreTotal(entity.getScoreTotal());
-        vo.setScoreEnvironment(entity.getScoreEnvironment());
-        vo.setScoreRecreation(entity.getScoreRecreation());
-        vo.setScoreNursing(entity.getScoreNursing());
-        vo.setScoreFood(entity.getScoreFood());
-        vo.setScoreService(entity.getScoreService());
-        vo.setScorePrice(entity.getScorePrice());
-        vo.setScoreDescription(entity.getScoreDescription());
         vo.setSortOrder(entity.getSortOrder());
         vo.setIsHot(entity.getIsHot());
         vo.setSubScript(entity.getSubScript());

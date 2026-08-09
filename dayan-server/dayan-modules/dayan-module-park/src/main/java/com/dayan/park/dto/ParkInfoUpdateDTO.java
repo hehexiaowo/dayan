@@ -41,8 +41,8 @@ public class ParkInfoUpdateDTO {
     private String districtCode;
     private String address;
 
-    private String longitude;
-    private String latitude;
+    private BigDecimal longitude;
+    private BigDecimal latitude;
 
     private String serviceHotline;
     private String baseDescription;

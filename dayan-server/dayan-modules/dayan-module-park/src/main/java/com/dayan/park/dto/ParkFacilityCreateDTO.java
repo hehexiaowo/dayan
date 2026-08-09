@@ -32,8 +32,6 @@ public class ParkFacilityCreateDTO {
     private String facilityDescription;
     private String coverImage;
     private String images;
-    private Integer isFree;
-    private String feeDescription;
     private Integer sortOrder;
     private Integer status;
 }

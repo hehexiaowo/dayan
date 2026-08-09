@@ -462,14 +462,13 @@ T['park_facility'] = f([
   ['area','decimal(8,2)','面积'],['capacity','int(11)','最大容纳人数'],
   ['open_time','varchar(100)','开放时间'],['facility_description','text','设施详细描述'],
   ['cover_image','varchar(500)','封面图URL'],['images','text','设施图片URL列表'],
-  ['is_free','tinyint(1)','是否免费使用'],['fee_description','varchar(500)','收费说明'],
   ['sort_order','int(11)','排序号'],['status','tinyint(1)','状态'],
 ]);
 T['park_service_item'] = f([
   ['park_code','varchar(64)','机构编码'],['service_code','varchar(50)','服务编码'],
   ['service_name','varchar(100)','服务名称'],['service_category','tinyint(2)','服务类别'],
-  ['service_description','text','服务详细描述'],['is_included','tinyint(1)','是否包含在基础费用中'],
-  ['fee_standard','varchar(200)','收费标准说明'],['service_frequency','varchar(100)','服务频次'],
+  ['service_description','text','服务详细描述'],
+  ['service_frequency','varchar(100)','服务频次'],
   ['service_duration','varchar(50)','服务时长'],['cover_image','varchar(500)','服务图片URL'],
   ['sort_order','int(11)','排序号'],['status','tinyint(1)','状态'],
 ]);

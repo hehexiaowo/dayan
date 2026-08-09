@@ -56,12 +56,6 @@ public class ParkFacility extends BaseEntity {
     /** 设施图片URL列表 */
     private String images;
 
-    /** 是否免费使用 */
-    private Integer isFree;
-
-    /** 收费说明 */
-    private String feeDescription;
-
     /** 排序号 */
     private Integer sortOrder;
 
