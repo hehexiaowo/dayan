@@ -209,11 +209,7 @@ async function handleLogin() {
   &__img {
     width: 200px;
     height: auto;
-    /* 真实 logo 主色为黑色，放在深色渐变面板上需白色容器衬托 */
-    padding: 10px 18px;
-    background: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    /* 真实 logo 为红色图标 + 白色文字，直接贴深色渐变面板即可清晰可见 */
   }
 }
 
