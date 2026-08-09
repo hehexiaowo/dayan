@@ -34,7 +34,7 @@ public class ParkPricing extends BaseEntity {
     /** 费类（1=房间费 2=照护费 3=餐费 4=押金 5=设施费 6=服务费 9=其他） */
     private Integer chargeType;
 
-    /** 关联类型（room_type/care_type/food_type/facility/service_item/park） */
+    /** 关联类型（room_type/care_type/food_type/facility_type/service_type/park） */
     private String refType;
 
     /** 关联编码 */

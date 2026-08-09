@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 05_park.sql  养老机构域（park_）
--- 域说明：养老机构核心资产——主信息、素材库、设施、服务、顾问、周边、房型/照护/餐饮类型与费用
--- 表数：13（park_info + park_asset + facility + service_item + adviser + periphery + room_type + care_type + food_type + pricing + pricing_item + score + display_block）
+-- 域说明：养老机构核心资产——主信息、素材库、设施/服务/房型/照护/餐饮类型与费用、顾问、周边
+-- 表数：13（park_info + park_asset + facility_type + service_type + adviser + periphery + room_type + care_type + food_type + pricing + pricing_item + score + display_block）
 -- 注：原 4 张 media 表（media_image/video/file/vr）已合并为 park_asset，见 park_asset_merge.sql
 -- 生成依据：docs/02数据库设计文档_v4.1.md §3.5
 -- 主键策略：全部为平台共享表（AUTO_INCREMENT）
@@ -206,21 +206,21 @@ CREATE TABLE `park_media_vr` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构VR资源';
 
 -- ---------------------------------------------------------------------
--- 3.5.6 park_facility 机构配套设施
+-- 3.5.6 park_facility_type 机构配套设施类型
 -- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_facility`;
-CREATE TABLE `park_facility` (
+DROP TABLE IF EXISTS `park_facility_type`;
+CREATE TABLE `park_facility_type` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `facility_code` VARCHAR(50) NOT NULL COMMENT '设施编码',
-  `facility_name` VARCHAR(100) NOT NULL COMMENT '设施名称（如"健身房"、"棋牌室"、"医疗室"、"阅览室"）',
-  `facility_category` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '设施类别（1=休闲娱乐, 2=医疗健康, 3=运动健身, 4=文化教育, 5=生活服务, 6=安全保障）',
+  `facility_type_code` VARCHAR(50) NOT NULL COMMENT '设施类型编码',
+  `facility_type_name` VARCHAR(100) NOT NULL COMMENT '设施类型名称（如"健身房"、"棋牌室"、"医疗室"、"阅览室"）',
+  `facility_type_category` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '设施类别（1=休闲娱乐, 2=医疗健康, 3=运动健身, 4=文化教育, 5=生活服务, 6=安全保障）',
   `building_name` VARCHAR(100) DEFAULT NULL COMMENT '所在楼栋（如"A栋"、"南楼"）',
   `floor` VARCHAR(20) DEFAULT NULL COMMENT '所在楼层',
   `area` DECIMAL(8,2) DEFAULT NULL COMMENT '面积（平方米）',
   `capacity` INT(11) DEFAULT NULL COMMENT '最大容纳人数',
   `open_time` VARCHAR(100) DEFAULT NULL COMMENT '开放时间（如"08:00-20:00"）',
-  `facility_description` TEXT DEFAULT NULL COMMENT '设施详细描述',
+  `facility_type_description` TEXT DEFAULT NULL COMMENT '设施详细描述',
   `cover_image` VARCHAR(500) DEFAULT NULL COMMENT '封面图URL',
   `images` TEXT DEFAULT NULL COMMENT '设施图片URL列表（JSON数组）',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
@@ -232,25 +232,25 @@ CREATE TABLE `park_facility` (
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
   `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_facility_code` (`park_code`, `facility_code`),
+  UNIQUE KEY `uk_facility_type_code` (`park_code`, `facility_type_code`),
   KEY `idx_park_code` (`park_code`),
-  KEY `idx_facility_category` (`facility_category`),
+  KEY `idx_facility_type_category` (`facility_type_category`),
   KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构配套设施';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构配套设施类型';
 
 -- ---------------------------------------------------------------------
--- 3.5.7 park_service_item 机构服务项目
+-- 3.5.7 park_service_type 机构服务类型
 -- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_service_item`;
-CREATE TABLE `park_service_item` (
+DROP TABLE IF EXISTS `park_service_type`;
+CREATE TABLE `park_service_type` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `service_code` VARCHAR(50) NOT NULL COMMENT '服务编码',
-  `service_name` VARCHAR(100) NOT NULL COMMENT '服务名称（如"24小时护理"、"康复训练"、"心理疏导"）',
-  `service_category` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '服务类别（1=生活照料, 2=医疗健康, 3=康复训练, 4=文化娱乐, 5=心理关怀, 6=其他）',
-  `service_description` TEXT DEFAULT NULL COMMENT '服务详细描述',
-  `service_frequency` VARCHAR(100) DEFAULT NULL COMMENT '服务频次（如"每日3次"、"按需"）',
-  `service_duration` VARCHAR(50) DEFAULT NULL COMMENT '服务时长（如"每次1小时"）',
+  `service_type_code` VARCHAR(50) NOT NULL COMMENT '服务类型编码',
+  `service_type_name` VARCHAR(100) NOT NULL COMMENT '服务类型名称（如"24小时护理"、"康复训练"、"心理疏导"）',
+  `service_type_category` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '服务类别（1=生活照料, 2=医疗健康, 3=康复训练, 4=文化娱乐, 5=心理关怀, 6=其他）',
+  `service_type_description` TEXT DEFAULT NULL COMMENT '服务详细描述',
+  `service_type_frequency` VARCHAR(100) DEFAULT NULL COMMENT '服务频次（如"每日3次"、"按需"）',
+  `service_type_duration` VARCHAR(50) DEFAULT NULL COMMENT '服务时长（如"每次1小时"）',
   `cover_image` VARCHAR(500) DEFAULT NULL COMMENT '服务图片URL',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
   `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=停用, 1=启用）',
@@ -261,11 +261,11 @@ CREATE TABLE `park_service_item` (
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
   `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_service_code` (`park_code`, `service_code`),
+  UNIQUE KEY `uk_service_type_code` (`park_code`, `service_type_code`),
   KEY `idx_park_code` (`park_code`),
-  KEY `idx_service_category` (`service_category`),
+  KEY `idx_service_type_category` (`service_type_category`),
   KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构服务项目';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构服务类型';
 
 -- ---------------------------------------------------------------------
 -- 3.5.8 park_adviser 机构顾问信息
@@ -374,7 +374,7 @@ CREATE TABLE `park_room_type` (
 -- ---------------------------------------------------------------------
 -- 合并原 park_room_price / park_care_price / park_food_price / park_facility_price / park_service_price 五张表。
 -- 养老机构定价四要素：押金(charge_type=4)、房间费(1)、照护等级费(2)、餐费(3)，外加设施费(5)/服务费(6)。
--- charge_type 统一费类；ref_type+ref_code 关联具体 type 表（room_type/care_type/food_type/facility/service_item）。
+-- charge_type 统一费类；ref_type+ref_code 关联具体 type 表（room_type/care_type/food_type/facility_type/service_type）。
 -- billing_cycle（枚举：月/季/半年/年/一次性）兼容 room/care/food；price_unit（自由文本）兼容 facility/service。
 -- current_key 生成列 + uk_current 唯一索引 = DB 级保证 is_current=1 在同维度下唯一。
 -- version 字段 + @Version 注解 = MyBatis-Plus 乐观锁。
@@ -384,7 +384,7 @@ CREATE TABLE `park_pricing` (
   `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
   `plan_name` VARCHAR(100) DEFAULT NULL COMMENT '方案名称（如"豪华单人间·月费"）',
   `charge_type` TINYINT NOT NULL COMMENT '费类（1=房间费 2=照护费 3=餐费 4=押金 5=设施费 6=服务费 9=其他）',
-  `ref_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility/service_item/park）',
+  `ref_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility_type/service_type/park）',
   `ref_code` VARCHAR(64) NOT NULL COMMENT '关联编码',
   `ref_name` VARCHAR(100) DEFAULT NULL COMMENT '关联名称（冗余）',
   `billing_cycle` TINYINT DEFAULT NULL COMMENT '计费周期（1=月 2=季 3=半年 4=年 5=一次性）',
@@ -433,7 +433,7 @@ CREATE TABLE `park_pricing_item` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `pricing_id` BIGINT NOT NULL COMMENT 'FK→park_pricing.id',
   `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
-  `item_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility/service_item）',
+  `item_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility_type/service_type）',
   `item_code` VARCHAR(64) NOT NULL COMMENT '关联编码',
   `item_name` VARCHAR(100) DEFAULT NULL COMMENT '关联名称（冗余）',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',

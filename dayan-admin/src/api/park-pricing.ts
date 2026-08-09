@@ -9,7 +9,7 @@ import type { ParkPricing, ParkPricingQuery } from '@/types/park'
  *
  * 设计要点：
  * - chargeType 区分费类（1房间 2照护 3餐费 4押金 5设施 6服务 9其他）。
- * - refType + refCode 关联具体 type 表（room_type/care_type/food_type/facility/service_item）。
+ * - refType + refCode 关联具体 type 表（room_type/care_type/food_type/facility_type/service_type）。
  * - 主键为自增 id（Long），useCrud 传 idKey:'id'。
  * - 展开行专用 /list（parkCode + refType + refCode 三参必填），返回数组非分页。
  */

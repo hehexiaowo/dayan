@@ -3,28 +3,28 @@
  * 机构详情页 - 服务项目 tab。
  *
  * 架构（serviceItem 主表 + price 子表双层，仿 RoomTab 模式）：
- * 1. 搜索条（serviceName + serviceCategory + status）+ 新增服务项按钮
+ * 1. 搜索条（serviceTypeName + serviceTypeCategory + status）+ 新增服务项按钮
  * 2. 主表格服务项列表，useCrud（idKey:'id', fixedParams:{parkCode}）
- * 3. 展开行：展开时调 listServicePrices(parkCode, serviceCode) 加载价格，
+ * 3. 展开行：展开时调 listServicePrices(parkCode, serviceTypeCode) 加载价格，
  *    内联小表格 + 新增/编辑/删除（独立 ref + Map 缓存按需加载）
- * 4. 服务项新增/编辑 el-dialog，必填 serviceCode(≤50)/serviceName(≤200)，parkCode 隐藏
+ * 4. 服务项新增/编辑 el-dialog，必填 serviceTypeCode(≤50)/serviceTypeName(≤200)，parkCode 隐藏
  * 5. 价格新增/编辑 el-dialog，业务必填 salePrice/effectiveDate，
- *    serviceCode+parkCode 从展开行上下文带入不显示；priceUnit 自由文本（次/月/场/小时）
+ *    serviceTypeCode+parkCode 从展开行上下文带入不显示；priceUnit 自由文本（次/月/场/小时）
  *
  * 红线遵守：
  * - 主键 Long id，useCrud 传 idKey:'id'
- * - serviceCode 用户填写非系统生成；update 时不可改（编辑弹窗内 disabled）
- * - price 展开行用 /list 端点（parkCode+serviceCode 两参）
+ * - serviceTypeCode 用户填写非系统生成；update 时不可改（编辑弹窗内 disabled）
+ * - price 展开行用 /list 端点（parkCode+serviceTypeCode 两参）
  * - isCurrent / isPromotion 提交 0/1 非 true/false
  */
 import { reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
-  pageServiceItems,
-  createServiceItem,
-  updateServiceItem,
-  deleteServiceItem
+  pageServiceTypes,
+  createServiceType,
+  updateServiceType,
+  deleteServiceType
 } from '@/api/park-misc'
 import {
   listPricingsByRef,
@@ -32,29 +32,29 @@ import {
   updatePricing,
   deletePricing
 } from '@/api/park-pricing'
-import { SERVICE_CATEGORY_OPTIONS, serviceCategoryLabel } from '@/types/park'
-import type { ParkServiceItem, ParkServiceItemQuery, ParkPricing } from '@/types/park'
+import { SERVICE_TYPE_CATEGORY_OPTIONS, serviceTypeCategoryLabel } from '@/types/park'
+import type { ParkServiceType, ParkServiceTypeQuery, ParkPricing } from '@/types/park'
 import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{ parkCode: string }>()
 
 // ---------- 服务项 列表（useCrud，主键 id） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
-  ParkServiceItem,
-  ParkServiceItemQuery,
+  ParkServiceType,
+  ParkServiceTypeQuery,
   number
 >(
   {
-    page: pageServiceItems,
-    create: createServiceItem,
-    update: (id, data) => updateServiceItem(id, data),
-    remove: deleteServiceItem
+    page: pageServiceTypes,
+    create: createServiceType,
+    update: (id, data) => updateServiceType(id, data),
+    remove: deleteServiceType
   },
   {
     initialQuery: {
-      serviceCode: '',
-      serviceName: '',
-      serviceCategory: undefined,
+      serviceTypeCode: '',
+      serviceTypeName: '',
+      serviceTypeCategory: undefined,
       status: undefined
     },
     idKey: 'id',
@@ -70,26 +70,26 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-const form = reactive<ParkServiceItem>({
+const form = reactive<ParkServiceType>({
   id: undefined,
   parkCode: '',
-  serviceCode: '',
-  serviceName: '',
-  serviceCategory: undefined,
-  serviceDescription: '',
-  serviceFrequency: '',
-  serviceDuration: '',
+  serviceTypeCode: '',
+  serviceTypeName: '',
+  serviceTypeCategory: undefined,
+  serviceTypeDescription: '',
+  serviceTypeFrequency: '',
+  serviceTypeDuration: '',
   coverImage: '',
   sortOrder: 0,
   status: 1
 })
 
-const rules: FormRules<ParkServiceItem> = {
-  serviceCode: [
+const rules: FormRules<ParkServiceType> = {
+  serviceTypeCode: [
     { required: true, message: '请输入服务编码', trigger: 'blur' },
     { max: 50, message: '不超过 50 个字符', trigger: 'blur' }
   ],
-  serviceName: [
+  serviceTypeName: [
     { required: true, message: '请输入服务名称', trigger: 'blur' },
     { max: 200, message: '不超过 200 个字符', trigger: 'blur' }
   ]
@@ -99,12 +99,12 @@ function resetForm() {
   Object.assign(form, {
     id: undefined,
     parkCode: '',
-    serviceCode: '',
-    serviceName: '',
-    serviceCategory: undefined,
-    serviceDescription: '',
-    serviceFrequency: '',
-    serviceDuration: '',
+    serviceTypeCode: '',
+    serviceTypeName: '',
+    serviceTypeCategory: undefined,
+    serviceTypeDescription: '',
+    serviceTypeFrequency: '',
+    serviceTypeDuration: '',
     coverImage: '',
     sortOrder: 0,
     status: 1
@@ -118,7 +118,7 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: ParkServiceItem) {
+function openEdit(row: ParkServiceType) {
   dialogMode.value = 'edit'
   resetForm()
   Object.assign(form, row)
@@ -135,10 +135,10 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialogMode.value === 'create') {
-      await createServiceItem(form)
+      await createServiceType(form)
       ElMessage.success('新增成功')
     } else if (form.id) {
-      await updateServiceItem(form.id, form)
+      await updateServiceType(form.id, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -148,47 +148,47 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(row: ParkServiceItem) {
+async function handleDelete(row: ParkServiceType) {
   if (!row.id) return
   await ElMessageBox.confirm(
     '确定删除该服务项吗？删除前请先删除该服务项下所有价格记录（不级联删除）。',
     '提示',
     { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
   )
-  await deleteServiceItem(row.id)
+  await deleteServiceType(row.id)
   ElMessage.success('删除成功')
   loadPage()
 }
 
 // ---------- 展开行 price 管理 ----------
-/** 各展开行的 price 列表缓存，key=serviceCode */
+/** 各展开行的 price 列表缓存，key=serviceTypeCode */
 const priceMap = ref<Map<string, ParkPricing[]>>(new Map())
 /** price 加载状态 */
 const priceLoadingMap = ref<Map<string, boolean>>(new Map())
 
-async function loadPrices(parkCode: string, row: ParkServiceItem) {
-  if (!row.serviceCode) return
-  priceLoadingMap.value.set(row.serviceCode, true)
+async function loadPrices(parkCode: string, row: ParkServiceType) {
+  if (!row.serviceTypeCode) return
+  priceLoadingMap.value.set(row.serviceTypeCode, true)
   try {
-    const list = await listPricingsByRef(parkCode, 'service_item', row.serviceCode)
-    priceMap.value.set(row.serviceCode, list)
+    const list = await listPricingsByRef(parkCode, 'service_type', row.serviceTypeCode)
+    priceMap.value.set(row.serviceTypeCode, list)
   } catch {
-    priceMap.value.set(row.serviceCode, [])
+    priceMap.value.set(row.serviceTypeCode, [])
   } finally {
-    priceLoadingMap.value.set(row.serviceCode, false)
+    priceLoadingMap.value.set(row.serviceTypeCode, false)
   }
 }
 
 /** 展开行 toggle：展开时按需加载 price */
-function handleExpandChange(row: ParkServiceItem, expanded: ParkServiceItem[], parkCode: string) {
+function handleExpandChange(row: ParkServiceType, expanded: ParkServiceType[], parkCode: string) {
   const isExpanded = expanded.some((r) => r.id === row.id)
-  if (isExpanded && row.serviceCode) {
+  if (isExpanded && row.serviceTypeCode) {
     loadPrices(parkCode, row)
   }
 }
 
 // ---------- 主表"当前价"列：分页加载后并行批量取当前价（避免 N+1 串行）----------
-/** key=serviceCode → 当前价展示文本（如 "¥80/次"），无当前价则无 key */
+/** key=serviceTypeCode → 当前价展示文本（如 "¥80/次"），无当前价则无 key */
 const currentPriceMap = ref<Map<string, string>>(new Map())
 
 /** 取一条 price 的展示文本 */
@@ -198,8 +198,8 @@ function formatPriceText(p: ParkPricing): string {
 }
 
 /** 分页数据变化后，批量拉取每行当前价（Promise.all 并行，单页最多 size 条） */
-async function loadCurrentPrices(rows: ParkServiceItem[]) {
-  const codes = rows.filter((r) => r.serviceCode).map((r) => r.serviceCode)
+async function loadCurrentPrices(rows: ParkServiceType[]) {
+  const codes = rows.filter((r) => r.serviceTypeCode).map((r) => r.serviceTypeCode)
   if (codes.length === 0) {
     currentPriceMap.value.clear()
     return
@@ -207,7 +207,7 @@ async function loadCurrentPrices(rows: ParkServiceItem[]) {
   const results = await Promise.all(
     codes.map(async (code) => {
       try {
-        const list = await listPricingsByRef(props.parkCode, 'service_item', code)
+        const list = await listPricingsByRef(props.parkCode, 'service_type', code)
         return [code, list] as const
       } catch {
         return [code, []] as const
@@ -223,17 +223,17 @@ async function loadCurrentPrices(rows: ParkServiceItem[]) {
 }
 
 /** price 增删改后同步刷新当前价（复用已加载的 priceMap，避免重复请求） */
-function refreshCurrentPrice(serviceCode: string) {
-  const list = priceMap.value.get(serviceCode)
+function refreshCurrentPrice(serviceTypeCode: string) {
+  const list = priceMap.value.get(serviceTypeCode)
   if (!list) {
-    currentPriceMap.value.delete(serviceCode)
+    currentPriceMap.value.delete(serviceTypeCode)
     return
   }
   const cur = list.find((p) => p.isCurrent === 1)
   if (cur) {
-    currentPriceMap.value.set(serviceCode, formatPriceText(cur))
+    currentPriceMap.value.set(serviceTypeCode, formatPriceText(cur))
   } else {
-    currentPriceMap.value.delete(serviceCode)
+    currentPriceMap.value.delete(serviceTypeCode)
   }
 }
 
@@ -250,14 +250,14 @@ const priceDialogVisible = ref(false)
 const priceDialogMode = ref<'create' | 'edit'>('create')
 const priceSubmitLoading = ref(false)
 const priceFormRef = ref<FormInstance>()
-/** 当前 price 所属的服务上下文（serviceCode + parkCode） */
-const priceContext = reactive({ parkCode: '', serviceCode: '' })
+/** 当前 price 所属的服务上下文（serviceTypeCode + parkCode） */
+const priceContext = reactive({ parkCode: '', serviceTypeCode: '' })
 
 const priceForm = reactive<ParkPricing>({
   id: undefined,
   parkCode: '',
   chargeType: 6,
-  refType: 'service_item',
+  refType: 'service_type',
   refCode: '',
   refName: '',
   priceUnit: '',
@@ -299,7 +299,7 @@ function resetPriceForm() {
     id: undefined,
     parkCode: '',
     chargeType: 6,
-    refType: 'service_item',
+    refType: 'service_type',
     refCode: '',
     refName: '',
     priceUnit: '',
@@ -318,23 +318,23 @@ function resetPriceForm() {
   discountEdited = false
 }
 
-function openCreatePrice(parkCode: string, serviceCode: string, serviceName?: string) {
+function openCreatePrice(parkCode: string, serviceTypeCode: string, serviceTypeName?: string) {
   priceDialogMode.value = 'create'
   resetPriceForm()
   priceContext.parkCode = parkCode
-  priceContext.serviceCode = serviceCode
+  priceContext.serviceTypeCode = serviceTypeCode
   priceForm.parkCode = parkCode
-  priceForm.refCode = serviceCode
-  priceForm.refName = serviceName || ''
+  priceForm.refCode = serviceTypeCode
+  priceForm.refName = serviceTypeName || ''
   priceDialogVisible.value = true
 }
 
-function openEditPrice(row: ParkPricing, parkCode: string, serviceCode: string) {
+function openEditPrice(row: ParkPricing, parkCode: string, serviceTypeCode: string) {
   priceDialogMode.value = 'edit'
   resetPriceForm()
   Object.assign(priceForm, row)
   priceContext.parkCode = parkCode
-  priceContext.serviceCode = serviceCode
+  priceContext.serviceTypeCode = serviceTypeCode
   priceDialogVisible.value = true
 }
 
@@ -349,8 +349,8 @@ async function handlePriceSubmit() {
   try {
     // 确保 parkCode + refCode 从上下文带入（编辑时也不可改外键）
     priceForm.parkCode = priceContext.parkCode
-    priceForm.refCode = priceContext.serviceCode
-    priceForm.refType = 'service_item'
+    priceForm.refCode = priceContext.serviceTypeCode
+    priceForm.refType = 'service_type'
     priceForm.chargeType = 6
     if (priceDialogMode.value === 'create') {
       await createPricing(priceForm)
@@ -360,16 +360,16 @@ async function handlePriceSubmit() {
       ElMessage.success('修改成功')
     }
     priceDialogVisible.value = false
-    // 刷新该展开行 price（用上下文 serviceCode）
-    loadPrices(priceContext.parkCode, { serviceCode: priceContext.serviceCode } as ParkServiceItem)
+    // 刷新该展开行 price（用上下文 serviceTypeCode）
+    loadPrices(priceContext.parkCode, { serviceTypeCode: priceContext.serviceTypeCode } as ParkServiceType)
     // 同步主表"当前价"列
-    refreshCurrentPrice(priceContext.serviceCode)
+    refreshCurrentPrice(priceContext.serviceTypeCode)
   } finally {
     priceSubmitLoading.value = false
   }
 }
 
-async function handleDeletePrice(row: ParkPricing, parkCode: string, serviceCode: string) {
+async function handleDeletePrice(row: ParkPricing, parkCode: string, serviceTypeCode: string) {
   if (!row.id) return
   await ElMessageBox.confirm('确定删除该价格记录？', '提示', {
     confirmButtonText: '确定',
@@ -378,8 +378,8 @@ async function handleDeletePrice(row: ParkPricing, parkCode: string, serviceCode
   })
   await deletePricing(row.id)
   ElMessage.success('删除成功')
-  loadPrices(parkCode, { serviceCode } as ParkServiceItem)
-  refreshCurrentPrice(serviceCode)
+  loadPrices(parkCode, { serviceTypeCode } as ParkServiceType)
+  refreshCurrentPrice(serviceTypeCode)
 }
 
 // ---------- 辅助渲染 ----------
@@ -401,11 +401,11 @@ defineExpose({ loadPage })
     <!-- 搜索栏 -->
     <el-form :inline="true" :model="query" @submit.prevent>
       <el-form-item label="服务名称">
-        <el-input v-model="query.serviceName" placeholder="服务名称" clearable @keyup.enter="handleSearch" />
+        <el-input v-model="query.serviceTypeName" placeholder="服务名称" clearable @keyup.enter="handleSearch" />
       </el-form-item>
       <el-form-item label="服务类别">
-        <el-select v-model="query.serviceCategory" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="o in SERVICE_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        <el-select v-model="query.serviceTypeCategory" placeholder="全部" clearable style="width: 140px">
+          <el-option v-for="o in SERVICE_TYPE_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </el-form-item>
       <el-form-item label="状态">
@@ -427,23 +427,23 @@ defineExpose({ loadPage })
       border
       stripe
       row-key="id"
-      @expand-change="(row: ParkServiceItem, expanded: ParkServiceItem[]) => handleExpandChange(row, expanded, parkCode)"
+      @expand-change="(row: ParkServiceType, expanded: ParkServiceType[]) => handleExpandChange(row, expanded, parkCode)"
     >
       <el-table-column type="expand">
         <template #default="{ row }">
-          <div class="price-block" v-loading="priceLoadingMap.get(row.serviceCode)">
+          <div class="price-block" v-loading="priceLoadingMap.get(row.serviceTypeCode)">
             <div class="price-toolbar">
-              <span class="price-title">价格记录（{{ row.serviceName }}）</span>
+              <span class="price-title">价格记录（{{ row.serviceTypeName }}）</span>
               <el-button
                 type="primary"
                 size="small"
                 :icon="'Plus'"
-                @click="openCreatePrice(parkCode, row.serviceCode, row.serviceName)"
+                @click="openCreatePrice(parkCode, row.serviceTypeCode, row.serviceTypeName)"
               >
                 新增价格
               </el-button>
             </div>
-            <el-table v-if="(priceMap.get(row.serviceCode) || []).length > 0" :data="priceMap.get(row.serviceCode) || []" border size="small">
+            <el-table v-if="(priceMap.get(row.serviceTypeCode) || []).length > 0" :data="priceMap.get(row.serviceTypeCode) || []" border size="small">
               <el-table-column prop="priceUnit" label="计费单位" width="100" align="center">
                 <template #default="{ row: p }">{{ p.priceUnit || '--' }}</template>
               </el-table-column>
@@ -478,38 +478,38 @@ defineExpose({ loadPage })
               </el-table-column>
               <el-table-column label="操作" width="140" fixed="right">
                 <template #default="{ row: p }">
-                  <el-button link type="primary" size="small" @click="openEditPrice(p, parkCode, row.serviceCode)">
+                  <el-button link type="primary" size="small" @click="openEditPrice(p, parkCode, row.serviceTypeCode)">
                     编辑
                   </el-button>
-                  <el-button link type="danger" size="small" @click="handleDeletePrice(p, parkCode, row.serviceCode)">
+                  <el-button link type="danger" size="small" @click="handleDeletePrice(p, parkCode, row.serviceTypeCode)">
                     删除
                   </el-button>
                 </template>
               </el-table-column>
             </el-table>
             <el-empty
-              v-else-if="!priceLoadingMap.get(row.serviceCode)"
+              v-else-if="!priceLoadingMap.get(row.serviceTypeCode)"
               description="暂无价格记录，点击右上角新增"
               :image-size="60"
             />
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="serviceCode" label="服务编码" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="serviceName" label="服务名称" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="serviceTypeCode" label="服务编码" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="serviceTypeName" label="服务名称" min-width="160" show-overflow-tooltip />
       <el-table-column label="当前价" width="130" align="center">
         <template #default="{ row }">
-          <span v-if="currentPriceMap.get(row.serviceCode)" class="current-price">
-            {{ currentPriceMap.get(row.serviceCode) }}
+          <span v-if="currentPriceMap.get(row.serviceTypeCode)" class="current-price">
+            {{ currentPriceMap.get(row.serviceTypeCode) }}
           </span>
           <span v-else class="price-empty">—</span>
         </template>
       </el-table-column>
-      <el-table-column prop="serviceCategory" label="类别" width="90" align="center">
-        <template #default="{ row }">{{ serviceCategoryLabel(row.serviceCategory) }}</template>
+      <el-table-column prop="serviceTypeCategory" label="类别" width="90" align="center">
+        <template #default="{ row }">{{ serviceTypeCategoryLabel(row.serviceTypeCategory) }}</template>
       </el-table-column>
-      <el-table-column prop="serviceFrequency" label="服务频次" min-width="120" show-overflow-tooltip />
-      <el-table-column prop="serviceDuration" label="服务时长" min-width="100" show-overflow-tooltip />
+      <el-table-column prop="serviceTypeFrequency" label="服务频次" min-width="120" show-overflow-tooltip />
+      <el-table-column prop="serviceTypeDuration" label="服务时长" min-width="100" show-overflow-tooltip />
       <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
       <el-table-column prop="status" label="状态" width="90" align="center">
         <template #default="{ row }">
@@ -550,9 +550,9 @@ defineExpose({ loadPage })
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="服务编码" prop="serviceCode">
+            <el-form-item label="服务编码" prop="serviceTypeCode">
               <el-input
-                v-model="form.serviceCode"
+                v-model="form.serviceTypeCode"
                 placeholder="业务编码（同机构下唯一）"
                 maxlength="50"
                 :disabled="dialogMode === 'edit'"
@@ -560,25 +560,25 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="服务名称" prop="serviceName">
-              <el-input v-model="form.serviceName" placeholder="服务名称" maxlength="200" show-word-limit />
+            <el-form-item label="服务名称" prop="serviceTypeName">
+              <el-input v-model="form.serviceTypeName" placeholder="服务名称" maxlength="200" show-word-limit />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="服务类别">
-              <el-select v-model="form.serviceCategory" placeholder="请选择" style="width: 100%">
-                <el-option v-for="o in SERVICE_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              <el-select v-model="form.serviceTypeCategory" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in SERVICE_TYPE_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="服务频次">
-              <el-input v-model="form.serviceFrequency" placeholder="如 每天/每周" />
+              <el-input v-model="form.serviceTypeFrequency" placeholder="如 每天/每周" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="服务时长">
-              <el-input v-model="form.serviceDuration" placeholder="如 30分钟" />
+              <el-input v-model="form.serviceTypeDuration" placeholder="如 30分钟" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -596,12 +596,12 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <FileUploader v-model="form.coverImage" type="image" module="park" :asset-park-code="props.parkCode" asset-source-type="service_item" :asset-source-ref="form.serviceCode" />
+              <FileUploader v-model="form.coverImage" type="image" module="park" :asset-park-code="props.parkCode" asset-source-type="service_type" :asset-source-ref="form.serviceTypeCode" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="服务描述">
-              <el-input v-model="form.serviceDescription" type="textarea" :rows="3" placeholder="服务描述" />
+              <el-input v-model="form.serviceTypeDescription" type="textarea" :rows="3" placeholder="服务描述" />
             </el-form-item>
           </el-col>
         </el-row>

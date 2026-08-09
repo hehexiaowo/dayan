@@ -25,7 +25,7 @@ public class ParkPricingItem extends BaseEntity {
     /** 机构编码 */
     private String parkCode;
 
-    /** 关联类型（room_type/care_type/food_type/facility/service_item） */
+    /** 关联类型（room_type/care_type/food_type/facility_type/service_type） */
     private String itemType;
 
     /** 关联编码 */

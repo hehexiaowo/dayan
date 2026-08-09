@@ -458,7 +458,7 @@ export interface ParkPricing {
   planName?: string
   /** 费类（1房间 2照护 3餐费 4押金 5设施 6服务 9其他） */
   chargeType?: number
-  /** 关联类型（room_type/care_type/food_type/facility/service_item/park） */
+  /** 关联类型（room_type/care_type/food_type/facility_type/service_type/park） */
   refType?: string
   /** 关联编码 */
   refCode?: string
@@ -569,7 +569,7 @@ export interface ParkAsset {
   vrProvider?: string
   thumbnailUrl?: string
   // 来源追踪
-  /** 来源（media_mgmt/room_type/food_type/facility/service_item/display_block/adviser/park_info） */
+  /** 来源（media_mgmt/room_type/food_type/facility_type/service_type/display_block/adviser/park_info） */
   sourceType?: string
   /** 来源编码（media_mgmt 时为空） */
   sourceRefCode?: string
@@ -589,23 +589,23 @@ export interface ParkAssetQuery extends PageQuery {
 }
 
 // ============================================================================
-// 设施（ParkFacility）
+// 设施类型（ParkFacilityType）
 // ============================================================================
 
 /**
- * 机构设施（后端 ParkFacilityVO）。
+ * 机构设施类型（后端 ParkFacilityTypeVO）。
  *
- * 外键 parkCode；facilityCode 必填（业务编码，update 不可改），facilityName 必填。
+ * 外键 parkCode；facilityTypeCode 必填（业务编码，update 不可改），facilityTypeName 必填。
  */
-export interface ParkFacility {
+export interface ParkFacilityType {
   id?: number
   parkCode?: string
-  /** 设施编码（必填，业务语义编码，update 不可改） */
-  facilityCode: string
-  /** 设施名称（必填） */
-  facilityName: string
+  /** 设施类型编码（必填，业务语义编码，update 不可改） */
+  facilityTypeCode: string
+  /** 设施类型名称（必填） */
+  facilityTypeName: string
   /** 设施类别 */
-  facilityCategory?: number
+  facilityTypeCategory?: number
   /** 楼栋名称 */
   buildingName?: string
   /** 楼层 */
@@ -617,7 +617,7 @@ export interface ParkFacility {
   /** 开放时间 */
   openTime?: string
   /** 设施描述 */
-  facilityDescription?: string
+  facilityTypeDescription?: string
   /** 封面图 URL */
   coverImage?: string
   /** 图片列表（JSON 字符串原文） */
@@ -630,12 +630,12 @@ export interface ParkFacility {
   createdAt?: string
 }
 
-/** 设施分页查询参数 */
-export interface ParkFacilityQuery extends PageQuery {
+/** 设施类型分页查询参数 */
+export interface ParkFacilityTypeQuery extends PageQuery {
   parkCode?: string
-  facilityCode?: string
-  facilityName?: string
-  facilityCategory?: number
+  facilityTypeCode?: string
+  facilityTypeName?: string
+  facilityTypeCategory?: number
   status?: number
 }
 
@@ -680,7 +680,7 @@ export interface ParkAdviserQuery extends PageQuery {
 }
 
 // ============================================================================
-// 周边（ParkPeriphery）+ 服务项（ParkServiceItem）
+// 周边（ParkPeriphery）+ 服务类型（ParkServiceType）
 // ============================================================================
 
 /**
@@ -718,25 +718,25 @@ export interface ParkPeripheryQuery extends PageQuery {
 }
 
 /**
- * 机构服务项（后端 ParkServiceItemVO）。
+ * 机构服务类型（后端 ParkServiceTypeVO）。
  *
- * 外键 parkCode；serviceCode 必填（业务编码，update 不可改），serviceName 必填。
+ * 外键 parkCode；serviceTypeCode 必填（业务编码，update 不可改），serviceTypeName 必填。
  */
-export interface ParkServiceItem {
+export interface ParkServiceType {
   id?: number
   parkCode?: string
-  /** 服务编码（必填，业务语义编码，update 不可改） */
-  serviceCode: string
-  /** 服务名称（必填） */
-  serviceName: string
+  /** 服务类型编码（必填，业务语义编码，update 不可改） */
+  serviceTypeCode: string
+  /** 服务类型名称（必填） */
+  serviceTypeName: string
   /** 服务类别 */
-  serviceCategory?: number
+  serviceTypeCategory?: number
   /** 服务描述 */
-  serviceDescription?: string
+  serviceTypeDescription?: string
   /** 服务频次 */
-  serviceFrequency?: string
+  serviceTypeFrequency?: string
   /** 服务时长 */
-  serviceDuration?: string
+  serviceTypeDuration?: string
   /** 封面图 URL */
   coverImage?: string
   /** 排序号 */
@@ -747,12 +747,12 @@ export interface ParkServiceItem {
   createdAt?: string
 }
 
-/** 服务项分页查询参数 */
-export interface ParkServiceItemQuery extends PageQuery {
+/** 服务类型分页查询参数 */
+export interface ParkServiceTypeQuery extends PageQuery {
   parkCode?: string
-  serviceCode?: string
-  serviceName?: string
-  serviceCategory?: number
+  serviceTypeCode?: string
+  serviceTypeName?: string
+  serviceTypeCategory?: number
   status?: number
 }
 
@@ -849,15 +849,15 @@ export const SOURCE_TYPE_OPTIONS = [
   { label: '素材库', value: 'media_mgmt' },
   { label: '房型', value: 'room_type' },
   { label: '餐饮', value: 'food_type' },
-  { label: '设施', value: 'facility' },
-  { label: '服务项目', value: 'service_item' },
+  { label: '设施', value: 'facility_type' },
+  { label: '服务项目', value: 'service_type' },
   { label: '展示板块', value: 'display_block' },
   { label: '顾问', value: 'adviser' },
   { label: '机构信息', value: 'park_info' }
 ] as const
 
-/** 设施-类别（facility_category）：1=休闲娱乐..6=安全保障 */
-export const FACILITY_CATEGORY_OPTIONS = [
+/** 设施类型-类别（facility_type_category）：1=休闲娱乐..6=安全保障 */
+export const FACILITY_TYPE_CATEGORY_OPTIONS = [
   { label: '休闲娱乐', value: 1 },
   { label: '医疗健康', value: 2 },
   { label: '运动健身', value: 3 },
@@ -866,8 +866,8 @@ export const FACILITY_CATEGORY_OPTIONS = [
   { label: '安全保障', value: 6 }
 ] as const
 
-/** 服务项-类别（service_category）：1=生活照料..6=其他 */
-export const SERVICE_CATEGORY_OPTIONS = [
+/** 服务类型-类别（service_type_category）：1=生活照料..6=其他 */
+export const SERVICE_TYPE_CATEGORY_OPTIONS = [
   { label: '生活照料', value: 1 },
   { label: '医疗健康', value: 2 },
   { label: '康复训练', value: 3 },
@@ -939,8 +939,8 @@ export function sourceTypeLabel(v?: string): string {
   const found = SOURCE_TYPE_OPTIONS.find((o) => o.value === v)
   return found ? found.label : v
 }
-export const facilityCategoryLabel = (v?: number) => labelOf(FACILITY_CATEGORY_OPTIONS, v)
-export const serviceCategoryLabel = (v?: number) => labelOf(SERVICE_CATEGORY_OPTIONS, v)
+export const facilityTypeCategoryLabel = (v?: number) => labelOf(FACILITY_TYPE_CATEGORY_OPTIONS, v)
+export const serviceTypeCategoryLabel = (v?: number) => labelOf(SERVICE_TYPE_CATEGORY_OPTIONS, v)
 export const peripheryTypeLabel = (v?: number) => labelOf(PERIPHERY_TYPE_OPTIONS, v)
 /** 0/1 布尔 label：是/否 */
 export const boolIntLabel = (v?: number) => labelOf(BOOL_INT_OPTIONS, v)

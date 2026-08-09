@@ -7,12 +7,12 @@ import com.dayan.common.mybatis.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 /**
- * 表 park_service_item 对应实体。
+ * 表 park_service_type 对应实体。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("park_service_item")
-public class ParkServiceItem extends BaseEntity {
+@TableName("park_service_type")
+public class ParkServiceType extends BaseEntity {
 
     /** 主键 */
     @TableId(type = IdType.AUTO)
@@ -22,23 +22,23 @@ public class ParkServiceItem extends BaseEntity {
     /** 机构编码 */
     private String parkCode;
 
-    /** 服务编码 */
-    private String serviceCode;
+    /** 服务类型编码 */
+    private String serviceTypeCode;
 
-    /** 服务名称 */
-    private String serviceName;
+    /** 服务类型名称 */
+    private String serviceTypeName;
 
     /** 服务类别 */
-    private Integer serviceCategory;
+    private Integer serviceTypeCategory;
 
     /** 服务详细描述 */
-    private String serviceDescription;
+    private String serviceTypeDescription;
 
     /** 服务频次 */
-    private String serviceFrequency;
+    private String serviceTypeFrequency;
 
     /** 服务时长 */
-    private String serviceDuration;
+    private String serviceTypeDuration;
 
     /** 服务图片URL */
     private String coverImage;

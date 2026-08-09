@@ -8,12 +8,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 /**
- * 表 park_facility 对应实体。
+ * 表 park_facility_type 对应实体。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("park_facility")
-public class ParkFacility extends BaseEntity {
+@TableName("park_facility_type")
+public class ParkFacilityType extends BaseEntity {
 
     /** 主键 */
     @TableId(type = IdType.AUTO)
@@ -23,14 +23,14 @@ public class ParkFacility extends BaseEntity {
     /** 机构编码 */
     private String parkCode;
 
-    /** 设施编码 */
-    private String facilityCode;
+    /** 设施类型编码 */
+    private String facilityTypeCode;
 
-    /** 设施名称 */
-    private String facilityName;
+    /** 设施类型名称 */
+    private String facilityTypeName;
 
     /** 设施类别 */
-    private Integer facilityCategory;
+    private Integer facilityTypeCategory;
 
     /** 所在楼栋 */
     private String buildingName;
@@ -48,7 +48,7 @@ public class ParkFacility extends BaseEntity {
     private String openTime;
 
     /** 设施详细描述 */
-    private String facilityDescription;
+    private String facilityTypeDescription;
 
     /** 封面图URL */
     private String coverImage;

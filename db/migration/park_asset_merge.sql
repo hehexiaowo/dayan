@@ -36,7 +36,7 @@ CREATE TABLE `park_asset` (
   `vr_provider` VARCHAR(100) DEFAULT NULL COMMENT 'VR服务提供商（VR专属）',
   `thumbnail_url` VARCHAR(500) DEFAULT NULL COMMENT '缩略图key（VR专属）',
   -- 来源追踪（核心设计）
-  `source_type` VARCHAR(30) NOT NULL DEFAULT 'media_mgmt' COMMENT '来源（media_mgmt=素材库直传 room_type=房型 food_type=餐饮 facility=设施 service_item=服务 display_block=展示板块 adviser=顾问 park_info=机构信息）',
+  `source_type` VARCHAR(30) NOT NULL DEFAULT 'media_mgmt' COMMENT '来源（media_mgmt=素材库直传 room_type=房型 food_type=餐饮 facility_type=设施 service_type=服务 display_block=展示板块 adviser=顾问 park_info=机构信息）',
   `source_ref_code` VARCHAR(64) DEFAULT NULL COMMENT '来源编码（media_mgmt 时为 NULL）',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
   `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=隐藏 1=显示）',

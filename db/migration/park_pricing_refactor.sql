@@ -21,7 +21,7 @@ CREATE TABLE `park_pricing` (
   `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
   `plan_name` VARCHAR(100) DEFAULT NULL COMMENT '方案名称（如"豪华单人间·月费"）',
   `charge_type` TINYINT NOT NULL COMMENT '费类（1=房间费 2=照护费 3=餐费 4=押金 5=设施费 6=服务费 9=其他）',
-  `ref_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility/service_item/park）',
+  `ref_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility_type/service_type/park）',
   `ref_code` VARCHAR(64) NOT NULL COMMENT '关联编码',
   `ref_name` VARCHAR(100) DEFAULT NULL COMMENT '关联名称（冗余）',
   `billing_cycle` TINYINT DEFAULT NULL COMMENT '计费周期（1=月 2=季 3=半年 4=年 5=一次性）',
@@ -69,7 +69,7 @@ CREATE TABLE `park_pricing_item` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `pricing_id` BIGINT NOT NULL COMMENT 'FK→park_pricing.id',
   `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
-  `item_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility/service_item）',
+  `item_type` VARCHAR(20) NOT NULL COMMENT '关联类型（room_type/care_type/food_type/facility_type/service_type）',
   `item_code` VARCHAR(64) NOT NULL COMMENT '关联编码',
   `item_name` VARCHAR(100) DEFAULT NULL COMMENT '关联名称（冗余）',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
@@ -171,7 +171,7 @@ INSERT INTO `park_pricing` (
   `sort_order`, `status`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`
 )
 SELECT
-  `park_code`, 5, 'facility', `facility_code`, `price_unit`,
+  `park_code`, 5, 'facility_type', `facility_code`, `price_unit`,
   `original_price`, `sale_price`, `discount_rate`, `price_description`,
   `effective_date`, `expire_date`, `is_current`,
   `is_promotion`, `promotion_description`,
@@ -187,7 +187,7 @@ INSERT INTO `park_pricing` (
   `sort_order`, `status`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`
 )
 SELECT
-  `park_code`, 6, 'service_item', `service_code`, `price_unit`,
+  `park_code`, 6, 'service_type', `service_code`, `price_unit`,
   `original_price`, `sale_price`, `discount_rate`, `price_description`,
   `effective_date`, `expire_date`, `is_current`,
   `is_promotion`, `promotion_description`,

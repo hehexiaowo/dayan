@@ -5,19 +5,19 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 机构设施更新入参。
+ * 机构设施类型更新入参。
  */
 @Data
-public class ParkFacilityUpdateDTO {
+public class ParkFacilityTypeUpdateDTO {
 
-    private String facilityName;
-    private Integer facilityCategory;
+    private String facilityTypeName;
+    private Integer facilityTypeCategory;
     private String buildingName;
     private String floor;
     private BigDecimal area;
     private Integer capacity;
     private String openTime;
-    private String facilityDescription;
+    private String facilityTypeDescription;
     private String coverImage;
     private String images;
     private Integer sortOrder;

@@ -66,7 +66,7 @@ public class ParkAsset extends BaseEntity {
     /** 缩略图key（VR专属） */
     private String thumbnailUrl;
 
-    /** 来源（media_mgmt/room_type/food_type/facility/service_item/display_block/adviser/park_info） */
+    /** 来源（media_mgmt/room_type/food_type/facility_type/service_type/display_block/adviser/park_info） */
     private String sourceType;
 
     /** 来源编码（media_mgmt 时为 NULL） */

@@ -198,8 +198,8 @@ defineExpose({ loadPage })
           <el-option label="素材库" value="media_mgmt" />
           <el-option label="房型" value="room_type" />
           <el-option label="餐饮" value="food_type" />
-          <el-option label="设施" value="facility" />
-          <el-option label="服务项目" value="service_item" />
+          <el-option label="设施" value="facility_type" />
+          <el-option label="服务项目" value="service_type" />
           <el-option label="展示板块" value="display_block" />
           <el-option label="顾问" value="adviser" />
           <el-option label="机构信息" value="park_info" />

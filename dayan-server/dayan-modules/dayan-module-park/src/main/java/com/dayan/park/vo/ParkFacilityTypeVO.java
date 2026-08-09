@@ -6,22 +6,22 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 机构设施 VO。
+ * 机构设施类型 VO。
  */
 @Data
-public class ParkFacilityVO {
+public class ParkFacilityTypeVO {
 
     private Long id;
     private String parkCode;
-    private String facilityCode;
-    private String facilityName;
-    private Integer facilityCategory;
+    private String facilityTypeCode;
+    private String facilityTypeName;
+    private Integer facilityTypeCategory;
     private String buildingName;
     private String floor;
     private BigDecimal area;
     private Integer capacity;
     private String openTime;
-    private String facilityDescription;
+    private String facilityTypeDescription;
     private String coverImage;
     private String images;
     private Integer sortOrder;

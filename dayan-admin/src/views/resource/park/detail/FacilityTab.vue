@@ -3,28 +3,28 @@
  * 机构详情页 - 设施 tab。
  *
  * 架构（facility 主表 + price 子表双层，仿 RoomTab 模式）：
- * 1. 搜索条（facilityName + facilityCategory + status）+ 新增设施按钮
+ * 1. 搜索条（facilityTypeName + facilityTypeCategory + status）+ 新增设施按钮
  * 2. 主表格设施列表，useCrud（idKey:'id', fixedParams:{parkCode}）
- * 3. 展开行：展开时调 listFacilityPrices(parkCode, facilityCode) 加载价格，
+ * 3. 展开行：展开时调 listFacilityPrices(parkCode, facilityTypeCode) 加载价格，
  *    内联小表格 + 新增/编辑/删除（独立 ref + Map 缓存按需加载）
- * 4. 设施新增/编辑 el-dialog，必填 facilityCode(≤50)/facilityName(≤200)，parkCode 隐藏
+ * 4. 设施新增/编辑 el-dialog，必填 facilityTypeCode(≤50)/facilityTypeName(≤200)，parkCode 隐藏
  * 5. 价格新增/编辑 el-dialog，业务必填 salePrice/effectiveDate，
- *    facilityCode+parkCode 从展开行上下文带入不显示；priceUnit 自由文本（次/月/场/小时）
+ *    facilityTypeCode+parkCode 从展开行上下文带入不显示；priceUnit 自由文本（次/月/场/小时）
  *
  * 红线遵守：
  * - 主键 Long id，useCrud 传 idKey:'id'
- * - facilityCode 用户填写非系统生成；update 时不可改（编辑弹窗内 disabled）
- * - price 展开行用 /list 端点（parkCode+facilityCode 两参）
+ * - facilityTypeCode 用户填写非系统生成；update 时不可改（编辑弹窗内 disabled）
+ * - price 展开行用 /list 端点（parkCode+facilityTypeCode 两参）
  * - isCurrent / isPromotion 提交 0/1 非 true/false
  */
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
-  pageFacilities,
-  createFacility,
-  updateFacility,
-  deleteFacility
+  pageFacilityTypes,
+  createFacilityType,
+  updateFacilityType,
+  deleteFacilityType
 } from '@/api/park-facility'
 import {
   listPricingsByRef,
@@ -32,26 +32,26 @@ import {
   updatePricing,
   deletePricing
 } from '@/api/park-pricing'
-import { FACILITY_CATEGORY_OPTIONS, facilityCategoryLabel } from '@/types/park'
-import type { ParkFacility, ParkFacilityQuery, ParkPricing } from '@/types/park'
+import { FACILITY_TYPE_CATEGORY_OPTIONS, facilityTypeCategoryLabel } from '@/types/park'
+import type { ParkFacilityType, ParkFacilityTypeQuery, ParkPricing } from '@/types/park'
 import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{ parkCode: string }>()
 
 // ---------- 设施 列表（useCrud，主键 id） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
-  ParkFacility,
-  ParkFacilityQuery,
+  ParkFacilityType,
+  ParkFacilityTypeQuery,
   number
 >(
   {
-    page: pageFacilities,
-    create: createFacility,
-    update: (id, data) => updateFacility(id, data),
-    remove: deleteFacility
+    page: pageFacilityTypes,
+    create: createFacilityType,
+    update: (id, data) => updateFacilityType(id, data),
+    remove: deleteFacilityType
   },
   {
-    initialQuery: { facilityCode: '', facilityName: '', facilityCategory: undefined, status: undefined },
+    initialQuery: { facilityTypeCode: '', facilityTypeName: '', facilityTypeCategory: undefined, status: undefined },
     idKey: 'id',
     fixedParams: { parkCode: props.parkCode }
   }
@@ -65,30 +65,30 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-const form = reactive<ParkFacility>({
+const form = reactive<ParkFacilityType>({
   id: undefined,
   parkCode: '',
-  facilityCode: '',
-  facilityName: '',
-  facilityCategory: undefined,
+  facilityTypeCode: '',
+  facilityTypeName: '',
+  facilityTypeCategory: undefined,
   buildingName: '',
   floor: '',
   area: undefined,
   capacity: undefined,
   openTime: '',
-  facilityDescription: '',
+  facilityTypeDescription: '',
   coverImage: '',
   images: '',
   sortOrder: 0,
   status: 1
 })
 
-const rules: FormRules<ParkFacility> = {
-  facilityCode: [
+const rules: FormRules<ParkFacilityType> = {
+  facilityTypeCode: [
     { required: true, message: '请输入设施编码', trigger: 'blur' },
     { max: 50, message: '不超过 50 个字符', trigger: 'blur' }
   ],
-  facilityName: [
+  facilityTypeName: [
     { required: true, message: '请输入设施名称', trigger: 'blur' },
     { max: 200, message: '不超过 200 个字符', trigger: 'blur' }
   ]
@@ -116,15 +116,15 @@ function resetForm() {
   Object.assign(form, {
     id: undefined,
     parkCode: '',
-    facilityCode: '',
-    facilityName: '',
-    facilityCategory: undefined,
+    facilityTypeCode: '',
+    facilityTypeName: '',
+    facilityTypeCategory: undefined,
     buildingName: '',
     floor: '',
     area: undefined,
     capacity: undefined,
     openTime: '',
-    facilityDescription: '',
+    facilityTypeDescription: '',
     coverImage: '',
     images: '',
     sortOrder: 0,
@@ -139,7 +139,7 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: ParkFacility) {
+function openEdit(row: ParkFacilityType) {
   dialogMode.value = 'edit'
   resetForm()
   Object.assign(form, row)
@@ -156,10 +156,10 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialogMode.value === 'create') {
-      await createFacility(form)
+      await createFacilityType(form)
       ElMessage.success('新增成功')
     } else if (form.id) {
-      await updateFacility(form.id, form)
+      await updateFacilityType(form.id, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -169,47 +169,47 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(row: ParkFacility) {
+async function handleDelete(row: ParkFacilityType) {
   if (!row.id) return
   await ElMessageBox.confirm(
     '确定删除该设施吗？删除前请先删除该设施下所有价格记录（不级联删除）。',
     '提示',
     { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
   )
-  await deleteFacility(row.id)
+  await deleteFacilityType(row.id)
   ElMessage.success('删除成功')
   loadPage()
 }
 
 // ---------- 展开行 price 管理 ----------
-/** 各展开行的 price 列表缓存，key=facilityCode */
+/** 各展开行的 price 列表缓存，key=facilityTypeCode */
 const priceMap = ref<Map<string, ParkPricing[]>>(new Map())
 /** price 加载状态 */
 const priceLoadingMap = ref<Map<string, boolean>>(new Map())
 
-async function loadPrices(parkCode: string, row: ParkFacility) {
-  if (!row.facilityCode) return
-  priceLoadingMap.value.set(row.facilityCode, true)
+async function loadPrices(parkCode: string, row: ParkFacilityType) {
+  if (!row.facilityTypeCode) return
+  priceLoadingMap.value.set(row.facilityTypeCode, true)
   try {
-    const list = await listPricingsByRef(parkCode, 'facility', row.facilityCode)
-    priceMap.value.set(row.facilityCode, list)
+    const list = await listPricingsByRef(parkCode, 'facility_type', row.facilityTypeCode)
+    priceMap.value.set(row.facilityTypeCode, list)
   } catch {
-    priceMap.value.set(row.facilityCode, [])
+    priceMap.value.set(row.facilityTypeCode, [])
   } finally {
-    priceLoadingMap.value.set(row.facilityCode, false)
+    priceLoadingMap.value.set(row.facilityTypeCode, false)
   }
 }
 
 /** 展开行 toggle：展开时按需加载 price */
-function handleExpandChange(row: ParkFacility, expanded: ParkFacility[], parkCode: string) {
+function handleExpandChange(row: ParkFacilityType, expanded: ParkFacilityType[], parkCode: string) {
   const isExpanded = expanded.some((r) => r.id === row.id)
-  if (isExpanded && row.facilityCode) {
+  if (isExpanded && row.facilityTypeCode) {
     loadPrices(parkCode, row)
   }
 }
 
 // ---------- 主表"当前价"列：分页加载后并行批量取当前价（避免 N+1 串行）----------
-/** key=facilityCode → 当前价展示文本（如 "¥150/次"），无当前价则无 key */
+/** key=facilityTypeCode → 当前价展示文本（如 "¥150/次"），无当前价则无 key */
 const currentPriceMap = ref<Map<string, string>>(new Map())
 
 /** 取一条 price 的展示文本 */
@@ -219,8 +219,8 @@ function formatPriceText(p: ParkPricing): string {
 }
 
 /** 分页数据变化后，批量拉取每行当前价（Promise.all 并行，单页最多 size 条） */
-async function loadCurrentPrices(rows: ParkFacility[]) {
-  const codes = rows.filter((r) => r.facilityCode).map((r) => r.facilityCode)
+async function loadCurrentPrices(rows: ParkFacilityType[]) {
+  const codes = rows.filter((r) => r.facilityTypeCode).map((r) => r.facilityTypeCode)
   if (codes.length === 0) {
     currentPriceMap.value.clear()
     return
@@ -228,7 +228,7 @@ async function loadCurrentPrices(rows: ParkFacility[]) {
   const results = await Promise.all(
     codes.map(async (code) => {
       try {
-        const list = await listPricingsByRef(props.parkCode, 'facility', code)
+        const list = await listPricingsByRef(props.parkCode, 'facility_type', code)
         return [code, list] as const
       } catch {
         return [code, []] as const
@@ -244,17 +244,17 @@ async function loadCurrentPrices(rows: ParkFacility[]) {
 }
 
 /** price 增删改后同步刷新当前价（复用已加载的 priceMap，避免重复请求） */
-function refreshCurrentPrice(facilityCode: string) {
-  const list = priceMap.value.get(facilityCode)
+function refreshCurrentPrice(facilityTypeCode: string) {
+  const list = priceMap.value.get(facilityTypeCode)
   if (!list) {
-    currentPriceMap.value.delete(facilityCode)
+    currentPriceMap.value.delete(facilityTypeCode)
     return
   }
   const cur = list.find((p) => p.isCurrent === 1)
   if (cur) {
-    currentPriceMap.value.set(facilityCode, formatPriceText(cur))
+    currentPriceMap.value.set(facilityTypeCode, formatPriceText(cur))
   } else {
-    currentPriceMap.value.delete(facilityCode)
+    currentPriceMap.value.delete(facilityTypeCode)
   }
 }
 
@@ -271,14 +271,14 @@ const priceDialogVisible = ref(false)
 const priceDialogMode = ref<'create' | 'edit'>('create')
 const priceSubmitLoading = ref(false)
 const priceFormRef = ref<FormInstance>()
-/** 当前 price 所属的设施上下文（facilityCode + parkCode） */
-const priceContext = reactive({ parkCode: '', facilityCode: '' })
+/** 当前 price 所属的设施上下文（facilityTypeCode + parkCode） */
+const priceContext = reactive({ parkCode: '', facilityTypeCode: '' })
 
 const priceForm = reactive<ParkPricing>({
   id: undefined,
   parkCode: '',
   chargeType: 5,
-  refType: 'facility',
+  refType: 'facility_type',
   refCode: '',
   refName: '',
   priceUnit: '',
@@ -320,7 +320,7 @@ function resetPriceForm() {
     id: undefined,
     parkCode: '',
     chargeType: 5,
-    refType: 'facility',
+    refType: 'facility_type',
     refCode: '',
     refName: '',
     priceUnit: '',
@@ -339,23 +339,23 @@ function resetPriceForm() {
   discountEdited = false
 }
 
-function openCreatePrice(parkCode: string, facilityCode: string, facilityName?: string) {
+function openCreatePrice(parkCode: string, facilityTypeCode: string, facilityTypeName?: string) {
   priceDialogMode.value = 'create'
   resetPriceForm()
   priceContext.parkCode = parkCode
-  priceContext.facilityCode = facilityCode
+  priceContext.facilityTypeCode = facilityTypeCode
   priceForm.parkCode = parkCode
-  priceForm.refCode = facilityCode
-  priceForm.refName = facilityName || ''
+  priceForm.refCode = facilityTypeCode
+  priceForm.refName = facilityTypeName || ''
   priceDialogVisible.value = true
 }
 
-function openEditPrice(row: ParkPricing, parkCode: string, facilityCode: string) {
+function openEditPrice(row: ParkPricing, parkCode: string, facilityTypeCode: string) {
   priceDialogMode.value = 'edit'
   resetPriceForm()
   Object.assign(priceForm, row)
   priceContext.parkCode = parkCode
-  priceContext.facilityCode = facilityCode
+  priceContext.facilityTypeCode = facilityTypeCode
   priceDialogVisible.value = true
 }
 
@@ -370,8 +370,8 @@ async function handlePriceSubmit() {
   try {
     // 确保 parkCode + refCode 从上下文带入（编辑时也不可改外键）
     priceForm.parkCode = priceContext.parkCode
-    priceForm.refCode = priceContext.facilityCode
-    priceForm.refType = 'facility'
+    priceForm.refCode = priceContext.facilityTypeCode
+    priceForm.refType = 'facility_type'
     priceForm.chargeType = 5
     if (priceDialogMode.value === 'create') {
       await createPricing(priceForm)
@@ -381,16 +381,16 @@ async function handlePriceSubmit() {
       ElMessage.success('修改成功')
     }
     priceDialogVisible.value = false
-    // 刷新该展开行 price（用上下文 facilityCode）
-    loadPrices(priceContext.parkCode, { facilityCode: priceContext.facilityCode } as ParkFacility)
+    // 刷新该展开行 price（用上下文 facilityTypeCode）
+    loadPrices(priceContext.parkCode, { facilityTypeCode: priceContext.facilityTypeCode } as ParkFacilityType)
     // 同步主表"当前价"列
-    refreshCurrentPrice(priceContext.facilityCode)
+    refreshCurrentPrice(priceContext.facilityTypeCode)
   } finally {
     priceSubmitLoading.value = false
   }
 }
 
-async function handleDeletePrice(row: ParkPricing, parkCode: string, facilityCode: string) {
+async function handleDeletePrice(row: ParkPricing, parkCode: string, facilityTypeCode: string) {
   if (!row.id) return
   await ElMessageBox.confirm('确定删除该价格记录？', '提示', {
     confirmButtonText: '确定',
@@ -399,8 +399,8 @@ async function handleDeletePrice(row: ParkPricing, parkCode: string, facilityCod
   })
   await deletePricing(row.id)
   ElMessage.success('删除成功')
-  loadPrices(parkCode, { facilityCode } as ParkFacility)
-  refreshCurrentPrice(facilityCode)
+  loadPrices(parkCode, { facilityTypeCode } as ParkFacilityType)
+  refreshCurrentPrice(facilityTypeCode)
 }
 
 // ---------- 辅助渲染 ----------
@@ -422,11 +422,11 @@ defineExpose({ loadPage })
     <!-- 搜索栏 -->
     <el-form :inline="true" :model="query" @submit.prevent>
       <el-form-item label="设施名称">
-        <el-input v-model="query.facilityName" placeholder="设施名称" clearable @keyup.enter="handleSearch" />
+        <el-input v-model="query.facilityTypeName" placeholder="设施名称" clearable @keyup.enter="handleSearch" />
       </el-form-item>
       <el-form-item label="设施类别">
-        <el-select v-model="query.facilityCategory" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="o in FACILITY_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        <el-select v-model="query.facilityTypeCategory" placeholder="全部" clearable style="width: 140px">
+          <el-option v-for="o in FACILITY_TYPE_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </el-form-item>
       <el-form-item label="状态">
@@ -448,23 +448,23 @@ defineExpose({ loadPage })
       border
       stripe
       row-key="id"
-      @expand-change="(row: ParkFacility, expanded: ParkFacility[]) => handleExpandChange(row, expanded, parkCode)"
+      @expand-change="(row: ParkFacilityType, expanded: ParkFacilityType[]) => handleExpandChange(row, expanded, parkCode)"
     >
       <el-table-column type="expand">
         <template #default="{ row }">
-          <div class="price-block" v-loading="priceLoadingMap.get(row.facilityCode)">
+          <div class="price-block" v-loading="priceLoadingMap.get(row.facilityTypeCode)">
             <div class="price-toolbar">
-              <span class="price-title">价格记录（{{ row.facilityName }}）</span>
+              <span class="price-title">价格记录（{{ row.facilityTypeName }}）</span>
               <el-button
                 type="primary"
                 size="small"
                 :icon="'Plus'"
-                @click="openCreatePrice(parkCode, row.facilityCode, row.facilityName)"
+                @click="openCreatePrice(parkCode, row.facilityTypeCode, row.facilityTypeName)"
               >
                 新增价格
               </el-button>
             </div>
-            <el-table v-if="(priceMap.get(row.facilityCode) || []).length > 0" :data="priceMap.get(row.facilityCode) || []" border size="small">
+            <el-table v-if="(priceMap.get(row.facilityTypeCode) || []).length > 0" :data="priceMap.get(row.facilityTypeCode) || []" border size="small">
               <el-table-column prop="priceUnit" label="计费单位" width="100" align="center">
                 <template #default="{ row: p }">{{ p.priceUnit || '--' }}</template>
               </el-table-column>
@@ -499,35 +499,35 @@ defineExpose({ loadPage })
               </el-table-column>
               <el-table-column label="操作" width="140" fixed="right">
                 <template #default="{ row: p }">
-                  <el-button link type="primary" size="small" @click="openEditPrice(p, parkCode, row.facilityCode)">
+                  <el-button link type="primary" size="small" @click="openEditPrice(p, parkCode, row.facilityTypeCode)">
                     编辑
                   </el-button>
-                  <el-button link type="danger" size="small" @click="handleDeletePrice(p, parkCode, row.facilityCode)">
+                  <el-button link type="danger" size="small" @click="handleDeletePrice(p, parkCode, row.facilityTypeCode)">
                     删除
                   </el-button>
                 </template>
               </el-table-column>
             </el-table>
             <el-empty
-              v-else-if="!priceLoadingMap.get(row.facilityCode)"
+              v-else-if="!priceLoadingMap.get(row.facilityTypeCode)"
               description="暂无价格记录，点击右上角新增"
               :image-size="60"
             />
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="facilityCode" label="设施编码" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="facilityName" label="设施名称" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="facilityTypeCode" label="设施编码" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="facilityTypeName" label="设施名称" min-width="160" show-overflow-tooltip />
       <el-table-column label="当前价" width="130" align="center">
         <template #default="{ row }">
-          <span v-if="currentPriceMap.get(row.facilityCode)" class="current-price">
-            {{ currentPriceMap.get(row.facilityCode) }}
+          <span v-if="currentPriceMap.get(row.facilityTypeCode)" class="current-price">
+            {{ currentPriceMap.get(row.facilityTypeCode) }}
           </span>
           <span v-else class="price-empty">—</span>
         </template>
       </el-table-column>
-      <el-table-column prop="facilityCategory" label="类别" width="90" align="center">
-        <template #default="{ row }">{{ facilityCategoryLabel(row.facilityCategory) }}</template>
+      <el-table-column prop="facilityTypeCategory" label="类别" width="90" align="center">
+        <template #default="{ row }">{{ facilityTypeCategoryLabel(row.facilityTypeCategory) }}</template>
       </el-table-column>
       <el-table-column prop="buildingName" label="楼栋" width="120" show-overflow-tooltip />
       <el-table-column prop="floor" label="楼层" width="90" align="center" />
@@ -573,9 +573,9 @@ defineExpose({ loadPage })
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="设施编码" prop="facilityCode">
+            <el-form-item label="设施编码" prop="facilityTypeCode">
               <el-input
-                v-model="form.facilityCode"
+                v-model="form.facilityTypeCode"
                 placeholder="业务编码（同机构下唯一）"
                 maxlength="50"
                 :disabled="dialogMode === 'edit'"
@@ -583,14 +583,14 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="设施名称" prop="facilityName">
-              <el-input v-model="form.facilityName" placeholder="设施名称" maxlength="200" show-word-limit />
+            <el-form-item label="设施名称" prop="facilityTypeName">
+              <el-input v-model="form.facilityTypeName" placeholder="设施名称" maxlength="200" show-word-limit />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="设施类别">
-              <el-select v-model="form.facilityCategory" placeholder="请选择" style="width: 100%">
-                <el-option v-for="o in FACILITY_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              <el-select v-model="form.facilityTypeCategory" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in FACILITY_TYPE_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -634,17 +634,17 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <FileUploader v-model="form.coverImage" type="image" module="park" :asset-park-code="props.parkCode" asset-source-type="facility" :asset-source-ref="form.facilityCode" />
+              <FileUploader v-model="form.coverImage" type="image" module="park" :asset-park-code="props.parkCode" asset-source-type="facility_type" :asset-source-ref="form.facilityTypeCode" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="图片(JSON)">
-              <FileUploader v-model="imagesModel" type="image" multiple module="park" :asset-park-code="props.parkCode" asset-source-type="facility" :asset-source-ref="form.facilityCode" />
+              <FileUploader v-model="imagesModel" type="image" multiple module="park" :asset-park-code="props.parkCode" asset-source-type="facility_type" :asset-source-ref="form.facilityTypeCode" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="设施描述">
-              <el-input v-model="form.facilityDescription" type="textarea" :rows="2" placeholder="设施描述" />
+              <el-input v-model="form.facilityTypeDescription" type="textarea" :rows="2" placeholder="设施描述" />
             </el-form-item>
           </el-col>
         </el-row>
