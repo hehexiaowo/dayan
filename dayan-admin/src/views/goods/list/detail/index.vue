@@ -8,10 +8,10 @@
  *
  * - 基本信息 tab：始终显示（GoodsInfo 主表字段编辑）。
  * - SKU 子表 tab：4 选 1，按 goodsType 互斥显示（goodsType 创建后不可改，决定唯一 SKU 子表）：
- *   - goodsType=1（权益商品）→ 权益规格（SkuEquityTab）
+ *   - goodsType=1（权益商品）→ 权益配置（EquityConfigTab）
  *   - goodsType=2（场景商品）→ 场景规格（SkuSceneTab）
  *   - goodsType=3（课程商品）→ 课程规格（SkuCourseTab）
- *   - goodsType=4（旅居商品）→ 旅居规格（SkuSojournTab）
+ *   - goodsType=4（旅居商品）→ 旅居规格（SkuSojournTab)
  *
  * 加载 getGoods 拿到 goodsType 后才计算 tab 列表，避免未拿主信息时渲染错误 SKU tab。
  * 所有 tab 带 lazy 属性懒加载（子 tab nav 常驻，未访问不渲染内容）。
@@ -26,7 +26,7 @@ import {
 } from '@/types/goods'
 import type { GoodsInfo } from '@/types/goods'
 import BasicTab from './BasicTab.vue'
-import SkuEquityTab from './SkuEquityTab.vue'
+import EquityConfigTab from './EquityConfigTab.vue'
 import SkuSceneTab from './SkuSceneTab.vue'
 import SkuCourseTab from './SkuCourseTab.vue'
 import SkuSojournTab from './SkuSojournTab.vue'
@@ -65,7 +65,7 @@ function goBack() {
 const tabs = computed(() => {
   const base = [{ name: 'basic', label: '基本信息' }]
   const skuTabMap: Record<number, { name: string; label: string }> = {
-    1: { name: 'sku-equity', label: '权益规格' },
+    1: { name: 'equity-config', label: '权益配置' },
     2: { name: 'sku-scene', label: '场景规格' },
     3: { name: 'sku-course', label: '课程规格' },
     4: { name: 'sku-sojourn', label: '旅居规格' }
@@ -106,7 +106,7 @@ const tabs = computed(() => {
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name" lazy>
         <BasicTab v-if="t.name === 'basic'" :goods-code="goodsCode" />
-        <SkuEquityTab v-else-if="t.name === 'sku-equity'" :goods-code="goodsCode" />
+        <EquityConfigTab v-else-if="t.name === 'equity-config'" :goods-code="goodsCode" />
         <SkuSceneTab v-else-if="t.name === 'sku-scene'" :goods-code="goodsCode" />
         <SkuCourseTab v-else-if="t.name === 'sku-course'" :goods-code="goodsCode" />
         <SkuSojournTab v-else-if="t.name === 'sku-sojourn'" :goods-code="goodsCode" />
