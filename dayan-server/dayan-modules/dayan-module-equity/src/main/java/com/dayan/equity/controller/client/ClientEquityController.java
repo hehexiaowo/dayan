@@ -145,21 +145,45 @@ public class ClientEquityController {
                     "服务项目配额已用尽: " + targetRel.getItemName());
         }
 
-        // 4. 构造 session DTO 创建
+        // 4. 校验使用人归属该权益（防伪造 usePersonId）
+        Long usePersonIdVal;
+        String usePersonName = dto.getUsePersonId();
+        try {
+            usePersonIdVal = Long.parseLong(dto.getUsePersonId());
+        } catch (NumberFormatException e) {
+            throw new com.dayan.common.core.exception.BusinessException(
+                    com.dayan.common.core.exception.ErrorCode.BUSINESS, "权益人ID格式错误");
+        }
+        List<EquityUsePersonVO> persons = equityUsePersonService.listByEquity(dto.getEquityCode());
+        boolean personValid = false;
+        if (persons != null) {
+            for (EquityUsePersonVO p : persons) {
+                if (p.getId() != null && p.getId().equals(usePersonIdVal)) {
+                    personValid = true;
+                    usePersonName = p.getUsePersonName();
+                    break;
+                }
+            }
+        }
+        if (!personValid) {
+            throw new com.dayan.common.core.exception.BusinessException(
+                    com.dayan.common.core.exception.ErrorCode.BUSINESS, "权益人不属于当前权益");
+        }
+
+        // 5. 构造 session DTO 创建
         ServiceSessionCreateDTO sessionDTO = new ServiceSessionCreateDTO();
         sessionDTO.setEquityCode(dto.getEquityCode());
         sessionDTO.setItemCode(dto.getItemCode());
         sessionDTO.setClientCode(clientCode);
         sessionDTO.setQuotaType(quotaType);
-        String usePersonId = dto.getUsePersonId();
-        sessionDTO.setServiceTitle(targetRel.getItemName() + " - 权益人 " + usePersonId);
+        sessionDTO.setServiceTitle(targetRel.getItemName() + " - " + usePersonName);
         sessionDTO.setServiceDescription(dto.getDemandDesc());
         sessionDTO.setSourceType(2); // 2=客户主动
         sessionDTO.setAgentCode(depot.getAgentCode());
         sessionDTO.setChannelCode(depot.getChannelCode());
         sessionDTO.setRemark("客户端发起（权益：" + dto.getEquityCode()
                 + "，项目：" + targetRel.getItemName()
-                + "，权益人ID：" + usePersonId + "）");
+                + "，权益人：" + usePersonName + "(" + usePersonIdVal + ")）");
 
         String sessionCode = serviceSessionService.create(sessionDTO);
         return R.ok(sessionCode);
