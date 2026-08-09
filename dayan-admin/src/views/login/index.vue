@@ -61,25 +61,9 @@ async function handleLogin() {
       <div class="brand-deco brand-deco--3" />
 
       <div class="brand-content">
-        <!-- Logo 区 -->
+        <!-- Logo 区（真实品牌 logo） -->
         <div class="brand-logo">
-          <svg class="brand-logo__icon" viewBox="0 0 48 48" fill="none">
-            <path
-              d="M24 4L8 14v12c0 9.5 6.8 17.8 16 20 9.2-2.2 16-10.5 16-20V14L24 4z"
-              stroke="white"
-              stroke-width="2.5"
-              stroke-linejoin="round"
-              fill="rgba(255,255,255,0.08)"
-            />
-            <path
-              d="M18 22l4 4 8-8"
-              stroke="white"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <span class="brand-logo__text">大雁养老</span>
+          <img src="/dayan_logo.png" alt="大雁养老" class="brand-logo__img" />
         </div>
 
         <!-- 标语 -->
@@ -220,20 +204,16 @@ async function handleLogin() {
 }
 
 .brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 14px;
   margin-bottom: 56px;
 
-  &__icon {
-    width: 44px;
-    height: 44px;
-  }
-
-  &__text {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 1px;
+  &__img {
+    width: 200px;
+    height: auto;
+    /* 真实 logo 主色为黑色，放在深色渐变面板上需白色容器衬托 */
+    padding: 10px 18px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   }
 }
 
