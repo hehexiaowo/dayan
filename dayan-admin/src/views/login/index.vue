@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import type { LoginParams } from '@/types/auth'
@@ -18,6 +18,19 @@ const loginForm = reactive<LoginParams>({
   password: ''
 })
 
+// 记住我：用户名存 localStorage，下次访问自动回填
+const REMEMBER_KEY = 'dayan_admin_remember_user'
+const rememberMe = ref(false)
+try {
+  const saved = localStorage.getItem(REMEMBER_KEY)
+  if (saved) {
+    loginForm.username = saved
+    rememberMe.value = true
+  }
+} catch {
+  /* localStorage 不可用时忽略 */
+}
+
 const loginRules: FormRules<LoginParams> = {
   username: [
     { required: true, message: '请输入登录账号', trigger: 'blur' },
@@ -27,6 +40,15 @@ const loginRules: FormRules<LoginParams> = {
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 64, message: '密码长度 6-64 位', trigger: 'blur' }
   ]
+}
+
+// 忘记密码：B 端内部系统走管理员重置流程
+function handleForgotPassword() {
+  ElMessageBox.alert(
+    '请联系超级管理员为您重置密码，重置后可使用新密码登录。',
+    '忘记密码',
+    { confirmButtonText: '我知道了', type: 'info' }
+  )
 }
 
 async function handleLogin() {
@@ -40,6 +62,16 @@ async function handleLogin() {
   loading.value = true
   try {
     await userStore.login({ ...loginForm })
+    // 登录成功后按勾选状态持久化用户名
+    try {
+      if (rememberMe.value) {
+        localStorage.setItem(REMEMBER_KEY, loginForm.username)
+      } else {
+        localStorage.removeItem(REMEMBER_KEY)
+      }
+    } catch {
+      /* 忽略 */
+    }
     ElMessage.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'
     router.replace(redirect)
@@ -112,7 +144,7 @@ async function handleLogin() {
           size="large"
           @keyup.enter="handleLogin"
         >
-          <el-form-item prop="username">
+          <el-form-item prop="username" label="登录账号">
             <el-input
               v-model="loginForm.username"
               placeholder="用户名 / 手机号 / 邮箱"
@@ -121,7 +153,7 @@ async function handleLogin() {
             />
           </el-form-item>
 
-          <el-form-item prop="password">
+          <el-form-item prop="password" label="登录密码">
             <el-input
               v-model="loginForm.password"
               type="password"
@@ -130,6 +162,11 @@ async function handleLogin() {
               :prefix-icon="Lock"
             />
           </el-form-item>
+
+          <div class="form-options">
+            <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+            <el-link type="primary" :underline="false" @click="handleForgotPassword">忘记密码?</el-link>
+          </div>
 
           <el-form-item>
             <el-button
@@ -308,10 +345,31 @@ async function handleLogin() {
   border: none;
   background: linear-gradient(135deg, #1e50a2, #2563eb);
   box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
 
   &:hover {
     background: linear-gradient(135deg, #1a4480, #1d4ed8);
     box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  }
+}
+
+/* 记住我 / 忘记密码 行 */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+/* 输入框聚焦态：主题色边框 + 柔和外阴影（覆盖 Element Plus 默认偏淡样式） */
+.form-card {
+  :deep(.el-input__wrapper.is-focus) {
+    box-shadow: 0 0 0 1px #2563eb inset, 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
   }
 }
 
