@@ -31,4 +31,24 @@ CREATE TABLE IF NOT EXISTS `service_item` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务项目（原子服务能力：安排权益/费用权益两大类）';
 
+-- ---------------------------------------------------------------------
+-- 种子数据：3 个核心安排权益 service_item（按 subtype 区分）
+--   SI00001 旅居(subtype=1) / SI00007 活力长居(subtype=2) / SI00005 照护长居(subtype=3)
+-- ---------------------------------------------------------------------
+INSERT INTO `service_item`
+  (`item_code`, `item_name`, `item_category`, `item_subtype`, `item_value`,
+   `cost_bearing`, `service_network`, `valid_days`, `max_use_count`,
+   `description`, `sort_order`, `status`, `creator`, `updater`)
+VALUES
+  ('SI00001', '安排权益·旅居', 1, 1, 1000.00,
+   0, '["*"]', 365, 10,
+   '旅居权益安排（短期度假式养老），含优惠入住权、优先预订权', 0, 1, 'system', 'system'),
+  ('SI00007', '安排权益·活力长居', 1, 2, 500.00,
+   0, '["*"]', 365, 10,
+   '活力长者长期入住安排权益（自理型），含优先入住权、优惠入住权', 0, 1, 'system', 'system'),
+  ('SI00005', '安排权益·照护长居', 1, 3, 500.00,
+   0, '["*"]', 365, 10,
+   '照护型长期入住安排权益（失能/半失能），含保证入住权、优先入住权', 0, 1, 'system', 'system')
+ON DUPLICATE KEY UPDATE `id` = `id`;
+
 SET FOREIGN_KEY_CHECKS = 1;

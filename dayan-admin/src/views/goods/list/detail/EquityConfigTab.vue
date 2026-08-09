@@ -17,7 +17,8 @@ import { getGoodsEquity, saveGoodsEquity, deleteGoodsEquity } from '@/api/goods-
 import { listServiceItems } from '@/api/service-item'
 import {
   ITEM_CATEGORY_OPTIONS,
-  ITEM_SUBTYPE_OPTIONS
+  ITEM_SUBTYPE_OPTIONS,
+  QUOTA_TYPE_OPTIONS
 } from '@/types/service-item'
 import type { GoodsEquitySaveDTO } from '@/types/goods-equity'
 import type { ServiceItem } from '@/types/service-item'
@@ -44,6 +45,7 @@ const form = reactive({
 interface RelRow {
   itemCode: string
   quantity: number
+  quotaType: number
   sortOrder: number
 }
 
@@ -75,6 +77,7 @@ async function loadConfig() {
       relRows.value = (equity.serviceItems || []).map(r => ({
         itemCode: r.itemCode,
         quantity: r.quantity,
+        quotaType: r.quotaType || 2,
         sortOrder: r.sortOrder || 0
       }))
     } else {
@@ -91,7 +94,7 @@ async function loadConfig() {
 }
 
 function addRelRow() {
-  relRows.value.push({ itemCode: '', quantity: 1, sortOrder: 0 })
+  relRows.value.push({ itemCode: '', quantity: 1, quotaType: 2, sortOrder: 0 })
 }
 
 function removeRelRow(index: number) {
@@ -123,6 +126,7 @@ async function handleSave() {
     serviceItems: relRows.value.map(r => ({
       itemCode: r.itemCode,
       quantity: r.quantity,
+      quotaType: r.quotaType,
       sortOrder: r.sortOrder
     }))
   }
@@ -229,9 +233,21 @@ onMounted(() => {
             <span v-else>—</span>
           </template>
         </el-table-column>
-        <el-table-column label="数量" width="120" align="center">
+        <el-table-column label="数量/配额" width="120" align="center">
           <template #default="{ row }">
             <el-input-number v-model="row.quantity" :min="1" :max="999" controls-position="right" size="small" style="width: 100%" />
+          </template>
+        </el-table-column>
+        <el-table-column label="配额周期" width="130" align="center">
+          <template #default="{ row }">
+            <el-select v-model="row.quotaType" size="small" style="width: 100%">
+              <el-option
+                v-for="opt in QUOTA_TYPE_OPTIONS"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
           </template>
         </el-table-column>
         <el-table-column label="排序" width="100" align="center">
