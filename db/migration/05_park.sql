@@ -332,7 +332,7 @@ CREATE TABLE `park_room_type` (
   `floor` VARCHAR(20) DEFAULT NULL COMMENT '所在楼层',
   `room_category` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '房间类别（1=单人间, 2=双人间, 3=多人间, 4=套间, 5=VIP房）',
   `area` DECIMAL(8,2) DEFAULT NULL COMMENT '房间面积（平方米）',
-  `orientation` VARCHAR(20) DEFAULT NULL COMMENT '朝向（如"南", "东南", "西南"）',
+  `orientation` VARCHAR(100) DEFAULT NULL COMMENT '朝向（如"南", "东南", "西南"）',
   `bed_count` INT(11) NOT NULL DEFAULT 1 COMMENT '床位数',
   `total_rooms` INT(11) NOT NULL DEFAULT 0 COMMENT '该类型房间总数',
   `available_rooms` INT(11) NOT NULL DEFAULT 0 COMMENT '可入住数',
