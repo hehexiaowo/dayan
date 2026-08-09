@@ -33,12 +33,9 @@ import com.dayan.goods.entity.GoodsEquity;
 import com.dayan.goods.entity.GoodsInfo;
 import com.dayan.goods.service.GoodsEquityService;
 import com.dayan.goods.service.GoodsInfoService;
-import com.dayan.goods.vo.GoodsEquityVO;
 import com.dayan.order.dto.EquityDeliverDTO;
 import com.dayan.order.service.OrderEquityService;
 import com.dayan.order.vo.OrderEquityVO;
-import com.dayan.service.dto.ServiceSessionCreateDTO;
-import com.dayan.service.service.ServiceSessionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -111,7 +108,6 @@ public class EquityDepotServiceImpl implements EquityDepotService {
     private final GoodsEquityService goodsEquityService;
     private final SequenceProvider sequenceProvider;
     private final StateMachineEngine stateMachineEngine;
-    private final ServiceSessionService serviceSessionService;
     private final OrderEquityService orderEquityService;
     /** AES 密钥 hex（由配置 dayan.aes.key 派生） */
     private final String aesKeyHex;
@@ -126,7 +122,6 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             GoodsEquityService goodsEquityService,
             SequenceProvider sequenceProvider,
             StateMachineEngine stateMachineEngine,
-            ServiceSessionService serviceSessionService,
             OrderEquityService orderEquityService,
             @Value("${dayan.aes.key:}") String configuredKey) {
         this.depotMapper = depotMapper;
@@ -138,7 +133,6 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         this.goodsEquityService = goodsEquityService;
         this.sequenceProvider = sequenceProvider;
         this.stateMachineEngine = stateMachineEngine;
-        this.serviceSessionService = serviceSessionService;
         this.orderEquityService = orderEquityService;
         if (configuredKey == null || configuredKey.isBlank()) {
             this.aesKeyHex = AesGcmUtil.deriveKey(DEFAULT_KEY_PASSWORD);
@@ -422,8 +416,8 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             }
         }
 
-        // 5. 自动创建服务会话（按 goods_service_item_rel 循环，每个 service_item 一个 session）
-        createServiceSessionsForActivation(depot, dto, activateRecordCode);
+        // 权益激活后不再自动创建服务会话——改由持卡人在 client 端主动发起服务请求时创建。
+        // 每次履约 = 1 个 session，配额按 equity+item 聚合统计（详见 ServiceSessionService.checkQuotaAvailable）。
 
         log.info("权益激活成功: equityCode={}, clientCode={}, activateRecordCode={}",
                 depot.getEquityCode(), dto.getClientCode(), activateRecordCode);
@@ -654,55 +648,6 @@ public class EquityDepotServiceImpl implements EquityDepotService {
     }
 
     // ====== 内部方法 ======
-
-    /**
-     * 权益激活后按 goods_service_item_rel 循环创建服务会话（每个 service_item 一个 session）。
-     *
-     * <p>跨域解耦：会话创建失败不阻断激活流程（激活本身已成功），仅记录警告。
-     *
-     * @param depot              权益卡/函实体（携带 goodsCode/agentCode/channelCode）
-     * @param dto                激活入参（携带 clientCode/clientFullName）
-     * @param activateRecordCode 激活记录编码（作为 session.sourceCode）
-     */
-    private void createServiceSessionsForActivation(EquityDepot depot, ActivateDTO dto, String activateRecordCode) {
-        try {
-            List<GoodsEquityVO.ServiceItemRelVO> rels = goodsEquityService.listRelsByGoodsCode(depot.getGoodsCode());
-            if (rels == null || rels.isEmpty()) {
-                log.info("权益激活：商品 {} 未配置服务项目，跳过创建服务会话", depot.getGoodsCode());
-                return;
-            }
-            String clientName = dto.getClientFullName() != null ? dto.getClientFullName() : dto.getClientCode();
-            for (GoodsEquityVO.ServiceItemRelVO rel : rels) {
-                try {
-                    ServiceSessionCreateDTO sessionDTO = new ServiceSessionCreateDTO();
-                    sessionDTO.setEquityCode(depot.getEquityCode());
-                    sessionDTO.setItemCode(rel.getItemCode());
-                    sessionDTO.setClientCode(dto.getClientCode());
-                    // 配额快照：quantity→maxUseCount, quotaType 透传（默认2=年度）
-                    int qty = rel.getQuantity() != null ? rel.getQuantity() : 1;
-                    int qType = rel.getQuotaType() != null ? rel.getQuotaType() : 2;
-                    String quotaLabel = qType == 1 ? qty + "次/终身" : qty + "次/年";
-                    sessionDTO.setMaxUseCount(qty);
-                    sessionDTO.setQuotaType(qType);
-                    sessionDTO.setServiceTitle(rel.getItemName() + "（" + quotaLabel + "） - " + clientName);
-                    sessionDTO.setServiceDescription("权益 " + depot.getEquityCode()
-                            + " 激活后按服务项目 " + rel.getItemCode() + " 自动创建的服务会话");
-                    sessionDTO.setSourceType(1); // 1=权益触发
-                    sessionDTO.setSourceCode(activateRecordCode);
-                    sessionDTO.setAgentCode(depot.getAgentCode());
-                    sessionDTO.setChannelCode(depot.getChannelCode());
-                    sessionDTO.setRemark("权益激活自动创建（服务项目：" + rel.getItemName() + "，配额：" + quotaLabel + "）");
-                    serviceSessionService.create(sessionDTO);
-                } catch (Exception e) {
-                    log.warn("权益激活后创建单个服务会话失败（忽略）: equityCode={}, itemCode={}, err={}",
-                            depot.getEquityCode(), rel.getItemCode(), e.getMessage());
-                }
-            }
-            log.info("权益激活联动创建服务会话: equityCode={}, itemCount={}", depot.getEquityCode(), rels.size());
-        } catch (Exception e) {
-            log.warn("权益激活后查询服务项目失败（忽略）: goodsCode={}, err={}", depot.getGoodsCode(), e.getMessage());
-        }
-    }
 
     private EquityDepot findByActivateCode(String activateCode) {
         EquityDepot depot = depotMapper.selectOne(new LambdaQueryWrapper<EquityDepot>()

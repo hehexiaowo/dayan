@@ -34,7 +34,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -128,12 +130,15 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         entity.setAgentCode(dto.getAgentCode());
         entity.setChannelCode(dto.getChannelCode());
         entity.setTouchCount(0);
-        // 配额快照（权益激活时从 rel.quantity/quota_type 带入，默认值兼容非权益场景）
-        entity.setMaxUseCount(dto.getMaxUseCount() != null ? dto.getMaxUseCount() : 1);
+        // 配额语义：每次履约 = 1 个 session = 1 次服务消费。
+        // max_use_count 固定 1（本行仅代表 1 次履约），总配额靠 equity+item 聚合统计（见 checkQuotaAvailable）。
+        // quota_type 从 DTO 快照（年度/终身），quota_reset_year 仅年度配额用（标记消费年份）。
+        entity.setMaxUseCount(1);
         entity.setUsedCount(0);
         int quotaType = dto.getQuotaType() != null ? dto.getQuotaType() : 2;
         entity.setQuotaType(quotaType);
-        entity.setQuotaResetYear(quotaType == 2 ? java.time.LocalDate.now().getYear() : null);
+        entity.setQuotaResetYear(quotaType == 2
+                ? LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear() : null);
         // 初始状态：待分配 + normal
         entity.setSessionStatus(ServiceSessionEvent.STATUS_PENDING_ASSIGN);
         entity.setSubStatus(ServiceSessionEvent.SUB_NORMAL);
@@ -288,23 +293,20 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         checkTerminal(session);
         int from = currentStatus(session);
         int to = stateMachineEngine.transition(ServiceSessionEvent.DOMAIN, from, ServiceSessionEvent.FINISH);
-        // 配额计数：used_count+1（与状态更新一起落库）
-        int newUsedCount = (session.getUsedCount() != null ? session.getUsedCount() : 0) + 1;
+        // 标记本 session 已消费（used_count 固定 0→1，不再累加；配额聚合判断由 listener 做）
         ServiceSession update = new ServiceSession();
         update.setId(session.getId());
         update.setSessionStatus(to);
         update.setCompleteTime(LocalDateTime.now());
-        update.setUsedCount(newUsedCount);
+        update.setUsedCount(1);
         sessionMapper.updateById(update);
-        // 回写本地 session 对象，供事件传递最新值
-        session.setUsedCount(newUsedCount);
-        log.info("完成服务: sessionCode={}, from={}, to={}, usedCount={}/{}",
-                sessionCode, from, to, newUsedCount, session.getMaxUseCount());
+        log.info("完成服务: sessionCode={}, from={}, to={}", sessionCode, from, to);
         // 联动权益使用计数：发布事件，由 equity 模块监听（避免 service→equity 循环依赖）
+        // 事件携带 itemCode+quotaType，listener 据此按 equity+item 聚合判断配额是否全部用尽
         try {
             eventPublisher.publishEvent(new ServiceSessionFinishedEvent(
                     this, sessionCode, session.getEquityCode(), session.getClientCode(),
-                    session.getMaxUseCount(), newUsedCount, session.getQuotaType()));
+                    session.getItemCode(), session.getQuotaType()));
         } catch (Exception e) {
             log.warn("发布服务完成事件失败（不影响主流程）: sessionCode={}", sessionCode, e);
         }
@@ -355,6 +357,22 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
                 .eq(ServiceSession::getId, session.getId())
                 .set(ServiceSession::getSubStatus, dto.getSubStatus()));
         log.info("更新子状态: sessionCode={}, subStatus={}", dto.getSessionCode(), dto.getSubStatus());
+    }
+
+    // ====== 配额聚合 ======
+
+    @Override
+    public int getRemainingQuota(String equityCode, String itemCode, int quotaType, int maxQuota) {
+        int consumed;
+        if (quotaType == 1) {
+            // 终身配额：统计全部已完成消费
+            consumed = sessionMapper.countConsumedSessions(equityCode, itemCode);
+        } else {
+            // 年度配额：只统计当年消费（quota_reset_year = 当前年）
+            int currentYear = LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear();
+            consumed = sessionMapper.countConsumedSessionsAnnual(equityCode, itemCode, currentYear);
+        }
+        return maxQuota - consumed;
     }
 
     // ====== 内部方法 ======

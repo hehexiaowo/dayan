@@ -68,4 +68,20 @@ public interface ServiceSessionService {
 
     /** 更新子状态，终态校验：完成/取消且 refund_done 时拒绝再转。 */
     void updateSubStatus(SubStatusUpdateDTO dto);
+
+    // ====== 配额聚合 ======
+
+    /**
+     * 检查权益下某服务项目的配额剩余可用次数。
+     *
+     * <p>配额按 equity+item 聚合统计：countConsumed(已完成) 对比 rel.quantity。
+     * 年度配额（quotaType=2）只统计当年消费；终身配额（quotaType=1）统计全部消费。
+     *
+     * @param equityCode 权益编码
+     * @param itemCode   服务项目编码
+     * @param quotaType  配额周期（1=终身, 2=年度）
+     * @param maxQuota   配额上限（从 rel.quantity 快照）
+     * @return 剩余可用次数（>0 可用，<=0 已用尽）
+     */
+    int getRemainingQuota(String equityCode, String itemCode, int quotaType, int maxQuota);
 }
