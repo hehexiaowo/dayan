@@ -70,7 +70,7 @@ import { getParks, type ParkQuery } from '@/api/park';
 import type { Park } from '@/types';
 
 const keyword = ref('');
-const query = ref<ParkQuery>({ page: 1, size: 20 });
+const query = ref<ParkQuery>({ current: 1, size: 20 });
 const list = ref<Park[]>([]);
 const loading = ref(false);
 const refreshing = ref(false);
@@ -97,7 +97,7 @@ async function loadData() {
   loading.value = true;
   try {
     const res = await getParks(query.value);
-    list.value = res?.list || [];
+    list.value = res?.records || [];
   } catch (e) {
     // 后端业务接口未实现，降级为空列表
     list.value = [];

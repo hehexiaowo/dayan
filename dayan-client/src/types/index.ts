@@ -3,17 +3,18 @@
  * 字段对齐后端 VO（EquityDepotVO / ServiceSessionVO / EquityUsePersonVO）。
  */
 
-/** 通用分页结果 */
+/** 通用分页结果（对齐后端 PageResult：records/total/current/size） */
 export interface PageResult<T> {
-  list: T[];
+  records: T[];
   total: number;
-  page: number;
+  current: number;
   size: number;
+  pages: number;
 }
 
-/** 通用分页查询参数 */
+/** 通用分页查询参数（后端用 current/size） */
 export interface PageQuery {
-  page?: number;
+  current?: number;
   size?: number;
   keyword?: string;
 }
@@ -83,9 +84,9 @@ export interface Equity {
   parkName?: string;
 }
 
-/** 权益使用人（对齐后端 EquityUsePersonVO） */
+/** 权益使用人（对齐后端 EquityUsePersonVO，id 序列化为字符串防精度丢失） */
 export interface EquityUsePerson {
-  id: number;
+  id: string;
   equityCode?: string;
   usePersonName: string;
   usePersonGender?: number;

@@ -156,7 +156,7 @@ import { getEquities, getUsePersons, getServiceItems, createServiceRequest } fro
 import type { ServiceSession, ServiceSessionStatus, Equity, EquityUsePerson, ClientServiceItem } from '@/types';
 
 // ===== 列表 =====
-const query = ref<ServiceQuery>({ page: 1, size: 20 });
+const query = ref<ServiceQuery>({ current: 1, size: 20 });
 const list = ref<ServiceSession[]>([]);
 const loading = ref(false);
 
@@ -179,7 +179,7 @@ async function loadData() {
   loading.value = true;
   try {
     const res = await getServices(query.value);
-    list.value = res?.list || [];
+    list.value = res?.records || [];
   } catch {
     list.value = [];
   } finally {
@@ -213,9 +213,9 @@ async function onStartService() {
   demandDesc.value = '';
   // 加载已激活/使用中的权益列表
   try {
-    const res = await getEquities({ page: 1, size: 50 });
+    const res = await getEquities({ current: 1, size: 50 });
     // 过滤出可用权益（已激活=2 或 使用中=3）
-    equities.value = (res?.list || []).filter(
+    equities.value = (res?.records || []).filter(
       e => e.equityStatus === 2 || e.equityStatus === 3
     );
   } catch {
