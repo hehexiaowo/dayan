@@ -3,10 +3,10 @@ package com.dayan.order.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.goods.service.GoodsSceneService;
 import com.dayan.goods.service.GoodsInfoService;
-import com.dayan.goods.service.GoodsSkuSceneService;
 import com.dayan.goods.vo.GoodsInfoVO;
-import com.dayan.goods.vo.GoodsSkuSceneVO;
+import com.dayan.goods.vo.GoodsSceneVO;
 import com.dayan.order.dto.CreateOrderSceneDTO;
 import com.dayan.order.dto.OrderCancelDTO;
 import com.dayan.order.dto.OrderCompleteDTO;
@@ -41,7 +41,7 @@ public class OrderSceneAdminController {
 
     private final OrderSceneService orderSceneService;
     private final GoodsInfoService goodsInfoService;
-    private final GoodsSkuSceneService goodsSkuSceneService;
+    private final GoodsSceneService goodsSceneService;
 
     @Operation(summary = "场景订单分页列表")
     @SaCheckPermission("order:scene:list")
@@ -84,7 +84,7 @@ public class OrderSceneAdminController {
             }
         }
         if (dto.getSkuCode() != null && !dto.getSkuCode().isBlank()) {
-            GoodsSkuSceneVO sku = goodsSkuSceneService.getByCode(dto.getSkuCode());
+            GoodsSceneVO sku = goodsSceneService.getByCode(dto.getSkuCode());
             if (sku != null) {
                 dto.setSkuName(sku.getSkuName());
             }

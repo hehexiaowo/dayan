@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 商品详情页 - 课程规格 tab（goodsType=3 时显示）。
+ * 商品详情页 - 课程配置 tab（goodsType=3 时显示）。
  *
  * 分页模式：useCrud（主键 id 自增 number，传 idKey:'id'，fixedParams:{goodsCode}）。
  *
@@ -18,10 +18,10 @@ import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
-  pageSkuCourses,
-  createSkuCourse,
-  updateSkuCourse,
-  deleteSkuCourse
+  pageCourses,
+  createCourse,
+  updateCourse,
+  deleteCourse
 } from '@/api/goods-sku'
 import {
   COURSE_TYPE_OPTIONS,
@@ -30,7 +30,7 @@ import {
   skuStatusLabel,
   skuStatusTagType
 } from '@/types/goods'
-import type { GoodsSkuCourse, GoodsSkuCourseQuery } from '@/types/goods'
+import type { GoodsCourse, GoodsCourseQuery } from '@/types/goods'
 import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
@@ -38,14 +38,14 @@ const props = defineProps<{
   goodsCode: string
 }>()
 
-// ---------- 课程规格列表（useCrud，主键 id 自增 number） ----------
+// ---------- 课程配置列表（useCrud，主键 id 自增 number） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
-  useCrud<GoodsSkuCourse, GoodsSkuCourseQuery, number>(
+  useCrud<GoodsCourse, GoodsCourseQuery, number>(
     {
-      page: pageSkuCourses,
-      create: createSkuCourse,
-      update: (id, data) => updateSkuCourse(id, data),
-      remove: deleteSkuCourse
+      page: pageCourses,
+      create: createCourse,
+      update: (id, data) => updateCourse(id, data),
+      remove: deleteCourse
     },
     {
       initialQuery: { skuName: '', courseCode: '', courseType: undefined, status: undefined },
@@ -62,7 +62,7 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-const form = reactive<GoodsSkuCourse>({
+const form = reactive<GoodsCourse>({
   id: undefined,
   goodsCode: '',
   skuCode: undefined,
@@ -77,7 +77,7 @@ const form = reactive<GoodsSkuCourse>({
   status: 1
 })
 
-const rules: FormRules<GoodsSkuCourse> = {
+const rules: FormRules<GoodsCourse> = {
   courseCode: [{ required: true, message: '请输入课程编码', trigger: 'blur' }]
 }
 
@@ -105,7 +105,7 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: GoodsSkuCourse) {
+function openEdit(row: GoodsCourse) {
   dialogMode.value = 'edit'
   resetForm()
   Object.assign(form, row)
@@ -123,10 +123,10 @@ async function handleSubmit() {
   try {
     form.goodsCode = props.goodsCode
     if (dialogMode.value === 'create') {
-      await createSkuCourse(form)
+      await createCourse(form)
       ElMessage.success('新增成功')
     } else if (form.id) {
-      await updateSkuCourse(form.id, form)
+      await updateCourse(form.id, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -136,14 +136,14 @@ async function handleSubmit() {
   }
 }
 
-async function handleDeleteRow(row: GoodsSkuCourse) {
+async function handleDeleteRow(row: GoodsCourse) {
   if (!row.id) return
-  await ElMessageBox.confirm('确定删除该课程规格记录？', '提示', {
+  await ElMessageBox.confirm('确定删除该课程配置记录？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteSkuCourse(row.id)
+  await deleteCourse(row.id)
   ElMessage.success('删除成功')
   loadPage()
 }
@@ -181,7 +181,7 @@ async function handleDeleteRow(row: GoodsSkuCourse) {
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增课程规格</el-button>
+        <el-button :icon="'Plus'" @click="openCreate">新增课程配置</el-button>
       </el-form-item>
     </el-form>
 
@@ -231,7 +231,7 @@ async function handleDeleteRow(row: GoodsSkuCourse) {
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增课程规格' : '编辑课程规格'"
+      :title="dialogMode === 'create' ? '新增课程配置' : '编辑课程配置'"
       width="720px"
       :close-on-click-modal="false"
     >

@@ -1,8 +1,8 @@
 /**
  * 商品相关类型。
  *
- * 字段对齐后端 com.dayan.goods.entity.GoodsInfo 及子表（GoodsSkuEquity / GoodsSkuScene /
- * GoodsSkuCourse / GoodsSkuSojourn）与对应的 DTO（DDL 来源：db/migration/12_goods.sql）。
+ * 字段对齐后端 com.dayan.goods.entity.GoodsInfo 及子表（GoodsSkuEquity / GoodsScene /
+ * GoodsCourse / GoodsSojourn）与对应的 DTO（DDL 来源：db/migration/12_goods.sql）。
  *
  * 枚举说明（重要，对齐 DDL 5 态）：
  * - GoodsType：4 值（1权益/2场景/3课程/4旅居），按 goodsType 互斥决定显示哪个 SKU 子表。
@@ -265,18 +265,18 @@ export interface GoodsSkuEquityQuery extends PageQuery {
 }
 
 // ============================================================================
-// 子表 B - 场景规格 Scene（GoodsSkuScene，skuCode 前缀 GS）
+// 子表 B - 场景配置 Scene（GoodsScene，表 goods_scene）
 // ============================================================================
 
 /**
- * 场景规格（后端 GoodsSkuScene，表 goods_sku_scene）。
+ * 场景配置（后端 GoodsScene，表 goods_scene）。
  *
  * 主键 id（自增 number），业务键 skuCode（服务端生成 GS 前缀）。
  * 关联键 goodsCode。
  *
  * 注意：parkCode DDL 是 NOT NULL 但 DTO 无 @NotBlank——前端表单把 parkCode 设为必填。
  */
-export interface GoodsSkuScene {
+export interface GoodsScene {
   /** 自增 id（主键） */
   id?: number
   /** 商品编码（关联键） */
@@ -310,9 +310,9 @@ export interface GoodsSkuScene {
 }
 
 /**
- * 场景规格分页查询参数（后端 GoodsSkuSceneQueryDTO）。
+ * 场景配置分页查询参数（后端 GoodsSceneQueryDTO）。
  */
-export interface GoodsSkuSceneQuery extends PageQuery {
+export interface GoodsSceneQuery extends PageQuery {
   /** 商品编码（详情页 tab 固定携带） */
   goodsCode?: string
   skuName?: string
@@ -321,18 +321,18 @@ export interface GoodsSkuSceneQuery extends PageQuery {
 }
 
 // ============================================================================
-// 子表 C - 课程规格 Course（GoodsSkuCourse，skuCode 前缀 GC）
+// 子表 C - 课程配置 Course（GoodsCourse，表 goods_course）
 // ============================================================================
 
 /**
- * 课程规格（后端 GoodsSkuCourse，表 goods_sku_course）。
+ * 课程配置（后端 GoodsCourse，表 goods_course）。
  *
  * 主键 id（自增 number），业务键 skuCode（服务端生成 GC 前缀）。
  *
  * 语义陷阱：stock 字段复用承载"学员上限 maxStudents"语义（表里无 maxStudents 列），
  * 前端课程 tab 的 stock label 标"库存/学员上限"。
  */
-export interface GoodsSkuCourse {
+export interface GoodsCourse {
   /** 自增 id（主键） */
   id?: number
   /** 商品编码（关联键） */
@@ -364,9 +364,9 @@ export interface GoodsSkuCourse {
 }
 
 /**
- * 课程规格分页查询参数（后端 GoodsSkuCourseQueryDTO）。
+ * 课程配置分页查询参数（后端 GoodsCourseQueryDTO）。
  */
-export interface GoodsSkuCourseQuery extends PageQuery {
+export interface GoodsCourseQuery extends PageQuery {
   /** 商品编码（详情页 tab 固定携带） */
   goodsCode?: string
   skuName?: string
@@ -376,18 +376,18 @@ export interface GoodsSkuCourseQuery extends PageQuery {
 }
 
 // ============================================================================
-// 子表 D - 旅居规格 Sojourn（GoodsSkuSojourn，skuCode 前缀 GJ）
+// 子表 D - 旅居配置 Sojourn（GoodsSojourn，表 goods_sojourn）
 // ============================================================================
 
 /**
- * 旅居规格（后端 GoodsSkuSojourn，表 goods_sku_sojourn）。
+ * 旅居配置（后端 GoodsSojourn，表 goods_sojourn）。
  *
  * 主键 id（自增 number），业务键 skuCode（服务端生成 GJ 前缀）。
  *
  * 后端校验：minDays ≤ maxDays（maxDays 可空=不限）、effectiveDate ≤ expireDate（expireDate 可空=不限）。
  * priceUnit 旅居默认"元/月"。effectiveDate/expireDate 是 LocalDate（YYYY-MM-DD）。
  */
-export interface GoodsSkuSojourn {
+export interface GoodsSojourn {
   /** 自增 id（主键） */
   id?: number
   /** 商品编码（关联键） */
@@ -431,9 +431,9 @@ export interface GoodsSkuSojourn {
 }
 
 /**
- * 旅居规格分页查询参数（后端 GoodsSkuSojournQueryDTO）。
+ * 旅居配置分页查询参数（后端 GoodsSojournQueryDTO）。
  */
-export interface GoodsSkuSojournQuery extends PageQuery {
+export interface GoodsSojournQuery extends PageQuery {
   /** 商品编码（详情页 tab 固定携带） */
   goodsCode?: string
   skuName?: string

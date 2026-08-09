@@ -7,12 +7,12 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 场景 SKU（goods_sku_scene）创建入参。
+ * 场景 SKU（goods_scene）创建入参。
  *
  * <p>{@code skuCode} 由系统生成（GS 前缀 + 5 位序列）；{@code sceneCode} 弱校验。
  */
 @Data
-public class GoodsSkuSceneCreateDTO {
+public class GoodsSceneCreateDTO {
 
     @NotBlank(message = "商品编码不能为空")
     private String goodsCode;

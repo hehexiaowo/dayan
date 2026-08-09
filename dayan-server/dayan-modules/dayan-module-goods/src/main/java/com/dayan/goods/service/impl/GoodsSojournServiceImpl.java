@@ -6,13 +6,13 @@ import com.dayan.common.core.code.SequenceProvider;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
-import com.dayan.goods.dto.GoodsSkuSojournCreateDTO;
-import com.dayan.goods.dto.GoodsSkuSojournQueryDTO;
-import com.dayan.goods.dto.GoodsSkuSojournUpdateDTO;
-import com.dayan.goods.entity.GoodsSkuSojourn;
-import com.dayan.goods.mapper.GoodsSkuSojournMapper;
-import com.dayan.goods.service.GoodsSkuSojournService;
-import com.dayan.goods.vo.GoodsSkuSojournVO;
+import com.dayan.goods.dto.GoodsSojournCreateDTO;
+import com.dayan.goods.dto.GoodsSojournQueryDTO;
+import com.dayan.goods.dto.GoodsSojournUpdateDTO;
+import com.dayan.goods.entity.GoodsSojourn;
+import com.dayan.goods.mapper.GoodsSojournMapper;
+import com.dayan.goods.service.GoodsSojournService;
+import com.dayan.goods.vo.GoodsSojournVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 旅居 SKU（goods_sku_sojourn）服务实现。
+ * 旅居 SKU（goods_sojourn）服务实现。
  *
  * <p>主键 id（AUTO_INCREMENT），业务键 skuCode（GJ + 5 位序列）。
  * 关联 {@code parkCode}/{@code roomTypeCode} 采用弱校验。时长范围 minDays/maxDays 校验。
@@ -31,54 +31,54 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GoodsSkuSojournServiceImpl implements GoodsSkuSojournService {
+public class GoodsSojournServiceImpl implements GoodsSojournService {
 
     /** SKU 编码前缀（GJ = Goods SoJourn） */
     private static final String SKU_PREFIX = "GJ";
     private static final String SEQ_KEY = "code:seq:" + SKU_PREFIX + ":0";
     private static final int DEFAULT_STATUS = 1;
 
-    private final GoodsSkuSojournMapper skuSojournMapper;
+    private final GoodsSojournMapper sojournMapper;
     private final SequenceProvider sequenceProvider;
 
     @Override
-    public PageResult<GoodsSkuSojournVO> page(GoodsSkuSojournQueryDTO query) {
-        LambdaQueryWrapper<GoodsSkuSojourn> wrapper = buildWrapper(query);
-        Page<GoodsSkuSojourn> page = skuSojournMapper.selectPage(
+    public PageResult<GoodsSojournVO> page(GoodsSojournQueryDTO query) {
+        LambdaQueryWrapper<GoodsSojourn> wrapper = buildWrapper(query);
+        Page<GoodsSojourn> page = sojournMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
-        List<GoodsSkuSojournVO> records = page.getRecords().stream().map(this::toVO).collect(Collectors.toList());
+        List<GoodsSojournVO> records = page.getRecords().stream().map(this::toVO).collect(Collectors.toList());
         return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), records);
     }
 
     @Override
-    public List<GoodsSkuSojournVO> listByGoods(String goodsCode) {
-        return skuSojournMapper.selectList(new LambdaQueryWrapper<GoodsSkuSojourn>()
-                .eq(GoodsSkuSojourn::getGoodsCode, goodsCode)
-                .orderByAsc(GoodsSkuSojourn::getSortOrder)
-                .orderByAsc(GoodsSkuSojourn::getId))
+    public List<GoodsSojournVO> listByGoods(String goodsCode) {
+        return sojournMapper.selectList(new LambdaQueryWrapper<GoodsSojourn>()
+                .eq(GoodsSojourn::getGoodsCode, goodsCode)
+                .orderByAsc(GoodsSojourn::getSortOrder)
+                .orderByAsc(GoodsSojourn::getId))
                 .stream().map(this::toVO).collect(Collectors.toList());
     }
 
     @Override
-    public GoodsSkuSojournVO getDetail(Long id) {
+    public GoodsSojournVO getDetail(Long id) {
         return toVO(requireSku(id));
     }
 
     @Override
-    public GoodsSkuSojournVO getByCode(String skuCode) {
-        GoodsSkuSojourn entity = skuSojournMapper.selectOne(new LambdaQueryWrapper<GoodsSkuSojourn>()
-                .eq(GoodsSkuSojourn::getSkuCode, skuCode)
+    public GoodsSojournVO getByCode(String skuCode) {
+        GoodsSojourn entity = sojournMapper.selectOne(new LambdaQueryWrapper<GoodsSojourn>()
+                .eq(GoodsSojourn::getSkuCode, skuCode)
                 .last("LIMIT 1"));
         return entity != null ? toVO(entity) : null;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(GoodsSkuSojournCreateDTO dto) {
+    public Long create(GoodsSojournCreateDTO dto) {
         validateDayRange(dto.getMinDays(), dto.getMaxDays());
         validateDateRange(dto.getEffectiveDate(), dto.getExpireDate());
 
-        GoodsSkuSojourn entity = new GoodsSkuSojourn();
+        GoodsSojourn entity = new GoodsSojourn();
         entity.setGoodsCode(dto.getGoodsCode());
         entity.setSkuCode(nextSkuCode());
         entity.setSkuName(dto.getSkuName());
@@ -98,7 +98,7 @@ public class GoodsSkuSojournServiceImpl implements GoodsSkuSojournService {
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
         entity.setStatus(dto.getStatus() == null ? DEFAULT_STATUS : dto.getStatus());
 
-        skuSojournMapper.insert(entity);
+        sojournMapper.insert(entity);
         log.info("创建旅居 SKU 成功: goodsCode={}, skuCode={}, id={}",
                 dto.getGoodsCode(), entity.getSkuCode(), entity.getId());
         return entity.getId();
@@ -106,8 +106,8 @@ public class GoodsSkuSojournServiceImpl implements GoodsSkuSojournService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, GoodsSkuSojournUpdateDTO dto) {
-        GoodsSkuSojourn existing = requireSku(id);
+    public void update(Long id, GoodsSojournUpdateDTO dto) {
+        GoodsSojourn existing = requireSku(id);
         // 合并已有值后再校验区间
         Integer minDays = dto.getMinDays() != null ? dto.getMinDays() : existing.getMinDays();
         Integer maxDays = dto.getMaxDays() != null ? dto.getMaxDays() : existing.getMaxDays();
@@ -116,7 +116,7 @@ public class GoodsSkuSojournServiceImpl implements GoodsSkuSojournService {
         LocalDate expire = dto.getExpireDate() != null ? dto.getExpireDate() : existing.getExpireDate();
         validateDateRange(effective, expire);
 
-        GoodsSkuSojourn update = new GoodsSkuSojourn();
+        GoodsSojourn update = new GoodsSojourn();
         update.setId(existing.getId());
 
         if (dto.getSkuName() != null) update.setSkuName(dto.getSkuName());
@@ -135,15 +135,15 @@ public class GoodsSkuSojournServiceImpl implements GoodsSkuSojournService {
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
 
-        skuSojournMapper.updateById(update);
+        sojournMapper.updateById(update);
         log.info("更新旅居 SKU 成功: id={}", id);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        GoodsSkuSojourn existing = requireSku(id);
-        skuSojournMapper.deleteById(existing.getId());
+        GoodsSojourn existing = requireSku(id);
+        sojournMapper.deleteById(existing.getId());
         log.info("删除旅居 SKU 成功: id={}", id);
     }
 
@@ -165,33 +165,33 @@ public class GoodsSkuSojournServiceImpl implements GoodsSkuSojournService {
         }
     }
 
-    private LambdaQueryWrapper<GoodsSkuSojourn> buildWrapper(GoodsSkuSojournQueryDTO query) {
-        LambdaQueryWrapper<GoodsSkuSojourn> wrapper = new LambdaQueryWrapper<GoodsSkuSojourn>()
-                .orderByAsc(GoodsSkuSojourn::getSortOrder)
-                .orderByAsc(GoodsSkuSojourn::getId);
+    private LambdaQueryWrapper<GoodsSojourn> buildWrapper(GoodsSojournQueryDTO query) {
+        LambdaQueryWrapper<GoodsSojourn> wrapper = new LambdaQueryWrapper<GoodsSojourn>()
+                .orderByAsc(GoodsSojourn::getSortOrder)
+                .orderByAsc(GoodsSojourn::getId);
         if (query.getGoodsCode() != null && !query.getGoodsCode().isEmpty()) {
-            wrapper.eq(GoodsSkuSojourn::getGoodsCode, query.getGoodsCode());
+            wrapper.eq(GoodsSojourn::getGoodsCode, query.getGoodsCode());
         }
         if (query.getSkuCode() != null && !query.getSkuCode().isEmpty()) {
-            wrapper.eq(GoodsSkuSojourn::getSkuCode, query.getSkuCode());
+            wrapper.eq(GoodsSojourn::getSkuCode, query.getSkuCode());
         }
         if (query.getSkuName() != null && !query.getSkuName().isEmpty()) {
-            wrapper.like(GoodsSkuSojourn::getSkuName, query.getSkuName());
+            wrapper.like(GoodsSojourn::getSkuName, query.getSkuName());
         }
         if (query.getParkCode() != null && !query.getParkCode().isEmpty()) {
-            wrapper.eq(GoodsSkuSojourn::getParkCode, query.getParkCode());
+            wrapper.eq(GoodsSojourn::getParkCode, query.getParkCode());
         }
         if (query.getRoomTypeCode() != null && !query.getRoomTypeCode().isEmpty()) {
-            wrapper.eq(GoodsSkuSojourn::getRoomTypeCode, query.getRoomTypeCode());
+            wrapper.eq(GoodsSojourn::getRoomTypeCode, query.getRoomTypeCode());
         }
         if (query.getStatus() != null) {
-            wrapper.eq(GoodsSkuSojourn::getStatus, query.getStatus());
+            wrapper.eq(GoodsSojourn::getStatus, query.getStatus());
         }
         return wrapper;
     }
 
-    private GoodsSkuSojourn requireSku(Long id) {
-        GoodsSkuSojourn entity = skuSojournMapper.selectById(id);
+    private GoodsSojourn requireSku(Long id) {
+        GoodsSojourn entity = sojournMapper.selectById(id);
         if (entity == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "旅居 SKU 不存在: id=" + id);
         }
@@ -202,8 +202,8 @@ public class GoodsSkuSojournServiceImpl implements GoodsSkuSojournService {
         return SKU_PREFIX + String.format("%05d", sequenceProvider.next(SEQ_KEY));
     }
 
-    private GoodsSkuSojournVO toVO(GoodsSkuSojourn entity) {
-        GoodsSkuSojournVO vo = new GoodsSkuSojournVO();
+    private GoodsSojournVO toVO(GoodsSojourn entity) {
+        GoodsSojournVO vo = new GoodsSojournVO();
         vo.setId(entity.getId());
         vo.setGoodsCode(entity.getGoodsCode());
         vo.setSkuCode(entity.getSkuCode());

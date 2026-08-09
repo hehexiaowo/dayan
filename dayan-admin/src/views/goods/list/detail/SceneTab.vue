@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 商品详情页 - 场景规格 tab（goodsType=2 时显示）。
+ * 商品详情页 - 场景配置 tab（goodsType=2 时显示）。
  *
  * 分页模式：useCrud（主键 id 自增 number，传 idKey:'id'，fixedParams:{goodsCode}）。
  *
@@ -16,17 +16,17 @@ import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
-  pageSkuScenes,
-  createSkuScene,
-  updateSkuScene,
-  deleteSkuScene
+  pageScenes,
+  createScene,
+  updateScene,
+  deleteScene
 } from '@/api/goods-sku'
 import {
   SKU_STATUS_OPTIONS,
   skuStatusLabel,
   skuStatusTagType
 } from '@/types/goods'
-import type { GoodsSkuScene, GoodsSkuSceneQuery } from '@/types/goods'
+import type { GoodsScene, GoodsSceneQuery } from '@/types/goods'
 import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
@@ -34,14 +34,14 @@ const props = defineProps<{
   goodsCode: string
 }>()
 
-// ---------- 场景规格列表（useCrud，主键 id 自增 number） ----------
+// ---------- 场景配置列表（useCrud，主键 id 自增 number） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
-  useCrud<GoodsSkuScene, GoodsSkuSceneQuery, number>(
+  useCrud<GoodsScene, GoodsSceneQuery, number>(
     {
-      page: pageSkuScenes,
-      create: createSkuScene,
-      update: (id, data) => updateSkuScene(id, data),
-      remove: deleteSkuScene
+      page: pageScenes,
+      create: createScene,
+      update: (id, data) => updateScene(id, data),
+      remove: deleteScene
     },
     {
       initialQuery: { skuName: '', sceneCode: '', status: undefined },
@@ -58,7 +58,7 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-const form = reactive<GoodsSkuScene>({
+const form = reactive<GoodsScene>({
   id: undefined,
   goodsCode: '',
   skuCode: undefined,
@@ -75,7 +75,7 @@ const form = reactive<GoodsSkuScene>({
 })
 
 // parkCode DDL NOT NULL 但 DTO 无 @NotBlank——前端 rules 强制必填避免 DB 报错
-const rules: FormRules<GoodsSkuScene> = {
+const rules: FormRules<GoodsScene> = {
   sceneCode: [{ required: true, message: '请输入场景编码', trigger: 'blur' }],
   parkCode: [{ required: true, message: '请输入园区编码', trigger: 'blur' }]
 }
@@ -105,7 +105,7 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: GoodsSkuScene) {
+function openEdit(row: GoodsScene) {
   dialogMode.value = 'edit'
   resetForm()
   Object.assign(form, row)
@@ -123,10 +123,10 @@ async function handleSubmit() {
   try {
     form.goodsCode = props.goodsCode
     if (dialogMode.value === 'create') {
-      await createSkuScene(form)
+      await createScene(form)
       ElMessage.success('新增成功')
     } else if (form.id) {
-      await updateSkuScene(form.id, form)
+      await updateScene(form.id, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -136,14 +136,14 @@ async function handleSubmit() {
   }
 }
 
-async function handleDeleteRow(row: GoodsSkuScene) {
+async function handleDeleteRow(row: GoodsScene) {
   if (!row.id) return
-  await ElMessageBox.confirm('确定删除该场景规格记录？', '提示', {
+  await ElMessageBox.confirm('确定删除该场景配置记录？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteSkuScene(row.id)
+  await deleteScene(row.id)
   ElMessage.success('删除成功')
   loadPage()
 }
@@ -176,7 +176,7 @@ async function handleDeleteRow(row: GoodsSkuScene) {
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增场景规格</el-button>
+        <el-button :icon="'Plus'" @click="openCreate">新增场景配置</el-button>
       </el-form-item>
     </el-form>
 
@@ -223,7 +223,7 @@ async function handleDeleteRow(row: GoodsSkuScene) {
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增场景规格' : '编辑场景规格'"
+      :title="dialogMode === 'create' ? '新增场景配置' : '编辑场景配置'"
       width="720px"
       :close-on-click-modal="false"
     >

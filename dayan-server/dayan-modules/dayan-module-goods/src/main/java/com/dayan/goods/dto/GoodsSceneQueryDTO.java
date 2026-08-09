@@ -3,10 +3,10 @@ package com.dayan.goods.dto;
 import lombok.Data;
 
 /**
- * 课程 SKU（goods_sku_course）查询入参。
+ * 场景 SKU（goods_scene）查询入参。
  */
 @Data
-public class GoodsSkuCourseQueryDTO {
+public class GoodsSceneQueryDTO {
 
     private Long current = 1L;
     private Long size = 20L;
@@ -14,7 +14,7 @@ public class GoodsSkuCourseQueryDTO {
     private String goodsCode;
     private String skuCode;
     private String skuName;
-    private String courseCode;
-    private Integer courseType;
+    private String sceneCode;
+    private String parkCode;
     private Integer status;
 }

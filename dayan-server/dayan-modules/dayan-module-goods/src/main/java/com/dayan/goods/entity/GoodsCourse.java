@@ -8,12 +8,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 /**
- * 表 goods_sku_scene 对应实体。
+ * 表 goods_course 对应实体。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("goods_sku_scene")
-public class GoodsSkuScene extends BaseEntity {
+@TableName("goods_course")
+public class GoodsCourse extends BaseEntity {
 
     /** 主键 */
     @TableId(type = IdType.AUTO)
@@ -29,23 +29,20 @@ public class GoodsSkuScene extends BaseEntity {
     /** SKU名称 */
     private String skuName;
 
-    /** 场景编码 */
-    private String sceneCode;
+    /** 课程编码 */
+    private String courseCode;
 
-    /** 关联机构编码 */
-    private String parkCode;
+    /** 课程类型 */
+    private Integer courseType;
 
     /** SKU售价 */
     private BigDecimal skuPrice;
 
-    /** 人数限制 */
-    private Integer personLimit;
+    /** 课时数 */
+    private Integer classCount;
 
-    /** 活动时长(小时) */
-    private BigDecimal durationHours;
-
-    /** 排期说明 */
-    private String scheduleDescription;
+    /** 有效天数 */
+    private Integer validDays;
 
     /** 库存 */
     private Integer stock;

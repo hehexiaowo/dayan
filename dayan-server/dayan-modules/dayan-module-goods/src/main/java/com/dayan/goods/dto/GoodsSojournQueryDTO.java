@@ -3,10 +3,10 @@ package com.dayan.goods.dto;
 import lombok.Data;
 
 /**
- * 场景 SKU（goods_sku_scene）查询入参。
+ * 旅居 SKU（goods_sojourn）查询入参。
  */
 @Data
-public class GoodsSkuSceneQueryDTO {
+public class GoodsSojournQueryDTO {
 
     private Long current = 1L;
     private Long size = 20L;
@@ -14,7 +14,7 @@ public class GoodsSkuSceneQueryDTO {
     private String goodsCode;
     private String skuCode;
     private String skuName;
-    private String sceneCode;
     private String parkCode;
+    private String roomTypeCode;
     private Integer status;
 }

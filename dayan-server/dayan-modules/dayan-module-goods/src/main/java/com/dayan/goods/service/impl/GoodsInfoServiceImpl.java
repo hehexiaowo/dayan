@@ -12,15 +12,15 @@ import com.dayan.goods.dto.GoodsInfoQueryDTO;
 import com.dayan.goods.dto.GoodsInfoShelfDTO;
 import com.dayan.goods.dto.GoodsInfoUpdateDTO;
 import com.dayan.goods.entity.GoodsInfo;
-import com.dayan.goods.entity.GoodsSkuCourse;
+import com.dayan.goods.entity.GoodsCourse;
 import com.dayan.goods.entity.GoodsSkuEquity;
-import com.dayan.goods.entity.GoodsSkuScene;
-import com.dayan.goods.entity.GoodsSkuSojourn;
+import com.dayan.goods.entity.GoodsScene;
+import com.dayan.goods.entity.GoodsSojourn;
 import com.dayan.goods.mapper.GoodsInfoMapper;
-import com.dayan.goods.mapper.GoodsSkuCourseMapper;
+import com.dayan.goods.mapper.GoodsCourseMapper;
 import com.dayan.goods.mapper.GoodsSkuEquityMapper;
-import com.dayan.goods.mapper.GoodsSkuSceneMapper;
-import com.dayan.goods.mapper.GoodsSkuSojournMapper;
+import com.dayan.goods.mapper.GoodsSceneMapper;
+import com.dayan.goods.mapper.GoodsSojournMapper;
 import com.dayan.goods.service.GoodsInfoService;
 import com.dayan.goods.vo.GoodsInfoVO;
 import lombok.RequiredArgsConstructor;
@@ -61,9 +61,9 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
 
     private final GoodsInfoMapper goodsInfoMapper;
     private final GoodsSkuEquityMapper skuEquityMapper;
-    private final GoodsSkuSceneMapper skuSceneMapper;
-    private final GoodsSkuCourseMapper skuCourseMapper;
-    private final GoodsSkuSojournMapper skuSojournMapper;
+    private final GoodsSceneMapper sceneMapper;
+    private final GoodsCourseMapper courseMapper;
+    private final GoodsSojournMapper sojournMapper;
     private final SequenceProvider sequenceProvider;
 
     @Override
@@ -185,12 +185,12 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
             switch (goodsType) {
                 case 1 -> checkSkuEmpty(goodsCode, "权益", skuEquityMapper.selectCount(
                         new LambdaQueryWrapper<GoodsSkuEquity>().eq(GoodsSkuEquity::getGoodsCode, goodsCode)));
-                case 2 -> checkSkuEmpty(goodsCode, "场景", skuSceneMapper.selectCount(
-                        new LambdaQueryWrapper<GoodsSkuScene>().eq(GoodsSkuScene::getGoodsCode, goodsCode)));
-                case 3 -> checkSkuEmpty(goodsCode, "课程", skuCourseMapper.selectCount(
-                        new LambdaQueryWrapper<GoodsSkuCourse>().eq(GoodsSkuCourse::getGoodsCode, goodsCode)));
-                case 4 -> checkSkuEmpty(goodsCode, "旅居", skuSojournMapper.selectCount(
-                        new LambdaQueryWrapper<GoodsSkuSojourn>().eq(GoodsSkuSojourn::getGoodsCode, goodsCode)));
+                case 2 -> checkSkuEmpty(goodsCode, "场景", sceneMapper.selectCount(
+                        new LambdaQueryWrapper<GoodsScene>().eq(GoodsScene::getGoodsCode, goodsCode)));
+                case 3 -> checkSkuEmpty(goodsCode, "课程", courseMapper.selectCount(
+                        new LambdaQueryWrapper<GoodsCourse>().eq(GoodsCourse::getGoodsCode, goodsCode)));
+                case 4 -> checkSkuEmpty(goodsCode, "旅居", sojournMapper.selectCount(
+                        new LambdaQueryWrapper<GoodsSojourn>().eq(GoodsSojourn::getGoodsCode, goodsCode)));
                 default -> { /* 未知类型不阻塞删除 */ }
             }
         }

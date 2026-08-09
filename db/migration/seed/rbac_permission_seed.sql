@@ -278,30 +278,30 @@ VALUES
   ('goods:info:update', '修改商品',     'goods:info', 3, '/admin-api/goods/info/*', 'PUT',    603, 1, '商品主信息', NOW(), NOW(), 'system', 'system', 0),
   ('goods:info:shelf',  '商品上下架',   'goods:info', 3, '/admin-api/goods/info/shelf', 'POST', 604, 1, '商品上下架', NOW(), NOW(), 'system', 'system', 0),
   ('goods:info:delete', '删除商品',     'goods:info', 3, '/admin-api/goods/info/*', 'DELETE', 605, 1, '商品主信息', NOW(), NOW(), 'system', 'system', 0),
-  -- goods:sku-course（课程 SKU）
-  ('goods:sku-course:list',   '课程SKU列表', 'goods:sku-course', 3, '/admin-api/goods/sku-course', 'GET',     610, 1, '商品课程SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-course:query',  '课程SKU详情', 'goods:sku-course', 3, '/admin-api/goods/sku-course/*', 'GET',    611, 1, '商品课程SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-course:create', '新增课程SKU', 'goods:sku-course', 3, '/admin-api/goods/sku-course', 'POST',    612, 1, '商品课程SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-course:update', '修改课程SKU', 'goods:sku-course', 3, '/admin-api/goods/sku-course/*', 'PUT',    613, 1, '商品课程SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-course:delete', '删除课程SKU', 'goods:sku-course', 3, '/admin-api/goods/sku-course/*', 'DELETE', 614, 1, '商品课程SKU', NOW(), NOW(), 'system', 'system', 0),
+  -- goods:course（课程 SKU）
+  ('goods:course:list',   '课程SKU列表', 'goods:course', 3, '/admin-api/goods/course', 'GET',     610, 1, '商品课程配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:course:query',  '课程SKU详情', 'goods:course', 3, '/admin-api/goods/course/*', 'GET',    611, 1, '商品课程配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:course:create', '新增课程SKU', 'goods:course', 3, '/admin-api/goods/course', 'POST',    612, 1, '商品课程配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:course:update', '修改课程SKU', 'goods:course', 3, '/admin-api/goods/course/*', 'PUT',    613, 1, '商品课程配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:course:delete', '删除课程SKU', 'goods:course', 3, '/admin-api/goods/course/*', 'DELETE', 614, 1, '商品课程配置', NOW(), NOW(), 'system', 'system', 0),
   -- goods:sku-equity（权益 SKU）
   ('goods:sku-equity:list',   '权益SKU列表', 'goods:sku-equity', 3, '/admin-api/goods/sku-equity', 'GET',     620, 1, '商品权益SKU', NOW(), NOW(), 'system', 'system', 0),
   ('goods:sku-equity:query',  '权益SKU详情', 'goods:sku-equity', 3, '/admin-api/goods/sku-equity/*', 'GET',    621, 1, '商品权益SKU', NOW(), NOW(), 'system', 'system', 0),
   ('goods:sku-equity:create', '新增权益SKU', 'goods:sku-equity', 3, '/admin-api/goods/sku-equity', 'POST',    622, 1, '商品权益SKU', NOW(), NOW(), 'system', 'system', 0),
   ('goods:sku-equity:update', '修改权益SKU', 'goods:sku-equity', 3, '/admin-api/goods/sku-equity/*', 'PUT',    623, 1, '商品权益SKU', NOW(), NOW(), 'system', 'system', 0),
   ('goods:sku-equity:delete', '删除权益SKU', 'goods:sku-equity', 3, '/admin-api/goods/sku-equity/*', 'DELETE', 624, 1, '商品权益SKU', NOW(), NOW(), 'system', 'system', 0),
-  -- goods:sku-scene（场景 SKU）
-  ('goods:sku-scene:list',   '场景SKU列表', 'goods:sku-scene', 3, '/admin-api/goods/sku-scene', 'GET',     630, 1, '商品场景SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-scene:query',  '场景SKU详情', 'goods:sku-scene', 3, '/admin-api/goods/sku-scene/*', 'GET',    631, 1, '商品场景SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-scene:create', '新增场景SKU', 'goods:sku-scene', 3, '/admin-api/goods/sku-scene', 'POST',    632, 1, '商品场景SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-scene:update', '修改场景SKU', 'goods:sku-scene', 3, '/admin-api/goods/sku-scene/*', 'PUT',    633, 1, '商品场景SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-scene:delete', '删除场景SKU', 'goods:sku-scene', 3, '/admin-api/goods/sku-scene/*', 'DELETE', 634, 1, '商品场景SKU', NOW(), NOW(), 'system', 'system', 0),
-  -- goods:sku-sojourn（旅居 SKU）
-  ('goods:sku-sojourn:list',   '旅居SKU列表', 'goods:sku-sojourn', 3, '/admin-api/goods/sku-sojourn', 'GET',     640, 1, '商品旅居SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-sojourn:query',  '旅居SKU详情', 'goods:sku-sojourn', 3, '/admin-api/goods/sku-sojourn/*', 'GET',    641, 1, '商品旅居SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-sojourn:create', '新增旅居SKU', 'goods:sku-sojourn', 3, '/admin-api/goods/sku-sojourn', 'POST',    642, 1, '商品旅居SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-sojourn:update', '修改旅居SKU', 'goods:sku-sojourn', 3, '/admin-api/goods/sku-sojourn/*', 'PUT',    643, 1, '商品旅居SKU', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sku-sojourn:delete', '删除旅居SKU', 'goods:sku-sojourn', 3, '/admin-api/goods/sku-sojourn/*', 'DELETE', 644, 1, '商品旅居SKU', NOW(), NOW(), 'system', 'system', 0)
+  -- goods:scene（场景配置）
+  ('goods:scene:list',   '场景配置列表', 'goods:scene', 3, '/admin-api/goods/scene', 'GET',     630, 1, '商品场景配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:scene:query',  '场景配置详情', 'goods:scene', 3, '/admin-api/goods/scene/*', 'GET',    631, 1, '商品场景配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:scene:create', '新增场景配置', 'goods:scene', 3, '/admin-api/goods/scene', 'POST',    632, 1, '商品场景配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:scene:update', '修改场景配置', 'goods:scene', 3, '/admin-api/goods/scene/*', 'PUT',    633, 1, '商品场景配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:scene:delete', '删除场景配置', 'goods:scene', 3, '/admin-api/goods/scene/*', 'DELETE', 634, 1, '商品场景配置', NOW(), NOW(), 'system', 'system', 0),
+  -- goods:sojourn（旅居配置）
+  ('goods:sojourn:list',   '旅居配置列表', 'goods:sojourn', 3, '/admin-api/goods/sojourn', 'GET',     640, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:sojourn:query',  '旅居配置详情', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'GET',    641, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:sojourn:create', '新增旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn', 'POST',    642, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:sojourn:update', '修改旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'PUT',    643, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:sojourn:delete', '删除旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'DELETE', 644, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
 -- ============================================================
@@ -491,24 +491,24 @@ VALUES
   ('ROLE_OPERATOR', 'goods:info:update', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:info:shelf',  NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:info:delete', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-course:list',   NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-course:query',  NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-course:create', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-course:update', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-course:delete', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:course:list',   NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:course:query',  NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:course:create', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:course:update', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:course:delete', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:sku-equity:list',   NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:sku-equity:query',  NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:sku-equity:create', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:sku-equity:update', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:sku-equity:delete', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-scene:list',   NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-scene:query',  NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-scene:create', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-scene:update', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-scene:delete', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-sojourn:list',   NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-sojourn:query',  NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-sojourn:create', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-sojourn:update', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'goods:sku-sojourn:delete', NOW(), NOW(), 'system', 'system', 0)
+  ('ROLE_OPERATOR', 'goods:scene:list',   NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:scene:query',  NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:scene:create', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:scene:update', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:scene:delete', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:sojourn:list',   NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:sojourn:query',  NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:sojourn:create', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:sojourn:update', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'goods:sojourn:delete', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `id` = `id`;

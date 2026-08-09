@@ -5,10 +5,10 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 场景 SKU（goods_sku_scene）更新入参。
+ * 场景 SKU（goods_scene）更新入参。
  */
 @Data
-public class GoodsSkuSceneUpdateDTO {
+public class GoodsSceneUpdateDTO {
 
     private String skuName;
     private String sceneCode;

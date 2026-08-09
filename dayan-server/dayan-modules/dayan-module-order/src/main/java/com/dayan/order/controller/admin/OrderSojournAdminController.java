@@ -4,9 +4,9 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.goods.service.GoodsInfoService;
-import com.dayan.goods.service.GoodsSkuSojournService;
+import com.dayan.goods.service.GoodsSojournService;
 import com.dayan.goods.vo.GoodsInfoVO;
-import com.dayan.goods.vo.GoodsSkuSojournVO;
+import com.dayan.goods.vo.GoodsSojournVO;
 import com.dayan.order.dto.CreateOrderSojournDTO;
 import com.dayan.order.dto.OrderCancelDTO;
 import com.dayan.order.dto.OrderCompleteDTO;
@@ -40,7 +40,7 @@ public class OrderSojournAdminController {
 
     private final OrderSojournService orderSojournService;
     private final GoodsInfoService goodsInfoService;
-    private final GoodsSkuSojournService goodsSkuSojournService;
+    private final GoodsSojournService goodsSojournService;
 
     @Operation(summary = "旅居订单分页列表")
     @SaCheckPermission("order:sojourn:list")
@@ -83,7 +83,7 @@ public class OrderSojournAdminController {
             }
         }
         if (dto.getSkuCode() != null && !dto.getSkuCode().isBlank()) {
-            GoodsSkuSojournVO sku = goodsSkuSojournService.getByCode(dto.getSkuCode());
+            GoodsSojournVO sku = goodsSojournService.getByCode(dto.getSkuCode());
             if (sku != null) {
                 dto.setSkuName(sku.getSkuName());
             }

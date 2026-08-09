@@ -7,14 +7,13 @@ import com.dayan.common.mybatis.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 /**
- * 表 goods_sku_sojourn 对应实体。
+ * 表 goods_scene 对应实体。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("goods_sku_sojourn")
-public class GoodsSkuSojourn extends BaseEntity {
+@TableName("goods_scene")
+public class GoodsScene extends BaseEntity {
 
     /** 主键 */
     @TableId(type = IdType.AUTO)
@@ -30,44 +29,29 @@ public class GoodsSkuSojourn extends BaseEntity {
     /** SKU名称 */
     private String skuName;
 
-    /** 机构编码 */
+    /** 场景编码 */
+    private String sceneCode;
+
+    /** 关联机构编码 */
     private String parkCode;
-
-    /** 关联房间类型编码 */
-    private String roomTypeCode;
-
-    /** 房间类型名称 */
-    private String roomTypeName;
-
-    /** 关联照护类型编码 */
-    private String careTypeCode;
-
-    /** 关联餐饮类型编码 */
-    private String foodTypeCode;
 
     /** SKU售价 */
     private BigDecimal skuPrice;
 
-    /** 价格单位 */
-    private String priceUnit;
+    /** 人数限制 */
+    private Integer personLimit;
 
-    /** 最少天数 */
-    private Integer minDays;
+    /** 活动时长(小时) */
+    private BigDecimal durationHours;
 
-    /** 最多天数 */
-    private Integer maxDays;
+    /** 排期说明 */
+    private String scheduleDescription;
 
     /** 库存 */
     private Integer stock;
 
     /** 已售数量 */
     private Integer salesCount;
-
-    /** 生效日期 */
-    private LocalDate effectiveDate;
-
-    /** 失效日期 */
-    private LocalDate expireDate;
 
     /** 排序号 */
     private Integer sortOrder;

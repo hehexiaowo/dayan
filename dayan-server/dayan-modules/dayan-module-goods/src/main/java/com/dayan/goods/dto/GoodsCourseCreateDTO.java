@@ -7,7 +7,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 课程 SKU（goods_sku_course）创建入参。
+ * 课程 SKU（goods_course）创建入参。
  *
  * <p>{@code skuCode} 由系统生成（GC 前缀 + 5 位序列）；{@code courseCode} 弱校验。
  *
@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  * 表结构未单独建 maxStudents 字段，沿用 {@code classCount}（课时数）+ {@code validDays}（有效天数）。
  */
 @Data
-public class GoodsSkuCourseCreateDTO {
+public class GoodsCourseCreateDTO {
 
     @NotBlank(message = "商品编码不能为空")
     private String goodsCode;

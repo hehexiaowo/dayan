@@ -4,9 +4,9 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.goods.service.GoodsInfoService;
-import com.dayan.goods.service.GoodsSkuCourseService;
+import com.dayan.goods.service.GoodsCourseService;
 import com.dayan.goods.vo.GoodsInfoVO;
-import com.dayan.goods.vo.GoodsSkuCourseVO;
+import com.dayan.goods.vo.GoodsCourseVO;
 import com.dayan.order.dto.CreateOrderCourseDTO;
 import com.dayan.order.dto.OrderCancelDTO;
 import com.dayan.order.dto.OrderCompleteDTO;
@@ -40,7 +40,7 @@ public class OrderCourseAdminController {
 
     private final OrderCourseService orderCourseService;
     private final GoodsInfoService goodsInfoService;
-    private final GoodsSkuCourseService goodsSkuCourseService;
+    private final GoodsCourseService goodsCourseService;
 
     @Operation(summary = "课程订单分页列表")
     @SaCheckPermission("order:course:list")
@@ -83,7 +83,7 @@ public class OrderCourseAdminController {
             }
         }
         if (dto.getSkuCode() != null && !dto.getSkuCode().isBlank()) {
-            GoodsSkuCourseVO sku = goodsSkuCourseService.getByCode(dto.getSkuCode());
+            GoodsCourseVO sku = goodsCourseService.getByCode(dto.getSkuCode());
             if (sku != null) {
                 dto.setSkuName(sku.getSkuName());
             }

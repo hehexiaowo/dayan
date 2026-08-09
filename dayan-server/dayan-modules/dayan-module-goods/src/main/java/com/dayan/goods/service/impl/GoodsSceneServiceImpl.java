@@ -6,13 +6,13 @@ import com.dayan.common.core.code.SequenceProvider;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
-import com.dayan.goods.dto.GoodsSkuSceneCreateDTO;
-import com.dayan.goods.dto.GoodsSkuSceneQueryDTO;
-import com.dayan.goods.dto.GoodsSkuSceneUpdateDTO;
-import com.dayan.goods.entity.GoodsSkuScene;
-import com.dayan.goods.mapper.GoodsSkuSceneMapper;
-import com.dayan.goods.service.GoodsSkuSceneService;
-import com.dayan.goods.vo.GoodsSkuSceneVO;
+import com.dayan.goods.dto.GoodsSceneCreateDTO;
+import com.dayan.goods.dto.GoodsSceneQueryDTO;
+import com.dayan.goods.dto.GoodsSceneUpdateDTO;
+import com.dayan.goods.entity.GoodsScene;
+import com.dayan.goods.mapper.GoodsSceneMapper;
+import com.dayan.goods.service.GoodsSceneService;
+import com.dayan.goods.vo.GoodsSceneVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 场景 SKU（goods_sku_scene）服务实现。
+ * 场景 SKU（goods_scene）服务实现。
  *
  * <p>主键 id（AUTO_INCREMENT），业务键 skuCode（GS + 5 位序列）。
  * 关联 {@code sceneCode}（场景）/ {@code parkCode}（机构）采用弱校验。
@@ -30,51 +30,51 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GoodsSkuSceneServiceImpl implements GoodsSkuSceneService {
+public class GoodsSceneServiceImpl implements GoodsSceneService {
 
     /** SKU 编码前缀（GS = Goods Scene） */
     private static final String SKU_PREFIX = "GS";
     private static final String SEQ_KEY = "code:seq:" + SKU_PREFIX + ":0";
     private static final int DEFAULT_STATUS = 1;
 
-    private final GoodsSkuSceneMapper skuSceneMapper;
+    private final GoodsSceneMapper sceneMapper;
     private final SequenceProvider sequenceProvider;
 
     @Override
-    public PageResult<GoodsSkuSceneVO> page(GoodsSkuSceneQueryDTO query) {
-        LambdaQueryWrapper<GoodsSkuScene> wrapper = buildWrapper(query);
-        Page<GoodsSkuScene> page = skuSceneMapper.selectPage(
+    public PageResult<GoodsSceneVO> page(GoodsSceneQueryDTO query) {
+        LambdaQueryWrapper<GoodsScene> wrapper = buildWrapper(query);
+        Page<GoodsScene> page = sceneMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
-        List<GoodsSkuSceneVO> records = page.getRecords().stream().map(this::toVO).collect(Collectors.toList());
+        List<GoodsSceneVO> records = page.getRecords().stream().map(this::toVO).collect(Collectors.toList());
         return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), records);
     }
 
     @Override
-    public List<GoodsSkuSceneVO> listByGoods(String goodsCode) {
-        return skuSceneMapper.selectList(new LambdaQueryWrapper<GoodsSkuScene>()
-                .eq(GoodsSkuScene::getGoodsCode, goodsCode)
-                .orderByAsc(GoodsSkuScene::getSortOrder)
-                .orderByAsc(GoodsSkuScene::getId))
+    public List<GoodsSceneVO> listByGoods(String goodsCode) {
+        return sceneMapper.selectList(new LambdaQueryWrapper<GoodsScene>()
+                .eq(GoodsScene::getGoodsCode, goodsCode)
+                .orderByAsc(GoodsScene::getSortOrder)
+                .orderByAsc(GoodsScene::getId))
                 .stream().map(this::toVO).collect(Collectors.toList());
     }
 
     @Override
-    public GoodsSkuSceneVO getDetail(Long id) {
+    public GoodsSceneVO getDetail(Long id) {
         return toVO(requireSku(id));
     }
 
     @Override
-    public GoodsSkuSceneVO getByCode(String skuCode) {
-        GoodsSkuScene entity = skuSceneMapper.selectOne(new LambdaQueryWrapper<GoodsSkuScene>()
-                .eq(GoodsSkuScene::getSkuCode, skuCode)
+    public GoodsSceneVO getByCode(String skuCode) {
+        GoodsScene entity = sceneMapper.selectOne(new LambdaQueryWrapper<GoodsScene>()
+                .eq(GoodsScene::getSkuCode, skuCode)
                 .last("LIMIT 1"));
         return entity != null ? toVO(entity) : null;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(GoodsSkuSceneCreateDTO dto) {
-        GoodsSkuScene entity = new GoodsSkuScene();
+    public Long create(GoodsSceneCreateDTO dto) {
+        GoodsScene entity = new GoodsScene();
         entity.setGoodsCode(dto.getGoodsCode());
         entity.setSkuCode(nextSkuCode());
         entity.setSkuName(dto.getSkuName());
@@ -89,7 +89,7 @@ public class GoodsSkuSceneServiceImpl implements GoodsSkuSceneService {
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
         entity.setStatus(dto.getStatus() == null ? DEFAULT_STATUS : dto.getStatus());
 
-        skuSceneMapper.insert(entity);
+        sceneMapper.insert(entity);
         log.info("创建场景 SKU 成功: goodsCode={}, skuCode={}, id={}",
                 dto.getGoodsCode(), entity.getSkuCode(), entity.getId());
         return entity.getId();
@@ -97,9 +97,9 @@ public class GoodsSkuSceneServiceImpl implements GoodsSkuSceneService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, GoodsSkuSceneUpdateDTO dto) {
-        GoodsSkuScene existing = requireSku(id);
-        GoodsSkuScene update = new GoodsSkuScene();
+    public void update(Long id, GoodsSceneUpdateDTO dto) {
+        GoodsScene existing = requireSku(id);
+        GoodsScene update = new GoodsScene();
         update.setId(existing.getId());
 
         if (dto.getSkuName() != null) update.setSkuName(dto.getSkuName());
@@ -113,47 +113,47 @@ public class GoodsSkuSceneServiceImpl implements GoodsSkuSceneService {
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
 
-        skuSceneMapper.updateById(update);
+        sceneMapper.updateById(update);
         log.info("更新场景 SKU 成功: id={}", id);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        GoodsSkuScene existing = requireSku(id);
-        skuSceneMapper.deleteById(existing.getId());
+        GoodsScene existing = requireSku(id);
+        sceneMapper.deleteById(existing.getId());
         log.info("删除场景 SKU 成功: id={}", id);
     }
 
     // ====== 内部方法 ======
 
-    private LambdaQueryWrapper<GoodsSkuScene> buildWrapper(GoodsSkuSceneQueryDTO query) {
-        LambdaQueryWrapper<GoodsSkuScene> wrapper = new LambdaQueryWrapper<GoodsSkuScene>()
-                .orderByAsc(GoodsSkuScene::getSortOrder)
-                .orderByAsc(GoodsSkuScene::getId);
+    private LambdaQueryWrapper<GoodsScene> buildWrapper(GoodsSceneQueryDTO query) {
+        LambdaQueryWrapper<GoodsScene> wrapper = new LambdaQueryWrapper<GoodsScene>()
+                .orderByAsc(GoodsScene::getSortOrder)
+                .orderByAsc(GoodsScene::getId);
         if (query.getGoodsCode() != null && !query.getGoodsCode().isEmpty()) {
-            wrapper.eq(GoodsSkuScene::getGoodsCode, query.getGoodsCode());
+            wrapper.eq(GoodsScene::getGoodsCode, query.getGoodsCode());
         }
         if (query.getSkuCode() != null && !query.getSkuCode().isEmpty()) {
-            wrapper.eq(GoodsSkuScene::getSkuCode, query.getSkuCode());
+            wrapper.eq(GoodsScene::getSkuCode, query.getSkuCode());
         }
         if (query.getSkuName() != null && !query.getSkuName().isEmpty()) {
-            wrapper.like(GoodsSkuScene::getSkuName, query.getSkuName());
+            wrapper.like(GoodsScene::getSkuName, query.getSkuName());
         }
         if (query.getSceneCode() != null && !query.getSceneCode().isEmpty()) {
-            wrapper.eq(GoodsSkuScene::getSceneCode, query.getSceneCode());
+            wrapper.eq(GoodsScene::getSceneCode, query.getSceneCode());
         }
         if (query.getParkCode() != null && !query.getParkCode().isEmpty()) {
-            wrapper.eq(GoodsSkuScene::getParkCode, query.getParkCode());
+            wrapper.eq(GoodsScene::getParkCode, query.getParkCode());
         }
         if (query.getStatus() != null) {
-            wrapper.eq(GoodsSkuScene::getStatus, query.getStatus());
+            wrapper.eq(GoodsScene::getStatus, query.getStatus());
         }
         return wrapper;
     }
 
-    private GoodsSkuScene requireSku(Long id) {
-        GoodsSkuScene entity = skuSceneMapper.selectById(id);
+    private GoodsScene requireSku(Long id) {
+        GoodsScene entity = sceneMapper.selectById(id);
         if (entity == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "场景 SKU 不存在: id=" + id);
         }
@@ -164,8 +164,8 @@ public class GoodsSkuSceneServiceImpl implements GoodsSkuSceneService {
         return SKU_PREFIX + String.format("%05d", sequenceProvider.next(SEQ_KEY));
     }
 
-    private GoodsSkuSceneVO toVO(GoodsSkuScene entity) {
-        GoodsSkuSceneVO vo = new GoodsSkuSceneVO();
+    private GoodsSceneVO toVO(GoodsScene entity) {
+        GoodsSceneVO vo = new GoodsSceneVO();
         vo.setId(entity.getId());
         vo.setGoodsCode(entity.getGoodsCode());
         vo.setSkuCode(entity.getSkuCode());

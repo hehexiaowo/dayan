@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 商品详情页 - 旅居规格 tab（goodsType=4 时显示）。
+ * 商品详情页 - 旅居配置 tab（goodsType=4 时显示）。
  *
  * 分页模式：useCrud（主键 id 自增 number，传 idKey:'id'，fixedParams:{goodsCode}）。
  *
@@ -19,17 +19,17 @@ import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
-  pageSkuSojourns,
-  createSkuSojourn,
-  updateSkuSojourn,
-  deleteSkuSojourn
+  pageSojourns,
+  createSojourn,
+  updateSojourn,
+  deleteSojourn
 } from '@/api/goods-sku'
 import {
   SKU_STATUS_OPTIONS,
   skuStatusLabel,
   skuStatusTagType
 } from '@/types/goods'
-import type { GoodsSkuSojourn, GoodsSkuSojournQuery } from '@/types/goods'
+import type { GoodsSojourn, GoodsSojournQuery } from '@/types/goods'
 import { formatDateTime, formatDate } from '@/utils/format'
 
 const props = defineProps<{
@@ -37,14 +37,14 @@ const props = defineProps<{
   goodsCode: string
 }>()
 
-// ---------- 旅居规格列表（useCrud，主键 id 自增 number） ----------
+// ---------- 旅居配置列表（useCrud，主键 id 自增 number） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
-  useCrud<GoodsSkuSojourn, GoodsSkuSojournQuery, number>(
+  useCrud<GoodsSojourn, GoodsSojournQuery, number>(
     {
-      page: pageSkuSojourns,
-      create: createSkuSojourn,
-      update: (id, data) => updateSkuSojourn(id, data),
-      remove: deleteSkuSojourn
+      page: pageSojourns,
+      create: createSojourn,
+      update: (id, data) => updateSojourn(id, data),
+      remove: deleteSojourn
     },
     {
       initialQuery: { skuName: '', parkCode: '', roomTypeCode: '', status: undefined },
@@ -64,7 +64,7 @@ const formRef = ref<FormInstance>()
 /** 旅居价格单位默认值（与主表的"元"不同） */
 const DEFAULT_PRICE_UNIT_SOJOURN = '元/月'
 
-const form = reactive<GoodsSkuSojourn>({
+const form = reactive<GoodsSojourn>({
   id: undefined,
   goodsCode: '',
   skuCode: undefined,
@@ -85,7 +85,7 @@ const form = reactive<GoodsSkuSojourn>({
   status: 1
 })
 
-const rules: FormRules<GoodsSkuSojourn> = {
+const rules: FormRules<GoodsSojourn> = {
   parkCode: [{ required: true, message: '请输入园区编码', trigger: 'blur' }],
   roomTypeCode: [{ required: true, message: '请输入房型编码', trigger: 'blur' }]
 }
@@ -120,7 +120,7 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: GoodsSkuSojourn) {
+function openEdit(row: GoodsSojourn) {
   dialogMode.value = 'edit'
   resetForm()
   Object.assign(form, row)
@@ -162,10 +162,10 @@ async function handleSubmit() {
   try {
     form.goodsCode = props.goodsCode
     if (dialogMode.value === 'create') {
-      await createSkuSojourn(form)
+      await createSojourn(form)
       ElMessage.success('新增成功')
     } else if (form.id) {
-      await updateSkuSojourn(form.id, form)
+      await updateSojourn(form.id, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -175,14 +175,14 @@ async function handleSubmit() {
   }
 }
 
-async function handleDeleteRow(row: GoodsSkuSojourn) {
+async function handleDeleteRow(row: GoodsSojourn) {
   if (!row.id) return
-  await ElMessageBox.confirm('确定删除该旅居规格记录？', '提示', {
+  await ElMessageBox.confirm('确定删除该旅居配置记录？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteSkuSojourn(row.id)
+  await deleteSojourn(row.id)
   ElMessage.success('删除成功')
   loadPage()
 }
@@ -223,7 +223,7 @@ async function handleDeleteRow(row: GoodsSkuSojourn) {
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增旅居规格</el-button>
+        <el-button :icon="'Plus'" @click="openCreate">新增旅居配置</el-button>
       </el-form-item>
     </el-form>
 
@@ -278,7 +278,7 @@ async function handleDeleteRow(row: GoodsSkuSojourn) {
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增旅居规格' : '编辑旅居规格'"
+      :title="dialogMode === 'create' ? '新增旅居配置' : '编辑旅居配置'"
       width="820px"
       :close-on-click-modal="false"
     >

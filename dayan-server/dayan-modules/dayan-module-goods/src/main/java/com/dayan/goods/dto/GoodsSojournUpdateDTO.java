@@ -6,10 +6,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * 旅居 SKU（goods_sku_sojourn）更新入参。
+ * 旅居 SKU（goods_sojourn）更新入参。
  */
 @Data
-public class GoodsSkuSojournUpdateDTO {
+public class GoodsSojournUpdateDTO {
 
     private String skuName;
     private String parkCode;
