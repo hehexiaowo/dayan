@@ -86,7 +86,6 @@ INSERT INTO `organ_permission`
    `sort_order`, `status`, `remark`,
    `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
-  ('equity:template:list',  '权益模板列表', NULL, 1, 0, 1, '演示权限', NOW(), NOW(), 'system', 'system', 0),
   ('equity:batch:list',     '权益批次列表', NULL, 1, 0, 1, '演示权限', NOW(), NOW(), 'system', 'system', 0),
   ('equity:depot:list',     '权益仓库列表', NULL, 1, 0, 1, '演示权限', NOW(), NOW(), 'system', 'system', 0),
   ('order:equity:list',     '权益订单列表', NULL, 1, 0, 1, '演示权限', NOW(), NOW(), 'system', 'system', 0),
@@ -102,7 +101,6 @@ INSERT INTO `organ_role_permission_ship`
   (`role_code`, `permission_code`,
    `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
-  ('ROLE_OPERATOR', 'equity:template:list', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'equity:batch:list',    NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'equity:depot:list',    NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'order:equity:list',    NOW(), NOW(), 'system', 'system', 0),

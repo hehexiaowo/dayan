@@ -1,7 +1,7 @@
 /**
  * 商品相关类型。
  *
- * 字段对齐后端 com.dayan.goods.entity.GoodsInfo 及子表（GoodsSkuEquity / GoodsScene /
+ * 字段对齐后端 com.dayan.goods.entity.GoodsInfo 及子表（GoodsScene /
  * GoodsCourse / GoodsSojourn）与对应的 DTO（DDL 来源：db/migration/12_goods.sql）。
  *
  * 枚举说明（重要，对齐 DDL 5 态）：
@@ -212,60 +212,7 @@ export const COURSE_TYPE_OPTIONS = [
 ] as const
 
 // ============================================================================
-// 子表 A - 权益规格 Equity（GoodsSkuEquity，skuCode 前缀 GE）
-// ============================================================================
-
-/**
- * 权益规格（后端 GoodsSkuEquity，表 goods_sku_equity）。
- *
- * 主键 id（自增 number），业务键 skuCode（服务端生成 GE 前缀，前端不传）。
- * 关联键 goodsCode（弱外键）。
- */
-export interface GoodsSkuEquity {
-  /** 自增 id（主键） */
-  id?: number
-  /** 商品编码（关联键） */
-  goodsCode: string
-  /** 权益规格编码（服务端生成） */
-  skuCode?: string
-  /** 规格名称 */
-  skuName?: string
-  // TODO: templateCode 无跨模块选择器文档，暂用 el-input 兜底
-  /** 权益模板编码（create 必填） */
-  templateCode: string
-  // TODO: equityType 枚举无文档（DDL 只写"权益类型"），暂用 el-input-number 兜底
-  /** 权益类型 */
-  equityType?: number
-  /** 权益值 */
-  equityValue?: string
-  /** SKU 价格 */
-  skuPrice?: number
-  /** 库存 */
-  stock?: number
-  /** 销量（统计字段，create 硬编码 0，只读） */
-  salesCount?: number
-  /** 规格描述 */
-  specDescription?: string
-  /** 排序号（默认 0） */
-  sortOrder?: number
-  /** 状态：0停售/1在售（默认 1） */
-  status?: number
-  createdAt?: string
-}
-
-/**
- * 权益规格分页查询参数（后端 GoodsSkuEquityQueryDTO）。
- */
-export interface GoodsSkuEquityQuery extends PageQuery {
-  /** 商品编码（详情页 tab 固定携带） */
-  goodsCode?: string
-  skuName?: string
-  templateCode?: string
-  status?: number
-}
-
-// ============================================================================
-// 子表 B - 场景配置 Scene（GoodsScene，表 goods_scene）
+// 子表 A - 场景配置 Scene（GoodsScene，表 goods_scene）
 // ============================================================================
 
 /**
@@ -321,7 +268,7 @@ export interface GoodsSceneQuery extends PageQuery {
 }
 
 // ============================================================================
-// 子表 C - 课程配置 Course（GoodsCourse，表 goods_course）
+// 子表 B - 课程配置 Course（GoodsCourse，表 goods_course）
 // ============================================================================
 
 /**
@@ -376,7 +323,7 @@ export interface GoodsCourseQuery extends PageQuery {
 }
 
 // ============================================================================
-// 子表 D - 旅居配置 Sojourn（GoodsSojourn，表 goods_sojourn）
+// 子表 C - 旅居配置 Sojourn（GoodsSojourn，表 goods_sojourn）
 // ============================================================================
 
 /**

@@ -8,9 +8,7 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.goods.service.GoodsInfoService;
-import com.dayan.goods.service.GoodsSkuEquityService;
 import com.dayan.goods.vo.GoodsInfoVO;
-import com.dayan.goods.vo.GoodsSkuEquityVO;
 import com.dayan.order.dto.CreateOrderEquityDTO;
 import com.dayan.order.dto.OrderCancelDTO;
 import com.dayan.order.dto.OrderEquityQueryDTO;
@@ -42,7 +40,6 @@ public class ChannelOrderEquityController {
 
     private final OrderEquityService orderEquityService;
     private final GoodsInfoService goodsInfoService;
-    private final GoodsSkuEquityService goodsSkuEquityService;
     private final ChannelConfigGoodsService channelConfigGoodsService;
 
     @Operation(summary = "本渠道订单列表")
@@ -97,13 +94,6 @@ public class ChannelOrderEquityController {
         }
         dto.setUnitPrice(unitPrice);
         dto.setGoodsName(goods.getGoodsName());
-        // 规格名称快照：按 skuCode 查目录权威覆盖（防篡改）
-        if (dto.getSkuCode() != null && !dto.getSkuCode().isBlank()) {
-            GoodsSkuEquityVO sku = goodsSkuEquityService.getByCode(dto.getSkuCode());
-            if (sku != null) {
-                dto.setSkuName(sku.getSkuName());
-            }
-        }
         // 权益订单 goodsType 必须为 1（权益类）
         if (!Integer.valueOf(1).equals(goods.getGoodsType())) {
             throw new BusinessException(ErrorCode.BUSINESS, "该商品类型不支持权益订单采购");

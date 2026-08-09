@@ -13,12 +13,10 @@ import com.dayan.goods.dto.GoodsInfoShelfDTO;
 import com.dayan.goods.dto.GoodsInfoUpdateDTO;
 import com.dayan.goods.entity.GoodsInfo;
 import com.dayan.goods.entity.GoodsCourse;
-import com.dayan.goods.entity.GoodsSkuEquity;
 import com.dayan.goods.entity.GoodsScene;
 import com.dayan.goods.entity.GoodsSojourn;
 import com.dayan.goods.mapper.GoodsInfoMapper;
 import com.dayan.goods.mapper.GoodsCourseMapper;
-import com.dayan.goods.mapper.GoodsSkuEquityMapper;
 import com.dayan.goods.mapper.GoodsSceneMapper;
 import com.dayan.goods.mapper.GoodsSojournMapper;
 import com.dayan.goods.service.GoodsInfoService;
@@ -60,7 +58,6 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
     private static final int STATUS_OFF = 0;
 
     private final GoodsInfoMapper goodsInfoMapper;
-    private final GoodsSkuEquityMapper skuEquityMapper;
     private final GoodsSceneMapper sceneMapper;
     private final GoodsCourseMapper courseMapper;
     private final GoodsSojournMapper sojournMapper;
@@ -183,8 +180,6 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
         Integer goodsType = existing.getGoodsType();
         if (goodsType != null) {
             switch (goodsType) {
-                case 1 -> checkSkuEmpty(goodsCode, "权益", skuEquityMapper.selectCount(
-                        new LambdaQueryWrapper<GoodsSkuEquity>().eq(GoodsSkuEquity::getGoodsCode, goodsCode)));
                 case 2 -> checkSkuEmpty(goodsCode, "场景", sceneMapper.selectCount(
                         new LambdaQueryWrapper<GoodsScene>().eq(GoodsScene::getGoodsCode, goodsCode)));
                 case 3 -> checkSkuEmpty(goodsCode, "课程", courseMapper.selectCount(

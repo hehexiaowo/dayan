@@ -1,8 +1,6 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
 import type {
-  GoodsSkuEquity,
-  GoodsSkuEquityQuery,
   GoodsScene,
   GoodsSceneQuery,
   GoodsCourse,
@@ -14,12 +12,11 @@ import type {
 /**
  * 商品域子表接口封装。
  *
- * 权益规格（sku-equity）使用旧路径 /admin-api/goods/sku-equity/*（保留）。
- * 场景/课程/旅居配置已重命名为 /admin-api/goods/scene/course/sojourn（无 sku 前缀）。
+ * 场景/课程/旅居配置路径：/admin-api/goods/scene/course/sojourn（无 sku 前缀）。
  *
- * 公共契约（4 子表一致）：
+ * 公共契约（3 子表一致）：
  * - 主键：物理 id（自增 number，非雪花），update/delete/{id} 都用 id。
- * - 业务键：skuCode（服务端生成 GE/GS/GC/GJ 前缀，前端不传）。
+ * - 业务键：skuCode（服务端生成 GS/GC/GJ 前缀，前端不传）。
  * - 关联键：goodsCode（弱外键，无 DB 约束）。
  * - list 入参是单参 goodsCode（不是 query DTO），返回 List 非分页。
  * - create 返回 number（id），不是 skuCode（与主表返回 goodsCode 不同）。
@@ -28,63 +25,7 @@ import type {
  */
 
 // ============================================================================
-// 1. 权益规格（sku-equity，skuCode 前缀 GE）— 保留旧路径，增量5将删除
-// ============================================================================
-
-/** 权益规格分页：GET /admin-api/goods/sku-equity/page */
-export function pageSkuEquities(query: GoodsSkuEquityQuery): Promise<PageResult<GoodsSkuEquity>> {
-  return request<PageResult<GoodsSkuEquity>>({
-    url: '/admin-api/goods/sku-equity/page',
-    method: 'get',
-    params: query
-  })
-}
-
-/** 权益规格列表（按 goodsCode 过滤，非分页）：GET /admin-api/goods/sku-equity/list */
-export function listSkuEquities(goodsCode: string): Promise<GoodsSkuEquity[]> {
-  return request<GoodsSkuEquity[]>({
-    url: '/admin-api/goods/sku-equity/list',
-    method: 'get',
-    params: { goodsCode }
-  })
-}
-
-/** 权益规格详情：GET /admin-api/goods/sku-equity/{id} */
-export function getSkuEquity(id: number): Promise<GoodsSkuEquity> {
-  return request<GoodsSkuEquity>({
-    url: `/admin-api/goods/sku-equity/${id}`,
-    method: 'get'
-  })
-}
-
-/** 新增权益规格：POST /admin-api/goods/sku-equity（返回 id） */
-export function createSkuEquity(data: Partial<GoodsSkuEquity>): Promise<number> {
-  return request<number>({
-    url: '/admin-api/goods/sku-equity',
-    method: 'post',
-    data
-  })
-}
-
-/** 修改权益规格：PUT /admin-api/goods/sku-equity/{id} */
-export function updateSkuEquity(id: number, data: Partial<GoodsSkuEquity>): Promise<void> {
-  return request<void>({
-    url: `/admin-api/goods/sku-equity/${id}`,
-    method: 'put',
-    data
-  })
-}
-
-/** 删除权益规格：DELETE /admin-api/goods/sku-equity/{id} */
-export function deleteSkuEquity(id: number): Promise<void> {
-  return request<void>({
-    url: `/admin-api/goods/sku-equity/${id}`,
-    method: 'delete'
-  })
-}
-
-// ============================================================================
-// 2. 场景配置（scene，skuCode 前缀 GS）
+// 1. 场景配置（scene，skuCode 前缀 GS）
 // ============================================================================
 
 /** 场景配置分页：GET /admin-api/goods/scene/page */
@@ -140,7 +81,7 @@ export function deleteScene(id: number): Promise<void> {
 }
 
 // ============================================================================
-// 3. 课程配置（course，skuCode 前缀 GC）
+// 2. 课程配置（course，skuCode 前缀 GC）
 // ============================================================================
 
 /** 课程配置分页：GET /admin-api/goods/course/page */
@@ -196,7 +137,7 @@ export function deleteCourse(id: number): Promise<void> {
 }
 
 // ============================================================================
-// 4. 旅居配置（sojourn，skuCode 前缀 GJ）
+// 3. 旅居配置（sojourn，skuCode 前缀 GJ）
 // ============================================================================
 
 /** 旅居配置分页：GET /admin-api/goods/sojourn/page */

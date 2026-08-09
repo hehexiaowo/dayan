@@ -2,7 +2,7 @@
  * 权益域相关类型。
  *
  * 字段对齐后端 com.dayan.equity 包下实体：
- * - EquityTemplate（权益模板）/ EquityBatch（批次）/ EquityDepot（权益仓库）。
+ * - EquityBatch（批次）/ EquityDepot（权益仓库）。
  *
  * 类型约定：Integer→number，BigDecimal→number，LocalDate/LocalDateTime→string。
  */
@@ -146,74 +146,6 @@ export const CARRIER_TYPE_OPTIONS = [
   { label: '权益卡', value: CarrierType.EQUITY_CARD },
   { label: '权益函', value: CarrierType.EQUITY_LETTER }
 ] as const
-
-// ---------------- 权益模板 ----------------
-
-/**
- * 权益模板实体（后端 EquityTemplate）。
- *
- * 主键 templateCode 服务端生成，新增表单不含该字段。
- */
-export interface EquityTemplate {
-  id?: number
-  /** 模板编码（服务端生成） */
-  templateCode?: string
-  /** 模板名称 */
-  templateName: string
-  /** 权益类型 */
-  equityType?: EquityType
-  /** 权益等级 */
-  equityLevel?: EquityLevel
-  /** 权益面值 */
-  equityValue?: number
-  /** 成本价 */
-  costPrice?: number
-  /** 权益内容描述 */
-  contentDescription?: string
-  /** 包含服务项目 */
-  serviceItems?: string
-  /** 适用机构范围 */
-  applicableParks?: string
-  /** 适用城市范围 */
-  applicableCities?: string
-  /** 激活后有效天数 */
-  validDays?: number
-  /** 库存有效期天数 */
-  shelfLifeDays?: number
-  /** 是否可转让：0否 1是 */
-  isTransferable?: number
-  /** 是否可叠加：0否 1是 */
-  isStackable?: number
-  /** 最大使用次数 */
-  maxUseCount?: number
-  /** 封面图 URL */
-  coverImage?: string
-  /** 卡面设计图 URL */
-  cardDesignUrl?: string
-  /** 使用说明/条款 */
-  terms?: string
-  /** 排序号 */
-  sortOrder?: number
-  /** 状态：1启用 0禁用 */
-  status?: number
-  /** 备注 */
-  remark?: string
-  /** 创建时间 */
-  createdAt?: string
-  /** 更新时间 */
-  updatedAt?: string
-}
-
-/**
- * 权益模板分页查询参数（后端 EquityTemplateQueryDTO）。
- */
-export interface EquityTemplateQuery extends PageQuery {
-  templateCode?: string
-  templateName?: string
-  equityType?: EquityType
-  equityLevel?: EquityLevel
-  status?: number
-}
 
 // ---------------- 权益批次 ----------------
 

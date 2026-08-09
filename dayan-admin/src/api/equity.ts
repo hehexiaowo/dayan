@@ -1,8 +1,6 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
 import type {
-  EquityTemplate,
-  EquityTemplateQuery,
   EquityBatch,
   EquityBatchQuery,
   EquityBatchStats,
@@ -13,66 +11,10 @@ import type {
 /**
  * 权益域接口封装。
  *
- * 对应后端三个 Admin 控制器（均挂在 /admin-api 前缀下）：
- * - EquityTemplateAdminController（/admin-api/equity/template/*）
+ * 对应后端两个 Admin 控制器（均挂在 /admin-api 前缀下）：
  * - EquityBatchAdminController（/admin-api/equity/batch/*）
  * - EquityDepotAdminController（/admin-api/equity/depot/*）
  */
-
-// ============================================================
-// 权益模板（/admin-api/equity/template）
-// ============================================================
-
-/** 模板分页：GET /admin-api/equity/template/page */
-export function pageTemplates(query: EquityTemplateQuery): Promise<PageResult<EquityTemplate>> {
-  return request<PageResult<EquityTemplate>>({
-    url: '/admin-api/equity/template/page',
-    method: 'get',
-    params: query
-  })
-}
-
-/** 模板列表（不分页）：GET /admin-api/equity/template/list */
-export function listTemplates(): Promise<EquityTemplate[]> {
-  return request<EquityTemplate[]>({
-    url: '/admin-api/equity/template/list',
-    method: 'get'
-  })
-}
-
-/** 模板详情：GET /admin-api/equity/template/{templateCode} */
-export function getTemplate(templateCode: string): Promise<EquityTemplate> {
-  return request<EquityTemplate>({
-    url: `/admin-api/equity/template/${templateCode}`,
-    method: 'get'
-  })
-}
-
-/** 新增模板：POST /admin-api/equity/template（返回 templateCode） */
-export function createTemplate(data: Partial<EquityTemplate>): Promise<string> {
-  return request<string>({
-    url: '/admin-api/equity/template',
-    method: 'post',
-    data
-  })
-}
-
-/** 修改模板：PUT /admin-api/equity/template/{templateCode} */
-export function updateTemplate(templateCode: string, data: Partial<EquityTemplate>): Promise<void> {
-  return request<void>({
-    url: `/admin-api/equity/template/${templateCode}`,
-    method: 'put',
-    data
-  })
-}
-
-/** 删除模板：DELETE /admin-api/equity/template/{templateCode} */
-export function deleteTemplate(templateCode: string): Promise<void> {
-  return request<void>({
-    url: `/admin-api/equity/template/${templateCode}`,
-    method: 'delete'
-  })
-}
 
 // ============================================================
 // 权益批次（/admin-api/equity/batch）
