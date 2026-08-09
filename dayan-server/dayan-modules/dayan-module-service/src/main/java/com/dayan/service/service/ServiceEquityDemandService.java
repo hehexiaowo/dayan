@@ -19,11 +19,11 @@ public interface ServiceEquityDemandService {
 
     List<ServiceEquityDemandVO> listBySession(String sessionCode);
 
-    ServiceEquityDemandVO getDetail(Long id);
+    ServiceEquityDemandVO getDetail(String demandCode);
 
     String create(ServiceEquityDemandCreateDTO dto);
 
-    void update(Long id, ServiceEquityDemandUpdateDTO dto);
+    void update(String demandCode, ServiceEquityDemandUpdateDTO dto);
 
-    void delete(Long id);
+    void delete(String demandCode);
 }

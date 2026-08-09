@@ -60,8 +60,8 @@ public class ServiceEquityDemandServiceImpl implements ServiceEquityDemandServic
     }
 
     @Override
-    public ServiceEquityDemandVO getDetail(Long id) {
-        return toVO(requireDemand(id));
+    public ServiceEquityDemandVO getDetail(String demandCode) {
+        return toVO(requireDemandByCode(demandCode));
     }
 
     @Override
@@ -103,8 +103,8 @@ public class ServiceEquityDemandServiceImpl implements ServiceEquityDemandServic
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, ServiceEquityDemandUpdateDTO dto) {
-        ServiceEquityDemand existing = requireDemand(id);
+    public void update(String demandCode, ServiceEquityDemandUpdateDTO dto) {
+        ServiceEquityDemand existing = requireDemandByCode(demandCode);
         validateBudget(dto.getBudgetMin(), dto.getBudgetMax());
 
         ServiceEquityDemand update = new ServiceEquityDemand();
@@ -130,15 +130,15 @@ public class ServiceEquityDemandServiceImpl implements ServiceEquityDemandServic
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
         demandMapper.updateById(update);
-        log.info("更新需求成功: id={}", id);
+        log.info("更新需求成功: demandCode={}", demandCode);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
-        ServiceEquityDemand existing = requireDemand(id);
+    public void delete(String demandCode) {
+        ServiceEquityDemand existing = requireDemandByCode(demandCode);
         demandMapper.deleteById(existing.getId());
-        log.info("删除需求成功: id={}", id);
+        log.info("删除需求成功: demandCode={}", demandCode);
     }
 
     // ====== 内部方法 ======
@@ -174,10 +174,12 @@ public class ServiceEquityDemandServiceImpl implements ServiceEquityDemandServic
         return wrapper;
     }
 
-    private ServiceEquityDemand requireDemand(Long id) {
-        ServiceEquityDemand entity = demandMapper.selectById(id);
+    private ServiceEquityDemand requireDemandByCode(String demandCode) {
+        ServiceEquityDemand entity = demandMapper.selectOne(
+                new LambdaQueryWrapper<ServiceEquityDemand>()
+                        .eq(ServiceEquityDemand::getDemandCode, demandCode));
         if (entity == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "需求不存在: id=" + id);
+            throw new BusinessException(ErrorCode.NOT_FOUND, "需求不存在: demandCode=" + demandCode);
         }
         return entity;
     }

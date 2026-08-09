@@ -67,8 +67,8 @@ public class ServiceEquityFollowupServiceImpl implements ServiceEquityFollowupSe
     }
 
     @Override
-    public ServiceEquityFollowupVO getDetail(Long id) {
-        return toVO(requireFollowup(id));
+    public ServiceEquityFollowupVO getDetail(String followupCode) {
+        return toVO(requireFollowupByCode(followupCode));
     }
 
     @Override
@@ -123,8 +123,8 @@ public class ServiceEquityFollowupServiceImpl implements ServiceEquityFollowupSe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, ServiceEquityFollowupUpdateDTO dto) {
-        ServiceEquityFollowup existing = requireFollowup(id);
+    public void update(String followupCode, ServiceEquityFollowupUpdateDTO dto) {
+        ServiceEquityFollowup existing = requireFollowupByCode(followupCode);
         validateSatisfaction(dto.getServiceSatisfaction(), "服务满意度");
         validateSatisfaction(dto.getParkSatisfaction(), "机构满意度");
         validateSatisfaction(dto.getButlerSatisfaction(), "管家满意度");
@@ -150,15 +150,15 @@ public class ServiceEquityFollowupServiceImpl implements ServiceEquityFollowupSe
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
         followupMapper.updateById(update);
-        log.info("更新回访成功: id={}", id);
+        log.info("更新回访成功: followupCode={}", followupCode);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
-        ServiceEquityFollowup existing = requireFollowup(id);
+    public void delete(String followupCode) {
+        ServiceEquityFollowup existing = requireFollowupByCode(followupCode);
         followupMapper.deleteById(existing.getId());
-        log.info("删除回访成功: id={}", id);
+        log.info("删除回访成功: followupCode={}", followupCode);
     }
 
     // ====== 内部方法 ======
@@ -206,10 +206,12 @@ public class ServiceEquityFollowupServiceImpl implements ServiceEquityFollowupSe
         return wrapper;
     }
 
-    private ServiceEquityFollowup requireFollowup(Long id) {
-        ServiceEquityFollowup entity = followupMapper.selectById(id);
+    private ServiceEquityFollowup requireFollowupByCode(String followupCode) {
+        ServiceEquityFollowup entity = followupMapper.selectOne(
+                new LambdaQueryWrapper<ServiceEquityFollowup>()
+                        .eq(ServiceEquityFollowup::getFollowupCode, followupCode));
         if (entity == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "回访不存在: id=" + id);
+            throw new BusinessException(ErrorCode.NOT_FOUND, "回访不存在: followupCode=" + followupCode);
         }
         return entity;
     }

@@ -10,6 +10,8 @@ import {
   CLIENT_LEVEL_OPTIONS,
   ClientStatus,
   CLIENT_STATUS_OPTIONS,
+  clientStatusLabel,
+  clientStatusTagType,
   Gender,
   GENDER_OPTIONS,
   EDUCATION_OPTIONS,
@@ -356,8 +358,8 @@ onMounted(() => {
         <el-table-column prop="serviceCount" label="服务" width="70" align="center" />
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">
-              {{ row.status === 1 ? '启用' : '禁用' }}
+            <el-tag :type="clientStatusTagType(row.status)">
+              {{ clientStatusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>

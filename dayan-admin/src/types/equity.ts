@@ -43,80 +43,89 @@ export const EQUITY_TYPE_OPTIONS = [
   { label: '旅居体验权益', value: EquityType.SOJOURN_EXPERIENCE }
 ] as const
 
-/** 权益等级：1普通 / 2银卡 / 3金卡 / 4钻石 */
+/**
+ * 权益等级：对齐后端 DDL 10_equity.sql:18。
+ * 1=基础 / 2=标准 / 3=高级 / 4=尊享 / 5=定制。
+ */
 export enum EquityLevel {
-  /** 普通 */
-  NORMAL = 1,
-  /** 银卡 */
-  SILVER = 2,
-  /** 金卡 */
-  GOLD = 3,
-  /** 钻石 */
-  DIAMOND = 4
+  /** 基础 */
+  BASIC = 1,
+  /** 标准 */
+  STANDARD = 2,
+  /** 高级 */
+  PREMIUM = 3,
+  /** 尊享 */
+  LUXURY = 4,
+  /** 定制 */
+  CUSTOM = 5
 }
 
 /** 权益等级选项 */
 export const EQUITY_LEVEL_OPTIONS = [
-  { label: '普通', value: EquityLevel.NORMAL },
-  { label: '银卡', value: EquityLevel.SILVER },
-  { label: '金卡', value: EquityLevel.GOLD },
-  { label: '钻石', value: EquityLevel.DIAMOND }
+  { label: '基础', value: EquityLevel.BASIC },
+  { label: '标准', value: EquityLevel.STANDARD },
+  { label: '高级', value: EquityLevel.PREMIUM },
+  { label: '尊享', value: EquityLevel.LUXURY },
+  { label: '定制', value: EquityLevel.CUSTOM }
 ] as const
 
 // ---------------- 批次状态 ----------------
 
-/** 批次状态：0草稿 / 1生产中 / 2已完成 / 3已作废 */
+/** 批次状态：对齐后端 DDL 10_equity.sql batch_status。0=待生产 / 1=生产中 / 2=已完成 / 3=已出库 / 4=已关闭 */
 export enum BatchStatus {
-  /** 草稿 */
-  DRAFT = 0,
+  /** 待生产 */
+  PENDING_PRODUCE = 0,
   /** 生产中 */
   PRODUCING = 1,
   /** 已完成 */
   COMPLETED = 2,
-  /** 已作废 */
-  VOIDED = 3
+  /** 已出库 */
+  OUT_BOUND = 3,
+  /** 已关闭 */
+  CLOSED = 4
 }
 
 /** 批次状态选项 */
 export const BATCH_STATUS_OPTIONS = [
-  { label: '草稿', value: BatchStatus.DRAFT },
+  { label: '待生产', value: BatchStatus.PENDING_PRODUCE },
   { label: '生产中', value: BatchStatus.PRODUCING },
   { label: '已完成', value: BatchStatus.COMPLETED },
-  { label: '已作废', value: BatchStatus.VOIDED }
+  { label: '已出库', value: BatchStatus.OUT_BOUND },
+  { label: '已关闭', value: BatchStatus.CLOSED }
 ] as const
 
 // ---------------- 权益状态 ----------------
 
-/** 权益状态：0待入库 / 1在库 / 2已出库 / 3已激活 / 4已使用 / 5已过期 / 6已作废 / 7变更中 */
+/** 权益状态：对齐后端 DDL 10_equity.sql equity_status。0=库存中 / 1=已出库 / 2=已激活 / 3=使用中 / 4=已完成 / 5=已过期 / 6=已作废 / 7=更换权益人中 */
 export enum EquityStatus {
-  /** 待入库 */
-  PENDING_STOCK_IN = 0,
-  /** 在库 */
-  IN_STOCK = 1,
+  /** 库存中 */
+  STOCK = 0,
   /** 已出库 */
-  OUT_BOUND = 2,
+  OUTBOUND = 1,
   /** 已激活 */
-  ACTIVATED = 3,
-  /** 已使用 */
-  USED = 4,
+  ACTIVATED = 2,
+  /** 使用中 */
+  IN_USE = 3,
+  /** 已完成 */
+  COMPLETED = 4,
   /** 已过期 */
   EXPIRED = 5,
   /** 已作废 */
-  VOIDED = 6,
-  /** 变更中 */
-  CHANGING = 7
+  VOID = 6,
+  /** 更换权益人中 */
+  CHANGING_HOLDER = 7
 }
 
 /** 权益状态选项 */
 export const EQUITY_STATUS_OPTIONS = [
-  { label: '待入库', value: EquityStatus.PENDING_STOCK_IN },
-  { label: '在库', value: EquityStatus.IN_STOCK },
-  { label: '已出库', value: EquityStatus.OUT_BOUND },
+  { label: '库存中', value: EquityStatus.STOCK },
+  { label: '已出库', value: EquityStatus.OUTBOUND },
   { label: '已激活', value: EquityStatus.ACTIVATED },
-  { label: '已使用', value: EquityStatus.USED },
+  { label: '使用中', value: EquityStatus.IN_USE },
+  { label: '已完成', value: EquityStatus.COMPLETED },
   { label: '已过期', value: EquityStatus.EXPIRED },
-  { label: '已作废', value: EquityStatus.VOIDED },
-  { label: '变更中', value: EquityStatus.CHANGING }
+  { label: '已作废', value: EquityStatus.VOID },
+  { label: '更换权益人中', value: EquityStatus.CHANGING_HOLDER }
 ] as const
 
 // ---------------- 载体类型 ----------------

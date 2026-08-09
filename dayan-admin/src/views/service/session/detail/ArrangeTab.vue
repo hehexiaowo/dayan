@@ -36,21 +36,20 @@ const props = defineProps<{
   sessionCode: string
 }>()
 
-// ---------- 列表（useCrud，主键 id） ----------
+// ---------- 列表（useCrud，主键 arrangeCode） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   ServiceEquityArrange,
-  ServiceEquityArrangeQuery,
-  number
+  ServiceEquityArrangeQuery
 >(
   {
     page: pageServiceEquityArranges,
     create: createServiceEquityArrange,
-    update: (id, data) => updateServiceEquityArrange(id, data),
+    update: (code, data) => updateServiceEquityArrange(code, data),
     remove: deleteServiceEquityArrange
   },
   {
     initialQuery: { arrangeType: undefined, isConfirmed: undefined, status: undefined },
-    idKey: 'id',
+    idKey: 'arrangeCode',
     fixedParams: { sessionCode: props.sessionCode }
   }
 )
@@ -151,8 +150,8 @@ async function handleSubmit() {
     if (dialogMode.value === 'create') {
       await createServiceEquityArrange(form)
       ElMessage.success('新增成功')
-    } else if (form.id) {
-      await updateServiceEquityArrange(form.id, form)
+    } else if (form.arrangeCode) {
+      await updateServiceEquityArrange(form.arrangeCode, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -163,13 +162,13 @@ async function handleSubmit() {
 }
 
 async function handleDelete(row: ServiceEquityArrange) {
-  if (!row.id) return
-  await ElMessageBox.confirm(`确定删除安排「${row.arrangeCode || row.id}」吗？`, '提示', {
+  if (!row.arrangeCode) return
+  await ElMessageBox.confirm(`确定删除安排「${row.arrangeCode}」吗？`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteServiceEquityArrange(row.id)
+  await deleteServiceEquityArrange(row.arrangeCode)
   ElMessage.success('删除成功')
   loadPage()
 }
@@ -178,9 +177,9 @@ async function handleDelete(row: ServiceEquityArrange) {
 const confirmLoading = ref(false)
 
 async function handleConfirm(row: ServiceEquityArrange) {
-  if (!row.id) return
+  if (!row.arrangeCode) return
   await ElMessageBox.confirm(
-    `确认安排「${row.arrangeCode || row.id}」吗？确认后将自动写入确认时间，且方可触发会话开始服务。`,
+    `确认安排「${row.arrangeCode}」吗？确认后将自动写入确认时间，且方可触发会话开始服务。`,
     '确认安排',
     {
       confirmButtonText: '确认',
@@ -190,7 +189,7 @@ async function handleConfirm(row: ServiceEquityArrange) {
   )
   confirmLoading.value = true
   try {
-    await confirmServiceEquityArrange(row.id, 1)
+    await confirmServiceEquityArrange(row.arrangeCode, 1)
     ElMessage.success('已确认安排')
     loadPage()
   } finally {
@@ -267,7 +266,7 @@ defineExpose({ loadPage })
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
+    <el-table v-loading="loading" :data="tableData" border stripe row-key="arrangeCode">
       <el-table-column prop="arrangeCode" label="安排编码" min-width="150" show-overflow-tooltip />
       <el-table-column prop="arrangeType" label="类型" width="110" align="center">
         <template #default="{ row }">

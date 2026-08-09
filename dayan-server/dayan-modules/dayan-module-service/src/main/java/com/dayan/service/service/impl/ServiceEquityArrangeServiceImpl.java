@@ -63,8 +63,8 @@ public class ServiceEquityArrangeServiceImpl implements ServiceEquityArrangeServ
     }
 
     @Override
-    public ServiceEquityArrangeVO getDetail(Long id) {
-        return toVO(requireArrange(id));
+    public ServiceEquityArrangeVO getDetail(String arrangeCode) {
+        return toVO(requireArrangeByCode(arrangeCode));
     }
 
     @Override
@@ -100,8 +100,8 @@ public class ServiceEquityArrangeServiceImpl implements ServiceEquityArrangeServ
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, ServiceEquityArrangeUpdateDTO dto) {
-        ServiceEquityArrange existing = requireArrange(id);
+    public void update(String arrangeCode, ServiceEquityArrangeUpdateDTO dto) {
+        ServiceEquityArrange existing = requireArrangeByCode(arrangeCode);
         validateTimeRange(dto.getArrangeTimeStart(), dto.getArrangeTimeEnd());
 
         ServiceEquityArrange update = new ServiceEquityArrange();
@@ -123,13 +123,13 @@ public class ServiceEquityArrangeServiceImpl implements ServiceEquityArrangeServ
         if (dto.getCancelReason() != null) update.setCancelReason(dto.getCancelReason());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
         arrangeMapper.updateById(update);
-        log.info("更新安排成功: id={}", id);
+        log.info("更新安排成功: arrangeCode={}", arrangeCode);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirm(ArrangeConfirmDTO dto) {
-        ServiceEquityArrange existing = requireArrange(dto.getId());
+        ServiceEquityArrange existing = requireArrangeByCode(dto.getArrangeCode());
         ServiceEquityArrange update = new ServiceEquityArrange();
         update.setId(existing.getId());
         update.setIsConfirmed(dto.getIsConfirmed());
@@ -137,15 +137,15 @@ public class ServiceEquityArrangeServiceImpl implements ServiceEquityArrangeServ
             update.setConfirmTime(LocalDateTime.now());
         }
         arrangeMapper.updateById(update);
-        log.info("安排确认: id={}, isConfirmed={}", dto.getId(), dto.getIsConfirmed());
+        log.info("安排确认: arrangeCode={}, isConfirmed={}", dto.getArrangeCode(), dto.getIsConfirmed());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
-        ServiceEquityArrange existing = requireArrange(id);
+    public void delete(String arrangeCode) {
+        ServiceEquityArrange existing = requireArrangeByCode(arrangeCode);
         arrangeMapper.deleteById(existing.getId());
-        log.info("删除安排成功: id={}", id);
+        log.info("删除安排成功: arrangeCode={}", arrangeCode);
     }
 
     @Override
@@ -195,10 +195,12 @@ public class ServiceEquityArrangeServiceImpl implements ServiceEquityArrangeServ
         return wrapper;
     }
 
-    private ServiceEquityArrange requireArrange(Long id) {
-        ServiceEquityArrange entity = arrangeMapper.selectById(id);
+    private ServiceEquityArrange requireArrangeByCode(String arrangeCode) {
+        ServiceEquityArrange entity = arrangeMapper.selectOne(
+                new LambdaQueryWrapper<ServiceEquityArrange>()
+                        .eq(ServiceEquityArrange::getArrangeCode, arrangeCode));
         if (entity == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "安排不存在: id=" + id);
+            throw new BusinessException(ErrorCode.NOT_FOUND, "安排不存在: arrangeCode=" + arrangeCode);
         }
         return entity;
     }

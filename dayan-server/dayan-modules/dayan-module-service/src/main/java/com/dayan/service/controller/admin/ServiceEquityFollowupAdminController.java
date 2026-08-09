@@ -46,9 +46,9 @@ public class ServiceEquityFollowupAdminController {
 
     @Operation(summary = "回访详情")
     @SaCheckPermission("service:equity-followup:query")
-    @GetMapping("/{id}")
-    public R<ServiceEquityFollowupVO> getDetail(@PathVariable Long id) {
-        return R.ok(serviceEquityFollowupService.getDetail(id));
+    @GetMapping("/{followupCode}")
+    public R<ServiceEquityFollowupVO> getDetail(@PathVariable String followupCode) {
+        return R.ok(serviceEquityFollowupService.getDetail(followupCode));
     }
 
     @Operation(summary = "新增回访")
@@ -60,18 +60,18 @@ public class ServiceEquityFollowupAdminController {
 
     @Operation(summary = "修改回访")
     @SaCheckPermission("service:equity-followup:update")
-    @PutMapping("/{id}")
-    public R<Void> update(@PathVariable Long id,
+    @PutMapping("/{followupCode}")
+    public R<Void> update(@PathVariable String followupCode,
                           @RequestBody ServiceEquityFollowupUpdateDTO dto) {
-        serviceEquityFollowupService.update(id, dto);
+        serviceEquityFollowupService.update(followupCode, dto);
         return R.ok();
     }
 
     @Operation(summary = "删除回访")
     @SaCheckPermission("service:equity-followup:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        serviceEquityFollowupService.delete(id);
+    @DeleteMapping("/{followupCode}")
+    public R<Void> delete(@PathVariable String followupCode) {
+        serviceEquityFollowupService.delete(followupCode);
         return R.ok();
     }
 }

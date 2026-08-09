@@ -23,9 +23,10 @@ import type {
  * - /admin-api/service/arrange     （ServiceEquityArrangeAdminController，含 /confirm）
  * - /admin-api/service/followup    （ServiceEquityFollowupAdminController）
  *
- * 主键约定（全部 id 为雪花 Long，路径参数用 id，useCrud 传 idKey:'id'）：
- * - ServiceEvaluation：create 返回 Long（id，无业务 code）。
- * - ServiceEquityDemand/Solution/Arrange/Followup：create 返回 String（业务 code：DM/SO/AR/FU 前缀）。
+ * 主键约定：
+ * - ServiceEvaluation：无业务 code，路径用 Long id（useCrud 传 idKey:'id'）。
+ * - ServiceEquityDemand/Solution/Arrange/Followup：有业务 code（DM/SO/AR/FU 前缀），
+ *   路径参数用 xxxCode（useCrud 传 idKey:'demandCode' 等），避免雪花 Long 精度溢出。
  *
  * list 端点差异（务必注意）：
  * - evaluation：list 接 QueryDTO（sessionCode/butlerCode/parkCode 等均可过滤）。
@@ -112,10 +113,10 @@ export function listServiceEquityDemands(sessionCode: string): Promise<ServiceEq
   })
 }
 
-/** 需求详情：GET /admin-api/service/demand/{id} */
-export function getServiceEquityDemand(id: number): Promise<ServiceEquityDemand> {
+/** 需求详情：GET /admin-api/service/demand/{demandCode} */
+export function getServiceEquityDemand(demandCode: string): Promise<ServiceEquityDemand> {
   return request<ServiceEquityDemand>({
-    url: `/admin-api/service/demand/${id}`,
+    url: `/admin-api/service/demand/${demandCode}`,
     method: 'get'
   })
 }
@@ -129,19 +130,19 @@ export function createServiceEquityDemand(data: Partial<ServiceEquityDemand>): P
   })
 }
 
-/** 修改需求：PUT /admin-api/service/demand/{id} */
-export function updateServiceEquityDemand(id: number, data: Partial<ServiceEquityDemand>): Promise<void> {
+/** 修改需求：PUT /admin-api/service/demand/{demandCode} */
+export function updateServiceEquityDemand(demandCode: string, data: Partial<ServiceEquityDemand>): Promise<void> {
   return request<void>({
-    url: `/admin-api/service/demand/${id}`,
+    url: `/admin-api/service/demand/${demandCode}`,
     method: 'put',
     data
   })
 }
 
-/** 删除需求：DELETE /admin-api/service/demand/{id} */
-export function deleteServiceEquityDemand(id: number): Promise<void> {
+/** 删除需求：DELETE /admin-api/service/demand/{demandCode} */
+export function deleteServiceEquityDemand(demandCode: string): Promise<void> {
   return request<void>({
-    url: `/admin-api/service/demand/${id}`,
+    url: `/admin-api/service/demand/${demandCode}`,
     method: 'delete'
   })
 }
@@ -166,10 +167,10 @@ export function listServiceEquitySolutions(sessionCode: string): Promise<Service
   })
 }
 
-/** 方案详情：GET /admin-api/service/solution/{id} */
-export function getServiceEquitySolution(id: number): Promise<ServiceEquitySolution> {
+/** 方案详情：GET /admin-api/service/solution/{solutionCode} */
+export function getServiceEquitySolution(solutionCode: string): Promise<ServiceEquitySolution> {
   return request<ServiceEquitySolution>({
-    url: `/admin-api/service/solution/${id}`,
+    url: `/admin-api/service/solution/${solutionCode}`,
     method: 'get'
   })
 }
@@ -183,10 +184,10 @@ export function createServiceEquitySolution(data: Partial<ServiceEquitySolution>
   })
 }
 
-/** 修改方案：PUT /admin-api/service/solution/{id} */
-export function updateServiceEquitySolution(id: number, data: Partial<ServiceEquitySolution>): Promise<void> {
+/** 修改方案：PUT /admin-api/service/solution/{solutionCode} */
+export function updateServiceEquitySolution(solutionCode: string, data: Partial<ServiceEquitySolution>): Promise<void> {
   return request<void>({
-    url: `/admin-api/service/solution/${id}`,
+    url: `/admin-api/service/solution/${solutionCode}`,
     method: 'put',
     data
   })
@@ -195,25 +196,25 @@ export function updateServiceEquitySolution(id: number, data: Partial<ServiceEqu
 /**
  * 方案接受/拒绝标记：POST /admin-api/service/solution/accept。
  *
- * body SolutionAcceptDTO { id, isAccepted:0/1/2, clientFeedback? }。
+ * body SolutionAcceptDTO { solutionCode, isAccepted:0/1/2, clientFeedback? }。
  * 会话 confirm_solution 前须存在 isAccepted=1 的方案。
  */
 export function acceptServiceEquitySolution(
-  id: number,
+  solutionCode: string,
   isAccepted: number,
   clientFeedback?: string
 ): Promise<void> {
   return request<void>({
     url: '/admin-api/service/solution/accept',
     method: 'post',
-    data: { id, isAccepted, clientFeedback }
+    data: { solutionCode, isAccepted, clientFeedback }
   })
 }
 
-/** 删除方案：DELETE /admin-api/service/solution/{id} */
-export function deleteServiceEquitySolution(id: number): Promise<void> {
+/** 删除方案：DELETE /admin-api/service/solution/{solutionCode} */
+export function deleteServiceEquitySolution(solutionCode: string): Promise<void> {
   return request<void>({
-    url: `/admin-api/service/solution/${id}`,
+    url: `/admin-api/service/solution/${solutionCode}`,
     method: 'delete'
   })
 }
@@ -238,10 +239,10 @@ export function listServiceEquityArranges(sessionCode: string): Promise<ServiceE
   })
 }
 
-/** 安排详情：GET /admin-api/service/arrange/{id} */
-export function getServiceEquityArrange(id: number): Promise<ServiceEquityArrange> {
+/** 安排详情：GET /admin-api/service/arrange/{arrangeCode} */
+export function getServiceEquityArrange(arrangeCode: string): Promise<ServiceEquityArrange> {
   return request<ServiceEquityArrange>({
-    url: `/admin-api/service/arrange/${id}`,
+    url: `/admin-api/service/arrange/${arrangeCode}`,
     method: 'get'
   })
 }
@@ -255,10 +256,10 @@ export function createServiceEquityArrange(data: Partial<ServiceEquityArrange>):
   })
 }
 
-/** 修改安排：PUT /admin-api/service/arrange/{id} */
-export function updateServiceEquityArrange(id: number, data: Partial<ServiceEquityArrange>): Promise<void> {
+/** 修改安排：PUT /admin-api/service/arrange/{arrangeCode} */
+export function updateServiceEquityArrange(arrangeCode: string, data: Partial<ServiceEquityArrange>): Promise<void> {
   return request<void>({
-    url: `/admin-api/service/arrange/${id}`,
+    url: `/admin-api/service/arrange/${arrangeCode}`,
     method: 'put',
     data
   })
@@ -267,21 +268,21 @@ export function updateServiceEquityArrange(id: number, data: Partial<ServiceEqui
 /**
  * 确认安排：POST /admin-api/service/arrange/confirm。
  *
- * body ArrangeConfirmDTO { id, isConfirmed:0/1 }。
+ * body ArrangeConfirmDTO { arrangeCode, isConfirmed:0/1 }。
  * isConfirmed=1 后自动写 confirmTime，方可触发会话 start_service。
  */
-export function confirmServiceEquityArrange(id: number, isConfirmed: number): Promise<void> {
+export function confirmServiceEquityArrange(arrangeCode: string, isConfirmed: number): Promise<void> {
   return request<void>({
     url: '/admin-api/service/arrange/confirm',
     method: 'post',
-    data: { id, isConfirmed }
+    data: { arrangeCode, isConfirmed }
   })
 }
 
-/** 删除安排：DELETE /admin-api/service/arrange/{id} */
-export function deleteServiceEquityArrange(id: number): Promise<void> {
+/** 删除安排：DELETE /admin-api/service/arrange/{arrangeCode} */
+export function deleteServiceEquityArrange(arrangeCode: string): Promise<void> {
   return request<void>({
-    url: `/admin-api/service/arrange/${id}`,
+    url: `/admin-api/service/arrange/${arrangeCode}`,
     method: 'delete'
   })
 }
@@ -306,10 +307,10 @@ export function listServiceEquityFollowups(sessionCode: string): Promise<Service
   })
 }
 
-/** 回访详情：GET /admin-api/service/followup/{id} */
-export function getServiceEquityFollowup(id: number): Promise<ServiceEquityFollowup> {
+/** 回访详情：GET /admin-api/service/followup/{followupCode} */
+export function getServiceEquityFollowup(followupCode: string): Promise<ServiceEquityFollowup> {
   return request<ServiceEquityFollowup>({
-    url: `/admin-api/service/followup/${id}`,
+    url: `/admin-api/service/followup/${followupCode}`,
     method: 'get'
   })
 }
@@ -323,19 +324,19 @@ export function createServiceEquityFollowup(data: Partial<ServiceEquityFollowup>
   })
 }
 
-/** 修改回访：PUT /admin-api/service/followup/{id} */
-export function updateServiceEquityFollowup(id: number, data: Partial<ServiceEquityFollowup>): Promise<void> {
+/** 修改回访：PUT /admin-api/service/followup/{followupCode} */
+export function updateServiceEquityFollowup(followupCode: string, data: Partial<ServiceEquityFollowup>): Promise<void> {
   return request<void>({
-    url: `/admin-api/service/followup/${id}`,
+    url: `/admin-api/service/followup/${followupCode}`,
     method: 'put',
     data
   })
 }
 
-/** 删除回访：DELETE /admin-api/service/followup/{id} */
-export function deleteServiceEquityFollowup(id: number): Promise<void> {
+/** 删除回访：DELETE /admin-api/service/followup/{followupCode} */
+export function deleteServiceEquityFollowup(followupCode: string): Promise<void> {
   return request<void>({
-    url: `/admin-api/service/followup/${id}`,
+    url: `/admin-api/service/followup/${followupCode}`,
     method: 'delete'
   })
 }

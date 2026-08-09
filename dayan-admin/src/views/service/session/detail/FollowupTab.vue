@@ -35,21 +35,20 @@ const props = defineProps<{
   sessionCode: string
 }>()
 
-// ---------- 列表（useCrud，主键 id） ----------
+// ---------- 列表（useCrud，主键 followupCode） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   ServiceEquityFollowup,
-  ServiceEquityFollowupQuery,
-  number
+  ServiceEquityFollowupQuery
 >(
   {
     page: pageServiceEquityFollowups,
     create: createServiceEquityFollowup,
-    update: (id, data) => updateServiceEquityFollowup(id, data),
+    update: (code, data) => updateServiceEquityFollowup(code, data),
     remove: deleteServiceEquityFollowup
   },
   {
     initialQuery: { followupType: undefined, status: undefined },
-    idKey: 'id',
+    idKey: 'followupCode',
     fixedParams: { sessionCode: props.sessionCode }
   }
 )
@@ -168,8 +167,8 @@ async function handleSubmit() {
         remark: form.remark
       })
       ElMessage.success('新增成功')
-    } else if (form.id) {
-      await updateServiceEquityFollowup(form.id, form)
+    } else if (form.followupCode) {
+      await updateServiceEquityFollowup(form.followupCode, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -180,13 +179,13 @@ async function handleSubmit() {
 }
 
 async function handleDelete(row: ServiceEquityFollowup) {
-  if (!row.id) return
-  await ElMessageBox.confirm(`确定删除回访「${row.followupCode || row.id}」吗？`, '提示', {
+  if (!row.followupCode) return
+  await ElMessageBox.confirm(`确定删除回访「${row.followupCode}」吗？`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteServiceEquityFollowup(row.id)
+  await deleteServiceEquityFollowup(row.followupCode)
   ElMessage.success('删除成功')
   loadPage()
 }
@@ -249,7 +248,7 @@ defineExpose({ loadPage })
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
+    <el-table v-loading="loading" :data="tableData" border stripe row-key="followupCode">
       <el-table-column prop="followupCode" label="回访编码" min-width="150" show-overflow-tooltip />
       <el-table-column prop="followupType" label="类型" width="120" align="center">
         <template #default="{ row }">

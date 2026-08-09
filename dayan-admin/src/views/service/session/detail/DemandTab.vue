@@ -36,21 +36,20 @@ const props = defineProps<{
   sessionCode: string
 }>()
 
-// ---------- 列表（useCrud，主键 id） ----------
+// ---------- 列表（useCrud，主键 demandCode） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   ServiceEquityDemand,
-  ServiceEquityDemandQuery,
-  number
+  ServiceEquityDemandQuery
 >(
   {
     page: pageServiceEquityDemands,
     create: createServiceEquityDemand,
-    update: (id, data) => updateServiceEquityDemand(id, data),
+    update: (code, data) => updateServiceEquityDemand(code, data),
     remove: deleteServiceEquityDemand
   },
   {
     initialQuery: { demandType: undefined, status: undefined },
-    idKey: 'id',
+    idKey: 'demandCode',
     fixedParams: { sessionCode: props.sessionCode }
   }
 )
@@ -172,8 +171,8 @@ async function handleSubmit() {
     if (dialogMode.value === 'create') {
       await createServiceEquityDemand(form)
       ElMessage.success('新增成功')
-    } else if (form.id) {
-      await updateServiceEquityDemand(form.id, form)
+    } else if (form.demandCode) {
+      await updateServiceEquityDemand(form.demandCode, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -184,13 +183,13 @@ async function handleSubmit() {
 }
 
 async function handleDelete(row: ServiceEquityDemand) {
-  if (!row.id) return
-  await ElMessageBox.confirm(`确定删除需求「${row.demandCode || row.id}」吗？`, '提示', {
+  if (!row.demandCode) return
+  await ElMessageBox.confirm(`确定删除需求「${row.demandCode}」吗？`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteServiceEquityDemand(row.id)
+  await deleteServiceEquityDemand(row.demandCode)
   ElMessage.success('删除成功')
   loadPage()
 }
@@ -250,7 +249,7 @@ defineExpose({ loadPage })
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
+    <el-table v-loading="loading" :data="tableData" border stripe row-key="demandCode">
       <el-table-column prop="demandCode" label="需求编码" min-width="150" show-overflow-tooltip />
       <el-table-column prop="demandType" label="类型" width="110" align="center">
         <template #default="{ row }">

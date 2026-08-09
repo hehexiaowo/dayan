@@ -7,7 +7,8 @@ import {
   pageSessions,
   updateSession,
   deleteSession,
-  transitionSession
+  transitionSession,
+  assignButler
 } from '@/api/service'
 import type { ServiceSession, ServiceSessionQuery } from '@/types/service'
 import {
@@ -168,7 +169,7 @@ async function handleTransition(
   }
 }
 
-/** 分配管家（assign_butler: 0→1）：需选择管家，此处简化用 prompt 收集 butlerCode。 */
+/** 分配管家（assign_butler）：需选择管家，用 prompt 收集 butlerCode 后调专用端点。 */
 async function handleAssignButler(row: ServiceSession) {
   if (!row.sessionCode) return
   let butlerCode = ''
@@ -185,10 +186,7 @@ async function handleAssignButler(row: ServiceSession) {
   }
   actionLoading.value = true
   try {
-    // 分配管家走专用端点语义（assign_butler 事件 + butlerCode 上下文），
-    // transition 端点不传 butlerCode，因此这里复用 assign_butler 事件触发，
-    // 若后端要求 butlerCode 则后续可切换为专用 /assign-butler 端点。
-    await transitionSession(row.sessionCode, 'assign_butler')
+    await assignButler(row.sessionCode, butlerCode)
     ElMessage.success(`已分配管家：${butlerCode}`)
     loadPage()
   } finally {

@@ -21,16 +21,16 @@ public interface ServiceEquityArrangeService {
 
     List<ServiceEquityArrangeVO> listBySession(String sessionCode);
 
-    ServiceEquityArrangeVO getDetail(Long id);
+    ServiceEquityArrangeVO getDetail(String arrangeCode);
 
     String create(ServiceEquityArrangeCreateDTO dto);
 
-    void update(Long id, ServiceEquityArrangeUpdateDTO dto);
+    void update(String arrangeCode, ServiceEquityArrangeUpdateDTO dto);
 
     /** 确认安排（isConfirmed 置 1，写 confirmTime）。 */
     void confirm(ArrangeConfirmDTO dto);
 
-    void delete(Long id);
+    void delete(String arrangeCode);
 
     /** 统计会话下已确认安排数（start_service 前校验用）。 */
     long countByConfirmed(String sessionCode, Integer isConfirmed);

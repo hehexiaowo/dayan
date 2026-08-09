@@ -1,5 +1,6 @@
 package com.dayan.service.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -11,8 +12,8 @@ import lombok.Data;
 @Data
 public class SolutionAcceptDTO {
 
-    @NotNull(message = "方案 id 不能为空")
-    private Long id;
+    @NotBlank(message = "方案编码不能为空")
+    private String solutionCode;
 
     /** 0=否, 1=是, 2=需调整 */
     @NotNull(message = "接受标记不能为空")

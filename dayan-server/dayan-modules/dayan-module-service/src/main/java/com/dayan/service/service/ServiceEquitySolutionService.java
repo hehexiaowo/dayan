@@ -21,16 +21,16 @@ public interface ServiceEquitySolutionService {
 
     List<ServiceEquitySolutionVO> listBySession(String sessionCode);
 
-    ServiceEquitySolutionVO getDetail(Long id);
+    ServiceEquitySolutionVO getDetail(String solutionCode);
 
     String create(ServiceEquitySolutionCreateDTO dto);
 
-    void update(Long id, ServiceEquitySolutionUpdateDTO dto);
+    void update(String solutionCode, ServiceEquitySolutionUpdateDTO dto);
 
     /** 标记方案接受/拒绝（isAccepted: 0/1/2）。 */
     void accept(SolutionAcceptDTO dto);
 
-    void delete(Long id);
+    void delete(String solutionCode);
 
     /** 统计会话下指定接受标记的方案数（confirm_solution 前校验用）。 */
     long countByAccepted(String sessionCode, Integer isAccepted);

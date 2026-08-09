@@ -126,14 +126,16 @@ function orderStatusLabel(s?: number): string {
   return found ? found.label : s != null ? String(s) : '--'
 }
 
-/** 订单状态 el-tag type：0待付warning / 1已付primary / 2发货/3完成success / 4取消info / 5退款/6已退danger。 */
+/** 订单状态 el-tag type：0待付warning / 1已付primary / 2部分发放info / 3已发放info / 4完成success / 5取消info / 6退款danger / 7已退danger。 */
 function orderStatusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   switch (status) {
-    case EquityOrderStatus.PENDING:
+    case EquityOrderStatus.PENDING_PAY:
       return 'warning'
     case EquityOrderStatus.PAID:
       return 'primary'
+    case EquityOrderStatus.PARTIAL_DELIVERED:
     case EquityOrderStatus.DELIVERED:
+      return 'info'
     case EquityOrderStatus.COMPLETED:
       return 'success'
     case EquityOrderStatus.REFUNDING:
@@ -145,13 +147,13 @@ function orderStatusTagType(status?: number): 'success' | 'warning' | 'danger' |
   }
 }
 
-/** 待支付 / 退款中 可取消（其余状态后端状态机会拒绝）。 */
+/** 待支付 / 已支付 / 部分发放 / 已发放 可取消（其余状态后端状态机会拒绝）。 */
 function canCancel(status?: number): boolean {
   return (
-    status === EquityOrderStatus.PENDING ||
+    status === EquityOrderStatus.PENDING_PAY ||
     status === EquityOrderStatus.PAID ||
-    status === EquityOrderStatus.DELIVERED ||
-    status === EquityOrderStatus.REFUNDING
+    status === EquityOrderStatus.PARTIAL_DELIVERED ||
+    status === EquityOrderStatus.DELIVERED
   )
 }
 

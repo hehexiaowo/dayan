@@ -47,9 +47,9 @@ public class ServiceEquityArrangeAdminController {
 
     @Operation(summary = "安排详情")
     @SaCheckPermission("service:equity-arrange:query")
-    @GetMapping("/{id}")
-    public R<ServiceEquityArrangeVO> getDetail(@PathVariable Long id) {
-        return R.ok(serviceEquityArrangeService.getDetail(id));
+    @GetMapping("/{arrangeCode}")
+    public R<ServiceEquityArrangeVO> getDetail(@PathVariable String arrangeCode) {
+        return R.ok(serviceEquityArrangeService.getDetail(arrangeCode));
     }
 
     @Operation(summary = "新增安排")
@@ -61,10 +61,10 @@ public class ServiceEquityArrangeAdminController {
 
     @Operation(summary = "修改安排")
     @SaCheckPermission("service:equity-arrange:update")
-    @PutMapping("/{id}")
-    public R<Void> update(@PathVariable Long id,
+    @PutMapping("/{arrangeCode}")
+    public R<Void> update(@PathVariable String arrangeCode,
                           @RequestBody ServiceEquityArrangeUpdateDTO dto) {
-        serviceEquityArrangeService.update(id, dto);
+        serviceEquityArrangeService.update(arrangeCode, dto);
         return R.ok();
     }
 
@@ -78,9 +78,9 @@ public class ServiceEquityArrangeAdminController {
 
     @Operation(summary = "删除安排")
     @SaCheckPermission("service:equity-arrange:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        serviceEquityArrangeService.delete(id);
+    @DeleteMapping("/{arrangeCode}")
+    public R<Void> delete(@PathVariable String arrangeCode) {
+        serviceEquityArrangeService.delete(arrangeCode);
         return R.ok();
     }
 }

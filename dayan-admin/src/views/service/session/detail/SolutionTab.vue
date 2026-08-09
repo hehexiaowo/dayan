@@ -36,21 +36,20 @@ const props = defineProps<{
   sessionCode: string
 }>()
 
-// ---------- 列表（useCrud，主键 id） ----------
+// ---------- 列表（useCrud，主键 solutionCode） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   ServiceEquitySolution,
-  ServiceEquitySolutionQuery,
-  number
+  ServiceEquitySolutionQuery
 >(
   {
     page: pageServiceEquitySolutions,
     create: createServiceEquitySolution,
-    update: (id, data) => updateServiceEquitySolution(id, data),
+    update: (code, data) => updateServiceEquitySolution(code, data),
     remove: deleteServiceEquitySolution
   },
   {
     initialQuery: { solutionType: undefined, isAccepted: undefined, status: undefined },
-    idKey: 'id',
+    idKey: 'solutionCode',
     fixedParams: { sessionCode: props.sessionCode }
   }
 )
@@ -147,8 +146,8 @@ async function handleSubmit() {
     if (dialogMode.value === 'create') {
       await createServiceEquitySolution(form)
       ElMessage.success('新增成功')
-    } else if (form.id) {
-      await updateServiceEquitySolution(form.id, form)
+    } else if (form.solutionCode) {
+      await updateServiceEquitySolution(form.solutionCode, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -159,13 +158,13 @@ async function handleSubmit() {
 }
 
 async function handleDelete(row: ServiceEquitySolution) {
-  if (!row.id) return
-  await ElMessageBox.confirm(`确定删除方案「${row.solutionCode || row.id}」吗？`, '提示', {
+  if (!row.solutionCode) return
+  await ElMessageBox.confirm(`确定删除方案「${row.solutionCode}」吗？`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteServiceEquitySolution(row.id)
+  await deleteServiceEquitySolution(row.solutionCode)
   ElMessage.success('删除成功')
   loadPage()
 }
@@ -174,7 +173,7 @@ async function handleDelete(row: ServiceEquitySolution) {
 const acceptLoading = ref(false)
 
 async function handleAccept(row: ServiceEquitySolution) {
-  if (!row.id) return
+  if (!row.solutionCode) return
   // 先选目标状态
   let isAccepted = 1
   try {
@@ -204,7 +203,7 @@ async function handleAccept(row: ServiceEquitySolution) {
   }
   acceptLoading.value = true
   try {
-    await acceptServiceEquitySolution(row.id, isAccepted, clientFeedback)
+    await acceptServiceEquitySolution(row.solutionCode, isAccepted, clientFeedback)
     ElMessage.success('接受标记已更新')
     loadPage()
   } finally {
@@ -289,7 +288,7 @@ defineExpose({ loadPage })
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
+    <el-table v-loading="loading" :data="tableData" border stripe row-key="solutionCode">
       <el-table-column prop="solutionCode" label="方案编码" min-width="150" show-overflow-tooltip />
       <el-table-column prop="solutionName" label="方案名称" min-width="160" show-overflow-tooltip />
       <el-table-column prop="solutionType" label="类型" width="100" align="center">

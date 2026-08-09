@@ -62,7 +62,7 @@ const form = reactive<EquityBatch>({
   totalCost: undefined,
   produceDate: '',
   expireDate: '',
-  batchStatus: BatchStatus.DRAFT,
+  batchStatus: BatchStatus.PENDING_PRODUCE,
   remark: ''
 })
 
@@ -83,7 +83,7 @@ function resetForm() {
     totalCost: undefined,
     produceDate: '',
     expireDate: '',
-    batchStatus: BatchStatus.DRAFT,
+    batchStatus: BatchStatus.PENDING_PRODUCE,
     remark: ''
   })
 }
@@ -110,7 +110,7 @@ async function openEdit(row: EquityBatch) {
       totalCost: detail.totalCost,
       produceDate: detail.produceDate ?? '',
       expireDate: detail.expireDate ?? '',
-      batchStatus: detail.batchStatus ?? BatchStatus.DRAFT,
+      batchStatus: detail.batchStatus ?? BatchStatus.PENDING_PRODUCE,
       remark: detail.remark ?? ''
     })
   } catch {
@@ -124,7 +124,7 @@ async function openEdit(row: EquityBatch) {
       totalCost: row.totalCost,
       produceDate: row.produceDate ?? '',
       expireDate: row.expireDate ?? '',
-      batchStatus: row.batchStatus ?? BatchStatus.DRAFT,
+      batchStatus: row.batchStatus ?? BatchStatus.PENDING_PRODUCE,
       remark: row.remark ?? ''
     })
   }
@@ -202,16 +202,18 @@ function batchStatusLabel(s?: number): string {
   return found ? found.label : s != null ? String(s) : '--'
 }
 
-/** 批次状态 tag：0草稿info / 1生产中warning / 2已完成success / 3已作废danger */
-function batchStatusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' {
+/** 批次状态 tag：0待生产info / 1生产中warning / 2已完成success / 3已出库primary / 4已关闭danger */
+function batchStatusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   switch (status) {
     case BatchStatus.PRODUCING:
       return 'warning'
     case BatchStatus.COMPLETED:
       return 'success'
-    case BatchStatus.VOIDED:
+    case BatchStatus.OUT_BOUND:
+      return 'primary'
+    case BatchStatus.CLOSED:
       return 'danger'
-    case BatchStatus.DRAFT:
+    case BatchStatus.PENDING_PRODUCE:
     default:
       return 'info'
   }

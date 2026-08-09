@@ -62,8 +62,8 @@ public class ServiceEquitySolutionServiceImpl implements ServiceEquitySolutionSe
     }
 
     @Override
-    public ServiceEquitySolutionVO getDetail(Long id) {
-        return toVO(requireSolution(id));
+    public ServiceEquitySolutionVO getDetail(String solutionCode) {
+        return toVO(requireSolutionByCode(solutionCode));
     }
 
     @Override
@@ -99,8 +99,8 @@ public class ServiceEquitySolutionServiceImpl implements ServiceEquitySolutionSe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, ServiceEquitySolutionUpdateDTO dto) {
-        ServiceEquitySolution existing = requireSolution(id);
+    public void update(String solutionCode, ServiceEquitySolutionUpdateDTO dto) {
+        ServiceEquitySolution existing = requireSolutionByCode(solutionCode);
         ServiceEquitySolution update = new ServiceEquitySolution();
         update.setId(existing.getId());
         if (dto.getSolutionName() != null) update.setSolutionName(dto.getSolutionName());
@@ -120,27 +120,27 @@ public class ServiceEquitySolutionServiceImpl implements ServiceEquitySolutionSe
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
         solutionMapper.updateById(update);
-        log.info("更新方案成功: id={}", id);
+        log.info("更新方案成功: solutionCode={}", solutionCode);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void accept(SolutionAcceptDTO dto) {
-        ServiceEquitySolution existing = requireSolution(dto.getId());
+        ServiceEquitySolution existing = requireSolutionByCode(dto.getSolutionCode());
         ServiceEquitySolution update = new ServiceEquitySolution();
         update.setId(existing.getId());
         update.setIsAccepted(dto.getIsAccepted());
         if (dto.getClientFeedback() != null) update.setClientFeedback(dto.getClientFeedback());
         solutionMapper.updateById(update);
-        log.info("方案接受标记更新: id={}, isAccepted={}", dto.getId(), dto.getIsAccepted());
+        log.info("方案接受标记更新: solutionCode={}, isAccepted={}", dto.getSolutionCode(), dto.getIsAccepted());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
-        ServiceEquitySolution existing = requireSolution(id);
+    public void delete(String solutionCode) {
+        ServiceEquitySolution existing = requireSolutionByCode(solutionCode);
         solutionMapper.deleteById(existing.getId());
-        log.info("删除方案成功: id={}", id);
+        log.info("删除方案成功: solutionCode={}", solutionCode);
     }
 
     @Override
@@ -184,10 +184,12 @@ public class ServiceEquitySolutionServiceImpl implements ServiceEquitySolutionSe
         return wrapper;
     }
 
-    private ServiceEquitySolution requireSolution(Long id) {
-        ServiceEquitySolution entity = solutionMapper.selectById(id);
+    private ServiceEquitySolution requireSolutionByCode(String solutionCode) {
+        ServiceEquitySolution entity = solutionMapper.selectOne(
+                new LambdaQueryWrapper<ServiceEquitySolution>()
+                        .eq(ServiceEquitySolution::getSolutionCode, solutionCode));
         if (entity == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "方案不存在: id=" + id);
+            throw new BusinessException(ErrorCode.NOT_FOUND, "方案不存在: solutionCode=" + solutionCode);
         }
         return entity;
     }

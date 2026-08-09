@@ -20,11 +20,11 @@ public interface ServiceEquityFollowupService {
 
     List<ServiceEquityFollowupVO> listBySession(String sessionCode);
 
-    ServiceEquityFollowupVO getDetail(Long id);
+    ServiceEquityFollowupVO getDetail(String followupCode);
 
     String create(ServiceEquityFollowupCreateDTO dto);
 
-    void update(Long id, ServiceEquityFollowupUpdateDTO dto);
+    void update(String followupCode, ServiceEquityFollowupUpdateDTO dto);
 
-    void delete(Long id);
+    void delete(String followupCode);
 }

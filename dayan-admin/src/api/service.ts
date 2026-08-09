@@ -446,3 +446,17 @@ export function transitionSession(sessionCode: string, event: string): Promise<n
     data: { sessionCode, event }
   })
 }
+
+/**
+ * 分配管家：POST /admin-api/service/session/assign-butler
+ *
+ * 入参对齐后端 AssignButlerDTO（@RequestBody）。
+ * 触发 assign_butler 事件，写 butlerCode/butlerFullName(快照)/acceptTime=now。
+ */
+export function assignButler(sessionCode: string, butlerCode: string): Promise<void> {
+  return request<void>({
+    url: '/admin-api/service/session/assign-butler',
+    method: 'post',
+    data: { sessionCode, butlerCode }
+  })
+}

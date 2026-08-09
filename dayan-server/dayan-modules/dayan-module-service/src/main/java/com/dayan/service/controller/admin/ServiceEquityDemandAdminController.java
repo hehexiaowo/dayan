@@ -45,9 +45,9 @@ public class ServiceEquityDemandAdminController {
 
     @Operation(summary = "需求详情")
     @SaCheckPermission("service:equity-demand:query")
-    @GetMapping("/{id}")
-    public R<ServiceEquityDemandVO> getDetail(@PathVariable Long id) {
-        return R.ok(serviceEquityDemandService.getDetail(id));
+    @GetMapping("/{demandCode}")
+    public R<ServiceEquityDemandVO> getDetail(@PathVariable String demandCode) {
+        return R.ok(serviceEquityDemandService.getDetail(demandCode));
     }
 
     @Operation(summary = "新增需求")
@@ -59,18 +59,18 @@ public class ServiceEquityDemandAdminController {
 
     @Operation(summary = "修改需求")
     @SaCheckPermission("service:equity-demand:update")
-    @PutMapping("/{id}")
-    public R<Void> update(@PathVariable Long id,
+    @PutMapping("/{demandCode}")
+    public R<Void> update(@PathVariable String demandCode,
                           @RequestBody ServiceEquityDemandUpdateDTO dto) {
-        serviceEquityDemandService.update(id, dto);
+        serviceEquityDemandService.update(demandCode, dto);
         return R.ok();
     }
 
     @Operation(summary = "删除需求")
     @SaCheckPermission("service:equity-demand:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        serviceEquityDemandService.delete(id);
+    @DeleteMapping("/{demandCode}")
+    public R<Void> delete(@PathVariable String demandCode) {
+        serviceEquityDemandService.delete(demandCode);
         return R.ok();
     }
 }

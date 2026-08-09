@@ -13,30 +13,33 @@ import type { PageQuery } from '@/types/common'
 /**
  * 权益订单状态（order_equity.order_status）。
  *
- * 0=待支付 / 1=已支付 / 2=已发货 / 3=已完成 / 4=已取消 / 5=退款中 / 6=已退款。
+ * 对齐后端 DDL 15_order.sql：0=待支付 / 1=已支付 / 2=部分发放 / 3=已发放 / 4=已完成 / 5=已取消 / 6=退款中 / 7=已退款。
  */
 export enum EquityOrderStatus {
   /** 待支付 */
-  PENDING = 0,
+  PENDING_PAY = 0,
   /** 已支付 */
   PAID = 1,
-  /** 已发货 */
-  DELIVERED = 2,
+  /** 部分发放 */
+  PARTIAL_DELIVERED = 2,
+  /** 已发放 */
+  DELIVERED = 3,
   /** 已完成 */
-  COMPLETED = 3,
+  COMPLETED = 4,
   /** 已取消 */
-  CANCELLED = 4,
+  CANCELLED = 5,
   /** 退款中 */
-  REFUNDING = 5,
+  REFUNDING = 6,
   /** 已退款 */
-  REFUNDED = 6
+  REFUNDED = 7
 }
 
 /** 权益订单状态选项 */
 export const EQUITY_ORDER_STATUS_OPTIONS = [
-  { label: '待支付', value: EquityOrderStatus.PENDING },
+  { label: '待支付', value: EquityOrderStatus.PENDING_PAY },
   { label: '已支付', value: EquityOrderStatus.PAID },
-  { label: '已发货', value: EquityOrderStatus.DELIVERED },
+  { label: '部分发放', value: EquityOrderStatus.PARTIAL_DELIVERED },
+  { label: '已发放', value: EquityOrderStatus.DELIVERED },
   { label: '已完成', value: EquityOrderStatus.COMPLETED },
   { label: '已取消', value: EquityOrderStatus.CANCELLED },
   { label: '退款中', value: EquityOrderStatus.REFUNDING },
@@ -46,27 +49,33 @@ export const EQUITY_ORDER_STATUS_OPTIONS = [
 /**
  * 场景订单状态（order_scene.order_status）。
  *
- * 0=待支付 / 1=已支付 / 2=已完成 / 3=已取消 / 4=退款中 / 5=已退款。
+ * 对齐后端 DDL 15_order.sql：0=待支付 / 1=已支付 / 2=部分发放 / 3=已发放 / 4=已完成 / 5=已取消 / 6=退款中 / 7=已退款。
  */
 export enum SceneOrderStatus {
   /** 待支付 */
-  PENDING = 0,
+  PENDING_PAY = 0,
   /** 已支付 */
   PAID = 1,
+  /** 部分发放 */
+  PARTIAL_DELIVERED = 2,
+  /** 已发放 */
+  DELIVERED = 3,
   /** 已完成 */
-  COMPLETED = 2,
+  COMPLETED = 4,
   /** 已取消 */
-  CANCELLED = 3,
+  CANCELLED = 5,
   /** 退款中 */
-  REFUNDING = 4,
+  REFUNDING = 6,
   /** 已退款 */
-  REFUNDED = 5
+  REFUNDED = 7
 }
 
 /** 场景订单状态选项 */
 export const SCENE_ORDER_STATUS_OPTIONS = [
-  { label: '待支付', value: SceneOrderStatus.PENDING },
+  { label: '待支付', value: SceneOrderStatus.PENDING_PAY },
   { label: '已支付', value: SceneOrderStatus.PAID },
+  { label: '部分发放', value: SceneOrderStatus.PARTIAL_DELIVERED },
+  { label: '已发放', value: SceneOrderStatus.DELIVERED },
   { label: '已完成', value: SceneOrderStatus.COMPLETED },
   { label: '已取消', value: SceneOrderStatus.CANCELLED },
   { label: '退款中', value: SceneOrderStatus.REFUNDING },
@@ -76,13 +85,11 @@ export const SCENE_ORDER_STATUS_OPTIONS = [
 /**
  * 采购来源（order_equity.order_source）。
  *
- * 1=渠道采购 / 2=代理人下单 / 3=分销商下单 / 4=平台直采。
+ * 对齐后端 DDL 15_order.sql：1=渠道对公采购 / 2=代理人个人采购。
  */
 export const ORDER_SOURCE_OPTIONS = [
-  { label: '渠道采购', value: 1 },
-  { label: '代理人下单', value: 2 },
-  { label: '分销商下单', value: 3 },
-  { label: '平台直采', value: 4 }
+  { label: '渠道对公采购', value: 1 },
+  { label: '代理人个人采购', value: 2 }
 ] as const
 
 /**
@@ -105,7 +112,7 @@ export interface OrderEquity {
   id?: number
   /** 订单编号（主键，业务生成） */
   orderCode?: string
-  /** 采购来源：1渠道/2代理人/3分销商/4平台直采 */
+  /** 采购来源：1渠道对公采购 / 2代理人个人采购 */
   orderSource?: number
   /** 渠道编码 */
   channelCode?: string

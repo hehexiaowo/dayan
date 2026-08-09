@@ -80,7 +80,7 @@ const form = reactive<EquityDepot>({
   agentCode: '',
   clientCode: '',
   carrierType: CarrierType.EQUITY_CARD,
-  equityStatus: EquityStatus.PENDING_STOCK_IN,
+  equityStatus: EquityStatus.STOCK,
   activateCode: '',
   logisticsNo: '',
   remark: ''
@@ -103,7 +103,7 @@ function resetForm() {
     agentCode: '',
     clientCode: '',
     carrierType: CarrierType.EQUITY_CARD,
-    equityStatus: EquityStatus.PENDING_STOCK_IN,
+    equityStatus: EquityStatus.STOCK,
     activateCode: '',
     logisticsNo: '',
     remark: ''
@@ -126,7 +126,7 @@ async function openEdit(row: EquityDepot) {
       agentCode: detail.agentCode ?? '',
       clientCode: detail.clientCode ?? '',
       carrierType: detail.carrierType ?? CarrierType.EQUITY_CARD,
-      equityStatus: detail.equityStatus ?? EquityStatus.PENDING_STOCK_IN,
+      equityStatus: detail.equityStatus ?? EquityStatus.STOCK,
       activateCode: detail.activateCode ?? '',
       logisticsNo: detail.logisticsNo ?? '',
       remark: detail.remark ?? ''
@@ -143,7 +143,7 @@ async function openEdit(row: EquityDepot) {
       agentCode: row.agentCode ?? '',
       clientCode: row.clientCode ?? '',
       carrierType: row.carrierType ?? CarrierType.EQUITY_CARD,
-      equityStatus: row.equityStatus ?? EquityStatus.PENDING_STOCK_IN,
+      equityStatus: row.equityStatus ?? EquityStatus.STOCK,
       activateCode: row.activateCode ?? '',
       logisticsNo: row.logisticsNo ?? '',
       remark: row.remark ?? ''
@@ -202,7 +202,7 @@ async function handleDeleteRow(row: EquityDepot) {
  * 通用状态流转：ElMessageBox 确认后调用 transitionDepot(equityCode, event)。
  *
  * @param row 权益记录
- * @param event 状态机事件名：stock-in / outbound / activate / void 等
+ * @param event 状态机事件名：outbound / activate / void 等（对齐 DDL EQUITY_SM 状态机）
  * @param msg 二次确认提示文案
  */
 async function handleTransition(row: EquityDepot, event: string, msg: string) {
@@ -224,25 +224,25 @@ function equityStatusLabel(s?: number): string {
 }
 
 /**
- * 权益状态 tag 颜色映射（共 8 态）。
- * 0待入库info / 1在库success / 2已出库warning / 3已激活primary /
- * 4已使用info / 5已过期danger / 6已作废danger / 7变更中warning。
+ * 权益状态 tag 颜色映射（共 8 态，对齐 DDL）。
+ * 0库存中info / 1已出库warning / 2已激活primary / 3使用中success /
+ * 4已完成success / 5已过期danger / 6已作废info / 7更换权益人中warning。
  */
 function equityStatusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   switch (status) {
-    case EquityStatus.IN_STOCK:
-      return 'success'
-    case EquityStatus.OUT_BOUND:
+    case EquityStatus.OUTBOUND:
       return 'warning'
     case EquityStatus.ACTIVATED:
       return 'primary'
+    case EquityStatus.IN_USE:
+    case EquityStatus.COMPLETED:
+      return 'success'
     case EquityStatus.EXPIRED:
-    case EquityStatus.VOIDED:
       return 'danger'
-    case EquityStatus.CHANGING:
+    case EquityStatus.CHANGING_HOLDER:
       return 'warning'
-    case EquityStatus.PENDING_STOCK_IN:
-    case EquityStatus.USED:
+    case EquityStatus.STOCK:
+    case EquityStatus.VOID:
     default:
       return 'info'
   }
@@ -346,19 +346,9 @@ loadPage()
         <el-table-column prop="expireTime" label="过期时间" width="160" align="center" />
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
-            <!-- 入库：仅 status=0 待入库 -->
+            <!-- 出库：库存中(0) → 已出库(1) -->
             <el-button
-              v-if="row.equityStatus === EquityStatus.PENDING_STOCK_IN"
-              link
-              type="primary"
-              size="small"
-              @click="handleTransition(row, 'stock-in', '确定入库此权益卡？')"
-            >
-              入库
-            </el-button>
-            <!-- 出库：仅 status=1 在库 -->
-            <el-button
-              v-if="row.equityStatus === EquityStatus.IN_STOCK"
+              v-if="row.equityStatus === EquityStatus.STOCK"
               link
               type="success"
               size="small"
@@ -366,9 +356,9 @@ loadPage()
             >
               出库
             </el-button>
-            <!-- 激活：仅 status=2 已出库 -->
+            <!-- 激活：已出库(1) → 已激活(2) -->
             <el-button
-              v-if="row.equityStatus === EquityStatus.OUT_BOUND"
+              v-if="row.equityStatus === EquityStatus.OUTBOUND"
               link
               type="warning"
               size="small"
@@ -376,9 +366,9 @@ loadPage()
             >
               激活
             </el-button>
-            <!-- 作废：任意状态（非已作废 status!=6） -->
+            <!-- 作废：库存中/已出库(0,1) → 已作废(6) -->
             <el-button
-              v-if="row.equityStatus !== EquityStatus.VOIDED"
+              v-if="row.equityStatus === EquityStatus.STOCK || row.equityStatus === EquityStatus.OUTBOUND"
               link
               type="danger"
               size="small"

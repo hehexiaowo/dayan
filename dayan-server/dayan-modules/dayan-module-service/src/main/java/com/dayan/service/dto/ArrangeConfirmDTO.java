@@ -1,5 +1,6 @@
 package com.dayan.service.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -11,8 +12,8 @@ import lombok.Data;
 @Data
 public class ArrangeConfirmDTO {
 
-    @NotNull(message = "安排 id 不能为空")
-    private Long id;
+    @NotBlank(message = "安排编码不能为空")
+    private String arrangeCode;
 
     /** 0=否, 1=是 */
     @NotNull(message = "确认标记不能为空")

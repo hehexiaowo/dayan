@@ -47,9 +47,9 @@ public class ServiceEquitySolutionAdminController {
 
     @Operation(summary = "方案详情")
     @SaCheckPermission("service:equity-solution:query")
-    @GetMapping("/{id}")
-    public R<ServiceEquitySolutionVO> getDetail(@PathVariable Long id) {
-        return R.ok(serviceEquitySolutionService.getDetail(id));
+    @GetMapping("/{solutionCode}")
+    public R<ServiceEquitySolutionVO> getDetail(@PathVariable String solutionCode) {
+        return R.ok(serviceEquitySolutionService.getDetail(solutionCode));
     }
 
     @Operation(summary = "新增方案")
@@ -61,10 +61,10 @@ public class ServiceEquitySolutionAdminController {
 
     @Operation(summary = "修改方案")
     @SaCheckPermission("service:equity-solution:update")
-    @PutMapping("/{id}")
-    public R<Void> update(@PathVariable Long id,
+    @PutMapping("/{solutionCode}")
+    public R<Void> update(@PathVariable String solutionCode,
                           @RequestBody ServiceEquitySolutionUpdateDTO dto) {
-        serviceEquitySolutionService.update(id, dto);
+        serviceEquitySolutionService.update(solutionCode, dto);
         return R.ok();
     }
 
@@ -78,9 +78,9 @@ public class ServiceEquitySolutionAdminController {
 
     @Operation(summary = "删除方案")
     @SaCheckPermission("service:equity-solution:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        serviceEquitySolutionService.delete(id);
+    @DeleteMapping("/{solutionCode}")
+    public R<Void> delete(@PathVariable String solutionCode) {
+        serviceEquitySolutionService.delete(solutionCode);
         return R.ok();
     }
 }
