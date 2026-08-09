@@ -600,7 +600,7 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="封面图">
-              <FileUploader v-model="typeForm.coverImage" type="image" module="park" />
+              <FileUploader v-model="typeForm.coverImage" type="image" module="park" :asset-park-code="props.parkCode" asset-source-type="food_type" :asset-source-ref="typeForm.foodTypeCode" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

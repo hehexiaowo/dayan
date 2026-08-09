@@ -4,10 +4,20 @@ import { ElMessage } from 'element-plus'
 import { Plus, VideoPlay, Document, Delete } from '@element-plus/icons-vue'
 import { uploadFile } from '@/api/file'
 import { formatFileUrl } from '@/utils/file'
+import { registerAsset } from '@/api/park-asset'
 
 defineOptions({ name: 'FileUploader' })
 
 type FileType = 'image' | 'video' | 'file' | 'vr' | 'any'
+
+/** FileType → asset_type 数字映射（park_asset.asset_type） */
+const FILE_TYPE_TO_ASSET_TYPE: Record<FileType, number | undefined> = {
+  image: 1,
+  video: 2,
+  file: 3,
+  vr: 4,
+  any: undefined
+}
 
 const props = withDefaults(defineProps<{
   type?: FileType
@@ -18,6 +28,12 @@ const props = withDefaults(defineProps<{
   limit?: number
   disabled?: boolean
   module?: string
+  /** 素材中心注册：传了 assetParkCode 就在上传成功后自动幂等注册到 park_asset */
+  assetParkCode?: string
+  /** 来源类型（如 room_type / facility / media_mgmt） */
+  assetSourceType?: string
+  /** 来源编码（如房型 code） */
+  assetSourceRef?: string
 }>(), {
   type: 'any',
   multiple: false,
@@ -78,6 +94,24 @@ async function handleUpload(e: Event) {
       emit('update:modelValue', res.key)
     }
     ElMessage.success('上传成功')
+
+    // 素材中心自动注册（非阻塞：失败只 warn 不影响主流程）
+    if (props.assetParkCode) {
+      const assetType = FILE_TYPE_TO_ASSET_TYPE[props.type]
+      if (assetType) {
+        registerAsset({
+          parkCode: props.assetParkCode,
+          assetType,
+          assetUrl: res.key,
+          assetName: res.originalName,
+          fileSize: res.size,
+          sourceType: props.assetSourceType || 'media_mgmt',
+          sourceRefCode: props.assetSourceRef || undefined
+        }).catch((e) => {
+          console.warn('[FileUploader] 素材注册失败（不影响上传）:', e)
+        })
+      }
+    }
   } catch {
     // request 拦截器已弹错误 toast
   } finally {

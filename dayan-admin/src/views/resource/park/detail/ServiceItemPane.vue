@@ -596,7 +596,7 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <FileUploader v-model="form.coverImage" type="image" module="park" />
+              <FileUploader v-model="form.coverImage" type="image" module="park" :asset-park-code="props.parkCode" asset-source-type="service_item" :asset-source-ref="form.serviceCode" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

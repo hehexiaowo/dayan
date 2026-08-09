@@ -1,7 +1,8 @@
 -- =====================================================================
 -- 05_park.sql  养老机构域（park_）
--- 域说明：养老机构核心资产——主信息、媒体资源、设施、服务、顾问、周边、房型/照护/餐饮类型与费用
--- 表数：16（park_info + 4 media + facility + service_item + adviser + periphery + room_type + care_type + food_type + pricing + pricing_item + score + display_block）
+-- 域说明：养老机构核心资产——主信息、素材库、设施、服务、顾问、周边、房型/照护/餐饮类型与费用
+-- 表数：13（park_info + park_asset + facility + service_item + adviser + periphery + room_type + care_type + food_type + pricing + pricing_item + score + display_block）
+-- 注：原 4 张 media 表（media_image/video/file/vr）已合并为 park_asset，见 park_asset_merge.sql
 -- 生成依据：docs/02数据库设计文档_v4.1.md §3.5
 -- 主键策略：全部为平台共享表（AUTO_INCREMENT）
 -- =====================================================================

@@ -532,153 +532,59 @@ export interface ParkScore {
 }
 
 // ============================================================================
-// 媒体库（ParkMediaImage / ParkMediaVideo / ParkMediaFile / ParkMediaVr）
+// 素材库（ParkAsset）—— 统一管理所有来源的图片/视频/文件/VR
 // ============================================================================
 
 /**
- * 机构媒体-图片（后端 ParkMediaImageVO）。
+ * 机构素材（后端 ParkAssetVO）。
  *
- * 外键 parkCode；imageUrl 必填（@NotBlank）。
+ * assetType 区分类型（1图片 2视频 3文件 4VR）；类型专属字段按需填写。
+ * sourceType + sourceRefCode 追踪来源，media_mgmt=素材库直传。
  */
-export interface ParkMediaImage {
+export interface ParkAsset {
   id?: number
   parkCode?: string
-  /** 图片 URL（必填） */
-  imageUrl: string
-  /** 图片名称 */
-  imageName?: string
-  /** 图片类型 */
-  imageType?: number
-  /** 图片描述 */
-  imageDescription?: string
-  /** 宽度 */
+  /** 素材类型（1=图片 2=视频 3=文件 4=VR） */
+  assetType?: number
+  /** 文件 OSS key */
+  assetUrl?: string
+  /** 文件名称 */
+  assetName?: string
+  /** 业务分类（图片:1-11 视频:1-3 文件:1-5 VR:1-3） */
+  assetCategory?: number
+  /** 描述 */
+  description?: string
+  /** 文件大小（字节） */
+  fileSize?: number
+  // 图片专属
   width?: number
-  /** 高度 */
   height?: number
-  /** 文件大小（字节） */
-  fileSize?: number
-  /** 排序号 */
-  sortOrder?: number
-  /** 是否封面：1是 / 0否 */
   isCover?: number
-  /** 状态：1启用 / 0停用 */
-  status?: number
-  /** 创建时间 */
-  createdAt?: string
-}
-
-/** 媒体-图片分页查询参数 */
-export interface ParkMediaImageQuery extends PageQuery {
-  parkCode?: string
-  imageType?: number
-  isCover?: number
-  status?: number
-}
-
-/**
- * 机构媒体-视频（后端 ParkMediaVideoVO）。
- *
- * 外键 parkCode；videoUrl 必填。
- */
-export interface ParkMediaVideo {
-  id?: number
-  parkCode?: string
-  /** 视频 URL（必填） */
-  videoUrl: string
-  /** 封面图 URL */
+  // 视频专属
   coverUrl?: string
-  /** 视频名称 */
-  videoName?: string
-  /** 视频类型 */
-  videoType?: number
-  /** 视频描述 */
-  videoDescription?: string
-  /** 时长（秒） */
   duration?: number
-  /** 文件大小（字节） */
-  fileSize?: number
-  /** 排序号 */
-  sortOrder?: number
-  /** 状态：1启用 / 0停用 */
-  status?: number
-  /** 创建时间 */
-  createdAt?: string
-}
-
-/** 媒体-视频分页查询参数 */
-export interface ParkMediaVideoQuery extends PageQuery {
-  parkCode?: string
-  videoType?: number
-  status?: number
-}
-
-/**
- * 机构媒体-文档（后端 ParkMediaFileVO）。
- *
- * 外键 parkCode；fileUrl 必填。
- */
-export interface ParkMediaFile {
-  id?: number
-  parkCode?: string
-  /** 文档 URL（必填） */
-  fileUrl: string
-  /** 文档名称 */
-  fileName?: string
-  /** 文档类型 */
-  fileType?: number
-  /** 文档格式（扩展名） */
+  // 文件专属
   fileFormat?: string
-  /** 文件大小（字节） */
-  fileSize?: number
-  /** 文档描述 */
-  fileDescription?: string
-  /** 排序号 */
-  sortOrder?: number
-  /** 状态：1启用 / 0停用 */
-  status?: number
-  /** 创建时间 */
-  createdAt?: string
-}
-
-/** 媒体-文档分页查询参数 */
-export interface ParkMediaFileQuery extends PageQuery {
-  parkCode?: string
-  fileType?: number
-  status?: number
-}
-
-/**
- * 机构媒体-VR（后端 ParkMediaVrVO）。
- *
- * 外键 parkCode；vrUrl 必填。vrType：1全景图 / 2 3D 模型 / 3视频。
- */
-export interface ParkMediaVr {
-  id?: number
-  parkCode?: string
-  /** VR URL（必填） */
-  vrUrl: string
-  /** VR 提供方 */
+  // VR 专属
   vrProvider?: string
-  /** VR 名称 */
-  vrName?: string
-  /** VR 类型：1全景图 / 2 3D 模型 / 3视频 */
-  vrType?: number
-  /** 缩略图 URL */
   thumbnailUrl?: string
-  /** VR 描述 */
-  vrDescription?: string
-  /** 排序号 */
+  // 来源追踪
+  /** 来源（media_mgmt/room_type/food_type/facility/service_item/display_block/adviser/park_info） */
+  sourceType?: string
+  /** 来源编码（media_mgmt 时为空） */
+  sourceRefCode?: string
   sortOrder?: number
-  /** 状态：1启用 / 0停用 */
   status?: number
-  /** 创建时间 */
   createdAt?: string
 }
 
-/** 媒体-VR 分页查询参数 */
-export interface ParkMediaVrQuery extends PageQuery {
+/** 素材分页查询参数 */
+export interface ParkAssetQuery extends PageQuery {
   parkCode?: string
-  vrType?: number
+  assetType?: number
+  assetCategory?: number
+  isCover?: number
+  sourceType?: string
   status?: number
 }
 
@@ -892,8 +798,16 @@ export const SPECIAL_DIET_OPTIONS = [
   { label: '是', value: 1 }
 ] as const
 
-/** 媒体-图片类型（image_type）：1=外观..11=其他 */
-export const IMAGE_TYPE_OPTIONS = [
+/** 素材类型（asset_type）：1=图片 2=视频 3=文件 4=VR */
+export const ASSET_TYPE_OPTIONS = [
+  { label: '图片', value: 1 },
+  { label: '视频', value: 2 },
+  { label: '文件', value: 3 },
+  { label: 'VR', value: 4 }
+] as const
+
+/** 图片业务分类（asset_category, asset_type=1）：1=外观..11=其他 */
+export const IMAGE_CATEGORY_OPTIONS = [
   { label: '外观', value: 1 },
   { label: '大堂', value: 2 },
   { label: '房间', value: 3 },
@@ -907,15 +821,15 @@ export const IMAGE_TYPE_OPTIONS = [
   { label: '其他', value: 11 }
 ] as const
 
-/** 媒体-视频类型（video_type）：1=宣传视频, 2=环境展示, 3=活动记录 */
-export const VIDEO_TYPE_OPTIONS = [
+/** 视频业务分类（asset_category, asset_type=2）：1=宣传视频, 2=环境展示, 3=活动记录 */
+export const VIDEO_CATEGORY_OPTIONS = [
   { label: '宣传视频', value: 1 },
   { label: '环境展示', value: 2 },
   { label: '活动记录', value: 3 }
 ] as const
 
-/** 媒体-文档类型（file_type）：1=资质文件..5=其他 */
-export const FILE_TYPE_OPTIONS = [
+/** 文件业务分类（asset_category, asset_type=3）：1=资质文件..5=其他 */
+export const FILE_CATEGORY_OPTIONS = [
   { label: '资质文件', value: 1 },
   { label: '合同文件', value: 2 },
   { label: '宣传资料', value: 3 },
@@ -923,11 +837,23 @@ export const FILE_TYPE_OPTIONS = [
   { label: '其他', value: 5 }
 ] as const
 
-/** 媒体-VR类型（vr_type）：1=全景VR, 2=3D模型, 3=视频VR */
-export const VR_TYPE_OPTIONS = [
+/** VR 业务分类（asset_category, asset_type=4）：1=全景VR, 2=3D模型, 3=视频VR */
+export const VR_CATEGORY_OPTIONS = [
   { label: '全景VR', value: 1 },
   { label: '3D模型', value: 2 },
   { label: '视频VR', value: 3 }
+] as const
+
+/** 素材来源（source_type） */
+export const SOURCE_TYPE_OPTIONS = [
+  { label: '素材库', value: 'media_mgmt' },
+  { label: '房型', value: 'room_type' },
+  { label: '餐饮', value: 'food_type' },
+  { label: '设施', value: 'facility' },
+  { label: '服务项目', value: 'service_item' },
+  { label: '展示板块', value: 'display_block' },
+  { label: '顾问', value: 'adviser' },
+  { label: '机构信息', value: 'park_info' }
 ] as const
 
 /** 设施-类别（facility_category）：1=休闲娱乐..6=安全保障 */
@@ -988,10 +914,31 @@ export const stayTypeLabel = (v?: number) => labelOf(STAY_TYPE_OPTIONS, v)
 export const careLevelLabel = (v?: number) => labelOf(CARE_LEVEL_OPTIONS, v)
 export const mealPlanLabel = (v?: number) => labelOf(MEAL_PLAN_OPTIONS, v)
 export const specialDietLabel = (v?: number) => labelOf(SPECIAL_DIET_OPTIONS, v)
-export const imageTypeLabel = (v?: number) => labelOf(IMAGE_TYPE_OPTIONS, v)
-export const videoTypeLabel = (v?: number) => labelOf(VIDEO_TYPE_OPTIONS, v)
-export const fileTypeLabel = (v?: number) => labelOf(FILE_TYPE_OPTIONS, v)
-export const vrTypeLabel = (v?: number) => labelOf(VR_TYPE_OPTIONS, v)
+export const assetTypeLabel = (v?: number) => labelOf(ASSET_TYPE_OPTIONS, v)
+export const imageCategoryLabel = (v?: number) => labelOf(IMAGE_CATEGORY_OPTIONS, v)
+export const videoCategoryLabel = (v?: number) => labelOf(VIDEO_CATEGORY_OPTIONS, v)
+export const fileCategoryLabel = (v?: number) => labelOf(FILE_CATEGORY_OPTIONS, v)
+export const vrCategoryLabel = (v?: number) => labelOf(VR_CATEGORY_OPTIONS, v)
+/** 按 assetType 返回对应的分类 OPTIONS */
+export function categoryOptionsByType(assetType?: number) {
+  switch (assetType) {
+    case 1: return IMAGE_CATEGORY_OPTIONS
+    case 2: return VIDEO_CATEGORY_OPTIONS
+    case 3: return FILE_CATEGORY_OPTIONS
+    case 4: return VR_CATEGORY_OPTIONS
+    default: return []
+  }
+}
+/** 按 assetType 返回对应的分类 label */
+export function categoryLabel(assetType?: number, category?: number): string {
+  return labelOf(categoryOptionsByType(assetType), category)
+}
+/** 来源 label */
+export function sourceTypeLabel(v?: string): string {
+  if (!v) return '素材库'
+  const found = SOURCE_TYPE_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : v
+}
 export const facilityCategoryLabel = (v?: number) => labelOf(FACILITY_CATEGORY_OPTIONS, v)
 export const serviceCategoryLabel = (v?: number) => labelOf(SERVICE_CATEGORY_OPTIONS, v)
 export const peripheryTypeLabel = (v?: number) => labelOf(PERIPHERY_TYPE_OPTIONS, v)

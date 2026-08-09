@@ -11,7 +11,7 @@
  * - 房型价格：ParkRoomType + ParkPricing（chargeType=1，展开行定价内联）
  * - 照护价格：ParkCareType + ParkPricing（chargeType=2）
  * - 餐饮价格：ParkFoodType + ParkPricing（chargeType=3）
- * - 素材文件：ParkMediaImage/Video/File/Vr（单 tab 内 el-tabs 切 4 子类）
+ * - 素材库：ParkAsset（单 tab 内 el-tabs 切 4 类型：图片/视频/文件/VR，统一表）
  * - 基础设施：ParkFacility + ParkPricing（chargeType=5）
  * - 联系顾问：ParkAdviser
  * - 周边相关：ParkPeriphery
@@ -28,7 +28,7 @@ import BasicTab from './BasicTab.vue'
 import RoomTab from './RoomTab.vue'
 import CareTab from './CareTab.vue'
 import FoodTab from './FoodTab.vue'
-import MediaTab from './MediaTab.vue'
+import AssetTab from './AssetTab.vue'
 import FacilityTab from './FacilityTab.vue'
 import AdviserTab from './AdviserTab.vue'
 import PeripheryPane from './PeripheryPane.vue'
@@ -71,7 +71,7 @@ const tabs = [
   { name: 'room', label: '房型价格' },
   { name: 'care', label: '照护价格' },
   { name: 'food', label: '餐饮价格' },
-  { name: 'media', label: '素材文件' },
+  { name: 'asset', label: '素材库' },
   { name: 'facility', label: '基础设施' },
   { name: 'adviser', label: '联系顾问' },
   { name: 'periphery', label: '周边相关' },
@@ -116,7 +116,7 @@ const tabs = [
         <RoomTab v-else-if="t.name === 'room'" :park-code="parkCode" />
         <CareTab v-else-if="t.name === 'care'" :park-code="parkCode" />
         <FoodTab v-else-if="t.name === 'food'" :park-code="parkCode" />
-        <MediaTab v-else-if="t.name === 'media'" :park-code="parkCode" />
+        <AssetTab v-else-if="t.name === 'asset'" :park-code="parkCode" />
         <FacilityTab v-else-if="t.name === 'facility'" :park-code="parkCode" />
         <AdviserTab v-else-if="t.name === 'adviser'" :park-code="parkCode" />
         <PeripheryPane v-else-if="t.name === 'periphery'" :park-code="parkCode" />
