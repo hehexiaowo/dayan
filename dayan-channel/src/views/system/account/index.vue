@@ -9,7 +9,7 @@
  * - el-table 列：accountCode / username / realName / phone / isAdmin / accountStatus / lastLoginTime / 操作；
  * - 新增弹窗：channelCode（从 getChannelInfoTree 取渠道下拉）/ username / password / realName /
  *   phone / email / position / isAdmin / accountStatus；
- * - 编辑弹窗：密码字段隐藏（密码留空不改，与 admin system/user 一致），username 不可改，
+ * - 编辑弹窗：密码字段隐藏（密码留空不改，与 admin basic/account 一致），username 不可改，
  *   其余字段可改；
  * - 操作列：编辑 / 删除（二次确认） / 重置密码（二次确认） / 分配角色（el-checkbox-group，
  *   选项来自 pageChannelRoles({current:1,size:999})，回显 getChannelAccountRoles，

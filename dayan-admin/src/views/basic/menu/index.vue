@@ -327,12 +327,12 @@ loadTree()
           </el-col>
           <el-col :span="12">
             <el-form-item label="路由路径">
-              <el-input v-model="form.path" placeholder="/system/user" />
+              <el-input v-model="form.path" placeholder="/basic/account" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="组件路径">
-              <el-input v-model="form.component" placeholder="system/user/index（相对 src/views）" />
+              <el-input v-model="form.component" placeholder="basic/account/index（相对 src/views）" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

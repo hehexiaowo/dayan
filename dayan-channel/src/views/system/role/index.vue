@@ -156,7 +156,7 @@ function handleReset() {
   handleSearch()
 }
 
-// ---------- 分配权限弹窗（重点，参考 admin system/role） ----------
+// ---------- 分配权限弹窗（重点，参考 admin basic/role） ----------
 const permDialogVisible = ref(false)
 const permLoading = ref(false)
 const permSubmitLoading = ref(false)

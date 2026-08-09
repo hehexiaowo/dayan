@@ -47,9 +47,9 @@ export interface Menu {
   parentCode: string | null
   /** 菜单类型：1目录 2菜单 3按钮 */
   menuType: MenuType
-  /** 路由路径（如 /system/user） */
+  /** 路由路径（如 /basic/account） */
   path: string | null
-  /** 前端组件路径（如 system/user/index，相对 src/views） */
+  /** 前端组件路径（如 basic/account/index，相对 src/views） */
   component: string | null
   /** 权限标识（按钮类用，如 organ:account:list） */
   permissionCode: string | null

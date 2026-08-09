@@ -56,7 +56,6 @@ VALUES
   ('ROLE_OPERATOR', 'admin_dashboard',     'OR00001', NOW(), NOW(), 'system', 'system', 0),
   -- 权益管理（目录 + 3 叶子）
   ('ROLE_OPERATOR', 'admin_equity',        'OR00001', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'admin_equity_template','OR00001', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'admin_equity_batch',  'OR00001', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'admin_equity_depot',  'OR00001', NOW(), NOW(), 'system', 'system', 0),
   -- 订单管理（目录 + 2 叶子）
@@ -66,9 +65,10 @@ VALUES
   -- 渠道管理（目录 + 客户管理）
   ('ROLE_OPERATOR', 'admin_channel',       'OR00001', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'admin_channel_client','OR00001', NOW(), NOW(), 'system', 'system', 0),
-  -- 商品管理（目录 + 1 叶子）
-  ('ROLE_OPERATOR', 'admin_goods',         'OR00001', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'admin_goods_info',    'OR00001', NOW(), NOW(), 'system', 'system', 0),
+  -- 商品管理（目录 + 2 叶子）
+  ('ROLE_OPERATOR', 'admin_goods',             'OR00001', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'admin_goods_list',        'OR00001', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'admin_goods_service-item','OR00001', NOW(), NOW(), 'system', 'system', 0),
   -- 财务结算（目录 + 2 叶子）
   ('ROLE_OPERATOR', 'admin_finance',       'OR00001', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'admin_finance_flow',  'OR00001', NOW(), NOW(), 'system', 'system', 0),

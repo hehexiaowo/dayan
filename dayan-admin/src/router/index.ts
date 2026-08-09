@@ -66,9 +66,9 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '管家详情', hidden: true }
       },
       {
-        path: 'goods/info/detail/:goodsCode',
+        path: 'goods/list/detail/:goodsCode',
         name: 'GoodsDetail',
-        component: () => import('@/views/goods/info/detail/index.vue'),
+        component: () => import('@/views/goods/list/detail/index.vue'),
         meta: { title: '商品详情', hidden: true }
       },
       {

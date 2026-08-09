@@ -35,8 +35,10 @@ public class ClientInfoServiceImpl implements ClientInfoService {
     @Override
     public PageResult<ClientInfoVO> page(ClientInfoQueryDTO query) {
         LambdaQueryWrapper<ClientInfo> wrapper = new LambdaQueryWrapper<ClientInfo>()
-                .eq(ClientInfo::getChannelCode, query.getChannelCode())
                 .orderByDesc(ClientInfo::getCreatedAt);
+        if (query.getChannelCode() != null && !query.getChannelCode().isEmpty()) {
+            wrapper.eq(ClientInfo::getChannelCode, query.getChannelCode());
+        }
         if (query.getClientCode() != null && !query.getClientCode().isEmpty()) {
             wrapper.eq(ClientInfo::getClientCode, query.getClientCode());
         }

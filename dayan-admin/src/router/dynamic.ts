@@ -12,7 +12,7 @@ import { MenuType } from '@/types/menu'
 const modules = import.meta.glob('../views/**/*.vue')
 
 /**
- * 根据菜单的 component 字段（如 'system/user/index'）解析为异步组件工厂。
+ * 根据菜单的 component 字段（如 'basic/account/index'）解析为异步组件工厂。
  *
  * 解析规则：component 值拼接为 `../views/{component}.vue` 在 modules 中查找
  * （与 import.meta.glob 的 key 前缀一致）。找不到时返回 null（对应页面尚未实现），调用方跳过该路由。

@@ -54,7 +54,7 @@ async function loadDetail() {
 loadDetail()
 
 function goBack() {
-  router.push({ path: '/goods/info' })
+  router.push({ path: '/goods/list' })
 }
 
 /**
