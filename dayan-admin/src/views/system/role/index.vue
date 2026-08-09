@@ -206,10 +206,8 @@ async function openAssignPermission(row: Role) {
 }
 
 async function handleAssignSubmit() {
-  const checkedKeys = permTreeRef.value?.getCheckedKeys(false) as string[]
-  const halfCheckedKeys = permTreeRef.value?.getHalfCheckedKeys() as string[]
-  // 半选（父级）一并提交，避免丢失上级关系
-  const codes = Array.from(new Set([...(checkedKeys ?? []), ...(halfCheckedKeys ?? [])]))
+  // check-strictly 模式下父子独立勾选，直接取已勾选项即可
+  const codes = permTreeRef.value?.getCheckedKeys(false) as string[]
 
   permSubmitLoading.value = true
   try {
@@ -220,8 +218,6 @@ async function handleAssignSubmit() {
     permSubmitLoading.value = false
   }
 }
-
-// nextTick 已在顶部引入
 
 // 初始化加载
 loadPage()

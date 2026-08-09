@@ -17,6 +17,10 @@ const loading = ref(false)
 const tableData = ref<SystemStateMachine[]>([])
 const total = ref(0)
 
+/** 业务类型 value → 中文 label 映射 */
+const bizTypeLabel = (value: string): string =>
+  STATE_MACHINE_BIZ_TYPE_OPTIONS.find((o) => o.value === value)?.label ?? value
+
 const query = reactive<StateMachineQuery>({
   machineCode: '',
   bizType: '',
@@ -202,7 +206,11 @@ onMounted(() => {
       >
         <el-table-column prop="machineCode" label="状态机编码" min-width="160" show-overflow-tooltip />
         <el-table-column prop="machineName" label="状态机名称" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="bizType" label="业务类型" width="100" align="center" />
+        <el-table-column label="业务类型" width="100" align="center">
+          <template #default="{ row }">
+            {{ bizTypeLabel(row.bizType) }}
+          </template>
+        </el-table-column>
         <el-table-column label="状态迁移" min-width="220">
           <template #default="{ row }">
             <span class="state-flow">
