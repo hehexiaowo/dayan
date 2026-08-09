@@ -18,11 +18,21 @@ public class ServiceSessionFinishedEvent extends ApplicationEvent {
     private final String sessionCode;
     private final String equityCode;
     private final String clientCode;
+    /** 最大使用次数（从 session 快照，null=非权益会话） */
+    private final Integer maxUseCount;
+    /** 当前已使用次数（含本次完成） */
+    private final Integer usedCount;
+    /** 配额周期（1=终身,2=年度） */
+    private final Integer quotaType;
 
-    public ServiceSessionFinishedEvent(Object source, String sessionCode, String equityCode, String clientCode) {
+    public ServiceSessionFinishedEvent(Object source, String sessionCode, String equityCode, String clientCode,
+                                       Integer maxUseCount, Integer usedCount, Integer quotaType) {
         super(source);
         this.sessionCode = sessionCode;
         this.equityCode = equityCode;
         this.clientCode = clientCode;
+        this.maxUseCount = maxUseCount;
+        this.usedCount = usedCount;
+        this.quotaType = quotaType;
     }
 }

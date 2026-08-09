@@ -678,14 +678,20 @@ public class EquityDepotServiceImpl implements EquityDepotService {
                     sessionDTO.setEquityCode(depot.getEquityCode());
                     sessionDTO.setItemCode(rel.getItemCode());
                     sessionDTO.setClientCode(dto.getClientCode());
-                    sessionDTO.setServiceTitle(rel.getItemName() + " - " + clientName);
+                    // 配额快照：quantity→maxUseCount, quotaType 透传（默认2=年度）
+                    int qty = rel.getQuantity() != null ? rel.getQuantity() : 1;
+                    int qType = rel.getQuotaType() != null ? rel.getQuotaType() : 2;
+                    String quotaLabel = qType == 1 ? qty + "次/终身" : qty + "次/年";
+                    sessionDTO.setMaxUseCount(qty);
+                    sessionDTO.setQuotaType(qType);
+                    sessionDTO.setServiceTitle(rel.getItemName() + "（" + quotaLabel + "） - " + clientName);
                     sessionDTO.setServiceDescription("权益 " + depot.getEquityCode()
                             + " 激活后按服务项目 " + rel.getItemCode() + " 自动创建的服务会话");
                     sessionDTO.setSourceType(1); // 1=权益触发
                     sessionDTO.setSourceCode(activateRecordCode);
                     sessionDTO.setAgentCode(depot.getAgentCode());
                     sessionDTO.setChannelCode(depot.getChannelCode());
-                    sessionDTO.setRemark("权益激活自动创建（服务项目：" + rel.getItemName() + "）");
+                    sessionDTO.setRemark("权益激活自动创建（服务项目：" + rel.getItemName() + "，配额：" + quotaLabel + "）");
                     serviceSessionService.create(sessionDTO);
                 } catch (Exception e) {
                     log.warn("权益激活后创建单个服务会话失败（忽略）: equityCode={}, itemCode={}, err={}",

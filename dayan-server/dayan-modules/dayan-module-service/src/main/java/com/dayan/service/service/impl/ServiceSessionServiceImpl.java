@@ -288,16 +288,23 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         checkTerminal(session);
         int from = currentStatus(session);
         int to = stateMachineEngine.transition(ServiceSessionEvent.DOMAIN, from, ServiceSessionEvent.FINISH);
+        // 配额计数：used_count+1（与状态更新一起落库）
+        int newUsedCount = (session.getUsedCount() != null ? session.getUsedCount() : 0) + 1;
         ServiceSession update = new ServiceSession();
         update.setId(session.getId());
         update.setSessionStatus(to);
         update.setCompleteTime(LocalDateTime.now());
+        update.setUsedCount(newUsedCount);
         sessionMapper.updateById(update);
-        log.info("完成服务: sessionCode={}, from={}, to={}", sessionCode, from, to);
+        // 回写本地 session 对象，供事件传递最新值
+        session.setUsedCount(newUsedCount);
+        log.info("完成服务: sessionCode={}, from={}, to={}, usedCount={}/{}",
+                sessionCode, from, to, newUsedCount, session.getMaxUseCount());
         // 联动权益使用计数：发布事件，由 equity 模块监听（避免 service→equity 循环依赖）
         try {
             eventPublisher.publishEvent(new ServiceSessionFinishedEvent(
-                    this, sessionCode, session.getEquityCode(), session.getClientCode()));
+                    this, sessionCode, session.getEquityCode(), session.getClientCode(),
+                    session.getMaxUseCount(), newUsedCount, session.getQuotaType()));
         } catch (Exception e) {
             log.warn("发布服务完成事件失败（不影响主流程）: sessionCode={}", sessionCode, e);
         }
@@ -450,6 +457,9 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         vo.setCloseTime(entity.getCloseTime());
         vo.setTotalDuration(entity.getTotalDuration());
         vo.setTouchCount(entity.getTouchCount());
+        vo.setMaxUseCount(entity.getMaxUseCount());
+        vo.setUsedCount(entity.getUsedCount());
+        vo.setQuotaType(entity.getQuotaType());
         vo.setIsSatisfied(entity.getIsSatisfied());
         vo.setOverallRating(entity.getOverallRating());
         vo.setSessionStatus(entity.getSessionStatus());

@@ -33,6 +33,12 @@ public class ServiceSessionVO {
     private LocalDateTime closeTime;
     private Integer totalDuration;
     private Integer touchCount;
+    /** 最大使用次数（配额上限） */
+    private Integer maxUseCount;
+    /** 已使用次数 */
+    private Integer usedCount;
+    /** 配额周期（1=终身,2=年度） */
+    private Integer quotaType;
     private Integer isSatisfied;
     private Integer overallRating;
     private Integer sessionStatus;

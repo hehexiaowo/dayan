@@ -16,9 +16,10 @@ import org.springframework.stereotype.Component;
  * <p>背景：equity 模块已依赖 service 模块（激活后自动创建会话），所以 service 不能反向
  * 直接依赖 equity。通过 Spring 事件机制实现反向联动：
  * <ul>
- *   <li>{@link ServiceSessionStartedEvent} → equity {@code start_service}（2→3 使用中 + use_count+1）</li>
- *   <li>{@link ServiceSessionFinishedEvent} → equity {@code end_service}（3→2 恢复激活），
- *       并在 use_count ≥ max_use_count 时触发 {@code complete}（3→4 已完成，经状态机两段式流转）</li>
+ *   <li>{@link ServiceSessionStartedEvent} → equity {@code start_service}（2→3 使用中）</li>
+ *   <li>{@link ServiceSessionFinishedEvent} → 终身配额用尽时 {@code complete}（3→4 已完成），
+ *       否则 {@code end_service}（3→2 恢复激活）。配额计数在 service_session.used_count 维护，
+ *       事件携带 usedCount/maxUseCount/quotaType。年度配额（quota_type=2）不因用尽而完成权益。</li>
  * </ul>
  *
  * <p>所有联动 try-catch 包裹：下游异常仅告警，不阻断主流程（会话状态已落库）。
@@ -56,16 +57,14 @@ public class EquityUsageEventListener {
     }
 
     /**
-     * 服务完成 → 权益 3→2 恢复激活，若使用次数达到上限则进一步 2→4 完成。
+     * 服务完成 → 权益状态流转。
      *
      * <p>设计说明：
      * <ul>
-     *   <li>先 {@code end_service}（3→2）：让权益从「使用中」恢复「已激活」</li>
-     *   <li>若恢复后 use_count ≥ max_use_count，再尝试 {@code complete}（2→4 完成）。
-     *       注意状态机规则里 complete 只允许 3→4，所以先 end_service 回到 2，
-     *       再用 {@code transition} 在合适时机推进 —— 这里实际由 END_SERVICE 回到 2 后，
-     *       若需完成需走业务侧显式 complete（3→4）。简化策略：仅做 end_service 回滚，
-     *       use_count 达上限的「自动完成」由调度任务或前端按钮触发，不在事件链中推进。</li>
+     *   <li>终身配额（quota_type=1）用尽（usedCount ≥ maxUseCount）：直接 {@code complete}（3→4），
+     *       因为 COMPLETE 只允许 3→4，必须在 END_SERVICE 之前执行。</li>
+     *   <li>其他情况：{@code end_service}（3→2 恢复激活）。年度配额用尽不触发完成，
+     *       由 {@code QuotaResetScheduler} 年初重置 used_count。</li>
      * </ul>
      */
     @Order(10)
@@ -76,10 +75,21 @@ public class EquityUsageEventListener {
             log.debug("服务完成事件无 equityCode，跳过权益联动: sessionCode={}", event.getSessionCode());
             return;
         }
+        // 终身配额（quota_type=1）达上限 → 直接 3→4 完成（COMPLETE 只允许 3→4，必须在 END_SERVICE 之前）
+        // 年度配额（quota_type=2）不因用尽而完成权益，由年度重置任务恢复
+        boolean quotaExhausted = event.getMaxUseCount() != null && event.getUsedCount() != null
+                && event.getQuotaType() != null && event.getQuotaType() == 1
+                && event.getUsedCount() >= event.getMaxUseCount();
         try {
-            Integer to = equityDepotService.transition(equityCode, EquityEvent.END_SERVICE);
-            log.info("服务完成联动权益: sessionCode={}, equityCode={}, 3--end_service-->{}",
-                    event.getSessionCode(), equityCode, to);
+            if (quotaExhausted) {
+                Integer to = equityDepotService.transition(equityCode, EquityEvent.COMPLETE);
+                log.info("终身配额用尽，权益自动完成: sessionCode={}, equityCode={}, 3--complete-->{}, used={}/{}",
+                        event.getSessionCode(), equityCode, to, event.getUsedCount(), event.getMaxUseCount());
+            } else {
+                Integer to = equityDepotService.transition(equityCode, EquityEvent.END_SERVICE);
+                log.info("服务完成联动权益: sessionCode={}, equityCode={}, 3--end_service-->{}",
+                        event.getSessionCode(), equityCode, to);
+            }
         } catch (Exception e) {
             log.warn("服务完成联动权益失败（不影响主流程）: sessionCode={}, equityCode={}",
                     event.getSessionCode(), equityCode, e);
