@@ -8,7 +8,7 @@ import java.time.LocalDate;
 /**
  * 权益批次修改入参（字段可选更新）。
  *
- * <p>统计字段、{@code batchCode}、{@code templateCode} 不可改（被 depot 引用且由联动维护）。
+ * <p>统计字段、{@code batchCode}、{@code goodsCode} 不可改（被 depot 引用且由联动维护）。
  */
 @Data
 public class EquityBatchUpdateDTO {

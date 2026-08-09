@@ -13,6 +13,8 @@ public class ServiceSessionVO {
     private Long id;
     private String sessionCode;
     private String equityCode;
+    /** 服务项目编码 */
+    private String itemCode;
     private String clientCode;
     private String butlerCode;
     private String butlerFullName;

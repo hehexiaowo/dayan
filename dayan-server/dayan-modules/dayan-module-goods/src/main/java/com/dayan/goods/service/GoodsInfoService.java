@@ -5,6 +5,7 @@ import com.dayan.goods.dto.GoodsInfoCreateDTO;
 import com.dayan.goods.dto.GoodsInfoQueryDTO;
 import com.dayan.goods.dto.GoodsInfoShelfDTO;
 import com.dayan.goods.dto.GoodsInfoUpdateDTO;
+import com.dayan.goods.entity.GoodsInfo;
 import com.dayan.goods.vo.GoodsInfoVO;
 
 import java.util.List;
@@ -52,4 +53,12 @@ public interface GoodsInfoService {
      * 删除商品（按 goodsCode）。校验是否存在关联 SKU。
      */
     void delete(String goodsCode);
+
+    /**
+     * 内部调用：获取商品实体（供权益激活链路取 goodsName/costPrice 等）。
+     *
+     * @param goodsCode 商品编码
+     * @return 商品实体（不存在则抛异常）
+     */
+    GoodsInfo requireGoods(String goodsCode);
 }

@@ -5,7 +5,6 @@ import { pageEquities } from '@/api/equity'
 import {
   CARRIER_TYPE_OPTIONS,
   EQUITY_STATUS_OPTIONS,
-  EQUITY_TYPE_OPTIONS,
   EquityStatus,
   type Equity,
   type EquityQuery
@@ -17,8 +16,8 @@ import { formatFileUrl } from '@/utils/file'
  *
  * 综合查询本渠道每个权益的完整生命周期流转信息：
  * - 搜索栏：权益编码 / 权益状态 / 载体类型 / 关联客户编码；
- * - el-table：equityCode / equityStatus / equityType(label) / carrierType / equityValue /
- *   clientCode / useCount+maxUseCount / activateTime / expireTime / 操作（查看详情）；
+ * - el-table：equityCode / equityStatus / carrierType / personCount /
+ *   clientCode / activateTime / expireTime / 操作（查看详情）；
  * - 详情抽屉（el-drawer + el-descriptions + el-timeline）：基本信息 / 分配与客户 /
  *   激活与物流 / 流转时间轴，数据直接取列表 row（后端 VO 字段齐全，无需额外请求）。
  */
@@ -68,11 +67,6 @@ function statusTagType(v?: number): 'success' | 'warning' | 'info' | 'danger' | 
 
 function statusText(v?: number) {
   const opt = EQUITY_STATUS_OPTIONS.find((o) => o.value === v)
-  return opt ? opt.label : '-'
-}
-
-function equityTypeLabel(v?: number) {
-  const opt = EQUITY_TYPE_OPTIONS.find((o) => o.value === v)
   return opt ? opt.label : '-'
 }
 
@@ -168,12 +162,6 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="equityType" label="权益类型" min-width="120" align="center">
-          <template #default="{ row }">
-            <el-tag v-if="row.equityType != null" type="info">{{ equityTypeLabel(row.equityType) }}</el-tag>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
         <el-table-column label="商品名称" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.goodsName">{{ row.goodsName }}</span>
@@ -186,18 +174,8 @@ const timelineNodes = computed<TimelineNode[]>(() => {
         <el-table-column prop="carrierType" label="载体类型" width="100" align="center">
           <template #default="{ row }">{{ carrierText(row.carrierType) }}</template>
         </el-table-column>
-        <el-table-column prop="equityValue" label="权益价值（元）" width="130" align="right">
-          <template #default="{ row }">{{ row.equityValue != null ? Number(row.equityValue).toFixed(2) : '--' }}</template>
-        </el-table-column>
+        <el-table-column prop="personCount" label="使用人数" width="100" align="center" />
         <el-table-column prop="clientCode" label="客户编码" min-width="130" show-overflow-tooltip />
-        <el-table-column label="使用次数" width="110" align="center">
-          <template #default="{ row }">
-            <span v-if="row.useCount != null || row.maxUseCount != null">
-              {{ row.useCount ?? 0 }} / {{ row.maxUseCount ?? '-' }}
-            </span>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
         <el-table-column prop="activateTime" label="激活时间" min-width="160" show-overflow-tooltip />
         <el-table-column prop="expireTime" label="到期时间" min-width="160" show-overflow-tooltip />
         <el-table-column label="操作" width="100" align="center" fixed="right">
@@ -239,22 +217,15 @@ const timelineNodes = computed<TimelineNode[]>(() => {
               <span v-else>-</span>
             </el-descriptions-item>
             <el-descriptions-item label="卡号">{{ currentEquity.equityNo || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="权益类型">
-              <el-tag v-if="currentEquity.equityType != null" type="info">{{ equityTypeLabel(currentEquity.equityType) }}</el-tag>
-              <span v-else>-</span>
+            <el-descriptions-item label="使用人数">
+              {{ currentEquity.personCount != null ? currentEquity.personCount : '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="载体类型">{{ carrierText(currentEquity.carrierType) }}</el-descriptions-item>
-            <el-descriptions-item label="使用次数">
-              {{ currentEquity.useCount ?? 0 }} / {{ currentEquity.maxUseCount ?? '-' }}
-            </el-descriptions-item>
             <el-descriptions-item label="商品名称">
               {{ currentEquity.goodsName || '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="规格">
               {{ currentEquity.skuName || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="权益价值">
-              {{ currentEquity.equityValue != null ? `¥${Number(currentEquity.equityValue).toFixed(2)}` : '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="成本价">
               {{ currentEquity.costPrice != null ? `¥${Number(currentEquity.costPrice).toFixed(2)}` : '-' }}
@@ -271,7 +242,7 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             <el-descriptions-item label="客户编码">{{ currentEquity.clientCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="关联订单">{{ currentEquity.orderCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="批次编码">{{ currentEquity.batchCode || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="模板编码">{{ currentEquity.templateCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="商品编码">{{ currentEquity.goodsCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="出库渠道">{{ currentEquity.outboundChannelCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="出库代理人">{{ currentEquity.outboundAgentCode || '-' }}</el-descriptions-item>
           </el-descriptions>

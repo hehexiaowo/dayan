@@ -27,17 +27,17 @@ public class EquityDepot extends BaseEntity {
     /** 权益卡号 */
     private String equityNo;
 
-    /** 权益模板编码 */
-    private String templateCode;
+    /** 商品编码（入库时从批次快照） */
+    private String goodsCode;
+
+    /** 使用人人数快照（入库时从 goods_equity 冻结） */
+    private Integer personCount;
+
+    /** 激活后有效天数快照（入库时从 goods_equity 冻结） */
+    private Integer validDays;
 
     /** 批次编码 */
     private String batchCode;
-
-    /** 权益类型 */
-    private Integer equityType;
-
-    /** 权益面值 */
-    private BigDecimal equityValue;
 
     /** 成本价 */
     private BigDecimal costPrice;
@@ -77,12 +77,6 @@ public class EquityDepot extends BaseEntity {
 
     /** 最近使用时间 */
     private LocalDateTime lastUseTime;
-
-    /** 已使用次数 */
-    private Integer useCount;
-
-    /** 最大使用次数 */
-    private Integer maxUseCount;
 
     /** 过期时间 */
     private LocalDateTime expireTime;

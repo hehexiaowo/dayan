@@ -13,7 +13,7 @@ public class EquityActivateVO {
     private Long id;
     private String activateCode;
     private String equityCode;
-    private String templateCode;
+    private String goodsCode;
     private String clientCode;
     private String clientFullName;
     private String clientPhone;

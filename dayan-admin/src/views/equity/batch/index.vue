@@ -39,7 +39,7 @@ const {
     initialQuery: {
       batchCode: '',
       batchName: '',
-      templateCode: '',
+      goodsCode: '',
       channelCode: '',
       batchStatus: undefined
     }
@@ -55,7 +55,7 @@ const formRef = ref<FormInstance>()
 const form = reactive<EquityBatch>({
   batchCode: undefined,
   batchName: '',
-  templateCode: '',
+  goodsCode: '',
   channelCode: '',
   totalQuantity: undefined,
   unitCost: undefined,
@@ -68,7 +68,7 @@ const form = reactive<EquityBatch>({
 
 const rules: FormRules<EquityBatch> = {
   batchName: [{ required: true, message: '请输入批次名称', trigger: 'blur' }],
-  templateCode: [{ required: true, message: '请输入关联模板编码', trigger: 'blur' }],
+  goodsCode: [{ required: true, message: '请输入关联商品编码', trigger: 'blur' }],
   totalQuantity: [{ required: true, message: '请输入总数量', trigger: 'blur' }]
 }
 
@@ -76,7 +76,7 @@ function resetForm() {
   Object.assign(form, {
     batchCode: undefined,
     batchName: '',
-    templateCode: '',
+    goodsCode: '',
     channelCode: '',
     totalQuantity: undefined,
     unitCost: undefined,
@@ -103,7 +103,7 @@ async function openEdit(row: EquityBatch) {
     Object.assign(form, {
       batchCode: detail.batchCode,
       batchName: detail.batchName ?? '',
-      templateCode: detail.templateCode ?? '',
+      goodsCode: detail.goodsCode ?? '',
       channelCode: detail.channelCode ?? '',
       totalQuantity: detail.totalQuantity,
       unitCost: detail.unitCost,
@@ -117,7 +117,7 @@ async function openEdit(row: EquityBatch) {
     Object.assign(form, {
       batchCode: row.batchCode,
       batchName: row.batchName ?? '',
-      templateCode: row.templateCode ?? '',
+      goodsCode: row.goodsCode ?? '',
       channelCode: row.channelCode ?? '',
       totalQuantity: row.totalQuantity,
       unitCost: row.unitCost,
@@ -158,7 +158,7 @@ async function handleSubmit() {
 function handleReset() {
   query.batchCode = ''
   query.batchName = ''
-  query.templateCode = ''
+  query.goodsCode = ''
   query.channelCode = ''
   query.batchStatus = undefined
   handleSearch()
@@ -234,8 +234,8 @@ loadPage()
         <el-form-item label="批次名称">
           <el-input v-model="query.batchName" placeholder="批次名称关键字" clearable @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item label="模板编码">
-          <el-input v-model="query.templateCode" placeholder="模板编码" clearable @keyup.enter="handleSearch" />
+        <el-form-item label="商品编码">
+          <el-input v-model="query.goodsCode" placeholder="商品编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="渠道编码">
           <el-input v-model="query.channelCode" placeholder="渠道编码" clearable @keyup.enter="handleSearch" />
@@ -264,7 +264,7 @@ loadPage()
       <el-table v-loading="loading" :data="tableData" border stripe row-key="batchCode">
         <el-table-column prop="batchCode" label="批次编码" min-width="150" show-overflow-tooltip fixed="left" />
         <el-table-column prop="batchName" label="批次名称" min-width="160" show-overflow-tooltip fixed="left" />
-        <el-table-column prop="templateCode" label="模板编码" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="goodsCode" label="商品编码" min-width="130" show-overflow-tooltip />
         <el-table-column prop="channelCode" label="渠道编码" min-width="120" show-overflow-tooltip />
         <el-table-column prop="totalQuantity" label="总数量" width="90" align="right" />
         <el-table-column label="生产/分配/出库" width="170" align="center">
@@ -340,8 +340,8 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="模板编码" prop="templateCode">
-              <el-input v-model="form.templateCode" placeholder="权益模板编码（templateCode）" maxlength="50" />
+            <el-form-item label="商品编码" prop="goodsCode">
+              <el-input v-model="form.goodsCode" placeholder="商品编码（goodsCode）" maxlength="50" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

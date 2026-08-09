@@ -26,8 +26,8 @@ public class EquityActivate extends BaseEntity {
     /** 权益编码 */
     private String equityCode;
 
-    /** 权益模板编码 */
-    private String templateCode;
+    /** 商品编码 */
+    private String goodsCode;
 
     /** 激活客户编码 */
     private String clientCode;

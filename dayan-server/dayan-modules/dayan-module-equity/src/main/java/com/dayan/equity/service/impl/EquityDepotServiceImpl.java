@@ -20,7 +20,6 @@ import com.dayan.equity.entity.EquityActivate;
 import com.dayan.equity.entity.EquityBatch;
 import com.dayan.equity.entity.EquityChangeHolder;
 import com.dayan.equity.entity.EquityDepot;
-import com.dayan.equity.entity.EquityTemplate;
 import com.dayan.equity.entity.EquityUsePerson;
 import com.dayan.equity.enums.EquityEvent;
 import com.dayan.equity.mapper.EquityActivateMapper;
@@ -29,8 +28,12 @@ import com.dayan.equity.mapper.EquityDepotMapper;
 import com.dayan.equity.mapper.EquityUsePersonMapper;
 import com.dayan.equity.service.EquityBatchService;
 import com.dayan.equity.service.EquityDepotService;
-import com.dayan.equity.service.EquityTemplateService;
 import com.dayan.equity.vo.EquityDepotVO;
+import com.dayan.goods.entity.GoodsEquity;
+import com.dayan.goods.entity.GoodsInfo;
+import com.dayan.goods.service.GoodsEquityService;
+import com.dayan.goods.service.GoodsInfoService;
+import com.dayan.goods.vo.GoodsEquityVO;
 import com.dayan.order.dto.EquityDeliverDTO;
 import com.dayan.order.service.OrderEquityService;
 import com.dayan.order.vo.OrderEquityVO;
@@ -104,7 +107,8 @@ public class EquityDepotServiceImpl implements EquityDepotService {
     private final EquityUsePersonMapper usePersonMapper;
     private final EquityChangeHolderMapper changeHolderMapper;
     private final EquityBatchService batchService;
-    private final EquityTemplateService templateService;
+    private final GoodsInfoService goodsInfoService;
+    private final GoodsEquityService goodsEquityService;
     private final SequenceProvider sequenceProvider;
     private final StateMachineEngine stateMachineEngine;
     private final ServiceSessionService serviceSessionService;
@@ -118,7 +122,8 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             EquityUsePersonMapper usePersonMapper,
             EquityChangeHolderMapper changeHolderMapper,
             EquityBatchService batchService,
-            EquityTemplateService templateService,
+            GoodsInfoService goodsInfoService,
+            GoodsEquityService goodsEquityService,
             SequenceProvider sequenceProvider,
             StateMachineEngine stateMachineEngine,
             ServiceSessionService serviceSessionService,
@@ -129,7 +134,8 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         this.usePersonMapper = usePersonMapper;
         this.changeHolderMapper = changeHolderMapper;
         this.batchService = batchService;
-        this.templateService = templateService;
+        this.goodsInfoService = goodsInfoService;
+        this.goodsEquityService = goodsEquityService;
         this.sequenceProvider = sequenceProvider;
         this.stateMachineEngine = stateMachineEngine;
         this.serviceSessionService = serviceSessionService;
@@ -194,12 +200,13 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "入库数量必须大于 0");
         }
 
-        // 校验批次、模板（取冗余字段）
+        // 校验批次、商品、权益配置（取入库快照）
         EquityBatch batch = batchService.requireBatch(dto.getBatchCode());
-        EquityTemplate template = templateService.requireTemplate(batch.getTemplateCode());
+        GoodsEquity goodsEquity = goodsEquityService.requireByGoodsCode(batch.getGoodsCode());
+        GoodsInfo goodsInfo = goodsInfoService.requireGoods(batch.getGoodsCode());
 
         LocalDateTime now = LocalDateTime.now();
-        Integer shelfLifeDays = template.getShelfLifeDays();
+        Integer shelfLifeDays = goodsEquity.getShelfLifeDays();
         LocalDateTime shelfExpireTime = (shelfLifeDays != null && shelfLifeDays > 0)
                 ? now.plusDays(shelfLifeDays) : null;
 
@@ -208,16 +215,15 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             String equityCode = generateEquityCode();
             entity.setEquityCode(equityCode);
             entity.setEquityNo(equityCode); // equity_no = equity_code
-            entity.setTemplateCode(template.getTemplateCode());
+            entity.setGoodsCode(batch.getGoodsCode());
+            // 入库快照：从 goods_equity 冻结 personCount + validDays
+            entity.setPersonCount(goodsEquity.getPersonCount() != null ? goodsEquity.getPersonCount() : 1);
+            entity.setValidDays(goodsEquity.getValidDays() != null ? goodsEquity.getValidDays() : 365);
             entity.setBatchCode(batch.getBatchCode());
-            entity.setEquityType(template.getEquityType());
-            entity.setEquityValue(template.getEquityValue());
-            entity.setCostPrice(template.getCostPrice());
+            entity.setCostPrice(goodsInfo.getCostPrice() != null ? goodsInfo.getCostPrice() : java.math.BigDecimal.ZERO);
             entity.setChannelCode(dto.getChannelCode() != null ? dto.getChannelCode() : batch.getChannelCode());
             entity.setProduceTime(now);
             entity.setShelfExpireTime(shelfExpireTime);
-            entity.setUseCount(0);
-            entity.setMaxUseCount(template.getMaxUseCount());
             entity.setCardSecret(encryptCardSecret());
             entity.setCarrierType(carrierType);
             if (carrierType == 1) {
@@ -352,9 +358,9 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             throw new BusinessException(ErrorCode.BUSINESS, "权益未出库或已激活（当前状态=" + from + "）");
         }
 
-        EquityTemplate template = templateService.requireTemplate(depot.getTemplateCode());
+        // validDays 从 depot 自身入库快照取（不再跨表查 template）
         LocalDateTime now = LocalDateTime.now();
-        Integer validDays = template.getValidDays();
+        Integer validDays = depot.getValidDays();
         LocalDateTime expireTime = (validDays != null && validDays > 0) ? now.plusDays(validDays) : null;
 
         // 状态机 1→2
@@ -374,7 +380,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         EquityActivate activate = new EquityActivate();
         activate.setActivateCode(activateRecordCode);
         activate.setEquityCode(depot.getEquityCode());
-        activate.setTemplateCode(depot.getTemplateCode());
+        activate.setGoodsCode(depot.getGoodsCode());
         activate.setClientCode(dto.getClientCode());
         activate.setClientFullName(dto.getClientFullName());
         activate.setClientPhone(dto.getClientPhone());
@@ -391,39 +397,33 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         // 3. 联动批次：activated_count += 1
         batchService.incrementStat(depot.getBatchCode(), "activated_count", 1);
 
-        // 4. 自动建默认使用人（仅当当前无任何使用人时，避免重复激活场景重复创建）
+        // 4. 自动建使用人：按 depot.personCount 快照创建（第1个=本人，其余占位"待填写-N"）
+        // 仅当当前无任何使用人时（避免重复激活场景重复创建）
         Long existCount = usePersonMapper.selectCount(new LambdaQueryWrapper<EquityUsePerson>()
                 .eq(EquityUsePerson::getEquityCode, depot.getEquityCode()));
         if (existCount == null || existCount == 0) {
-            EquityUsePerson person = new EquityUsePerson();
-            person.setEquityCode(depot.getEquityCode());
-            person.setClientCode(dto.getClientCode());
-            person.setUsePersonName(dto.getClientFullName());
-            person.setRelationWithHolder("本人");
-            person.setIsDefaultHolder(1);
-            usePersonMapper.insert(person);
+            int personCount = depot.getPersonCount() != null ? depot.getPersonCount() : 1;
+            for (int i = 0; i < personCount; i++) {
+                EquityUsePerson person = new EquityUsePerson();
+                person.setEquityCode(depot.getEquityCode());
+                if (i == 0) {
+                    // 第一个使用人=激活人本人
+                    person.setClientCode(dto.getClientCode());
+                    person.setUsePersonName(dto.getClientFullName());
+                    person.setRelationWithHolder("本人");
+                    person.setIsDefaultHolder(1);
+                } else {
+                    // 其余占位使用人，待后续填写
+                    person.setUsePersonName("待填写-" + (i + 1));
+                    person.setRelationWithHolder("其他");
+                    person.setIsDefaultHolder(0);
+                }
+                usePersonMapper.insert(person);
+            }
         }
 
-        // 5. 自动创建服务会话（权益激活后创建会话，待分配管家）
-        // 规格见 state_machine_seed.sql: SERVICE_SESSION_SM 注释「权益激活后创建会话，分配管家」
-        try {
-            ServiceSessionCreateDTO sessionDTO = new ServiceSessionCreateDTO();
-            sessionDTO.setEquityCode(depot.getEquityCode());
-            sessionDTO.setClientCode(dto.getClientCode());
-            sessionDTO.setServiceType(mapEquityTypeToServiceType(depot.getEquityType()));
-            sessionDTO.setServiceTitle("权益激活 - " + (dto.getClientFullName() != null ? dto.getClientFullName() : dto.getClientCode()));
-            sessionDTO.setServiceDescription("权益 " + depot.getEquityCode() + " 激活后自动创建的服务会话，待分配管家");
-            sessionDTO.setSourceType(1); // 1=权益触发
-            sessionDTO.setSourceCode(activateRecordCode);
-            sessionDTO.setAgentCode(depot.getAgentCode());
-            sessionDTO.setChannelCode(depot.getChannelCode());
-            sessionDTO.setRemark("权益激活自动创建");
-            serviceSessionService.create(sessionDTO);
-            log.info("权益激活联动创建服务会话: equityCode={}, clientCode={}", depot.getEquityCode(), dto.getClientCode());
-        } catch (Exception e) {
-            // 会话创建失败不阻断激活流程（激活本身已成功），仅记录警告
-            log.warn("权益激活后创建服务会话失败（忽略）: equityCode={}, err={}", depot.getEquityCode(), e.getMessage());
-        }
+        // 5. 自动创建服务会话（按 goods_service_item_rel 循环，每个 service_item 一个 session）
+        createServiceSessionsForActivation(depot, dto, activateRecordCode);
 
         log.info("权益激活成功: equityCode={}, clientCode={}, activateRecordCode={}",
                 depot.getEquityCode(), dto.getClientCode(), activateRecordCode);
@@ -638,7 +638,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             batchService.incrementStat(depot.getBatchCode(), "expired_count", 1);
         }
 
-        // 使用计数维护
+        // 使用时间维护（使用次数由 service_session 维度跟踪，depot 不再承载）
         EquityDepot update = new EquityDepot();
         update.setId(depot.getId());
         update.setEquityStatus(to);
@@ -647,7 +647,6 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         }
         if (EquityEvent.START_SERVICE.equals(event)) {
             update.setLastUseTime(LocalDateTime.now());
-            update.setUseCount((depot.getUseCount() == null ? 0 : depot.getUseCount()) + 1);
         }
         depotMapper.updateById(update);
         log.info("权益状态流转: equityCode={}, {} --{}--> {}", equityCode, from, event, to);
@@ -657,29 +656,45 @@ public class EquityDepotServiceImpl implements EquityDepotService {
     // ====== 内部方法 ======
 
     /**
-     * 权益类型 → 服务类型映射（用于激活后自动创建服务会话）。
+     * 权益激活后按 goods_service_item_rel 循环创建服务会话（每个 service_item 一个 session）。
      *
-     * <p>权益类型（equity_template.equity_type）：1=机构入住, 2=机构参观, 3=场景活动,
-     * 4=居家护理, 5=健康检测, 6=课程学习, 7=旅居体验。
-     * 服务类型（service_session.service_type）：1=机构入住, 2=场景活动, 3=居家养老, 4=健康咨询。
+     * <p>跨域解耦：会话创建失败不阻断激活流程（激活本身已成功），仅记录警告。
+     *
+     * @param depot              权益卡/函实体（携带 goodsCode/agentCode/channelCode）
+     * @param dto                激活入参（携带 clientCode/clientFullName）
+     * @param activateRecordCode 激活记录编码（作为 session.sourceCode）
      */
-    private Integer mapEquityTypeToServiceType(Integer equityType) {
-        if (equityType == null) return null;
-        switch (equityType) {
-            case 1: // 机构入住权益 → 机构入住
-            case 2: // 机构参观权益 → 归入机构入住
-                return 1;
-            case 3: // 场景活动权益 → 场景活动
-                return 2;
-            case 4: // 居家护理权益 → 居家养老
-                return 3;
-            case 5: // 健康检测权益 → 健康咨询
-                return 4;
-            case 6: // 课程学习权益 → 默认健康咨询（无直接对应）
-            case 7: // 旅居体验权益 → 默认机构入住（无直接对应）
-                return 4;
-            default:
-                return null;
+    private void createServiceSessionsForActivation(EquityDepot depot, ActivateDTO dto, String activateRecordCode) {
+        try {
+            List<GoodsEquityVO.ServiceItemRelVO> rels = goodsEquityService.listRelsByGoodsCode(depot.getGoodsCode());
+            if (rels == null || rels.isEmpty()) {
+                log.info("权益激活：商品 {} 未配置服务项目，跳过创建服务会话", depot.getGoodsCode());
+                return;
+            }
+            String clientName = dto.getClientFullName() != null ? dto.getClientFullName() : dto.getClientCode();
+            for (GoodsEquityVO.ServiceItemRelVO rel : rels) {
+                try {
+                    ServiceSessionCreateDTO sessionDTO = new ServiceSessionCreateDTO();
+                    sessionDTO.setEquityCode(depot.getEquityCode());
+                    sessionDTO.setItemCode(rel.getItemCode());
+                    sessionDTO.setClientCode(dto.getClientCode());
+                    sessionDTO.setServiceTitle(rel.getItemName() + " - " + clientName);
+                    sessionDTO.setServiceDescription("权益 " + depot.getEquityCode()
+                            + " 激活后按服务项目 " + rel.getItemCode() + " 自动创建的服务会话");
+                    sessionDTO.setSourceType(1); // 1=权益触发
+                    sessionDTO.setSourceCode(activateRecordCode);
+                    sessionDTO.setAgentCode(depot.getAgentCode());
+                    sessionDTO.setChannelCode(depot.getChannelCode());
+                    sessionDTO.setRemark("权益激活自动创建（服务项目：" + rel.getItemName() + "）");
+                    serviceSessionService.create(sessionDTO);
+                } catch (Exception e) {
+                    log.warn("权益激活后创建单个服务会话失败（忽略）: equityCode={}, itemCode={}, err={}",
+                            depot.getEquityCode(), rel.getItemCode(), e.getMessage());
+                }
+            }
+            log.info("权益激活联动创建服务会话: equityCode={}, itemCount={}", depot.getEquityCode(), rels.size());
+        } catch (Exception e) {
+            log.warn("权益激活后查询服务项目失败（忽略）: goodsCode={}, err={}", depot.getGoodsCode(), e.getMessage());
         }
     }
 
@@ -769,8 +784,8 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         if (query.getEquityNo() != null && !query.getEquityNo().isEmpty()) {
             wrapper.eq(EquityDepot::getEquityNo, query.getEquityNo());
         }
-        if (query.getTemplateCode() != null && !query.getTemplateCode().isEmpty()) {
-            wrapper.eq(EquityDepot::getTemplateCode, query.getTemplateCode());
+        if (query.getGoodsCode() != null && !query.getGoodsCode().isEmpty()) {
+            wrapper.eq(EquityDepot::getGoodsCode, query.getGoodsCode());
         }
         if (query.getBatchCode() != null && !query.getBatchCode().isEmpty()) {
             wrapper.eq(EquityDepot::getBatchCode, query.getBatchCode());
@@ -824,10 +839,10 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         vo.setId(entity.getId());
         vo.setEquityCode(entity.getEquityCode());
         vo.setEquityNo(entity.getEquityNo());
-        vo.setTemplateCode(entity.getTemplateCode());
+        vo.setGoodsCode(entity.getGoodsCode());
+        vo.setPersonCount(entity.getPersonCount());
+        vo.setValidDays(entity.getValidDays());
         vo.setBatchCode(entity.getBatchCode());
-        vo.setEquityType(entity.getEquityType());
-        vo.setEquityValue(entity.getEquityValue());
         vo.setCostPrice(entity.getCostPrice());
         vo.setChannelCode(entity.getChannelCode());
         vo.setAgentCode(entity.getAgentCode());
@@ -841,8 +856,6 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         vo.setActivateTime(entity.getActivateTime());
         vo.setFirstUseTime(entity.getFirstUseTime());
         vo.setLastUseTime(entity.getLastUseTime());
-        vo.setUseCount(entity.getUseCount());
-        vo.setMaxUseCount(entity.getMaxUseCount());
         vo.setExpireTime(entity.getExpireTime());
         vo.setShelfExpireTime(entity.getShelfExpireTime());
         // 卡密脱敏

@@ -26,6 +26,9 @@ public class ServiceSession extends BaseEntity {
     /** 关联权益编码 */
     private String equityCode;
 
+    /** 服务项目编码（权益激活按 service_item 创建会话时标记） */
+    private String itemCode;
+
     /** 客户编码 */
     private String clientCode;
 

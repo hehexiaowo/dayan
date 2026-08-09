@@ -16,6 +16,9 @@ public class ServiceSessionCreateDTO {
     /** 关联权益编码（可空，非权益触发场景） */
     private String equityCode;
 
+    /** 服务项目编码（权益激活按 service_item 创建会话时标记） */
+    private String itemCode;
+
     @NotBlank(message = "客户编码不能为空")
     @Size(max = 50)
     private String clientCode;

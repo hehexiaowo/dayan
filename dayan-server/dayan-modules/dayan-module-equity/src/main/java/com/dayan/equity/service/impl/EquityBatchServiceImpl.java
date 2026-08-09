@@ -11,11 +11,12 @@ import com.dayan.equity.dto.EquityBatchCreateDTO;
 import com.dayan.equity.dto.EquityBatchQueryDTO;
 import com.dayan.equity.dto.EquityBatchUpdateDTO;
 import com.dayan.equity.entity.EquityBatch;
-import com.dayan.equity.entity.EquityTemplate;
 import com.dayan.equity.mapper.EquityBatchMapper;
 import com.dayan.equity.service.EquityBatchService;
-import com.dayan.equity.service.EquityTemplateService;
 import com.dayan.equity.vo.EquityBatchVO;
+import com.dayan.goods.entity.GoodsEquity;
+import com.dayan.goods.service.GoodsEquityService;
+import com.dayan.goods.service.GoodsInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,13 +48,13 @@ public class EquityBatchServiceImpl implements EquityBatchService {
     private static final int BATCH_STATUS_PENDING = 0;
     private static final int BATCH_STATUS_PRODUCING = 1;
     private static final int BATCH_STATUS_COMPLETED = 2;
-    /** 模板启用状态 */
-    private static final int TEMPLATE_STATUS_ENABLED = 1;
 
     private final EquityBatchMapper batchMapper;
     private final SequenceProvider sequenceProvider;
-    /** 模板服务，用于校验模板存在且启用。 */
-    private final EquityTemplateService templateService;
+    /** 商品信息服务，用于校验商品存在。 */
+    private final GoodsInfoService goodsInfoService;
+    /** 权益配置服务，用于校验 goods_equity 已配置 + 取 shelfLifeDays 兜底。 */
+    private final GoodsEquityService goodsEquityService;
 
     @Override
     public PageResult<EquityBatchVO> page(EquityBatchQueryDTO query) {
@@ -90,11 +91,9 @@ public class EquityBatchServiceImpl implements EquityBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(EquityBatchCreateDTO dto) {
-        // 校验模板存在且启用
-        EquityTemplate template = templateService.requireTemplate(dto.getTemplateCode());
-        if (template.getStatus() == null || template.getStatus() != TEMPLATE_STATUS_ENABLED) {
-            throw new BusinessException(ErrorCode.BUSINESS, "权益模板未启用，无法创建批次: " + dto.getTemplateCode());
-        }
+        // 校验商品存在 + 权益配置已存在
+        goodsInfoService.requireGoods(dto.getGoodsCode());
+        GoodsEquity goodsEquity = goodsEquityService.requireByGoodsCode(dto.getGoodsCode());
 
         // 日期校验
         validateDateRange(dto.getProduceDate(), dto.getExpireDate());
@@ -104,7 +103,7 @@ public class EquityBatchServiceImpl implements EquityBatchService {
         EquityBatch entity = new EquityBatch();
         entity.setBatchCode(batchCode);
         entity.setBatchName(dto.getBatchName());
-        entity.setTemplateCode(dto.getTemplateCode());
+        entity.setGoodsCode(dto.getGoodsCode());
         entity.setChannelCode(dto.getChannelCode());
         entity.setTotalQuantity(dto.getTotalQuantity());
         entity.setProducedCount(0);
@@ -116,18 +115,18 @@ public class EquityBatchServiceImpl implements EquityBatchService {
         entity.setVoidedCount(0);
         entity.setRemainCount(0);
         // unit_cost/total_cost/produce_date/expire_date 为 NOT NULL 列，
-        // DTO 未提供时兜底默认值（成本 0 + 生产日期取今天 + 有效期取模板 shelfLifeDays 后）
+        // DTO 未提供时兜底默认值（成本 0 + 生产日期取今天 + 有效期取 goodsEquity shelfLifeDays 后）
         entity.setUnitCost(dto.getUnitCost() != null ? dto.getUnitCost() : BigDecimal.ZERO);
         entity.setTotalCost(dto.getTotalCost() != null ? dto.getTotalCost() : BigDecimal.ZERO);
         LocalDate produceDate = dto.getProduceDate() != null ? dto.getProduceDate() : LocalDate.now();
         entity.setProduceDate(produceDate);
         entity.setExpireDate(dto.getExpireDate() != null ? dto.getExpireDate()
-                : produceDate.plusDays(template.getShelfLifeDays() != null ? template.getShelfLifeDays() : 365));
+                : produceDate.plusDays(goodsEquity.getShelfLifeDays() != null ? goodsEquity.getShelfLifeDays() : 730));
         entity.setBatchStatus(dto.getBatchStatus() == null ? BATCH_STATUS_PENDING : dto.getBatchStatus());
         entity.setRemark(dto.getRemark());
 
         batchMapper.insert(entity);
-        log.info("创建权益批次成功: batchCode={}, templateCode={}", batchCode, dto.getTemplateCode());
+        log.info("创建权益批次成功: batchCode={}, goodsCode={}", batchCode, dto.getGoodsCode());
         return batchCode;
     }
 
@@ -232,8 +231,8 @@ public class EquityBatchServiceImpl implements EquityBatchService {
         if (query.getBatchName() != null && !query.getBatchName().isEmpty()) {
             wrapper.like(EquityBatch::getBatchName, query.getBatchName());
         }
-        if (query.getTemplateCode() != null && !query.getTemplateCode().isEmpty()) {
-            wrapper.eq(EquityBatch::getTemplateCode, query.getTemplateCode());
+        if (query.getGoodsCode() != null && !query.getGoodsCode().isEmpty()) {
+            wrapper.eq(EquityBatch::getGoodsCode, query.getGoodsCode());
         }
         if (query.getChannelCode() != null && !query.getChannelCode().isEmpty()) {
             wrapper.eq(EquityBatch::getChannelCode, query.getChannelCode());
@@ -249,7 +248,7 @@ public class EquityBatchServiceImpl implements EquityBatchService {
         vo.setId(entity.getId());
         vo.setBatchCode(entity.getBatchCode());
         vo.setBatchName(entity.getBatchName());
-        vo.setTemplateCode(entity.getTemplateCode());
+        vo.setGoodsCode(entity.getGoodsCode());
         vo.setChannelCode(entity.getChannelCode());
         vo.setTotalQuantity(entity.getTotalQuantity());
         vo.setProducedCount(entity.getProducedCount());

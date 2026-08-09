@@ -228,8 +228,8 @@ export interface EquityBatch {
   batchCode?: string
   /** 批次名称 */
   batchName: string
-  /** 权益模板编码 */
-  templateCode?: string
+  /** 关联商品编码 */
+  goodsCode?: string
   /** 分配渠道编码 */
   channelCode?: string
   /** 总数量 */
@@ -274,7 +274,7 @@ export interface EquityBatch {
 export interface EquityBatchQuery extends PageQuery {
   batchCode?: string
   batchName?: string
-  templateCode?: string
+  goodsCode?: string
   channelCode?: string
   batchStatus?: BatchStatus
 }
@@ -307,14 +307,14 @@ export interface EquityDepot {
   equityCode?: string
   /** 权益卡号 */
   equityNo?: string
-  /** 权益模板编码 */
-  templateCode?: string
+  /** 关联商品编码 */
+  goodsCode?: string
   /** 批次编码 */
   batchCode?: string
-  /** 权益类型 */
-  equityType?: EquityType
-  /** 权益面值 */
-  equityValue?: number
+  /** 使用人人数快照 */
+  personCount?: number
+  /** 激活后有效天数快照 */
+  validDays?: number
   /** 分配渠道编码 */
   channelCode?: string
   /** 分配代理人编码 */
@@ -359,7 +359,7 @@ export interface EquityDepot {
 export interface EquityDepotQuery extends PageQuery {
   equityCode?: string
   equityNo?: string
-  templateCode?: string
+  goodsCode?: string
   batchCode?: string
   channelCode?: string
   agentCode?: string

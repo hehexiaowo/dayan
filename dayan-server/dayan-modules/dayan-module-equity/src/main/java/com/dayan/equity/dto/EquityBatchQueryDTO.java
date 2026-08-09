@@ -13,7 +13,7 @@ public class EquityBatchQueryDTO {
 
     private String batchCode;
     private String batchName;
-    private String templateCode;
+    private String goodsCode;
     private String channelCode;
     private Integer batchStatus;
 }

@@ -11,10 +11,8 @@ import {
 } from '@/api/equity'
 import type { EquityDepot, EquityDepotQuery } from '@/types/equity'
 import {
-  EquityType,
   EquityStatus,
   CarrierType,
-  EQUITY_TYPE_OPTIONS,
   EQUITY_STATUS_OPTIONS,
   CARRIER_TYPE_OPTIONS
 } from '@/types/equity'
@@ -50,7 +48,7 @@ const {
     initialQuery: {
       equityCode: '',
       equityNo: '',
-      templateCode: '',
+      goodsCode: '',
       batchCode: '',
       channelCode: '',
       agentCode: '',
@@ -72,10 +70,8 @@ const formRef = ref<FormInstance>()
 const form = reactive<EquityDepot>({
   equityCode: undefined,
   equityNo: '',
-  templateCode: '',
+  goodsCode: '',
   batchCode: '',
-  equityType: EquityType.INSTITUTION_STAY,
-  equityValue: undefined,
   channelCode: '',
   agentCode: '',
   clientCode: '',
@@ -88,17 +84,15 @@ const form = reactive<EquityDepot>({
 
 const rules: FormRules<EquityDepot> = {
   equityNo: [{ required: true, message: '请输入权益卡号', trigger: 'blur' }],
-  templateCode: [{ required: true, message: '请输入关联模板编码', trigger: 'blur' }]
+  goodsCode: [{ required: true, message: '请输入关联商品编码', trigger: 'blur' }]
 }
 
 function resetForm() {
   Object.assign(form, {
     equityCode: undefined,
     equityNo: '',
-    templateCode: '',
+    goodsCode: '',
     batchCode: '',
-    equityType: EquityType.INSTITUTION_STAY,
-    equityValue: undefined,
     channelCode: '',
     agentCode: '',
     clientCode: '',
@@ -118,10 +112,8 @@ async function openEdit(row: EquityDepot) {
     Object.assign(form, {
       equityCode: detail.equityCode,
       equityNo: detail.equityNo ?? '',
-      templateCode: detail.templateCode ?? '',
+      goodsCode: detail.goodsCode ?? '',
       batchCode: detail.batchCode ?? '',
-      equityType: detail.equityType ?? EquityType.INSTITUTION_STAY,
-      equityValue: detail.equityValue,
       channelCode: detail.channelCode ?? '',
       agentCode: detail.agentCode ?? '',
       clientCode: detail.clientCode ?? '',
@@ -135,10 +127,8 @@ async function openEdit(row: EquityDepot) {
     Object.assign(form, {
       equityCode: row.equityCode,
       equityNo: row.equityNo ?? '',
-      templateCode: row.templateCode ?? '',
+      goodsCode: row.goodsCode ?? '',
       batchCode: row.batchCode ?? '',
-      equityType: row.equityType ?? EquityType.INSTITUTION_STAY,
-      equityValue: row.equityValue,
       channelCode: row.channelCode ?? '',
       agentCode: row.agentCode ?? '',
       clientCode: row.clientCode ?? '',
@@ -175,7 +165,7 @@ async function handleSubmit() {
 function handleReset() {
   query.equityCode = ''
   query.equityNo = ''
-  query.templateCode = ''
+  query.goodsCode = ''
   query.batchCode = ''
   query.channelCode = ''
   query.agentCode = ''
@@ -248,11 +238,6 @@ function equityStatusTagType(status?: number): 'success' | 'warning' | 'danger' 
   }
 }
 
-function equityTypeLabel(t?: number): string {
-  const found = EQUITY_TYPE_OPTIONS.find((o) => o.value === t)
-  return found ? found.label : t != null ? String(t) : '--'
-}
-
 function carrierTypeLabel(c?: number): string {
   const found = CARRIER_TYPE_OPTIONS.find((o) => o.value === c)
   return found ? found.label : c != null ? String(c) : '--'
@@ -273,8 +258,8 @@ loadPage()
         <el-form-item label="卡号">
           <el-input v-model="query.equityNo" placeholder="权益卡号" clearable @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item label="模板编码">
-          <el-input v-model="query.templateCode" placeholder="模板编码" clearable @keyup.enter="handleSearch" />
+        <el-form-item label="商品编码">
+          <el-input v-model="query.goodsCode" placeholder="商品编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="批次编码">
           <el-input v-model="query.batchCode" placeholder="批次编码" clearable @keyup.enter="handleSearch" />
@@ -320,14 +305,9 @@ loadPage()
       <el-table v-loading="loading" :data="tableData" border stripe row-key="equityCode">
         <el-table-column prop="equityCode" label="权益编码" min-width="150" show-overflow-tooltip fixed="left" />
         <el-table-column prop="equityNo" label="卡号" min-width="140" show-overflow-tooltip fixed="left" />
-        <el-table-column prop="templateCode" label="模板" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="goodsCode" label="商品编码" min-width="130" show-overflow-tooltip />
         <el-table-column prop="batchCode" label="批次" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="equityType" label="类型" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag type="info" size="small">{{ equityTypeLabel(row.equityType) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="equityValue" label="面值" width="90" align="right" />
+        <el-table-column prop="personCount" label="使用人数" width="100" align="center" />
         <el-table-column prop="channelCode" label="渠道" min-width="110" show-overflow-tooltip />
         <el-table-column prop="agentCode" label="代理人" min-width="110" show-overflow-tooltip />
         <el-table-column prop="clientCode" label="客户" min-width="110" show-overflow-tooltip />
@@ -416,25 +396,13 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="模板编码" prop="templateCode">
-              <el-input v-model="form.templateCode" placeholder="权益模板编码" maxlength="50" />
+            <el-form-item label="商品编码" prop="goodsCode">
+              <el-input v-model="form.goodsCode" placeholder="商品编码" maxlength="50" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="批次编码">
               <el-input v-model="form.batchCode" placeholder="批次编码" maxlength="50" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="权益类型">
-              <el-select v-model="form.equityType" placeholder="权益类型" style="width: 100%">
-                <el-option v-for="o in EQUITY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="权益面值">
-              <el-input-number v-model="form.equityValue" :min="0" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">

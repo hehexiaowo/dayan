@@ -62,8 +62,8 @@ public class EquityActivateServiceImpl implements EquityActivateService {
         if (query.getEquityCode() != null && !query.getEquityCode().isEmpty()) {
             wrapper.eq(EquityActivate::getEquityCode, query.getEquityCode());
         }
-        if (query.getTemplateCode() != null && !query.getTemplateCode().isEmpty()) {
-            wrapper.eq(EquityActivate::getTemplateCode, query.getTemplateCode());
+        if (query.getGoodsCode() != null && !query.getGoodsCode().isEmpty()) {
+            wrapper.eq(EquityActivate::getGoodsCode, query.getGoodsCode());
         }
         if (query.getClientCode() != null && !query.getClientCode().isEmpty()) {
             wrapper.eq(EquityActivate::getClientCode, query.getClientCode());
@@ -82,7 +82,7 @@ public class EquityActivateServiceImpl implements EquityActivateService {
         vo.setId(entity.getId());
         vo.setActivateCode(entity.getActivateCode());
         vo.setEquityCode(entity.getEquityCode());
-        vo.setTemplateCode(entity.getTemplateCode());
+        vo.setGoodsCode(entity.getGoodsCode());
         vo.setClientCode(entity.getClientCode());
         vo.setClientFullName(entity.getClientFullName());
         vo.setClientPhone(entity.getClientPhone());

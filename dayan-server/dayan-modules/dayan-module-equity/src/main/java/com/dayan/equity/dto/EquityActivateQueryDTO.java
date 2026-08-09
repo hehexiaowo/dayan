@@ -13,7 +13,7 @@ public class EquityActivateQueryDTO {
 
     private String activateCode;
     private String equityCode;
-    private String templateCode;
+    private String goodsCode;
     private String clientCode;
     private Integer activateChannel;
 

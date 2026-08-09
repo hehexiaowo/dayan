@@ -13,7 +13,7 @@ public class EquityDepotQueryDTO {
 
     private String equityCode;
     private String equityNo;
-    private String templateCode;
+    private String goodsCode;
     private String batchCode;
     private String channelCode;
     private String agentCode;

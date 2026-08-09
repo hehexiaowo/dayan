@@ -15,7 +15,7 @@ public class EquityBatchVO {
     private Long id;
     private String batchCode;
     private String batchName;
-    private String templateCode;
+    private String goodsCode;
     private String channelCode;
     private Integer totalQuantity;
     private Integer producedCount;

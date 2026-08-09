@@ -27,8 +27,8 @@ public class EquityBatch extends BaseEntity {
     /** 批次名称 */
     private String batchName;
 
-    /** 权益模板编码 */
-    private String templateCode;
+    /** 商品编码（关联 goods_info.goods_code） */
+    private String goodsCode;
 
     /** 分配渠道编码 */
     private String channelCode;

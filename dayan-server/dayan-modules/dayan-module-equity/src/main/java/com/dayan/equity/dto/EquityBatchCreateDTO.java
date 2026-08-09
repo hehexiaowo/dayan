@@ -20,9 +20,9 @@ public class EquityBatchCreateDTO {
     @NotBlank(message = "批次名称不能为空")
     private String batchName;
 
-    /** 权益模板编码（须存在且 status=1 启用） */
-    @NotBlank(message = "权益模板编码不能为空")
-    private String templateCode;
+    /** 商品编码（须存在且对应 goods_equity 已配置） */
+    @NotBlank(message = "商品编码不能为空")
+    private String goodsCode;
 
     /** 分配渠道编码（可空） */
     private String channelCode;

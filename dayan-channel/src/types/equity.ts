@@ -70,10 +70,10 @@ export const CARRIER_TYPE_OPTIONS = [
  * 权益实体（对齐后端 EquityDepotVO，渠道视角）。
  *
  * 后端渠道端 GET /channel-api/equities 返回与管理端相同的 EquityDepotVO，
- * 字段覆盖完整生命周期（入库/分配/出库/激活/使用/到期时间轴 + 批次/物流/使用计数），
+ * 字段覆盖完整生命周期（入库/分配/出库/激活/使用/到期时间轴 + 批次/物流/使用人快照），
  * channelCode 由后端 ContextHolder 强制注入防越权。
  *
- * 注意：equityValue 单位是「元」（后端 DECIMAL(12,2)），前端直接显示，不要除以 100。
+ * 注意：personCount/validDays 为激活时快照，costPrice 单位是「元」。
  */
 export interface Equity {
   id?: number
@@ -81,14 +81,14 @@ export interface Equity {
   equityCode?: string
   /** 权益卡号（入库时 = equityCode） */
   equityNo?: string
-  /** 关联模板编码 */
-  templateCode?: string
+  /** 关联商品编码 */
+  goodsCode?: string
   /** 关联批次编码 */
   batchCode?: string
-  /** 权益类型 */
-  equityType?: number
-  /** 权益价值（单位：元，不要除以100） */
-  equityValue?: number
+  /** 使用人人数快照 */
+  personCount?: number
+  /** 激活后有效天数快照 */
+  validDays?: number
   /** 成本价 */
   costPrice?: number
   /** 载体类型（1权益卡/2权益函） */
@@ -122,10 +122,6 @@ export interface Equity {
   expireTime?: string
   /** 库存到期时间（上架有效期截止） */
   shelfExpireTime?: string
-  /** 已使用次数 */
-  useCount?: number
-  /** 最大使用次数 */
-  maxUseCount?: number
   // ====== 激活与关联 ======
   /** 激活码（DY-8位，权益卡专用） */
   activateCode?: string
@@ -173,7 +169,7 @@ export interface EquityActivate {
   id?: number
   activateCode: string
   equityCode: string
-  templateCode?: string
+  goodsCode?: string
   clientCode?: string
   clientFullName?: string
   clientPhone?: string
@@ -189,7 +185,7 @@ export interface EquityActivate {
 export interface EquityActivateQuery extends PageQuery {
   activateCode?: string
   equityCode?: string
-  templateCode?: string
+  goodsCode?: string
   clientCode?: string
   activateChannel?: number
 }

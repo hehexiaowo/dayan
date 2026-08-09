@@ -11,7 +11,9 @@ import com.dayan.equity.dto.EquityUsePersonCreateDTO;
 import com.dayan.equity.dto.EquityUsePersonQueryDTO;
 import com.dayan.equity.dto.EquityUsePersonUpdateDTO;
 import com.dayan.equity.dto.SetDefaultHolderDTO;
+import com.dayan.equity.entity.EquityDepot;
 import com.dayan.equity.entity.EquityUsePerson;
+import com.dayan.equity.mapper.EquityDepotMapper;
 import com.dayan.equity.mapper.EquityUsePersonMapper;
 import com.dayan.equity.service.EquityUsePersonService;
 import com.dayan.equity.vo.EquityUsePersonVO;
@@ -35,17 +37,20 @@ import java.util.stream.Collectors;
 @Service
 public class EquityUsePersonServiceImpl implements EquityUsePersonService {
 
-    /** 单权益最大使用人数 */
-    private static final int MAX_USE_PERSON_PER_EQUITY = 3;
+    /** 使用人人数兜底（depot 快照缺失时） */
+    private static final int DEFAULT_PERSON_COUNT = 1;
     private static final String DEFAULT_KEY_PASSWORD = "dayan-default-key";
 
     private final EquityUsePersonMapper usePersonMapper;
+    private final EquityDepotMapper depotMapper;
     private final String aesKeyHex;
 
     public EquityUsePersonServiceImpl(
             EquityUsePersonMapper usePersonMapper,
+            EquityDepotMapper depotMapper,
             @Value("${dayan.aes.key:}") String configuredKey) {
         this.usePersonMapper = usePersonMapper;
+        this.depotMapper = depotMapper;
         if (configuredKey == null || configuredKey.isBlank()) {
             this.aesKeyHex = AesGcmUtil.deriveKey(DEFAULT_KEY_PASSWORD);
         } else {
@@ -80,12 +85,13 @@ public class EquityUsePersonServiceImpl implements EquityUsePersonService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(EquityUsePersonCreateDTO dto) {
-        // 1. 数量限制 ≤3
+        // 1. 数量限制 = depot.personCount 快照
+        int maxPersons = getPersonCountLimit(dto.getEquityCode());
         Long count = usePersonMapper.selectCount(new LambdaQueryWrapper<EquityUsePerson>()
                 .eq(EquityUsePerson::getEquityCode, dto.getEquityCode()));
-        if (count != null && count >= MAX_USE_PERSON_PER_EQUITY) {
+        if (count != null && count >= maxPersons) {
             throw new BusinessException(ErrorCode.BUSINESS,
-                    "单权益使用人已达上限 " + MAX_USE_PERSON_PER_EQUITY + " 人");
+                    "单权益使用人已达上限 " + maxPersons + " 人");
         }
 
         // 2. 身份证唯一校验（解密比对）
@@ -171,6 +177,19 @@ public class EquityUsePersonServiceImpl implements EquityUsePersonService {
     }
 
     // ====== 内部方法 ======
+
+    /**
+     * 从 depot 快照取使用人人数上限（depot.personCount）。
+     */
+    private int getPersonCountLimit(String equityCode) {
+        EquityDepot depot = depotMapper.selectOne(new LambdaQueryWrapper<EquityDepot>()
+                .eq(EquityDepot::getEquityCode, equityCode)
+                .last("LIMIT 1"));
+        if (depot != null && depot.getPersonCount() != null && depot.getPersonCount() > 0) {
+            return depot.getPersonCount();
+        }
+        return DEFAULT_PERSON_COUNT;
+    }
 
     private EquityUsePerson requireUsePerson(Long id) {
         EquityUsePerson entity = usePersonMapper.selectById(id);

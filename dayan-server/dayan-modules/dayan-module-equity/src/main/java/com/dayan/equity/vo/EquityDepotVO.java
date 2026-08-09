@@ -17,10 +17,12 @@ public class EquityDepotVO {
     private Long id;
     private String equityCode;
     private String equityNo;
-    private String templateCode;
+    private String goodsCode;
+    /** 使用人人数快照 */
+    private Integer personCount;
+    /** 激活后有效天数快照 */
+    private Integer validDays;
     private String batchCode;
-    private Integer equityType;
-    private BigDecimal equityValue;
     private BigDecimal costPrice;
     private String channelCode;
     private String agentCode;
@@ -34,8 +36,6 @@ public class EquityDepotVO {
     private LocalDateTime activateTime;
     private LocalDateTime firstUseTime;
     private LocalDateTime lastUseTime;
-    private Integer useCount;
-    private Integer maxUseCount;
     private LocalDateTime expireTime;
     private LocalDateTime shelfExpireTime;
     /** 卡密（脱敏） */

@@ -115,6 +115,7 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         String sessionCode = generateSessionCode();
         entity.setSessionCode(sessionCode);
         entity.setEquityCode(dto.getEquityCode());
+        entity.setItemCode(dto.getItemCode());
         entity.setClientCode(dto.getClientCode());
         entity.setServiceType(dto.getServiceType());
         entity.setServiceTitle(dto.getServiceTitle());
@@ -424,6 +425,7 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         vo.setId(entity.getId());
         vo.setSessionCode(entity.getSessionCode());
         vo.setEquityCode(entity.getEquityCode());
+        vo.setItemCode(entity.getItemCode());
         vo.setClientCode(entity.getClientCode());
         vo.setButlerCode(entity.getButlerCode());
         vo.setButlerFullName(entity.getButlerFullName());

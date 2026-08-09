@@ -10,7 +10,7 @@ import { statusTagType } from '@/utils/format'
  *
  * - 数据源：pageEquityActivates（/channel-api/equity-activates，任务 6 新建）。
  * - 搜索：激活码 / 权益码 / 客户编码。
- * - 表格：activateCode / equityCode / templateCode / clientFullName / clientPhone / activateTime / expireTime / isIdCardVerified(tag)。
+ * - 表格：activateCode / equityCode / goodsCode / clientFullName / clientPhone / activateTime / expireTime / isIdCardVerified(tag)。
  * - 后端端点未实现时降级（空表 + 控制台 warn，不弹 toast）。
  *
  * 说明：useCrud 不返回 handleReset（已核实 composables/useCrud.ts），
@@ -65,7 +65,7 @@ onMounted(() => {
       <el-table v-loading="loading" :data="tableData" border stripe row-key="activateCode">
         <el-table-column prop="activateCode" label="激活码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="equityCode" label="权益码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="templateCode" label="模板" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="goodsCode" label="商品编码" min-width="120" show-overflow-tooltip />
         <el-table-column prop="clientFullName" label="客户" min-width="100" />
         <el-table-column prop="clientPhone" label="手机" min-width="120" />
         <el-table-column prop="activateTime" label="激活时间" min-width="160" />

@@ -232,7 +232,8 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
         return wrapper;
     }
 
-    private GoodsInfo requireGoods(String goodsCode) {
+    @Override
+    public GoodsInfo requireGoods(String goodsCode) {
         GoodsInfo entity = goodsInfoMapper.selectOne(new LambdaQueryWrapper<GoodsInfo>()
                 .eq(GoodsInfo::getGoodsCode, goodsCode)
                 .last("LIMIT 1"));
