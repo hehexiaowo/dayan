@@ -145,8 +145,8 @@ async function loadAgentInfo() {
 async function loadNotifications() {
   loadingNotif.value = true;
   try {
-    const list = await getNotifications();
-    notifications.value = Array.isArray(list) ? list : [];
+    const res = await getNotifications();
+    notifications.value = res?.records || [];
   } catch (e) {
     notifications.value = [];
   } finally {

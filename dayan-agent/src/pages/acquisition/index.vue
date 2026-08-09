@@ -69,8 +69,8 @@ const loading = ref(false);
 async function loadList() {
   loading.value = true;
   try {
-    const list = await getLeads({ keyword: keyword.value || undefined });
-    leads.value = Array.isArray(list) ? list : [];
+    const res = await getLeads({ keyword: keyword.value || undefined });
+    leads.value = res?.records || [];
   } catch (e) {
     leads.value = [];
   } finally {

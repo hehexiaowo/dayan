@@ -27,7 +27,11 @@ export const useUserStore = defineStore('user', {
       const data = await loginApi(params);
       this.token = data.token;
       this.channelCode = data.channelCode;
-      this.userInfo = { accountCode: data.agentCode, channelCode: data.channelCode };
+      this.userInfo = {
+        accountCode: data.agentCode,
+        realName: data.realName,
+        channelCode: data.channelCode,
+      };
       uni.setStorageSync('agent_token', data.token);
       uni.setStorageSync('agent_channel_code', data.channelCode);
       uni.setStorageSync('agent_user', this.userInfo);

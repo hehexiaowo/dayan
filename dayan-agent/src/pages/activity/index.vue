@@ -62,8 +62,8 @@ const loading = ref(false);
 async function loadList() {
   loading.value = true;
   try {
-    const list = await getActivities();
-    activities.value = Array.isArray(list) ? list : [];
+    const res = await getActivities();
+    activities.value = res?.records || [];
   } catch (e) {
     activities.value = [];
   } finally {

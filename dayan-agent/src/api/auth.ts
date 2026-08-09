@@ -10,6 +10,7 @@ export interface LoginResult {
   tokenName: string;
   agentCode: string;
   channelCode: string;
+  realName?: string;
 }
 
 /** 选渠道：按手机号/openId 检索关联渠道列表 */

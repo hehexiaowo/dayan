@@ -57,8 +57,8 @@ const loading = ref(false);
 async function loadList() {
   loading.value = true;
   try {
-    const list = await getCustomers({ keyword: keyword.value || undefined });
-    customers.value = Array.isArray(list) ? list : [];
+    const res = await getCustomers({ keyword: keyword.value || undefined });
+    customers.value = res?.records || [];
   } catch (e) {
     customers.value = [];
   } finally {
@@ -72,14 +72,9 @@ function onSearch() {
 
 function onCustomerClick(c: Customer) {
   // 详情页本期未实现，toast 占位
-  uni.navigateTo({
-    url: `/pages/customer/detail?id=${encodeURIComponent(c.clientCode)}`,
-    fail: () => {
-      uni.showToast({
-        title: `客户详情：${c.clientName}（开发中）`,
-        icon: 'none',
-      });
-    },
+  uni.showToast({
+    title: `客户详情：${c.clientName}（开发中）`,
+    icon: 'none',
   });
 }
 

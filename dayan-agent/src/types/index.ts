@@ -3,6 +3,22 @@
  * 与后端 Entity 字段对齐（参考设计规格 §2.4）；接口未实现时降级。
  */
 
+/** 通用分页结果（对齐后端 PageResult：records/total/current/size） */
+export interface PageResult<T> {
+  records: T[];
+  total: number;
+  current: number;
+  size: number;
+  pages: number;
+}
+
+/** 通用分页查询参数（后端用 current/size） */
+export interface PageQuery {
+  current?: number;
+  size?: number;
+  keyword?: string;
+}
+
 /** 代理人信息（GET /agent-api/agent/info） */
 export interface Agent {
   /** 代理人编码（登录后由 token 携带的 agentCode） */
@@ -23,7 +39,7 @@ export interface Agent {
 
 /** 通知/待办（GET /agent-api/notifications） */
 export interface AgentNotification {
-  id: string | number;
+  id: string;
   title: string;
   content?: string;
   type?: number;
@@ -40,7 +56,7 @@ export enum LeadStatus {
 
 /** 客户线索（GET /agent-api/leads） */
 export interface Lead {
-  leadId: string | number;
+  leadId: string;
   clientName: string;
   phone?: string;
   /** 1 新 / 2 跟进中 / 3 已转化 */
@@ -67,17 +83,10 @@ export interface Customer {
 
 /** 活动/内容素材（GET /agent-api/activities） */
 export interface Activity {
-  activityId: string | number;
+  activityId: string;
   title: string;
   summary?: string;
   coverImage?: string;
   readCount?: number;
   createdAt?: string;
-}
-
-/** 分页查询基础入参 */
-export interface PageQuery {
-  page?: number;
-  size?: number;
-  keyword?: string;
 }
