@@ -6,7 +6,7 @@
  * - type 字段：foodTypeCode/foodTypeName/mealPlan(1/2/3/4)/dietFeatures/sampleMenu(JSON)/
  *   specialDiet(0/1)/specialDietDescription/description/coverImage
  * - price 字段：与 ParkCarePrice 完全一致（外键换 foodTypeCode）
- * - priceType 选项用 CARE_FOOD_PRICE_TYPE_OPTIONS（1月/2季/3半年/4年，无押金）
+ * - priceType 选项用 BILLING_CYCLE_OPTIONS（统一计费周期）
  *
  * 红线：主键 id；foodTypeCode 用户填写非系统生成，update 不可改；
  * price 展开行用 /list（parkCode+foodTypeCode）；sampleMenu 用 textarea 原文编辑；

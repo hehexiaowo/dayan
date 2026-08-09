@@ -687,16 +687,6 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="居住类型">
-              <el-input-number
-                v-model="typeForm.stayType"
-                :min="0"
-                controls-position="right"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="居住类型">
               <el-select v-model="typeForm.stayType" placeholder="请选择" style="width: 100%">
                 <el-option v-for="o in STAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>

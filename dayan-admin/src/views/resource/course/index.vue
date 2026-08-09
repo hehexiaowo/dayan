@@ -338,6 +338,11 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="24">
+            <el-form-item label="课程视频">
+              <FileUploader v-model="form.videoUrl" type="video" module="course" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
             <el-form-item label="课程简介">
               <el-input
                 v-model="form.courseDescription"

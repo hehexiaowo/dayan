@@ -6,7 +6,7 @@
  * - type 字段：careTypeCode/careTypeName/careLevel(1-5)/careTarget/careItems(JSON)/
  *   careFrequency/nursePatientRatio/assessmentCriteria/description
  * - price 字段：与 ParkRoomPrice 同集，但无 includesItems、无 priceChangeReason
- * - priceType 选项用 CARE_FOOD_PRICE_TYPE_OPTIONS（1月/2季/3半年/4年，无押金）
+ * - priceType 选项用 BILLING_CYCLE_OPTIONS（统一计费周期）
  *
  * 红线：主键 id；careTypeCode 用户填写非系统生成，update 不可改；
  * price 展开行用 /list（parkCode+careTypeCode）；careItems 用 textarea 原文编辑。

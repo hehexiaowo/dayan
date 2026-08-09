@@ -104,7 +104,7 @@ const rules: FormRules<SupplierContract> = {
   supplierCode: [{ required: true, message: '请输入供应商编码', trigger: 'blur' }]
 }
 
-/** attachmentUrls：后端是 string（JSON 数组），FileUploader 多图用 string[] */
+/** attachmentUrls：后端是 string（JSON 数组），FileUploader 多文件用 string[] */
 const attachmentUrlsModel = computed<string[]>({
   get() {
     const raw = form.attachmentUrls
@@ -517,7 +517,7 @@ const isEdit = computed(() => dialogMode.value === 'edit')
           </el-col>
           <el-col :span="24">
             <el-form-item label="附件">
-              <FileUploader v-model="attachmentUrlsModel" type="image" multiple module="supplier" />
+              <FileUploader v-model="attachmentUrlsModel" type="file" multiple module="supplier" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

@@ -23,6 +23,7 @@ import {
   sourceTypeLabel,
   fileSizeLabel
 } from '@/types/park'
+import { SOURCE_TYPE_OPTIONS } from '@/types/park'
 import type { ParkAsset, ParkAssetQuery } from '@/types/park'
 
 const props = defineProps<{
@@ -195,14 +196,7 @@ defineExpose({ loadPage })
       </el-form-item>
       <el-form-item label="来源">
         <el-select v-model="query.sourceType" placeholder="全部" clearable style="width: 140px">
-          <el-option label="素材库" value="media_mgmt" />
-          <el-option label="房型" value="room_type" />
-          <el-option label="餐饮" value="food_type" />
-          <el-option label="设施" value="facility_type" />
-          <el-option label="服务项目" value="service_type" />
-          <el-option label="展示板块" value="display_block" />
-          <el-option label="顾问" value="adviser" />
-          <el-option label="机构信息" value="park_info" />
+          <el-option v-for="o in SOURCE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </el-form-item>
       <el-form-item v-if="assetType === 1" label="封面">

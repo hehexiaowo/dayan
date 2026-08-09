@@ -229,6 +229,15 @@ async function handleOffline(row: ContentInfo) {
 
 async function handleDeleteRow(row: ContentInfo) {
   if (!row.contentCode) return
+  try {
+    await ElMessageBox.confirm(`确定删除内容「${row.title}」吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  } catch {
+    return // 用户取消
+  }
   await deleteContent(row.contentCode)
   ElMessage.success('删除成功')
   loadPage()

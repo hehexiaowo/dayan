@@ -4,18 +4,16 @@
  *
  * 从机构列表页"详情/管理"按钮进入（携带 parkCode 路由参数）。
  * 顶部展示机构主信息摘要 + 返回按钮；下方 el-tabs 按子表维度分 tab，
- * 每个 tab 内是该子表的内联 CRUD（自动携带 parkCode 过滤）。
+ * 每个 tab 内是该子表的内联 CRUD（自动携带 parkCode 过滤），均 lazy 懒加载。
  *
- * tab 划分（对应 P9 计划）：
- * - 基本信息：ParkInfo 主表字段编辑（复用主列表页编辑表单逻辑）+ ParkScore 评分
- * - 服务配置：内层 el-tabs 切 5 子面板——房型（RoomType）/ 照护等级（CareType）/ 餐饮方案（FoodType）
- *   / 设施配置（FacilityType）/ 服务项目（ServiceType），各子面板内联展开行定价（ParkPricing）
- * - 素材库：ParkAsset（单 tab 内 el-tabs 切 4 类型：图片/视频/文件/VR，统一表）
+ * tab 划分（6 个顶层 tab）：
+ * - 基本信息：ParkInfo 主表字段编辑 + ParkScore 评分
+ * - 服务配置：内层 el-tabs 切 5 子面板——房型 / 照护 / 餐饮 / 设施 / 服务项目，
+ *   各子面板内联展开行定价（ParkPricing）
+ * - 素材库：内层 el-tabs 切 4 类型——图片 / 视频 / 文件 / VR（ParkAsset 统一表）
  * - 联系顾问：ParkAdviser
  * - 周边相关：ParkPeriphery
  * - 展示板块：ParkDisplayBlock
- *
- * 注：各 tab 内容均已实现（任务 0 骨架 + 任务 1 前 4 tab + 任务 2 后 4 tab）。
  */
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -99,7 +97,7 @@ const tabs = [
 
     <el-divider />
 
-    <!-- tab 区：9 个子表 tab -->
+    <!-- tab 区：6 个顶层 tab（均 lazy 懒加载） -->
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name" lazy>
         <BasicTab v-if="t.name === 'basic'" :park-code="parkCode" />
