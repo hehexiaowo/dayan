@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
 import { getAgentInfo } from '@/api/agent';
@@ -101,12 +101,15 @@ const menuItems: MenuItem[] = [
 ];
 
 function onMenu(item: MenuItem) {
+  if (item.key === 'settings') {
+    uni.navigateTo({ url: '/pages/profile/settings' });
+    return;
+  }
   const tips: Record<string, string> = {
     stats: '经营数据（Inc 6 上线）',
     equity: '我的权益（Inc 6 上线）',
     orders: '我的订单（Inc 6 上线）',
     shares: '分享记录（Inc 4 上线）',
-    settings: '设置（开发中）',
   };
   uni.showToast({ title: tips[item.key] || '开发中', icon: 'none' });
 }
@@ -119,10 +122,6 @@ async function loadAgentInfo() {
     agentInfo.value = {};
   }
 }
-
-onMounted(() => {
-  loadAgentInfo();
-});
 
 onShow(() => {
   loadAgentInfo();
