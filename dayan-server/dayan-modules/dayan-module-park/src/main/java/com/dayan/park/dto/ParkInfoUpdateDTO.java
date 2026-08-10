@@ -3,6 +3,7 @@ package com.dayan.park.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 机构主信息更新入参（按字段非空更新）。
@@ -28,6 +29,8 @@ public class ParkInfoUpdateDTO {
 
     private Integer abilityType;
     private String abilityTypeDescription;
+    /** 网络标签（vital/care/sojourn 多选） */
+    private List<String> networkTags;
     private Integer natureType;
     private String natureTypeDescription;
     private String specialtyTag;

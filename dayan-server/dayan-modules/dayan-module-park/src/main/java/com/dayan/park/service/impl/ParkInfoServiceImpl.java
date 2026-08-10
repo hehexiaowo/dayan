@@ -22,10 +22,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
+import org.springframework.util.StringUtils;
 
 /**
  * 机构主信息（park_info）服务实现。
@@ -104,6 +106,8 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         entity.setBusinessBd(dto.getBusinessBd());
         entity.setAbilityType(dto.getAbilityType());
         entity.setAbilityTypeDescription(dto.getAbilityTypeDescription());
+        entity.setNetworkTags(
+                dto.getNetworkTags() != null ? String.join(",", dto.getNetworkTags()) : null);
         entity.setNatureType(dto.getNatureType());
         entity.setNatureTypeDescription(dto.getNatureTypeDescription());
         entity.setSpecialtyTag(dto.getSpecialtyTag());
@@ -182,6 +186,8 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         if (dto.getAbilityType() != null) update.setAbilityType(dto.getAbilityType());
         if (dto.getAbilityTypeDescription() != null)
             update.setAbilityTypeDescription(dto.getAbilityTypeDescription());
+        if (dto.getNetworkTags() != null)
+            update.setNetworkTags(String.join(",", dto.getNetworkTags()));
         if (dto.getNatureType() != null) update.setNatureType(dto.getNatureType());
         if (dto.getNatureTypeDescription() != null)
             update.setNatureTypeDescription(dto.getNatureTypeDescription());
@@ -285,6 +291,9 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         if (query.getAbilityType() != null) {
             wrapper.eq(ParkInfo::getAbilityType, query.getAbilityType());
         }
+        if (StringUtils.hasText(query.getNetworkTag())) {
+            wrapper.apply("FIND_IN_SET({0}, network_tags)", query.getNetworkTag());
+        }
         if (query.getNatureType() != null) {
             wrapper.eq(ParkInfo::getNatureType, query.getNatureType());
         }
@@ -367,6 +376,10 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         vo.setBusinessBd(entity.getBusinessBd());
         vo.setAbilityType(entity.getAbilityType());
         vo.setAbilityTypeDescription(entity.getAbilityTypeDescription());
+        vo.setNetworkTags(
+                entity.getNetworkTags() != null
+                        ? Arrays.asList(entity.getNetworkTags().split(","))
+                        : null);
         vo.setNatureType(entity.getNatureType());
         vo.setNatureTypeDescription(entity.getNatureTypeDescription());
         vo.setSpecialtyTag(entity.getSpecialtyTag());

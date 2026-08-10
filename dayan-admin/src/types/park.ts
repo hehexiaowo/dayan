@@ -48,6 +48,13 @@ export const ABILITY_TYPE_OPTIONS = [
   { label: '综合', value: 4 }
 ] as const
 
+/** 网络归属选项（networkTags 字段，多选） */
+export const NETWORK_TAG_OPTIONS = [
+  { label: '活力长居', value: 'vital' },
+  { label: '照护长居', value: 'care' },
+  { label: '旅居养老', value: 'sojourn' }
+] as const
+
 /** 性质类型选项（natureType 字段） */
 export const NATURE_TYPE_OPTIONS = [
   { label: '公办', value: 1 },
@@ -101,6 +108,8 @@ export interface ParkInfo {
   brandLogo?: string
   /** 能力类型：1自理/2半自理/3不能自理/4综合 */
   abilityType?: number
+  /** 网络归属（多选：vital=活力长居/care=照护长居/sojourn=旅居养老） */
+  networkTags?: string[]
   /** 性质类型：1公办/2民办/3公建民营/4合资 */
   natureType?: number
   /** 特色标签 */
@@ -217,6 +226,8 @@ export interface ParkInfoQuery extends PageQuery {
   /** 城市编码（精确匹配） */
   cityCode?: string
   abilityType?: number
+  /** 网络归属筛选（vital/care/sojourn） */
+  networkTag?: string
   natureType?: number
   dayanLevel?: number
   operateStatus?: ParkOperateStatus

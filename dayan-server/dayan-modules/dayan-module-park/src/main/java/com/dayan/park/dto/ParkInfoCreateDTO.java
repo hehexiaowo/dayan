@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 机构主信息创建入参。
@@ -38,6 +39,8 @@ public class ParkInfoCreateDTO {
 
     private Integer abilityType;
     private String abilityTypeDescription;
+    /** 网络标签（vital/care/sojourn 多选） */
+    private List<String> networkTags;
     private Integer natureType;
     private String natureTypeDescription;
     private String specialtyTag;

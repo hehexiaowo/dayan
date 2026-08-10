@@ -14,6 +14,7 @@ import { getScore, updateScore } from '@/api/park-score'
 import {
   DAYAN_LEVEL_OPTIONS,
   ABILITY_TYPE_OPTIONS,
+  NETWORK_TAG_OPTIONS,
   NATURE_TYPE_OPTIONS,
   PARK_OPERATE_STATUS_OPTIONS,
   CONTRACT_PERIOD_OPTIONS,
@@ -121,6 +122,7 @@ const form = reactive<ParkInfo>({
   businessLicenseNo: '',
   businessBd: '',
   abilityType: undefined,
+  networkTags: [],
   natureType: undefined,
   specialtyTag: '',
   dayanLevel: undefined,
@@ -178,6 +180,7 @@ function openEdit() {
     businessLicenseNo: d.businessLicenseNo ?? '',
     businessBd: d.businessBd ?? '',
     abilityType: d.abilityType,
+    networkTags: d.networkTags ?? [],
     natureType: d.natureType,
     specialtyTag: d.specialtyTag ?? '',
     dayanLevel: d.dayanLevel,
@@ -438,6 +441,13 @@ defineExpose({ loadDetail, loadScore })
             <el-form-item label="能力类型">
               <el-select v-model="form.abilityType" placeholder="请选择" clearable style="width: 100%">
                 <el-option v-for="o in ABILITY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="网络归属">
+              <el-select v-model="form.networkTags" multiple placeholder="选择网络" style="width: 100%">
+                <el-option v-for="o in NETWORK_TAG_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>

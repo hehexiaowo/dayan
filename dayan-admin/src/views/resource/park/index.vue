@@ -17,6 +17,7 @@ import {
   PARK_OPERATE_STATUS_OPTIONS,
   DAYAN_LEVEL_OPTIONS,
   ABILITY_TYPE_OPTIONS,
+  NETWORK_TAG_OPTIONS,
   NATURE_TYPE_OPTIONS
 } from '@/types/park'
 import RegionSelect from '@/components/RegionSelect.vue'
@@ -65,6 +66,7 @@ const form = reactive<ParkInfo>({
   supplierCode: '',
   brand: '',
   abilityType: undefined,
+  networkTags: [],
   natureType: undefined,
   dayanLevel: undefined,
   provinceCode: '',
@@ -126,6 +128,7 @@ async function openEdit(row: ParkInfo) {
       supplierCode: detail.supplierCode ?? '',
       brand: detail.brand ?? '',
       abilityType: detail.abilityType,
+      networkTags: detail.networkTags ?? [],
       natureType: detail.natureType,
       dayanLevel: detail.dayanLevel,
       provinceCode: detail.provinceCode ?? '',
@@ -148,6 +151,7 @@ async function openEdit(row: ParkInfo) {
       supplierCode: row.supplierCode ?? '',
       brand: row.brand ?? '',
       abilityType: row.abilityType,
+      networkTags: row.networkTags ?? [],
       natureType: row.natureType,
       dayanLevel: row.dayanLevel,
       provinceCode: row.provinceCode ?? '',
@@ -434,6 +438,13 @@ loadPage()
             <el-form-item label="能力类型">
               <el-select v-model="form.abilityType" placeholder="请选择" clearable style="width: 100%">
                 <el-option v-for="o in ABILITY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="网络归属">
+              <el-select v-model="form.networkTags" multiple placeholder="选择网络" style="width: 100%">
+                <el-option v-for="o in NETWORK_TAG_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>

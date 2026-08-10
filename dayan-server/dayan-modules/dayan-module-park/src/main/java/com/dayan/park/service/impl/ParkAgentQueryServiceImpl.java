@@ -69,54 +69,46 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
     private final ParkScoreMapper parkScoreMapper;
     private final ParkDisplayBlockMapper parkDisplayBlockMapper;
 
-    /** 活力长居：CCRC */
-    private static final List<Integer> VITAL_TYPES = List.of(1);
-    /** 照护长居：养老院/CB/认知症/NH */
-    private static final List<Integer> CARE_TYPES = List.of(2, 3, 4, 7);
     /** 直辖市 provinceCode（跳过 city 层，面包屑不输出城市段） */
     private static final List<String> MUNICIPALITY_CODES = List.of("110000", "120000", "310000", "500000");
 
     @Override
     public List<CategoryCountVO> countByCategory() {
-        Integer vitalCount = countByAbilityTypes(VITAL_TYPES);
-        Integer careCount = countByAbilityTypes(CARE_TYPES);
-        // sojourn 走独立查询路径（基于 park_room_type.stay_type=2 联表）
-        Integer sojournCount = parkInfoMapper.selectProvinceListForSojourn().stream()
+        return List.of(
+                countForTag("vital", "活力长居"),
+                countForTag("care", "照护长居"),
+                countForTag("sojourn", "旅居养老")
+        );
+    }
+
+    /** 按网络标签统计机构总数（复用 province 聚合求和，避免多写 count SQL） */
+    private CategoryCountVO countForTag(String tag, String name) {
+        Integer count = parkInfoMapper.selectProvinceList(tag).stream()
                 .mapToInt(RegionItem::getCount)
                 .sum();
-
-        return List.of(
-                new CategoryCountVO("vital", "活力长居", vitalCount, true),
-                new CategoryCountVO("care", "照护长居", careCount, true),
-                new CategoryCountVO("sojourn", "旅居养老", sojournCount, true)
-        );
+        return new CategoryCountVO(tag, name, count, true);
     }
 
     @Override
     public RegionDrillResult drillRegion(RegionQueryDTO query) {
-        // sojourn 走独立查询路径（基于 stay_type 联表，不走 ability_type）
-        if ("sojourn".equals(query.getCategory())) {
-            return drillRegionForSojourn(query);
-        }
-
-        List<Integer> abilityTypes = resolveAbilityTypes(query.getCategory());
+        String networkTag = query.getCategory(); // vital / care / sojourn 直接作为 network_tags 过滤值
         RegionDrillResult result = new RegionDrillResult();
         result.setLevel(query.getLevel());
 
         switch (query.getLevel()) {
             case "province" -> {
-                List<RegionItem> provinces = parkInfoMapper.selectProvinceList(abilityTypes);
+                List<RegionItem> provinces = parkInfoMapper.selectProvinceList(networkTag);
                 result.setItems(provinces);
                 result.setBreadcrumb(categoryName(query.getCategory()));
             }
             case "city" -> {
-                List<RegionItem> cities = parkInfoMapper.selectCityList(abilityTypes, query.getProvinceCode());
+                List<RegionItem> cities = parkInfoMapper.selectCityList(networkTag, query.getProvinceCode());
                 result.setItems(cities);
                 result.setBreadcrumb(categoryName(query.getCategory()) + " / " + provinceName(query.getProvinceCode(), cities));
             }
             case "district" -> {
                 List<RegionItem> districts = parkInfoMapper.selectDistrictList(
-                        abilityTypes, query.getProvinceCode(), query.getCityCode());
+                        networkTag, query.getProvinceCode(), query.getCityCode());
                 result.setItems(districts);
                 // 直辖市跳过 city 层面包屑（北京 / 北京市 冗余）
                 String crumb = categoryName(query.getCategory())
@@ -128,7 +120,7 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
             }
             case "park" -> {
                 List<ParkCardVO> parks = parkInfoMapper.selectParkCardList(
-                        abilityTypes, query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
+                        networkTag, query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
                 result.setParkList(parks);
                 String crumb = categoryName(query.getCategory())
                         + " / " + extractProvinceName(query.getProvinceCode());
@@ -141,65 +133,9 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
             default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的层级: " + query.getLevel());
         }
 
-        // 地图中心点：范围内机构坐标 AVG（sojourn 无数据时跳过，前端用省级表兜底）
-        if (!abilityTypes.isEmpty()) {
-            RegionCenterVO center = parkInfoMapper.selectRegionCenter(
-                    abilityTypes, query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
-            if (center != null) {
-                result.setCenterLng(center.getCenterLng());
-                result.setCenterLat(center.getCenterLat());
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * sojourn 独立下钻路径：基于 park_room_type.stay_type=2 联表查询，不走 ability_type。
-     * 结构与 drillRegion 一致（4 个 level 分支 + 面包屑 + 中心点）。
-     */
-    private RegionDrillResult drillRegionForSojourn(RegionQueryDTO query) {
-        RegionDrillResult result = new RegionDrillResult();
-        result.setLevel(query.getLevel());
-
-        switch (query.getLevel()) {
-            case "province" -> {
-                List<RegionItem> provinces = parkInfoMapper.selectProvinceListForSojourn();
-                result.setItems(provinces);
-                result.setBreadcrumb("旅居养老");
-            }
-            case "city" -> {
-                List<RegionItem> cities = parkInfoMapper.selectCityListForSojourn(query.getProvinceCode());
-                result.setItems(cities);
-                result.setBreadcrumb("旅居养老 / " + extractProvinceName(query.getProvinceCode()));
-            }
-            case "district" -> {
-                List<RegionItem> districts = parkInfoMapper.selectDistrictListForSojourn(
-                        query.getProvinceCode(), query.getCityCode());
-                result.setItems(districts);
-                String crumb = "旅居养老 / " + extractProvinceName(query.getProvinceCode());
-                if (!MUNICIPALITY_CODES.contains(query.getProvinceCode())) {
-                    crumb += " / " + extractCityName(query.getCityCode(), districts);
-                }
-                result.setBreadcrumb(crumb);
-            }
-            case "park" -> {
-                List<ParkCardVO> parks = parkInfoMapper.selectParkCardListForSojourn(
-                        query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
-                result.setParkList(parks);
-                String crumb = "旅居养老 / " + extractProvinceName(query.getProvinceCode());
-                if (!MUNICIPALITY_CODES.contains(query.getProvinceCode())) {
-                    crumb += " / " + extractCityName(query.getCityCode(), null);
-                }
-                crumb += " / " + extractDistrictName(query.getDistrictCode(), parks);
-                result.setBreadcrumb(crumb);
-            }
-            default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的层级: " + query.getLevel());
-        }
-
-        // 地图中心点
-        RegionCenterVO center = parkInfoMapper.selectRegionCenterForSojourn(
-                query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
+        // 地图中心点：范围内机构坐标 AVG
+        RegionCenterVO center = parkInfoMapper.selectRegionCenter(
+                networkTag, query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
         if (center != null) {
             result.setCenterLng(center.getCenterLng());
             result.setCenterLat(center.getCenterLat());
@@ -296,23 +232,6 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
     }
 
     // ===== 内部方法 =====
-
-    private Integer countByAbilityTypes(List<Integer> abilityTypes) {
-        // 复用 province 聚合查询的 count 求和（避免多写一个 count SQL）
-        return parkInfoMapper.selectProvinceList(abilityTypes).stream()
-                .mapToInt(RegionItem::getCount)
-                .sum();
-    }
-
-    private List<Integer> resolveAbilityTypes(String category) {
-        return switch (category) {
-            case "vital" -> VITAL_TYPES;
-            case "care" -> CARE_TYPES;
-            case "sojourn" -> throw new BusinessException(ErrorCode.PARAM_ERROR,
-                    "sojourn 走独立查询路径，不应到达 resolveAbilityTypes");
-            default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的分类: " + category);
-        };
-    }
 
     private String categoryName(String category) {
         return switch (category) {

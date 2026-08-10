@@ -17,6 +17,8 @@ public class ParkInfoQueryDTO {
     /** 城市编码（精确匹配） */
     private String cityCode;
     private Integer abilityType;
+    /** 网络标签筛选（vital/care/sojourn） */
+    private String networkTag;
     private Integer natureType;
     private Integer dayanLevel;
     /** 运营状态：0=待审核 / 1=已上线 / 2=已下架 / 3=暂停营业 */
