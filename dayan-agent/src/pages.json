@@ -5,7 +5,19 @@
     { "path": "pages/business/index", "style": { "navigationBarTitleText": "展业" } },
     { "path": "pages/learning/index", "style": { "navigationBarTitleText": "学习" } },
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务", "enablePullDownRefresh": true } },
-    { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } }
+    { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } },
+    {
+      "path": "pages/business/park/categories",
+      "style": { "navigationBarTitleText": "找机构" }
+    },
+    {
+      "path": "pages/business/park/region",
+      "style": { "navigationBarTitleText": "机构查询" }
+    },
+    {
+      "path": "pages/business/park/detail",
+      "style": { "navigationBarTitleText": "机构详情" }
+    }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "white",

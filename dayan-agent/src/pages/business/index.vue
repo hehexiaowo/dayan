@@ -12,7 +12,6 @@
         <view class="card-title">找机构</view>
         <view class="card-desc">旅居养老 / 活力长居 / 照护长居</view>
       </view>
-      <view class="card-tag">即将上线</view>
     </view>
 
     <!-- 大雁商城 -->
@@ -39,8 +38,11 @@
 
 <script setup lang="ts">
 function onSection(type: string) {
+  if (type === 'park') {
+    uni.navigateTo({ url: '/pages/business/park/categories' });
+    return;
+  }
   const tips: Record<string, string> = {
-    park: '找机构（Inc 1 上线）',
     mall: '大雁商城（Inc 2 上线）',
     activity: '场景活动（Inc 3 上线）',
   };
