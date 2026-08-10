@@ -10,6 +10,7 @@
           confirm-type="search"
           @confirm="onSearch"
         />
+        <text v-if="keyword" class="search-clear" @click="keyword = ''; onSearch()">×</text>
         <view class="btn-search dy-clickable" @click="onSearch">搜索</view>
       </view>
     </view>
@@ -22,6 +23,16 @@
         <DySkeleton :rows="2" card />
         <DySkeleton :rows="2" card />
       </template>
+
+      <!-- 加载错误态 -->
+      <DyEmpty
+        v-else-if="loadError"
+        text="加载失败，请检查网络后重试"
+        icon="!"
+        color="gray"
+        action-text="重新加载"
+        @action="loadList"
+      />
 
       <!-- 空状态 -->
       <DyEmpty
@@ -59,21 +70,24 @@
 import { ref, onMounted } from 'vue';
 import { onPullDownRefresh } from '@dcloudio/uni-app';
 import { getCustomers } from '@/api/customer';
-import type { Customer, ClientType } from '@/types';
+import type { Customer } from '@/types';
+import { ClientType } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const keyword = ref('');
 const customers = ref<Customer[]>([]);
 const loading = ref(false);
+const loadError = ref(false);
 
 async function loadList() {
   loading.value = true;
+  loadError.value = false;
   try {
     const res = await getCustomers({ keyword: keyword.value || undefined });
     customers.value = res?.records || [];
   } catch (e) {
-    customers.value = [];
+    loadError.value = true;
   } finally {
     loading.value = false;
   }
@@ -167,11 +181,16 @@ onPullDownRefresh(async () => {
 }
 .search-input {
   flex: 1;
-  border: 1px solid $border-base;
+  border: 1rpx solid $border-base;
   border-radius: $radius-sm;
   padding: 16rpx 20rpx;
   font-size: 28rpx;
   background: $bg-page;
+}
+.search-clear {
+  padding: 0 16rpx;
+  font-size: 36rpx;
+  color: $text-placeholder;
 }
 .btn-search {
   margin-left: $spacing-sm;

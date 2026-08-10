@@ -10,6 +10,7 @@ import com.dayan.park.service.ParkAgentQueryService;
 import com.dayan.park.vo.CategoryCountVO;
 import com.dayan.park.vo.ParkCardVO;
 import com.dayan.park.vo.ParkInfoVO;
+import com.dayan.park.vo.RegionCenterVO;
 import com.dayan.park.vo.RegionDrillResult;
 import com.dayan.park.vo.RegionItem;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +82,16 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
                         + " / " + extractDistrictName(query.getDistrictCode(), parks));
             }
             default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的层级: " + query.getLevel());
+        }
+
+        // 地图中心点：范围内机构坐标 AVG（sojourn 无数据时跳过，前端用省级表兜底）
+        if (!abilityTypes.isEmpty()) {
+            RegionCenterVO center = parkInfoMapper.selectRegionCenter(
+                    abilityTypes, query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
+            if (center != null) {
+                result.setCenterLng(center.getCenterLng());
+                result.setCenterLat(center.getCenterLat());
+            }
         }
 
         return result;

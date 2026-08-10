@@ -24,4 +24,10 @@ public class RegionDrillResult {
 
     /** 机构卡片清单（level == park 时有值） */
     private List<ParkCardVO> parkList;
+
+    /** 当前层级地图中心点经度（范围内机构 AVG，无坐标数据时为 null） */
+    private Double centerLng;
+
+    /** 当前层级地图中心点纬度 */
+    private Double centerLat;
 }

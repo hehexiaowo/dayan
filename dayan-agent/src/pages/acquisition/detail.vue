@@ -125,6 +125,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getLeadDetail, updateLead, deleteLead } from '@/api/lead';
 import { LeadStatus } from '@/types';
 import type { Lead } from '@/types';
+import { statusText, statusClass, avatarColor, genderText, intentionText, intentionClass, sourceText, formatTime } from '@/utils/lead';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -176,17 +177,36 @@ function onChangeStatus() {
     success: async (res) => {
       const chosen = items[res.tapIndex];
       if (!chosen) return;
-      try {
-        await updateLead(leadId!, { leadStatus: chosen.value });
-        uni.showToast({ title: '已更新', icon: 'success' });
-        // 本地立即更新，无需整页重载
-        lead.value!.leadStatus = chosen.value;
-        // 状态变跟进中时后端更新了 lastFollowTime，重新拉取以同步
-        if (chosen.value === LeadStatus.FOLLOWING) {
-          await loadDetail();
+      // 终态（已转化/已流失）需二次确认，防止误触
+      const needConfirm = chosen.value === LeadStatus.CONVERTED || chosen.value === LeadStatus.LOST;
+      const doUpdate = async () => {
+        try {
+          await updateLead(leadId!, { leadStatus: chosen.value });
+          uni.showToast({ title: '已更新', icon: 'success' });
+          // 本地立即更新，无需整页重载
+          lead.value!.leadStatus = chosen.value;
+          // 状态变跟进中时后端更新了 lastFollowTime，重新拉取以同步
+          if (chosen.value === LeadStatus.FOLLOWING) {
+            await loadDetail();
+          }
+        } catch {
+          // 错误已由 request 拦截器提示
         }
-      } catch {
-        // 错误已由 request 拦截器提示
+      };
+      if (needConfirm) {
+        uni.showModal({
+          title: chosen.value === LeadStatus.CONVERTED ? '确认转化' : '确认流失',
+          content:
+            chosen.value === LeadStatus.CONVERTED
+              ? '确认将此线索标记为已转化？'
+              : '确认放弃此线索？标记后不可撤销。',
+          confirmColor: chosen.value === LeadStatus.LOST ? '#fa3534' : '#409eff',
+          success: (r) => {
+            if (r.confirm) doUpdate();
+          },
+        });
+      } else {
+        doUpdate();
       }
     },
   });
@@ -209,131 +229,6 @@ function onDelete() {
       }
     },
   });
-}
-
-function statusText(s?: LeadStatus | number): string {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return '新线索';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return '跟进中';
-    case LeadStatus.INTENDED:
-    case 3:
-      return '意向';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return '已转化';
-    case LeadStatus.LOST:
-    case 5:
-      return '已流失';
-    default:
-      return '未知';
-  }
-}
-
-function statusClass(s?: LeadStatus | number): string {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return 'st-new';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return 'st-following';
-    case LeadStatus.INTENDED:
-    case 3:
-      return 'st-intended';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return 'st-converted';
-    case LeadStatus.LOST:
-    case 5:
-      return 'st-lost';
-    default:
-      return '';
-  }
-}
-
-function avatarColor(s?: LeadStatus | number): 'blue' | 'green' | 'orange' | 'red' | 'gray' {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return 'blue';
-    case LeadStatus.FOLLOWING:
-    case 2:
-    case LeadStatus.INTENDED:
-    case 3:
-      return 'orange';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return 'green';
-    case LeadStatus.LOST:
-    case 5:
-      return 'gray';
-    default:
-      return 'blue';
-  }
-}
-
-function genderText(g?: number): string {
-  switch (g) {
-    case 1:
-      return '男';
-    case 2:
-      return '女';
-    default:
-      return '未知';
-  }
-}
-
-function intentionText(level?: number): string {
-  switch (level) {
-    case 3:
-      return '高';
-    case 2:
-      return '中';
-    case 1:
-      return '低';
-    default:
-      return '-';
-  }
-}
-
-function intentionClass(level?: number): string {
-  switch (level) {
-    case 3:
-      return 'it-high';
-    case 2:
-      return 'it-mid';
-    case 1:
-      return 'it-low';
-    default:
-      return '';
-  }
-}
-
-function sourceText(s?: number): string {
-  switch (s) {
-    case 1:
-      return '手工录入';
-    case 2:
-      return '分享扫码';
-    case 3:
-      return '活动接触';
-    case 4:
-      return '转介绍';
-    case 5:
-      return '内容引流';
-    default:
-      return '未知';
-  }
-}
-
-function formatTime(t?: string): string {
-  if (!t) return '-';
-  // 后端返回 ISO 格式，截取到分钟
-  return t.replace('T', ' ').slice(0, 16);
 }
 
 onLoad((options: any) => {
@@ -418,7 +313,10 @@ onShow(() => {
 .btn-call {
   background: rgba(255, 255, 255, 0.2);
   border-radius: $radius-sm;
-  padding: 4rpx 20rpx;
+  padding: 12rpx 28rpx;
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
 }
 .btn-call-text {
   font-size: 24rpx;

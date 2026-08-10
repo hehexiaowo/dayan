@@ -30,7 +30,7 @@
             class="form-input"
             placeholder="请输入11位手机号"
             placeholder-class="input-placeholder"
-            type="number"
+            inputmode="numeric"
             maxlength="11"
           />
         </view>

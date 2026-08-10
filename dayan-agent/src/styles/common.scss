@@ -34,6 +34,7 @@
 
 // ===== 点击反馈 =====
 .dy-clickable {
+  cursor: pointer;
   transition: transform $transition-fast, box-shadow $transition-fast;
 
   &:active {

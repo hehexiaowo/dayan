@@ -14,6 +14,7 @@
             confirm-type="search"
             @confirm="onSearch"
           />
+          <text v-if="keyword" class="search-clear" @click="keyword = ''">×</text>
         </view>
         <button class="btn-search" size="mini" @click="onSearch">搜索</button>
       </view>
@@ -74,13 +75,23 @@
           <DySkeleton v-for="i in 3" :key="i" :rows="2" avatar />
         </template>
 
+        <!-- 加载错误态 -->
+        <DyEmpty
+          v-else-if="loadError"
+          text="加载失败，请检查网络后重试"
+          icon="!"
+          color="gray"
+          action-text="重新加载"
+          @action="loadList"
+        />
+
         <!-- 空状态 -->
         <DyEmpty
           v-else-if="!filteredLeads.length"
           :text="emptyText"
           icon="线"
           color="blue"
-          :action-text="activeStatus === null ? '新增线索' : ''"
+          :action-text="activeStatus === null && !keyword ? '新增线索' : ''"
           @action="onAdd"
         />
 
@@ -108,8 +119,8 @@
                 </view>
               </view>
               <view class="card-row-bottom">
-                <text class="card-phone">{{ formatPhone(lead.phone) }}</text>
-                <text v-if="lead.createdAt" class="card-time">{{ lead.createdAt }}</text>
+                <text class="card-phone">手机：{{ lead.phone || '-' }}</text>
+                <text v-if="lead.createdAt" class="card-time">{{ formatTime(lead.createdAt, true) }}</text>
               </view>
             </view>
           </view>
@@ -125,11 +136,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app';
 import { getLeads } from '@/api/lead';
 import { LeadStatus } from '@/types';
 import type { Lead } from '@/types';
+import { statusText, statusClass, avatarColor, formatTime } from '@/utils/lead';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -137,6 +149,7 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 const keyword = ref('');
 const leads = ref<Lead[]>([]);
 const loading = ref(false);
+const loadError = ref(false);
 
 /** 当前选中的状态筛选，null = 全部 */
 const activeStatus = ref<LeadStatus | null>(null);
@@ -151,10 +164,13 @@ const statusTabs = computed(() => [
   { label: '已流失', value: LeadStatus.LOST, count: countByStatus(LeadStatus.LOST) },
 ]);
 
-/** 按当前 Tab 过滤的线索列表 */
+/** 按当前 Tab + 关键字过滤的线索列表 */
 const filteredLeads = computed(() => {
-  if (activeStatus.value === null) return leads.value;
-  return leads.value.filter((l) => l.leadStatus === activeStatus.value);
+  const kw = keyword.value.trim();
+  let list = leads.value;
+  if (activeStatus.value !== null) list = list.filter((l) => l.leadStatus === activeStatus.value);
+  if (kw) list = list.filter((l) => (l.name || '').includes(kw) || (l.phone || '').includes(kw));
+  return list;
 });
 
 /** 空状态文案 */
@@ -169,15 +185,15 @@ function countByStatus(status: LeadStatus): number {
 
 async function loadList() {
   loading.value = true;
+  loadError.value = false;
   try {
-    // 一次性加载全部线索（不分状态），状态 Tab 切换纯客户端筛选 + 计数
+    // 一次性加载全部线索（不分状态、不带关键字），筛选 + 搜索均走客户端
     const res = await getLeads({
-      keyword: keyword.value || undefined,
       size: 999,
     });
     leads.value = res?.records || [];
   } catch (e) {
-    leads.value = [];
+    loadError.value = true;
   } finally {
     loading.value = false;
   }
@@ -203,87 +219,9 @@ function onLeadClick(lead: Lead) {
   uni.navigateTo({ url: '/pages/acquisition/detail?id=' + lead.id });
 }
 
-function statusText(s?: LeadStatus | number): string {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return '新线索';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return '跟进中';
-    case LeadStatus.INTENDED:
-    case 3:
-      return '意向';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return '已转化';
-    case LeadStatus.LOST:
-    case 5:
-      return '已流失';
-    default:
-      return '未知';
-  }
-}
-
-function statusClass(s?: LeadStatus | number): string {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return 'st-new';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return 'st-following';
-    case LeadStatus.INTENDED:
-    case 3:
-      return 'st-intended';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return 'st-converted';
-    case LeadStatus.LOST:
-    case 5:
-      return 'st-lost';
-    default:
-      return '';
-  }
-}
-
-/** 根据线索状态返回头像色块颜色 */
-function avatarColor(s?: LeadStatus | number): 'blue' | 'green' | 'orange' | 'red' | 'gray' {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return 'blue';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return 'orange';
-    case LeadStatus.INTENDED:
-    case 3:
-      return 'orange';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return 'green';
-    case LeadStatus.LOST:
-    case 5:
-      return 'gray';
-    default:
-      return 'blue';
-  }
-}
-
-function formatPhone(phone?: string): string {
-  if (!phone) return '手机：-';
-  return `手机：${phone}`;
-}
-
-onMounted(() => {
-  loadList();
-});
-
-// 从详情/表单页返回时刷新列表（状态变更、新增、删除后同步）
+// 每次进入/返回页面统一刷新（首次加载、状态变更、新增、删除后同步）
 onShow(() => {
-  if (leads.value.length > 0) {
-    loadList();
-  }
+  loadList();
 });
 
 onPullDownRefresh(async () => {
@@ -342,6 +280,16 @@ onPullDownRefresh(async () => {
 }
 .search-placeholder {
   color: $text-placeholder;
+}
+.search-clear {
+  position: absolute;
+  right: 20rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 36rpx;
+  color: $text-placeholder;
+  padding: 0 12rpx;
+  z-index: 1;
 }
 .btn-search {
   background: #fff;
@@ -537,8 +485,8 @@ onPullDownRefresh(async () => {
   color: $brand-success;
 }
 .st-intended {
-  background: #fdf6ec;
-  color: #e6a23c;
+  background: $brand-error-light;
+  color: $brand-error;
 }
 .st-lost {
   background: $brand-info-light;

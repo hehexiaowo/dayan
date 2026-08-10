@@ -26,7 +26,7 @@
         class="btn btn-outline"
         :class="{ 'is-disabled': loadingChannels }"
         :disabled="loadingChannels"
-        @click="loadChannels"
+        @click="onManualQuery"
       >
         <text v-if="loadingChannels">查询中...</text>
         <text v-else>查询关联渠道</text>
@@ -54,13 +54,17 @@
 
       <view class="form-item">
         <text class="form-label">密码</text>
-        <input
-          v-model="password"
-          password
-          placeholder="请输入密码"
-          placeholder-class="input-placeholder"
-          class="form-input"
-        />
+        <view class="pwd-wrap">
+          <input
+            v-model="password"
+            :password="!showPwd"
+            placeholder="请输入密码"
+            placeholder-class="input-placeholder"
+            class="form-input"
+            style="padding-right: 120rpx"
+          />
+          <text class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
+        </view>
       </view>
 
       <button
@@ -82,26 +86,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import type { ChannelOption } from '@/api/auth';
 
 const userStore = useUserStore();
 const mobile = ref('');
 const password = ref('');
+const showPwd = ref(false);
 const channels = ref<ChannelOption[]>([]);
 const selectedChannel = ref('');
 const loadingChannels = ref(false);
 const submitting = ref(false);
+
+let channelTimer: ReturnType<typeof setTimeout> | null = null;
+let channelSeq = 0;
+watch(mobile, (val) => {
+  channelSeq++;
+  loadingChannels.value = false; // 改号使旧响应失效，同时复位加载态防按钮卡禁用
+  channels.value = [];
+  selectedChannel.value = '';
+  if (channelTimer) clearTimeout(channelTimer);
+  if (/^1\d{10}$/.test(val)) {
+    channelTimer = setTimeout(() => loadChannels(), 500);
+  }
+});
+
+onUnmounted(() => {
+  if (channelTimer) clearTimeout(channelTimer);
+});
+
+onMounted(() => {
+  mobile.value = uni.getStorageSync('agent_remember_mobile') || '';
+});
 
 async function loadChannels() {
   if (!mobile.value) {
     uni.showToast({ title: '请输入手机号', icon: 'none' });
     return;
   }
+  // 序号守卫：改号/重复触发时，旧响应落地即丢弃
+  const seq = ++channelSeq;
   loadingChannels.value = true;
   try {
-    channels.value = await userStore.getChannels(mobile.value);
+    const result = await userStore.getChannels(mobile.value);
+    if (seq !== channelSeq) return;
+    channels.value = result;
     if (channels.value.length === 1) {
       selectedChannel.value = channels.value[0].channelCode;
     }
@@ -111,8 +141,13 @@ async function loadChannels() {
   } catch (e) {
     // 错误已由 request 拦截器提示
   } finally {
-    loadingChannels.value = false;
+    if (seq === channelSeq) loadingChannels.value = false;
   }
+}
+
+function onManualQuery() {
+  if (channelTimer) clearTimeout(channelTimer);
+  loadChannels();
 }
 
 async function handleLogin() {
@@ -131,6 +166,7 @@ async function handleLogin() {
       identifier: mobile.value,
       password: password.value,
     });
+    uni.setStorageSync('agent_remember_mobile', mobile.value);
     uni.showToast({ title: '登录成功', icon: 'success' });
     setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
   } catch (e) {
@@ -216,6 +252,20 @@ async function handleLogin() {
 .input-placeholder {
   color: $text-placeholder;
   font-size: 28rpx;
+}
+
+.pwd-wrap {
+  position: relative;
+}
+
+.pwd-toggle {
+  position: absolute;
+  right: 24rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 26rpx;
+  color: $brand-primary;
+  padding: 8rpx;
 }
 
 /* 按钮 */
