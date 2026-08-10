@@ -33,7 +33,7 @@
         </view>
         <view v-if="park.openingTime" class="info-row">
           <text class="info-label">开业</text>
-          <text class="info-value">{{ park.openingTime }}</text>
+          <text class="info-value">{{ formatDate(park.openingTime) }}</text>
         </view>
       </view>
 
@@ -136,6 +136,12 @@ const loading = ref(true);
 
 function formatAddress(p: ParkDetail): string {
   return [p.province, p.city, p.district, p.address].filter(Boolean).join(' ');
+}
+
+/** 将后端 LocalDateTime（如 "2018-01-01T00:00:00"）格式化为 yyyy-MM-dd */
+function formatDate(t?: string): string {
+  if (!t) return '-';
+  return t.substring(0, 10);
 }
 
 function onCall() {
