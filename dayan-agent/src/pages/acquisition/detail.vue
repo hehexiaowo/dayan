@@ -314,6 +314,9 @@ onShow(() => {
   background: rgba(255, 255, 255, 0.2);
   border-radius: $radius-sm;
   padding: 12rpx 28rpx;
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
 }
 .btn-call-text {
   font-size: 24rpx;
