@@ -80,7 +80,7 @@ async function handleLogin() {
       password: password.value,
     });
     uni.showToast({ title: '登录成功', icon: 'success' });
-    setTimeout(() => uni.reLaunch({ url: '/pages/home/index' }), 500);
+    setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
   } catch (e) {
     // 错误已提示
   } finally {
