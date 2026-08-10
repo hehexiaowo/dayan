@@ -1,15 +1,21 @@
 package com.dayan.agent.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
  * 代理人线索 VO（Agent 端）。
+ *
+ * <p>注意：id 为雪花 ID（19 位），超过 JS 安全整数范围（2^53-1），
+ * 使用 {@link ToStringSerializer} 序列化为字符串，防止前端精度丢失。
  */
 @Data
 public class AgentLeadVO {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     private String leadCode;
     private String agentCode;

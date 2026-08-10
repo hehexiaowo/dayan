@@ -51,6 +51,16 @@ export function getLeads(query?: LeadQuery): Promise<PageResult<Lead>> {
 }
 
 /**
+ * 线索详情（GET /agent-api/leads/{leadId}）。
+ */
+export function getLeadDetail(leadId: string): Promise<Lead> {
+  return request<Lead>({
+    url: `/leads/${leadId}`,
+    method: 'GET',
+  });
+}
+
+/**
  * 新增线索（POST /agent-api/leads）。
  */
 export function createLead(data: LeadCreateData): Promise<number> {
@@ -64,10 +74,20 @@ export function createLead(data: LeadCreateData): Promise<number> {
 /**
  * 更新线索（PUT /agent-api/leads/{leadId}）。
  */
-export function updateLead(leadId: number, data: LeadUpdateData): Promise<void> {
+export function updateLead(leadId: string, data: LeadUpdateData): Promise<void> {
   return request<void>({
     url: `/leads/${leadId}`,
     method: 'PUT',
     data,
+  });
+}
+
+/**
+ * 删除线索（DELETE /agent-api/leads/{leadId}）。
+ */
+export function deleteLead(leadId: string): Promise<void> {
+  return request<void>({
+    url: `/leads/${leadId}`,
+    method: 'DELETE',
   });
 }

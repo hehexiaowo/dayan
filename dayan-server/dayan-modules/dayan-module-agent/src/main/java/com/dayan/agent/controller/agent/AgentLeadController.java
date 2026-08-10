@@ -34,6 +34,12 @@ public class AgentLeadController {
         return R.ok(agentLeadService.page(query));
     }
 
+    @Operation(summary = "线索详情")
+    @GetMapping("/{leadId}")
+    public R<AgentLeadVO> detail(@PathVariable Long leadId) {
+        return R.ok(agentLeadService.detail(leadId));
+    }
+
     @Operation(summary = "新增线索")
     @OperationLog(module = "线索", action = "新增")
     @PostMapping
@@ -47,6 +53,14 @@ public class AgentLeadController {
     public R<Void> update(@PathVariable Long leadId,
                           @RequestBody AgentLeadUpdateDTO dto) {
         agentLeadService.update(leadId, dto);
+        return R.ok();
+    }
+
+    @Operation(summary = "删除线索")
+    @OperationLog(module = "线索", action = "删除")
+    @DeleteMapping("/{leadId}")
+    public R<Void> delete(@PathVariable Long leadId) {
+        agentLeadService.delete(leadId);
         return R.ok();
     }
 }

@@ -25,4 +25,14 @@ public interface AgentLeadService {
      * 更新线索（含状态变更）。
      */
     void update(Long leadId, AgentLeadUpdateDTO dto);
+
+    /**
+     * 查询单条线索详情（含归属校验）。
+     */
+    AgentLeadVO detail(Long leadId);
+
+    /**
+     * 删除线索（软删除）。
+     */
+    void delete(Long leadId);
 }

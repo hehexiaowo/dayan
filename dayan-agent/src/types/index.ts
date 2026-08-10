@@ -58,7 +58,8 @@ export enum LeadStatus {
 
 /** 客户线索（GET /agent-api/leads） */
 export interface Lead {
-  id: number;
+  /** 雪花ID（后端序列化为字符串，防止 JS 精度丢失） */
+  id: string;
   leadCode?: string;
   agentCode?: string;
   channelCode?: string;

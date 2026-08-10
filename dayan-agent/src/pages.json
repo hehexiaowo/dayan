@@ -2,6 +2,8 @@
   "pages": [
     { "path": "pages/login/index", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
     { "path": "pages/acquisition/index", "style": { "navigationBarTitleText": "获客", "enablePullDownRefresh": true } },
+    { "path": "pages/acquisition/detail", "style": { "navigationBarTitleText": "线索详情" } },
+    { "path": "pages/acquisition/form", "style": { "navigationBarTitleText": "线索" } },
     { "path": "pages/business/index", "style": { "navigationBarTitleText": "展业" } },
     { "path": "pages/learning/index", "style": { "navigationBarTitleText": "学习" } },
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务", "enablePullDownRefresh": true } },

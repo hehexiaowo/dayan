@@ -125,9 +125,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { onPullDownRefresh } from '@dcloudio/uni-app';
-import { getLeads, createLead } from '@/api/lead';
+import { ref, computed, onMounted } from 'vue';
+import { onPullDownRefresh, onShow } from '@dcloudio/uni-app';
+import { getLeads } from '@/api/lead';
 import { LeadStatus } from '@/types';
 import type { Lead } from '@/types';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
@@ -170,9 +170,10 @@ function countByStatus(status: LeadStatus): number {
 async function loadList() {
   loading.value = true;
   try {
+    // 一次性加载全部线索（不分状态），状态 Tab 切换纯客户端筛选 + 计数
     const res = await getLeads({
       keyword: keyword.value || undefined,
-      leadStatus: activeStatus.value ?? undefined,
+      size: 999,
     });
     leads.value = res?.records || [];
   } catch (e) {
@@ -182,43 +183,12 @@ async function loadList() {
   }
 }
 
-/** Tab 切换时重新加载（带状态筛选参数） */
-watch(activeStatus, () => loadList());
-
 function onSearch() {
   loadList();
 }
 
 function onAdd() {
-  // 用系统弹窗收集姓名+手机号（轻量表单，后续可升级为独立页面）
-  uni.showModal({
-    title: '新增线索',
-    editable: true,
-    placeholderText: '请输入客户姓名',
-    success: (resName) => {
-      if (!resName.confirm || !resName.content?.trim()) return;
-      const name = resName.content.trim();
-      uni.showModal({
-        title: '新增线索',
-        editable: true,
-        placeholderText: '请输入手机号',
-        success: async (resPhone) => {
-          if (!resPhone.confirm) return;
-          try {
-            await createLead({
-              name,
-              phone: resPhone.content?.trim() || undefined,
-              sourceType: 1,
-            });
-            uni.showToast({ title: '添加成功', icon: 'success' });
-            loadList();
-          } catch (e) {
-            // 错误已由 request 拦截器提示
-          }
-        },
-      });
-    },
-  });
+  uni.navigateTo({ url: '/pages/acquisition/form' });
 }
 
 function onShareCode() {
@@ -230,11 +200,7 @@ function onTool(type: string) {
 }
 
 function onLeadClick(lead: Lead) {
-  uni.showModal({
-    title: lead.name || '线索详情',
-    content: `手机：${lead.phone || '-'}\n状态：${statusText(lead.leadStatus)}`,
-    showCancel: false,
-  });
+  uni.navigateTo({ url: '/pages/acquisition/detail?id=' + lead.id });
 }
 
 function statusText(s?: LeadStatus | number): string {
@@ -311,6 +277,13 @@ function formatPhone(phone?: string): string {
 
 onMounted(() => {
   loadList();
+});
+
+// 从详情/表单页返回时刷新列表（状态变更、新增、删除后同步）
+onShow(() => {
+  if (leads.value.length > 0) {
+    loadList();
+  }
 });
 
 onPullDownRefresh(async () => {

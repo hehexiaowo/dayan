@@ -129,6 +129,37 @@ public class AgentLeadServiceImpl implements AgentLeadService {
         log.info("[Lead] 更新线索: leadId={}, leadStatus={}", leadId, lead.getLeadStatus());
     }
 
+    @Override
+    public AgentLeadVO detail(Long leadId) {
+        String agentCode = requireCurrentAgentCode();
+
+        AgentLead lead = leadMapper.selectById(leadId);
+        if (lead == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "线索不存在");
+        }
+        if (!agentCode.equals(lead.getAgentCode())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权查看此线索");
+        }
+        return toVO(lead);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Long leadId) {
+        String agentCode = requireCurrentAgentCode();
+
+        AgentLead lead = leadMapper.selectById(leadId);
+        if (lead == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "线索不存在");
+        }
+        if (!agentCode.equals(lead.getAgentCode())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权删除此线索");
+        }
+        // BaseEntity @TableLogic 自动软删除（deleted=1）
+        leadMapper.deleteById(leadId);
+        log.info("[Lead] 删除线索: leadId={}, leadCode={}", leadId, lead.getLeadCode());
+    }
+
     // ===== 内部方法 =====
 
     /**
