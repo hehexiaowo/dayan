@@ -14,23 +14,63 @@
       "style": { "navigationBarTitleText": "找机构" }
     },
     {
-      "path": "pages/business/park/list",
-      "style": { "navigationBarTitleText": "机构分布" }
+      "path": "pages/business/park/vital/list",
+      "style": { "navigationBarTitleText": "活力长居" }
     },
     {
-      "path": "pages/business/park/province",
+      "path": "pages/business/park/vital/province",
       "style": { "navigationBarTitleText": "区域分布" }
     },
     {
-      "path": "pages/business/park/city",
+      "path": "pages/business/park/vital/city",
       "style": { "navigationBarTitleText": "选择区县" }
     },
     {
-      "path": "pages/business/park/district",
+      "path": "pages/business/park/vital/district",
       "style": { "navigationBarTitleText": "机构列表" }
     },
     {
-      "path": "pages/business/park/detail",
+      "path": "pages/business/park/vital/detail",
+      "style": { "navigationBarTitleText": "机构详情" }
+    },
+    {
+      "path": "pages/business/park/care/list",
+      "style": { "navigationBarTitleText": "照护长居" }
+    },
+    {
+      "path": "pages/business/park/care/province",
+      "style": { "navigationBarTitleText": "区域分布" }
+    },
+    {
+      "path": "pages/business/park/care/city",
+      "style": { "navigationBarTitleText": "选择区县" }
+    },
+    {
+      "path": "pages/business/park/care/district",
+      "style": { "navigationBarTitleText": "机构列表" }
+    },
+    {
+      "path": "pages/business/park/care/detail",
+      "style": { "navigationBarTitleText": "机构详情" }
+    },
+    {
+      "path": "pages/business/park/sojourn/list",
+      "style": { "navigationBarTitleText": "旅居养老" }
+    },
+    {
+      "path": "pages/business/park/sojourn/province",
+      "style": { "navigationBarTitleText": "区域分布" }
+    },
+    {
+      "path": "pages/business/park/sojourn/city",
+      "style": { "navigationBarTitleText": "选择区县" }
+    },
+    {
+      "path": "pages/business/park/sojourn/district",
+      "style": { "navigationBarTitleText": "机构列表" }
+    },
+    {
+      "path": "pages/business/park/sojourn/detail",
       "style": { "navigationBarTitleText": "机构详情" }
     }
   ],

@@ -125,15 +125,19 @@ export async function searchByName(map: L.Map, name: string): Promise<void> {
 
 /**
  * 初始化详情页地图（单 marker + popup，zoom=15）。
+ * @param color marker 填充色（各网络主题色：vital=#409eff / care=#ff9900 / sojourn=#19be6b）
  */
 export function initDetailMap(
   containerId: string,
   latitude: number,
   longitude: number,
   name?: string,
+  color?: string,
 ): L.Map | null {
   const container = document.getElementById(containerId);
   if (!container) return null;
+
+  const fillColor = color || '#409eff';
 
   const map = L.map(containerId, {
     center: [latitude, longitude],
@@ -147,7 +151,7 @@ export function initDetailMap(
 
   const marker = L.circleMarker([latitude, longitude], {
     radius: 10,
-    fillColor: '#409eff',
+    fillColor: fillColor,
     color: '#fff',
     weight: 2,
     opacity: 1,

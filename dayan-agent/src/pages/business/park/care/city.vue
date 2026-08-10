@@ -2,7 +2,7 @@
   <view class="city-page">
     <!-- 位置指示器 -->
     <view class="location-bar">
-      <text class="location-text">{{ categoryName }} · 选择区县</text>
+      <text class="location-text">照护长居 · 选择区县</text>
     </view>
 
     <!-- 加载骨架 -->
@@ -42,26 +42,22 @@
 import { ref, computed, onMounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getRegions } from '@/api/park';
-import type { RegionItem, ParkCategory } from '@/types/park';
+import type { RegionItem } from '@/types/park';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
-const category = ref<ParkCategory>('vital');
 const provinceCode = ref('');
 const cityCode = ref('');
 const districts = ref<RegionItem[]>([]);
 const loading = ref(true);
 
-const categoryName = computed(() =>
-  ({ vital: '活力长居', care: '照护长居', sojourn: '旅居养老' }[category.value]),
-);
 const totalParks = computed(() => districts.value.reduce((s, i) => s + i.count, 0));
 
 async function fetchData() {
   loading.value = true;
   try {
     const result = await getRegions({
-      category: category.value,
+      category: 'care',
       level: 'district',
       provinceCode: provinceCode.value,
       cityCode: cityCode.value,
@@ -76,12 +72,11 @@ async function fetchData() {
 
 function onDistrictClick(item: RegionItem) {
   uni.navigateTo({
-    url: `/pages/business/park/district?category=${category.value}&provinceCode=${provinceCode.value}&cityCode=${cityCode.value}&districtCode=${item.code}`,
+    url: `/pages/business/park/care/district?category=care&provinceCode=${provinceCode.value}&cityCode=${cityCode.value}&districtCode=${item.code}`,
   });
 }
 
 onLoad((options: any) => {
-  if (options?.category) category.value = options.category;
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
   if (options?.cityCode) cityCode.value = options.cityCode;
 });
@@ -144,7 +139,7 @@ onMounted(fetchData);
 .district-count {
   display: block;
   font-size: 24rpx;
-  color: $brand-primary;
+  color: $brand-warning;
   margin-top: $spacing-xs;
 }
 .district-right {

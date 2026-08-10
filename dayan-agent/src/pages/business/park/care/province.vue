@@ -3,7 +3,7 @@
     <!-- ECharts 地图区 -->
     <view class="map-section">
       <!-- #ifdef H5 -->
-      <div id="province-map" class="map-container"></div>
+      <div id="care-province-map" class="map-container"></div>
       <!-- #endif -->
       <!-- #ifndef H5 -->
       <view class="map-placeholder">
@@ -20,7 +20,7 @@
         <view class="stat-divider"></view>
         <view class="stat-item">
           <text class="stat-value">{{ totalParks }}</text>
-          <text class="stat-label">机构总数</text>
+          <text class="stat-label">护理机构总数</text>
         </view>
       </view>
     </view>
@@ -53,20 +53,17 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import * as echarts from 'echarts';
 import { getRegions } from '@/api/park';
-import type { RegionItem, ParkCategory, DrillLevel } from '@/types/park';
+import type { RegionItem, DrillLevel } from '@/types/park';
 import { MUNICIPALITIES } from '@/types/park';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
-const category = ref<ParkCategory>('vital');
+const category = 'care' as const;
 const provinceCode = ref('');
 const regions = ref<RegionItem[]>([]);
 const loading = ref(true);
 let myChart: echarts.ECharts | null = null;
 
 const isMuni = computed(() => MUNICIPALITIES.includes(provinceCode.value));
-const categoryName = computed(() =>
-  ({ vital: '活力长居', care: '照护长居', sojourn: '旅居养老' }[category.value]),
-);
 const totalParks = computed(() => regions.value.reduce((s, i) => s + i.count, 0));
 
 async function fetchData() {
@@ -75,7 +72,7 @@ async function fetchData() {
     // 直辖市：直接查 district 层（跳过 city）
     const level: DrillLevel = isMuni.value ? 'district' : 'city';
     const params: any = {
-      category: category.value,
+      category,
       level,
       provinceCode: provinceCode.value,
     };
@@ -97,7 +94,7 @@ async function fetchData() {
 
 async function initChart() {
   // #ifdef H5
-  const container = document.getElementById('province-map');
+  const container = document.getElementById('care-province-map');
   if (!container) return;
 
   // 加载省份 GeoJSON
@@ -106,7 +103,7 @@ async function initChart() {
     const resp = await fetch(`/static/geo/provinces/${provinceCode.value}.json`);
     provinceGeo = await resp.json();
   } catch {
-    console.warn('[province.vue] 省份 GeoJSON 加载失败:', provinceCode.value);
+    console.warn('[care/province.vue] 省份 GeoJSON 加载失败:', provinceCode.value);
     return;
   }
 
@@ -117,7 +114,7 @@ async function initChart() {
     if (cp) centroidMap[f.properties.name] = [cp[0], cp[1]];
   });
 
-  const mapName = 'province-' + provinceCode.value;
+  const mapName = 'care-province-' + provinceCode.value;
   echarts.registerMap(mapName, provinceGeo);
   myChart = echarts.init(container);
 
@@ -146,11 +143,11 @@ async function initChart() {
         color: 'rgba(0,0,0,0.6)',
       },
       itemStyle: {
-        areaColor: '#f0f6ff',
+        areaColor: '#fff7e6',
         borderColor: 'rgba(0, 0, 0, 0.2)',
       },
       emphasis: {
-        itemStyle: { areaColor: '#f0f6ff' },
+        itemStyle: { areaColor: '#fff7e6' },
         label: { borderWidth: 0 },
       },
     },
@@ -166,9 +163,9 @@ async function initChart() {
         rippleEffect: { period: 4, scale: 4, brushType: 'fill' },
         symbolSize: 8,
         itemStyle: {
-          color: '#409eff',
+          color: '#ff9900',
           shadowBlur: 8,
-          shadowColor: 'rgba(64,158,255,0.5)',
+          shadowColor: 'rgba(255,153,0,0.5)',
         },
         data: scatterData,
       },
@@ -202,18 +199,17 @@ function handleNavigate(cityOrDistrictCode: string) {
   if (isMuni.value) {
     // 直辖市：code 是区县 code，直接去 district 页
     uni.navigateTo({
-      url: `/pages/business/park/district?category=${category.value}&provinceCode=${provinceCode.value}&cityCode=${provinceCode.value.substring(0, 2) + '0100'}&districtCode=${cityOrDistrictCode}`,
+      url: `/pages/business/park/care/district?category=care&provinceCode=${provinceCode.value}&cityCode=${provinceCode.value.substring(0, 2) + '0100'}&districtCode=${cityOrDistrictCode}`,
     });
   } else {
     // 普通省：code 是城市 code，去 city 页选区
     uni.navigateTo({
-      url: `/pages/business/park/city?category=${category.value}&provinceCode=${provinceCode.value}&cityCode=${cityOrDistrictCode}`,
+      url: `/pages/business/park/care/city?category=care&provinceCode=${provinceCode.value}&cityCode=${cityOrDistrictCode}`,
     });
   }
 }
 
 onLoad((options: any) => {
-  if (options?.category) category.value = options.category;
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
 });
 
@@ -254,7 +250,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #e8f0fe, #d4e4fc);
+  background: linear-gradient(135deg, #fff7e6, #ffe8cc);
 }
 .map-placeholder-text {
   font-size: 28rpx;
@@ -281,7 +277,7 @@ onUnmounted(() => {
   display: block;
   font-size: 40rpx;
   font-weight: bold;
-  color: $brand-primary;
+  color: $brand-warning;
 }
 .stat-label {
   display: block;
@@ -331,7 +327,7 @@ onUnmounted(() => {
 }
 .col-count {
   font-size: 28rpx;
-  color: $brand-primary;
+  color: $brand-warning;
   font-weight: bold;
 }
 .arrow {

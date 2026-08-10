@@ -3,7 +3,7 @@
     <!-- Leaflet 地图区 -->
     <view class="map-section">
       <!-- #ifdef H5 -->
-      <div id="district-map" class="map-container"></div>
+      <div id="sojourn-district-map" class="map-container"></div>
       <!-- #endif -->
       <!-- #ifndef H5 -->
       <view class="map-placeholder">
@@ -14,7 +14,7 @@
       <!-- 统计卡片 -->
       <view v-if="parks.length" class="stats-card">
         <text class="stat-value">{{ parks.length }}</text>
-        <text class="stat-label">家机构</text>
+        <text class="stat-label">家旅居机构</text>
       </view>
     </view>
 
@@ -28,7 +28,7 @@
       >
         <DyIconBlock
           :text="park.shortName?.charAt(0) || '机'"
-          :color="iconColor"
+          color="green"
           size="md"
         />
         <view class="park-info">
@@ -48,13 +48,13 @@
         </view>
         <text class="park-arrow">›</text>
       </view>
-      <DyEmpty v-if="!loading && !parks.length" text="该区县暂无机构" icon="空" color="gray" />
+      <DyEmpty v-if="!loading && !parks.length" text="该区县暂无旅居机构" icon="空" color="gray" />
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 // #ifdef H5
 import { initMap, addMarkers, searchByName, destroyMap, type MapMarkerItem } from '@/utils/map';
@@ -62,11 +62,10 @@ import type L from 'leaflet';
 // #endif
 import { getRegions } from '@/api/park';
 import { PROVINCE_CENTERS } from '@/utils/region';
-import type { ParkCard, ParkCategory } from '@/types/park';
+import type { ParkCard } from '@/types/park';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
-const category = ref<ParkCategory>('vital');
 const provinceCode = ref('');
 const cityCode = ref('');
 const districtCode = ref('');
@@ -78,21 +77,14 @@ let map: L.Map | null = null;
 let markerGroup: L.LayerGroup | null = null;
 // #endif
 
-const iconColor = computed(() =>
-  ({ vital: 'blue', care: 'orange', sojourn: 'green' }[category.value]) as 'blue' | 'orange' | 'green',
-);
-
-const categoryColorHex: Record<ParkCategory, string> = {
-  vital: '#409eff',
-  care: '#ff9900',
-  sojourn: '#19be6b',
-};
+/** sojourn 主题色（绿色） */
+const THEME_COLOR = '#19be6b';
 
 async function fetchData() {
   loading.value = true;
   try {
     const result = await getRegions({
-      category: category.value,
+      category: 'sojourn',
       level: 'park',
       provinceCode: provinceCode.value,
       cityCode: cityCode.value,
@@ -112,10 +104,9 @@ async function fetchData() {
 
 // #ifdef H5
 function initMapView() {
-  map = initMap('district-map');
+  map = initMap('sojourn-district-map');
   if (!map) return;
 
-  // 先设一个初始中心点（省中心或北京）
   const fallback = PROVINCE_CENTERS[provinceCode.value] || { lng: 116.4, lat: 39.9 };
   map.setView([fallback.lat, fallback.lng], 10);
 
@@ -126,17 +117,16 @@ function initMapView() {
       longitude: p.longitude!,
       name: p.shortName || p.fullName,
       code: p.parkCode,
-      color: categoryColorHex[category.value],
+      color: THEME_COLOR,
     }));
 
   if (itemsWithCoords.length > 0) {
     markerGroup = addMarkers(map, itemsWithCoords, (item) => {
       uni.navigateTo({
-        url: `/pages/business/park/detail?parkCode=${item.code}`,
+        url: `/pages/business/park/sojourn/detail?parkCode=${item.code}`,
       });
     });
   } else {
-    // 无坐标机构 → 按区县名搜索定位
     const districtName = parks.value[0]?.district;
     if (districtName) {
       searchByName(map, districtName);
@@ -147,7 +137,7 @@ function initMapView() {
 
 function onParkClick(park: ParkCard) {
   uni.navigateTo({
-    url: `/pages/business/park/detail?parkCode=${park.parkCode}`,
+    url: `/pages/business/park/sojourn/detail?parkCode=${park.parkCode}`,
   });
 }
 
@@ -156,7 +146,6 @@ function formatAddress(park: ParkCard): string {
 }
 
 onLoad((options: any) => {
-  if (options?.category) category.value = options.category;
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
   if (options?.cityCode) cityCode.value = options.cityCode;
   if (options?.districtCode) districtCode.value = options.districtCode;
@@ -200,7 +189,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #e8f0fe, #d4e4fc);
+  background: linear-gradient(135deg, #edfff3, #d4fce7);
 }
 .map-placeholder-text {
   font-size: 28rpx;
@@ -278,8 +267,8 @@ onUnmounted(() => {
   color: $brand-success;
 }
 .tag-type {
-  background: $brand-primary-light;
-  color: $brand-primary;
+  background: $brand-success-light;
+  color: $brand-success;
 }
 .park-arrow {
   color: $text-placeholder;

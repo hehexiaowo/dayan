@@ -87,9 +87,12 @@ function onCategoryClick(cat: CategoryCount) {
     uni.showToast({ title: `${cat.categoryName}即将上线`, icon: 'none' });
     return;
   }
-  uni.navigateTo({
-    url: `/pages/business/park/list?category=${cat.category}`,
-  });
+  const pathMap: Record<string, string> = {
+    vital: '/pages/business/park/vital/list',
+    care: '/pages/business/park/care/list',
+    sojourn: '/pages/business/park/sojourn/list',
+  };
+  uni.navigateTo({ url: pathMap[cat.category] || pathMap.vital });
 }
 
 onMounted(loadCategories);
@@ -105,7 +108,7 @@ onMounted(loadCategories);
 
 /* Hero 区 */
 .hero {
-  background: $gradient-blue;
+  background: linear-gradient(135deg, #409eff, #19be6b, #ff9900);
   padding: 56rpx $spacing-lg 48rpx;
   border-bottom-left-radius: $radius-lg;
   border-bottom-right-radius: $radius-lg;

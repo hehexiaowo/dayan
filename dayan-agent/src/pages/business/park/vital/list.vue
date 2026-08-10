@@ -3,7 +3,7 @@
     <!-- ECharts 地图区 -->
     <view class="map-section">
       <!-- #ifdef H5 -->
-      <div id="list-map" class="map-container"></div>
+      <div id="vital-list-map" class="map-container"></div>
       <!-- #endif -->
       <!-- #ifndef H5 -->
       <view class="map-placeholder">
@@ -20,7 +20,7 @@
         <view class="stat-divider"></view>
         <view class="stat-item">
           <text class="stat-value">{{ totalParks }}</text>
-          <text class="stat-label">{{ categoryName }}总数</text>
+          <text class="stat-label">养老机构总数</text>
         </view>
       </view>
     </view>
@@ -53,24 +53,18 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import * as echarts from 'echarts';
 import { getRegions } from '@/api/park';
-import type { RegionItem, ParkCategory } from '@/types/park';
+import type { RegionItem } from '@/types/park';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
-const category = ref<ParkCategory>('vital');
 const regions = ref<RegionItem[]>([]);
 const loading = ref(true);
 let myChart: echarts.ECharts | null = null;
-
-const categoryName = computed(() =>
-  ({ vital: '活力长居', care: '照护长居', sojourn: '旅居养老' }[category.value]),
-);
 
 const totalParks = computed(() => regions.value.reduce((s, i) => s + i.count, 0));
 
 // GeoJSON 名称规范化（API 返回 "河北省" → GeoJSON "河北"）
 function normalizeName(name: string, code: string): string {
   let n = name.replace(/省$/, '');
-  // 自治区硬编码（参考项目模式）
   const autonomousMap: Record<string, string> = {
     '640000': '宁夏',
     '650000': '新疆',
@@ -79,7 +73,6 @@ function normalizeName(name: string, code: string): string {
     '540000': '西藏',
   };
   if (autonomousMap[code]) n = autonomousMap[code];
-  // 去掉"市"后缀（北京市 → 北京）
   n = n.replace(/市$/, '');
   return n;
 }
@@ -88,7 +81,7 @@ async function fetchData() {
   loading.value = true;
   try {
     const result = await getRegions({
-      category: category.value,
+      category: 'vital',
       level: 'province',
     });
     regions.value = result.items || [];
@@ -103,20 +96,18 @@ async function fetchData() {
 
 async function initChart() {
   // #ifdef H5
-  const container = document.getElementById('list-map');
+  const container = document.getElementById('vital-list-map');
   if (!container) return;
 
-  // 加载全国 GeoJSON
   let chinaGeo: any = null;
   try {
     const resp = await fetch('/static/geo/china.json');
     chinaGeo = await resp.json();
   } catch {
-    console.warn('[list.vue] china.json 加载失败');
+    console.warn('[vital/list] china.json 加载失败');
     return;
   }
 
-  // 构建 centroid 映射：GeoJSON feature name → [lng, lat]
   const centroidMap: Record<string, [number, number]> = {};
   chinaGeo.features.forEach((f: any) => {
     const cp = f.properties?.centroid || f.properties?.center || f.properties?.cp;
@@ -126,7 +117,6 @@ async function initChart() {
   echarts.registerMap('china', chinaGeo);
   myChart = echarts.init(container);
 
-  // 散点数据：只渲染 count > 0 的省份
   const scatterData = regions.value
     .filter((r) => r.count > 0)
     .map((r) => {
@@ -135,7 +125,7 @@ async function initChart() {
       return {
         name: r.name,
         value: coord ? [...coord, r.count] : [],
-        code: r.code, // 关键：保留 code（参考项目 bug 就是丢了 code）
+        code: r.code,
       };
     })
     .filter((d) => d.value.length > 0);
@@ -182,14 +172,12 @@ async function initChart() {
     ],
   });
 
-  // 散点点击 → 导航
   myChart.on('click', (params: any) => {
     if (params.data?.code) {
       navigateToProvince(params.data.code);
     }
   });
 
-  // 禁用 hover 高亮（避免干扰散点交互）
   myChart.on('mouseover', () => {
     myChart?.dispatchAction({ type: 'downplay' });
   });
@@ -208,13 +196,9 @@ function onProvinceClick(item: RegionItem) {
 
 function navigateToProvince(provinceCode: string) {
   uni.navigateTo({
-    url: `/pages/business/park/province?category=${category.value}&provinceCode=${provinceCode}`,
+    url: `/pages/business/park/vital/province?provinceCode=${provinceCode}`,
   });
 }
-
-onLoad((options: any) => {
-  if (options?.category) category.value = options.category;
-});
 
 onMounted(fetchData);
 
@@ -246,7 +230,7 @@ onUnmounted(() => {
 }
 .map-container {
   width: 100%;
-  height: 300px; // 固定 px 确保 ECharts 有尺寸
+  height: 300px;
 }
 .map-placeholder {
   width: 100%;

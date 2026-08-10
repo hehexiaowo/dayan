@@ -78,20 +78,27 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
 
     @Override
     public List<CategoryCountVO> countByCategory() {
-        // 旅居养老当前无数据，固定返回 available=false
-        // 前端判断 available=false 时点击只 toast 不跳转
         Integer vitalCount = countByAbilityTypes(VITAL_TYPES);
         Integer careCount = countByAbilityTypes(CARE_TYPES);
+        // sojourn 走独立查询路径（基于 park_room_type.stay_type=2 联表）
+        Integer sojournCount = parkInfoMapper.selectProvinceListForSojourn().stream()
+                .mapToInt(RegionItem::getCount)
+                .sum();
 
         return List.of(
                 new CategoryCountVO("vital", "活力长居", vitalCount, true),
                 new CategoryCountVO("care", "照护长居", careCount, true),
-                new CategoryCountVO("sojourn", "旅居养老", 0, false)
+                new CategoryCountVO("sojourn", "旅居养老", sojournCount, true)
         );
     }
 
     @Override
     public RegionDrillResult drillRegion(RegionQueryDTO query) {
+        // sojourn 走独立查询路径（基于 stay_type 联表，不走 ability_type）
+        if ("sojourn".equals(query.getCategory())) {
+            return drillRegionForSojourn(query);
+        }
+
         List<Integer> abilityTypes = resolveAbilityTypes(query.getCategory());
         RegionDrillResult result = new RegionDrillResult();
         result.setLevel(query.getLevel());
@@ -142,6 +149,60 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
                 result.setCenterLng(center.getCenterLng());
                 result.setCenterLat(center.getCenterLat());
             }
+        }
+
+        return result;
+    }
+
+    /**
+     * sojourn 独立下钻路径：基于 park_room_type.stay_type=2 联表查询，不走 ability_type。
+     * 结构与 drillRegion 一致（4 个 level 分支 + 面包屑 + 中心点）。
+     */
+    private RegionDrillResult drillRegionForSojourn(RegionQueryDTO query) {
+        RegionDrillResult result = new RegionDrillResult();
+        result.setLevel(query.getLevel());
+
+        switch (query.getLevel()) {
+            case "province" -> {
+                List<RegionItem> provinces = parkInfoMapper.selectProvinceListForSojourn();
+                result.setItems(provinces);
+                result.setBreadcrumb("旅居养老");
+            }
+            case "city" -> {
+                List<RegionItem> cities = parkInfoMapper.selectCityListForSojourn(query.getProvinceCode());
+                result.setItems(cities);
+                result.setBreadcrumb("旅居养老 / " + extractProvinceName(query.getProvinceCode()));
+            }
+            case "district" -> {
+                List<RegionItem> districts = parkInfoMapper.selectDistrictListForSojourn(
+                        query.getProvinceCode(), query.getCityCode());
+                result.setItems(districts);
+                String crumb = "旅居养老 / " + extractProvinceName(query.getProvinceCode());
+                if (!MUNICIPALITY_CODES.contains(query.getProvinceCode())) {
+                    crumb += " / " + extractCityName(query.getCityCode(), districts);
+                }
+                result.setBreadcrumb(crumb);
+            }
+            case "park" -> {
+                List<ParkCardVO> parks = parkInfoMapper.selectParkCardListForSojourn(
+                        query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
+                result.setParkList(parks);
+                String crumb = "旅居养老 / " + extractProvinceName(query.getProvinceCode());
+                if (!MUNICIPALITY_CODES.contains(query.getProvinceCode())) {
+                    crumb += " / " + extractCityName(query.getCityCode(), null);
+                }
+                crumb += " / " + extractDistrictName(query.getDistrictCode(), parks);
+                result.setBreadcrumb(crumb);
+            }
+            default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的层级: " + query.getLevel());
+        }
+
+        // 地图中心点
+        RegionCenterVO center = parkInfoMapper.selectRegionCenterForSojourn(
+                query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
+        if (center != null) {
+            result.setCenterLng(center.getCenterLng());
+            result.setCenterLat(center.getCenterLat());
         }
 
         return result;
@@ -247,7 +308,8 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         return switch (category) {
             case "vital" -> VITAL_TYPES;
             case "care" -> CARE_TYPES;
-            case "sojourn" -> List.of(); // 旅居无数据
+            case "sojourn" -> throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    "sojourn 走独立查询路径，不应到达 resolveAbilityTypes");
             default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的分类: " + category);
         };
     }

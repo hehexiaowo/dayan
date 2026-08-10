@@ -42,7 +42,7 @@
       <view class="info-card">
         <text class="park-name">{{ park.fullName }}</text>
         <view class="park-tags">
-          <text v-if="park.abilityTypeDescription" class="dy-tag dy-tag-blue">{{ park.abilityTypeDescription }}</text>
+          <text v-if="park.abilityTypeDescription" class="dy-tag dy-tag-orange">{{ park.abilityTypeDescription }}</text>
           <text v-if="park.natureTypeDescription" class="dy-tag dy-tag-green">{{ park.natureTypeDescription }}</text>
           <text v-if="park.isHot === 1" class="dy-tag dy-tag-red">热门</text>
         </view>
@@ -90,7 +90,7 @@
         <view v-if="currentTabKey === 'base'" class="tab-panel">
           <view class="stat-grid">
             <view v-if="park.totalBeds != null" class="stat-item">
-              <text class="stat-value blue">{{ park.totalBeds }}</text>
+              <text class="stat-value green">{{ park.totalBeds }}</text>
               <text class="stat-label">总床位</text>
             </view>
             <view v-if="park.availableBeds != null" class="stat-item">
@@ -102,7 +102,7 @@
               <text class="stat-label">员工数</text>
             </view>
             <view v-if="park.nurseCount != null" class="stat-item">
-              <text class="stat-value blue">{{ park.nurseCount }}</text>
+              <text class="stat-value green">{{ park.nurseCount }}</text>
               <text class="stat-label">护理员</text>
             </view>
           </view>
@@ -416,6 +416,7 @@ watch(activeTab, async (idx) => {
           Number(p.latitude),
           Number(p.longitude),
           p.shortName || p.fullName || '',
+          '#19be6b',
         );
       });
     }
@@ -586,14 +587,14 @@ onLoad(async (options: any) => {
 }
 .copy-btn {
   font-size: 22rpx;
-  color: $brand-primary;
+  color: $brand-success;
   padding: 4rpx 16rpx;
-  background: $brand-primary-light;
+  background: $brand-success-light;
   border-radius: 16rpx;
   flex-shrink: 0;
 }
 .phone-link {
-  color: $brand-primary;
+  color: $brand-success;
 }
 .beds-tag {
   font-size: 22rpx;
@@ -643,7 +644,7 @@ onLoad(async (options: any) => {
   flex-shrink: 0;
 }
 .tab-item.active {
-  color: $brand-primary;
+  color: $brand-success;
   font-weight: bold;
 }
 .tab-item.active::after {
@@ -654,7 +655,7 @@ onLoad(async (options: any) => {
   transform: translateX(-50%);
   width: 48rpx;
   height: 4rpx;
-  background: $brand-primary;
+  background: $brand-success;
   border-radius: 2rpx;
 }
 
@@ -689,7 +690,6 @@ onLoad(async (options: any) => {
   display: block;
   font-size: 40rpx;
   font-weight: bold;
-  &.blue { color: $brand-primary; }
   &.green { color: $brand-success; }
   &.orange { color: $brand-warning; }
 }
@@ -782,8 +782,8 @@ onLoad(async (options: any) => {
   height: 36rpx;
   line-height: 36rpx;
   text-align: center;
-  background: $brand-primary-light;
-  color: $brand-primary;
+  background: $brand-success-light;
+  color: $brand-success;
   border-radius: 50%;
 }
 .room-desc {
@@ -875,8 +875,8 @@ onLoad(async (options: any) => {
 }
 .care-level {
   font-size: 22rpx;
-  color: $brand-primary;
-  background: $brand-primary-light;
+  color: $brand-success;
+  background: $brand-success-light;
   padding: 4rpx 12rpx;
   border-radius: 8rpx;
 }
@@ -957,7 +957,7 @@ onLoad(async (options: any) => {
 }
 .rim-tab.active {
   color: #fff;
-  background: $brand-primary;
+  background: $brand-success;
 }
 .rim-list {
   display: flex;
@@ -977,7 +977,7 @@ onLoad(async (options: any) => {
 }
 .rim-distance {
   font-size: 24rpx;
-  color: $brand-primary;
+  color: $brand-success;
   margin-left: $spacing-sm;
 }
 .rim-addr {
