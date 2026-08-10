@@ -1,44 +1,7 @@
 /**
- * 省级区划公共数据：方格地图布局 + 省会中心点（地图兜底定位）。
+ * 省级区划公共数据：省会中心点（地图兜底定位）。
+ * 省/市级热力图改用 ECharts + DataV GeoJSON，不再需要方格布局。
  */
-
-/** 方格地图布局：code → 格子坐标 + 2字简称（标准中国方格图布局，近似地理位置） */
-export const PROVINCE_TILES: Record<string, { row: number; col: number; short: string }> = {
-  '230000': { row: 0, col: 7, short: '龙江' },
-  '220000': { row: 1, col: 6, short: '吉林' },
-  '210000': { row: 1, col: 7, short: '辽宁' },
-  '150000': { row: 2, col: 2, short: '内蒙' },
-  '110000': { row: 2, col: 4, short: '北京' },
-  '120000': { row: 2, col: 5, short: '天津' },
-  '130000': { row: 2, col: 6, short: '河北' },
-  '370000': { row: 2, col: 7, short: '山东' },
-  '650000': { row: 3, col: 0, short: '新疆' },
-  '640000': { row: 3, col: 2, short: '宁夏' },
-  '610000': { row: 3, col: 3, short: '陕西' },
-  '140000': { row: 3, col: 4, short: '山西' },
-  '410000': { row: 3, col: 5, short: '河南' },
-  '630000': { row: 4, col: 0, short: '青海' },
-  '620000': { row: 4, col: 2, short: '甘肃' },
-  '510000': { row: 4, col: 3, short: '四川' },
-  '500000': { row: 4, col: 4, short: '重庆' },
-  '420000': { row: 4, col: 5, short: '湖北' },
-  '340000': { row: 4, col: 6, short: '安徽' },
-  '320000': { row: 4, col: 7, short: '江苏' },
-  '310000': { row: 4, col: 8, short: '上海' },
-  '540000': { row: 5, col: 0, short: '西藏' },
-  '520000': { row: 5, col: 3, short: '贵州' },
-  '430000': { row: 5, col: 4, short: '湖南' },
-  '360000': { row: 5, col: 5, short: '江西' },
-  '330000': { row: 5, col: 6, short: '浙江' },
-  '350000': { row: 5, col: 7, short: '福建' },
-  '530000': { row: 6, col: 2, short: '云南' },
-  '450000': { row: 6, col: 3, short: '广西' },
-  '440000': { row: 6, col: 4, short: '广东' },
-  '710000': { row: 6, col: 7, short: '台湾' },
-  '460000': { row: 7, col: 3, short: '海南' },
-  '810000': { row: 7, col: 5, short: '香港' },
-  '820000': { row: 7, col: 6, short: '澳门' },
-};
 
 /** 省级中心点（省会/首府坐标，地图兜底；真实定位优先用后端 AVG） */
 export const PROVINCE_CENTERS: Record<string, { lng: number; lat: number }> = {

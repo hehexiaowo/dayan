@@ -1,11 +1,12 @@
 <template>
   <view class="region-page">
-    <!-- 地图区：省=方格图 市=方格流 区/机构=真实地图 -->
+    <!-- 地图区：省=中国热力图 市=省份热力图 区/机构=真实天地图 -->
     <view class="map-section" :class="{ schematic: !showRealMap }">
       <template v-if="!showRealMap">
-        <ChinaTileMap
+        <ChinaEchartsMap
           :items="regionItems"
-          :mode="level === 'province' ? 'grid' : 'flow'"
+          :level="level === 'province' ? 'province' : 'city'"
+          :province-code="provinceCode"
           @select="drill"
         />
       </template>
@@ -100,7 +101,7 @@
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import TiandituMap from '@/components/TiandituMap/TiandituMap.vue';
-import ChinaTileMap from '@/components/ChinaTileMap/ChinaTileMap.vue';
+import ChinaEchartsMap from '@/components/RegionEchartsMap/RegionEchartsMap.vue';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -278,9 +279,8 @@ onLoad((options: any) => {
   box-shadow: $shadow-card;
 }
 .map-section.schematic {
-  height: auto;
-  min-height: 420rpx;
-  padding: 56rpx $spacing-md $spacing-lg;
+  height: 480rpx;
+  padding: $spacing-sm;
   background: $bg-card;
 }
 .map-label {
