@@ -103,6 +103,7 @@ let channelTimer: ReturnType<typeof setTimeout> | null = null;
 let channelSeq = 0;
 watch(mobile, (val) => {
   channelSeq++;
+  loadingChannels.value = false; // 改号使旧响应失效，同时复位加载态防按钮卡禁用
   channels.value = [];
   selectedChannel.value = '';
   if (channelTimer) clearTimeout(channelTimer);
