@@ -32,6 +32,8 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
     private static final List<Integer> VITAL_TYPES = List.of(1);
     /** 照护长居：养老院/CB/认知症/NH */
     private static final List<Integer> CARE_TYPES = List.of(2, 3, 4, 7);
+    /** 直辖市 provinceCode（跳过 city 层，面包屑不输出城市段） */
+    private static final List<String> MUNICIPALITY_CODES = List.of("110000", "120000", "310000", "500000");
 
     @Override
     public List<CategoryCountVO> countByCategory() {
@@ -68,18 +70,25 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
                 List<RegionItem> districts = parkInfoMapper.selectDistrictList(
                         abilityTypes, query.getProvinceCode(), query.getCityCode());
                 result.setItems(districts);
-                result.setBreadcrumb(categoryName(query.getCategory())
-                        + " / " + extractProvinceName(query.getProvinceCode())
-                        + " / " + extractCityName(query.getCityCode(), districts));
+                // 直辖市跳过 city 层面包屑（北京 / 北京市 冗余）
+                String crumb = categoryName(query.getCategory())
+                        + " / " + extractProvinceName(query.getProvinceCode());
+                if (!MUNICIPALITY_CODES.contains(query.getProvinceCode())) {
+                    crumb += " / " + extractCityName(query.getCityCode(), districts);
+                }
+                result.setBreadcrumb(crumb);
             }
             case "park" -> {
                 List<ParkCardVO> parks = parkInfoMapper.selectParkCardList(
                         abilityTypes, query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
                 result.setParkList(parks);
-                result.setBreadcrumb(categoryName(query.getCategory())
-                        + " / " + extractProvinceName(query.getProvinceCode())
-                        + " / " + extractCityName(query.getCityCode(), null)
-                        + " / " + extractDistrictName(query.getDistrictCode(), parks));
+                String crumb = categoryName(query.getCategory())
+                        + " / " + extractProvinceName(query.getProvinceCode());
+                if (!MUNICIPALITY_CODES.contains(query.getProvinceCode())) {
+                    crumb += " / " + extractCityName(query.getCityCode(), null);
+                }
+                crumb += " / " + extractDistrictName(query.getDistrictCode(), parks);
+                result.setBreadcrumb(crumb);
             }
             default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的层级: " + query.getLevel());
         }
