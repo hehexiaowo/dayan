@@ -1,0 +1,100 @@
+/**
+ * 大雁养老 Agent 端公共样式类
+ *
+ * 需配合 variables.scss 使用，页面内 @import '@/styles/common' 即可。
+ */
+
+// ===== 卡片 =====
+.dy-card {
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+// ===== 区块标题 =====
+.dy-section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: $text-primary;
+  padding: $spacing-md $spacing-md $spacing-sm;
+}
+
+// ===== tabBar 安全间距 =====
+.dy-safe-bottom {
+  padding-bottom: 140rpx;
+}
+
+// ===== 细分割线 =====
+.dy-divider {
+  height: 1rpx;
+  background: $border-light;
+  margin: $spacing-sm 0;
+}
+
+// ===== 点击反馈 =====
+.dy-clickable {
+  transition: transform $transition-fast, box-shadow $transition-fast;
+
+  &:active {
+    transform: scale(0.98);
+    box-shadow: $shadow-card;
+  }
+}
+
+// ===== 文本截断 =====
+.dy-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dy-ellipsis-2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+// ===== 渐变文字 =====
+.dy-gradient-text {
+  background: $gradient-blue;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+// ===== 状态标签基础 =====
+.dy-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  line-height: 1.4;
+}
+
+.dy-tag-blue {
+  background: $brand-primary-light;
+  color: $brand-primary;
+}
+
+.dy-tag-green {
+  background: $brand-success-light;
+  color: $brand-success;
+}
+
+.dy-tag-orange {
+  background: $brand-warning-light;
+  color: $brand-warning;
+}
+
+.dy-tag-red {
+  background: $brand-error-light;
+  color: $brand-error;
+}
+
+.dy-tag-gray {
+  background: $brand-info-light;
+  color: $brand-info;
+}

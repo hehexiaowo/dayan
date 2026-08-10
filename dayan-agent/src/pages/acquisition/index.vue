@@ -1,12 +1,14 @@
 <template>
-  <view class="page">
-    <!-- 顶部操作条：搜索 + 新增 + 分享码 -->
+  <view class="page dy-safe-bottom">
+    <!-- 顶部操作条 -->
     <view class="toolbar">
       <view class="search">
+        <text class="search-icon">搜</text>
         <input
           v-model="keyword"
           class="search-input"
           placeholder="搜索客户名/手机号"
+          placeholder-class="search-placeholder"
           confirm-type="search"
           @confirm="onSearch"
         />
@@ -25,15 +27,15 @@
       <view class="tools-title">获客工具</view>
       <view class="tools-grid">
         <view class="tool-item" @click="onTool('card')">
-          <view class="tool-icon" style="background: #409eff">名</view>
+          <DyIconBlock text="名" color="blue" size="md" shape="circle" />
           <text class="tool-label">电子名片</text>
         </view>
         <view class="tool-item" @click="onTool('poster')">
-          <view class="tool-icon" style="background: #ff9900">海</view>
+          <DyIconBlock text="海" color="orange" size="md" shape="circle" />
           <text class="tool-label">营销海报</text>
         </view>
         <view class="tool-item" @click="onTool('content')">
-          <view class="tool-icon" style="background: #19be6b">享</view>
+          <DyIconBlock text="享" color="green" size="md" shape="circle" />
           <text class="tool-label">内容分享</text>
         </view>
       </view>
@@ -41,24 +43,32 @@
 
     <!-- 线索列表 -->
     <view class="list">
-      <view v-if="loading && !leads.length" class="empty">加载中...</view>
-      <view v-else-if="!leads.length" class="empty">
-        暂无线索（接口待后端提供）
-      </view>
+      <!-- 加载骨架屏 -->
+      <template v-if="loading && !leads.length">
+        <DySkeleton v-for="i in 3" :key="i" :rows="2" avatar />
+      </template>
 
+      <!-- 空状态 -->
+      <DyEmpty
+        v-else-if="!leads.length"
+        text="暂无线索"
+        icon="线"
+        color="blue"
+        action-text="新增线索"
+        @action="onAdd"
+      />
+
+      <!-- 线索卡片 -->
       <view v-else>
         <view
           v-for="lead in leads"
           :key="lead.leadId"
-          class="card"
+          class="card dy-clickable"
           @click="onLeadClick(lead)"
         >
           <view class="card-row">
             <view class="card-name">{{ lead.name || '未命名' }}</view>
-            <view
-              class="card-status"
-              :class="statusClass(lead.leadStatus)"
-            >
+            <view class="card-status" :class="statusClass(lead.leadStatus)">
               {{ statusText(lead.leadStatus) }}
             </view>
           </view>
@@ -70,8 +80,10 @@
       </view>
     </view>
 
-    <!-- 底部新增按钮（固定） -->
-    <view class="fab" @click="onAdd">+</view>
+    <!-- 悬浮按钮 -->
+    <view class="fab" @click="onAdd">
+      <text class="fab-icon">+</text>
+    </view>
   </view>
 </template>
 
@@ -80,6 +92,9 @@ import { ref, onMounted } from 'vue';
 import { onPullDownRefresh } from '@dcloudio/uni-app';
 import { getLeads } from '@/api/lead';
 import type { Lead, LeadStatus } from '@/types';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const keyword = ref('');
 const leads = ref<Lead[]>([]);
@@ -190,65 +205,98 @@ onPullDownRefresh(async () => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .page {
-  padding: 24rpx 24rpx 160rpx;
+  padding: $spacing-md $spacing-md 0;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: $bg-page;
 }
 
 /* 工具条 */
 .toolbar {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 20rpx 24rpx;
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
 }
 .search {
   display: flex;
   align-items: center;
+  position: relative;
+}
+.search-icon {
+  position: absolute;
+  left: 24rpx;
+  font-size: 22rpx;
+  color: $text-placeholder;
+  z-index: 1;
 }
 .search-input {
   flex: 1;
-  border: 1px solid #dcdfe6;
-  border-radius: 8rpx;
-  padding: 16rpx 20rpx;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  padding: 18rpx 20rpx 18rpx 56rpx;
   font-size: 28rpx;
+  transition: border-color $transition-base;
+
+  &:focus {
+    border-color: $brand-primary;
+  }
+}
+.search-placeholder {
+  color: $text-placeholder;
 }
 .btn-search {
-  margin-left: 16rpx;
-  background: #409eff;
+  margin-left: $spacing-sm;
+  background: $brand-primary;
   color: #fff;
   font-size: 26rpx;
+  padding: 0 24rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  border-radius: $radius-md;
 }
 .actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16rpx;
+  margin-top: $spacing-sm;
+  gap: $spacing-sm;
 }
 .btn-outline {
-  background: #fff;
-  color: #409eff;
-  border: 1px solid #409eff;
+  background: $bg-card;
+  color: $brand-primary;
+  border: 2rpx solid $brand-primary;
   font-size: 24rpx;
-  margin-right: 16rpx;
+  padding: 0 20rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  border-radius: $radius-sm;
 }
 .btn-primary {
-  background: #19be6b;
+  background: $brand-success;
   color: #fff;
   font-size: 24rpx;
+  padding: 0 20rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  border-radius: $radius-sm;
 }
 
 /* 获客工具 */
 .tools {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx 28rpx;
-  margin-top: 20rpx;
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-lg $spacing-md;
+  margin-top: $spacing-md;
+  box-shadow: $shadow-card;
 }
 .tools-title {
   font-size: 30rpx;
   font-weight: bold;
-  color: #303133;
-  margin-bottom: 20rpx;
+  color: $text-primary;
+  margin-bottom: $spacing-md;
 }
 .tools-grid {
   display: flex;
@@ -258,97 +306,98 @@ onPullDownRefresh(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-.tool-icon {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 36rpx;
-  font-weight: bold;
+  transition: transform $transition-fast;
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 .tool-label {
-  margin-top: 12rpx;
+  margin-top: $spacing-sm;
   font-size: 24rpx;
-  color: #606266;
+  color: $text-regular;
 }
 
 /* 列表 */
 .list {
-  margin-top: 24rpx;
-}
-.empty {
-  text-align: center;
-  color: #909399;
-  font-size: 26rpx;
-  padding: 80rpx 0;
+  margin-top: $spacing-md;
 }
 .card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx 28rpx;
-  margin-bottom: 20rpx;
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
 }
 .card-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-.card-row.sub {
-  margin-top: 12rpx;
+
+  &.sub {
+    margin-top: 12rpx;
+  }
 }
 .card-name {
   font-size: 30rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
 }
 .card-phone,
 .card-time {
   font-size: 26rpx;
-  color: #606266;
+  color: $text-secondary;
 }
 .card-status {
   font-size: 24rpx;
-  padding: 4rpx 16rpx;
+  padding: 6rpx 20rpx;
   border-radius: 20rpx;
+  font-weight: 500;
 }
 .st-new {
-  background: #ecf5ff;
-  color: #409eff;
+  background: $brand-primary-light;
+  color: $brand-primary;
 }
 .st-following {
-  background: #fff7e6;
-  color: #ff9900;
+  background: $brand-warning-light;
+  color: $brand-warning;
 }
 .st-converted {
-  background: #edfff3;
-  color: #19be6b;
+  background: $brand-success-light;
+  color: $brand-success;
 }
 .st-intended {
   background: #fdf6ec;
   color: #e6a23c;
 }
 .st-lost {
-  background: #fef0f0;
-  color: #f56c6c;
+  background: $brand-error-light;
+  color: $brand-error;
 }
 
 /* 悬浮按钮 */
 .fab {
   position: fixed;
   right: 40rpx;
-  bottom: 60rpx;
+  bottom: 160rpx;
   width: 100rpx;
   height: 100rpx;
   border-radius: 50%;
-  background: #409eff;
+  background: $gradient-blue;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: $shadow-fab;
+  z-index: 100;
+  transition: transform $transition-fast;
+
+  &:active {
+    transform: scale(0.9);
+  }
+}
+.fab-icon {
   color: #fff;
-  font-size: 60rpx;
-  text-align: center;
-  line-height: 100rpx;
-  box-shadow: 0 8rpx 24rpx rgba(64, 158, 255, 0.5);
+  font-size: 56rpx;
+  font-weight: 300;
 }
 </style>

@@ -1,14 +1,40 @@
 <template>
   <view class="login-page">
-    <view class="logo">大雁养老 · 代理人</view>
-    <view class="form">
-      <view class="form-item">
-        <input v-model="mobile" placeholder="请输入手机号" class="input" />
+    <!-- 品牌区 -->
+    <view class="brand-section">
+      <view class="brand-logo">
+        <text class="brand-title">大雁养老</text>
+        <text class="brand-subtitle">代理人工作台</text>
       </view>
-      <button class="btn btn-outline" @click="loadChannels" :disabled="loadingChannels">
-        {{ loadingChannels ? '查询中...' : '查询关联渠道' }}
+    </view>
+
+    <!-- 表单卡片 -->
+    <view class="form-card">
+      <view class="form-item">
+        <text class="form-label">手机号</text>
+        <input
+          v-model="mobile"
+          placeholder="请输入手机号"
+          placeholder-class="input-placeholder"
+          inputmode="numeric"
+          maxlength="11"
+          class="form-input"
+        />
+      </view>
+
+      <button
+        class="btn btn-outline"
+        :class="{ 'is-disabled': loadingChannels }"
+        :disabled="loadingChannels"
+        @click="loadChannels"
+      >
+        <text v-if="loadingChannels">查询中...</text>
+        <text v-else>查询关联渠道</text>
       </button>
+
+      <!-- 渠道列表 -->
       <view v-if="channels.length" class="channel-list">
+        <text class="channel-hint">请选择所属渠道</text>
         <view
           v-for="ch in channels"
           :key="ch.channelCode"
@@ -16,15 +42,41 @@
           :class="{ active: selectedChannel === ch.channelCode }"
           @click="selectedChannel = ch.channelCode"
         >
-          {{ ch.channelName }} ({{ ch.channelCode }})
+          <view class="channel-radio">
+            <view v-if="selectedChannel === ch.channelCode" class="radio-dot" />
+          </view>
+          <view class="channel-info">
+            <text class="channel-name">{{ ch.channelName }}</text>
+            <text class="channel-code">{{ ch.channelCode }}</text>
+          </view>
         </view>
       </view>
+
       <view class="form-item">
-        <input v-model="password" password placeholder="请输入密码" class="input" />
+        <text class="form-label">密码</text>
+        <input
+          v-model="password"
+          password
+          placeholder="请输入密码"
+          placeholder-class="input-placeholder"
+          class="form-input"
+        />
       </view>
-      <button class="btn btn-primary" @click="handleLogin" :disabled="submitting">
-        {{ submitting ? '登录中...' : '登录' }}
+
+      <button
+        class="btn btn-primary"
+        :class="{ 'is-disabled': submitting }"
+        :disabled="submitting"
+        @click="handleLogin"
+      >
+        <text v-if="submitting">登录中...</text>
+        <text v-else>登 录</text>
       </button>
+    </view>
+
+    <!-- 底部版权 -->
+    <view class="footer">
+      <text class="footer-text">大雁养老 · 专业养老服务平台</text>
     </view>
   </view>
 </template>
@@ -90,53 +142,196 @@ async function handleLogin() {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+
 .login-page {
-  padding: 60rpx 40rpx;
   min-height: 100vh;
-  background: #fff;
+  background: $bg-page;
+  display: flex;
+  flex-direction: column;
 }
-.logo {
-  text-align: center;
-  font-size: 44rpx;
+
+/* 品牌区 */
+.brand-section {
+  background: $gradient-blue;
+  padding: 100rpx 48rpx 80rpx;
+  border-bottom-left-radius: 48rpx;
+  border-bottom-right-radius: 48rpx;
+}
+
+.brand-logo {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 56rpx;
   font-weight: bold;
-  color: #409eff;
-  margin: 80rpx 0 60rpx;
+  color: #fff;
+  letter-spacing: 4rpx;
 }
+
+.brand-subtitle {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 12rpx;
+  letter-spacing: 2rpx;
+}
+
+/* 表单卡片 */
+.form-card {
+  margin: -32rpx $spacing-lg 0;
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-xl $spacing-lg;
+  box-shadow: $shadow-hover;
+}
+
 .form-item {
-  margin: 30rpx 0;
+  margin-bottom: $spacing-lg;
 }
-.input {
-  border: 1px solid #dcdfe6;
-  border-radius: 8rpx;
-  padding: 20rpx;
+
+.form-label {
+  display: block;
+  font-size: 26rpx;
+  color: $text-regular;
+  margin-bottom: $spacing-sm;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  padding: 24rpx 28rpx;
+  font-size: 30rpx;
+  color: $text-primary;
+  transition: border-color $transition-base;
+
+  &:focus {
+    border-color: $brand-primary;
+  }
+}
+
+.input-placeholder {
+  color: $text-placeholder;
   font-size: 28rpx;
 }
+
+/* 按钮 */
 .btn {
-  margin: 20rpx 0;
-  border-radius: 8rpx;
-  font-size: 30rpx;
-  &-primary {
-    background: #409eff;
-    color: #fff;
+  width: 100%;
+  border-radius: $radius-md;
+  font-size: 32rpx;
+  font-weight: 500;
+  padding: 24rpx 0;
+  margin-top: $spacing-sm;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.98);
   }
-  &-outline {
-    background: #fff;
-    color: #409eff;
-    border: 1px solid #409eff;
+
+  &.is-disabled {
+    opacity: 0.6;
   }
 }
+
+.btn-primary {
+  background: $gradient-blue;
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(64, 158, 255, 0.3);
+}
+
+.btn-outline {
+  background: $bg-card;
+  color: $brand-primary;
+  border: 2rpx solid $brand-primary;
+}
+
+/* 渠道列表 */
 .channel-list {
-  margin: 20rpx 0;
+  margin: $spacing-md 0 $spacing-lg;
 }
+
+.channel-hint {
+  display: block;
+  font-size: 26rpx;
+  color: $text-secondary;
+  margin-bottom: $spacing-sm;
+}
+
 .channel-item {
-  padding: 20rpx;
-  border: 1px solid #dcdfe6;
-  border-radius: 8rpx;
-  margin-bottom: 12rpx;
-  &.active {
-    border-color: #409eff;
-    background: #ecf5ff;
-    color: #409eff;
+  display: flex;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-sm;
+  transition: all $transition-base;
+
+  &:active {
+    background: $bg-page;
   }
+
+  &.active {
+    border-color: $brand-primary;
+    background: $brand-primary-light;
+  }
+}
+
+.channel-radio {
+  width: 36rpx;
+  height: 36rpx;
+  border: 4rpx solid $border-base;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: $spacing-md;
+  flex-shrink: 0;
+  transition: border-color $transition-base;
+
+  .active & {
+    border-color: $brand-primary;
+  }
+}
+
+.radio-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background: $gradient-blue;
+}
+
+.channel-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.channel-name {
+  font-size: 28rpx;
+  color: $text-primary;
+  font-weight: 500;
+}
+
+.channel-code {
+  font-size: 22rpx;
+  color: $text-secondary;
+  margin-top: 4rpx;
+}
+
+/* 底部 */
+.footer {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 60rpx;
+}
+
+.footer-text {
+  font-size: 22rpx;
+  color: $text-placeholder;
 }
 </style>

@@ -10,22 +10,33 @@
           confirm-type="search"
           @confirm="onSearch"
         />
-        <button class="btn-search" size="mini" @click="onSearch">搜索</button>
+        <view class="btn-search dy-clickable" @click="onSearch">搜索</view>
       </view>
     </view>
 
     <!-- 客户列表 -->
     <view class="list">
-      <view v-if="loading && !customers.length" class="empty">加载中...</view>
-      <view v-else-if="!customers.length" class="empty">
-        暂无客户（接口待 Inc 5 提供）
-      </view>
+      <!-- 加载骨架 -->
+      <template v-if="loading && !customers.length">
+        <DySkeleton :rows="2" card />
+        <DySkeleton :rows="2" card />
+        <DySkeleton :rows="2" card />
+      </template>
 
+      <!-- 空状态 -->
+      <DyEmpty
+        v-else-if="!customers.length"
+        text="暂无客户"
+        icon="客"
+        color="orange"
+      />
+
+      <!-- 客户卡片 -->
       <view v-else>
         <view
           v-for="c in customers"
           :key="c.clientCode"
-          class="card"
+          class="card dy-clickable"
           @click="onCustomerClick(c)"
         >
           <view class="card-row">
@@ -49,6 +60,8 @@ import { ref, onMounted } from 'vue';
 import { onPullDownRefresh } from '@dcloudio/uni-app';
 import { getCustomers } from '@/api/customer';
 import type { Customer, ClientType } from '@/types';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const keyword = ref('');
 const customers = ref<Customer[]>([]);
@@ -128,47 +141,58 @@ onPullDownRefresh(async () => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .page {
-  padding: 24rpx 24rpx 60rpx;
+  padding: $spacing-md $spacing-md 60rpx;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: $bg-page;
 }
+
+/* 搜索栏 */
 .toolbar {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 20rpx 24rpx;
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
 }
 .search {
   display: flex;
   align-items: center;
 }
+.search-icon {
+  font-size: 28rpx;
+  margin-right: $spacing-xs;
+}
 .search-input {
   flex: 1;
-  border: 1px solid #dcdfe6;
-  border-radius: 8rpx;
+  border: 1px solid $border-base;
+  border-radius: $radius-sm;
   padding: 16rpx 20rpx;
   font-size: 28rpx;
+  background: $bg-page;
 }
 .btn-search {
-  margin-left: 16rpx;
-  background: #409eff;
+  margin-left: $spacing-sm;
+  background: $gradient-blue;
   color: #fff;
   font-size: 26rpx;
+  padding: 14rpx 32rpx;
+  border-radius: $radius-sm;
+  box-shadow: 0 4rpx 12rpx rgba(64, 158, 255, 0.3);
 }
+
+/* list */
 .list {
-  margin-top: 24rpx;
-}
-.empty {
-  text-align: center;
-  color: #909399;
-  font-size: 26rpx;
-  padding: 80rpx 0;
+  margin-top: $spacing-md;
 }
 .card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx 28rpx;
-  margin-bottom: 20rpx;
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-lg;
+  margin-bottom: $spacing-sm;
+  box-shadow: $shadow-card;
 }
 .card-row {
   display: flex;
@@ -181,12 +205,12 @@ onPullDownRefresh(async () => {
 .card-name {
   font-size: 30rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
 }
 .card-phone,
 .card-time {
   font-size: 26rpx;
-  color: #606266;
+  color: $text-regular;
 }
 .card-type {
   font-size: 24rpx;
@@ -194,15 +218,15 @@ onPullDownRefresh(async () => {
   border-radius: 20rpx;
 }
 .tp-self {
-  background: #ecf5ff;
-  color: #409eff;
+  background: $brand-primary-light;
+  color: $brand-primary;
 }
 .tp-family {
-  background: #fff7e6;
-  color: #ff9900;
+  background: $brand-warning-light;
+  color: $brand-warning;
 }
 .tp-elder {
-  background: #edfff3;
-  color: #19be6b;
+  background: $brand-success-light;
+  color: $brand-success;
 }
 </style>

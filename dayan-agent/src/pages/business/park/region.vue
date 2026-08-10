@@ -3,48 +3,66 @@
     <!-- 地图区域（固定顶部） -->
     <view class="map-section">
       <TiandituMap :markers="mapMarkers" :center="mapCenter" :zoom="mapZoom" />
-      <view class="map-label">📍 {{ pageTitle }}</view>
-      <view class="map-count">{{ totalCount }} {{ level === 'park' ? '家机构' : '个区域' }}</view>
+      <view class="map-label">
+        <text class="map-label-text">{{ pageTitle }}</text>
+      </view>
+      <view class="map-count">
+        <text class="map-count-num">{{ totalCount }}</text>
+        <text class="map-count-unit">{{ level === 'park' ? '家机构' : '个区域' }}</text>
+      </view>
     </view>
 
     <!-- 面包屑 -->
     <view class="breadcrumb">
-      <text>{{ breadcrumb || '加载中...' }}</text>
+      <text class="breadcrumb-text">{{ breadcrumb || '加载中...' }}</text>
     </view>
 
     <!-- 列表区域 -->
     <view class="list-section">
+      <!-- 加载骨架屏 -->
+      <template v-if="loading">
+        <DySkeleton v-for="i in 3" :key="i" :rows="1" avatar card />
+      </template>
+
       <!-- 下钻层：显示区域列表 -->
-      <template v-if="level !== 'park'">
+      <template v-else-if="level !== 'park'">
         <view class="list-header">
-          选择{{ levelName }}
-          <text v-if="regionItems.length" class="list-count">({{ regionItems.length }})</text>
+          <text>选择{{ levelName }}</text>
+          <text v-if="regionItems.length" class="list-count">{{ regionItems.length }} 个</text>
         </view>
         <view
           v-for="item in regionItems"
           :key="item.code"
-          class="region-item"
+          class="region-item dy-clickable"
           @click="onRegionClick(item)"
         >
           <text class="region-name">{{ item.name }}</text>
-          <text class="region-count">{{ item.count }} 家</text>
-          <text class="region-arrow">›</text>
+          <view class="region-right">
+            <text class="region-count">{{ item.count }} 家</text>
+            <text class="region-arrow">›</text>
+          </view>
         </view>
-        <view v-if="!loading && !regionItems.length" class="empty-state">
-          <text>该区域暂无机构</text>
-        </view>
+        <DyEmpty
+          v-if="!loading && !regionItems.length"
+          text="该区域暂无机构"
+          icon="空"
+          color="gray"
+        />
       </template>
 
       <!-- 末层：显示机构卡片清单 -->
       <template v-else>
-        <view class="list-header">机构清单({{ parkList.length }})</view>
+        <view class="list-header">
+          <text>机构清单</text>
+          <text class="list-count">{{ parkList.length }} 家</text>
+        </view>
         <view
           v-for="park in parkList"
           :key="park.parkCode"
-          class="park-card"
+          class="park-card dy-clickable"
           @click="onParkClick(park.parkCode)"
         >
-          <view class="park-img">🏥</view>
+          <DyIconBlock :text="park.shortName?.charAt(0) || '机'" color="blue" size="md" />
           <view class="park-info">
             <text class="park-name">{{ park.fullName }}</text>
             <text class="park-addr">{{ formatAddress(park) }}</text>
@@ -59,9 +77,12 @@
           </view>
           <text class="park-arrow">›</text>
         </view>
-        <view v-if="!loading && !parkList.length" class="empty-state">
-          <text>该区县暂无机构</text>
-        </view>
+        <DyEmpty
+          v-if="!loading && !parkList.length"
+          text="该区县暂无机构"
+          icon="空"
+          color="gray"
+        />
       </template>
     </view>
   </view>
@@ -71,6 +92,9 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import TiandituMap from '@/components/TiandituMap/TiandituMap.vue';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 import { getRegions } from '@/api/park';
 import type { RegionItem, ParkCard, RegionQuery, ParkCategory, DrillLevel } from '@/types/park';
 import { MUNICIPALITIES } from '@/types/park';
@@ -159,7 +183,7 @@ async function loadData() {
 
 // 区域名点击下钻
 function onRegionClick(item: RegionItem) {
-    if (level.value === 'province') {
+  if (level.value === 'province') {
     // 判断直辖市：跳过 city 层
     if (MUNICIPALITIES.includes(item.code)) {
       // 直辖市市级码规律：省码前2位 + 0100（如 110000 → 110100）
@@ -205,143 +229,167 @@ onLoad((options: any) => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import '@/styles/variables.scss';
+
 .region-page {
   min-height: 100vh;
-  background: #f5f7fa;
+  background: $bg-page;
   display: flex;
   flex-direction: column;
 }
+
+/* 地图区域 */
 .map-section {
-  height: 500rpx; /* 约 35vh */
+  height: 500rpx;
   position: relative;
   flex-shrink: 0;
+  border-bottom-left-radius: $radius-lg;
+  border-bottom-right-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-card;
 }
 .map-label {
   position: absolute;
-  top: 16rpx;
-  left: 20rpx;
+  top: $spacing-sm;
+  left: $spacing-md;
   background: rgba(255, 255, 255, 0.92);
-  padding: 8rpx 20rpx;
+  padding: 8rpx 24rpx;
   border-radius: 24rpx;
-  font-size: 22rpx;
-  color: #409eff;
   z-index: 10;
+}
+.map-label-text {
+  font-size: 24rpx;
+  color: $brand-primary;
+  font-weight: 500;
 }
 .map-count {
   position: absolute;
-  bottom: 16rpx;
-  right: 20rpx;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 8rpx 20rpx;
+  bottom: $spacing-sm;
+  right: $spacing-md;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 8rpx 24rpx;
   border-radius: 20rpx;
-  font-size: 22rpx;
-  color: #fff;
   z-index: 10;
 }
-.breadcrumb {
-  padding: 16rpx 24rpx;
-  background: #fff;
-  font-size: 24rpx;
-  color: #909399;
-  border-bottom: 1rpx solid #f0f0f0;
+.map-count-num {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: bold;
 }
+.map-count-unit {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-left: 4rpx;
+}
+
+/* 面包屑 */
+.breadcrumb {
+  padding: $spacing-md $spacing-lg;
+  background: $bg-card;
+  border-bottom: 1rpx solid $border-light;
+}
+.breadcrumb-text {
+  font-size: 24rpx;
+  color: $text-secondary;
+}
+
+/* 列表区域 */
 .list-section {
   flex: 1;
-  background: #fff;
+  background: $bg-page;
+  padding: $spacing-sm $spacing-md;
 }
 .list-header {
-  padding: 24rpx;
+  padding: $spacing-md;
   font-size: 26rpx;
-  color: #909399;
+  color: $text-secondary;
+  display: flex;
+  align-items: center;
 }
 .list-count {
-  color: #c0c4cc;
-  margin-left: 8rpx;
+  color: $text-placeholder;
+  margin-left: $spacing-xs;
 }
+
+/* 区域列表项 */
 .region-item {
   display: flex;
   align-items: center;
-  padding: 28rpx 24rpx;
-  border-bottom: 1rpx solid #f5f7fa;
+  justify-content: space-between;
+  padding: 30rpx $spacing-lg;
+  background: $bg-card;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-sm;
+  box-shadow: $shadow-card;
 }
 .region-name {
   flex: 1;
-  font-size: 30rpx;
-  color: #303133;
+  font-size: 32rpx;
+  color: $text-primary;
+  font-weight: 500;
+}
+.region-right {
+  display: flex;
+  align-items: center;
 }
 .region-count {
-  font-size: 24rpx;
-  color: #c0c4cc;
-  margin-right: 16rpx;
+  font-size: 26rpx;
+  color: $brand-primary;
+  margin-right: $spacing-sm;
 }
 .region-arrow {
-  color: #c0c4cc;
-  font-size: 28rpx;
+  color: $text-placeholder;
+  font-size: 36rpx;
 }
+
+/* 机构卡片 */
 .park-card {
   display: flex;
   align-items: center;
-  padding: 24rpx;
-  margin: 16rpx;
-  background: #fff;
-  border-radius: 16rpx;
-  border: 1rpx solid #ebeef5;
-}
-.park-img {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 16rpx;
-  background: #e8f0fe;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40rpx;
-  flex-shrink: 0;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-sm;
+  background: $bg-card;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
 }
 .park-info {
-  margin-left: 20rpx;
+  margin-left: $spacing-md;
   flex: 1;
 }
 .park-name {
   display: block;
-  font-size: 28rpx;
+  font-size: 30rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
 }
 .park-addr {
   display: block;
   font-size: 22rpx;
-  color: #909399;
-  margin-top: 8rpx;
+  color: $text-secondary;
+  margin-top: $spacing-xs;
 }
 .park-tags {
-  margin-top: 10rpx;
+  margin-top: $spacing-sm;
   display: flex;
-  gap: 12rpx;
+  gap: $spacing-sm;
 }
 .tag {
   font-size: 20rpx;
-  padding: 4rpx 14rpx;
+  padding: 4rpx 16rpx;
   border-radius: 12rpx;
 }
 .tag-price {
-  background: #fdf6ec;
-  color: #e6a23c;
+  background: $brand-warning-light;
+  color: $brand-warning;
 }
 .tag-bed {
-  background: #f0f9eb;
-  color: #67c23a;
+  background: $brand-success-light;
+  color: $brand-success;
 }
 .park-arrow {
-  color: #c0c4cc;
-  font-size: 28rpx;
+  color: $text-placeholder;
+  font-size: 36rpx;
   flex-shrink: 0;
-}
-.empty-state {
-  padding: 80rpx 0;
-  text-align: center;
-  color: #c0c4cc;
-  font-size: 26rpx;
 }
 </style>

@@ -1,7 +1,10 @@
 <template>
   <view class="detail-page">
-    <view v-if="loading" class="loading-state">
-      <text>加载中...</text>
+    <!-- 骨架屏 -->
+    <view v-if="loading" class="skeleton-wrap">
+      <DySkeleton :rows="1" avatar card />
+      <DySkeleton :rows="4" card />
+      <DySkeleton :rows="3" card />
     </view>
 
     <view v-else-if="park" class="detail-content">
@@ -9,13 +12,13 @@
       <view class="header-section">
         <text class="park-title">{{ park.fullName }}</text>
         <view class="park-tags">
-          <text v-if="park.abilityTypeDescription" class="tag tag-type">{{ park.abilityTypeDescription }}</text>
-          <text v-if="park.natureTypeDescription" class="tag tag-nature">{{ park.natureTypeDescription }}</text>
-          <text v-if="park.isHot === 1" class="tag tag-hot">🔥 热门</text>
+          <text v-if="park.abilityTypeDescription" class="dy-tag dy-tag-blue">{{ park.abilityTypeDescription }}</text>
+          <text v-if="park.natureTypeDescription" class="dy-tag dy-tag-green">{{ park.natureTypeDescription }}</text>
+          <text v-if="park.isHot === 1" class="dy-tag dy-tag-red">热门</text>
         </view>
       </view>
 
-      <!-- 地址+地图 -->
+      <!-- 地址+电话 -->
       <view class="info-card">
         <view class="info-row">
           <text class="info-label">地址</text>
@@ -36,19 +39,19 @@
       <view class="info-card">
         <view class="stat-grid">
           <view v-if="park.totalBeds != null" class="stat-item">
-            <text class="stat-value">{{ park.totalBeds }}</text>
+            <text class="stat-value blue">{{ park.totalBeds }}</text>
             <text class="stat-label">总床位</text>
           </view>
           <view v-if="park.availableBeds != null" class="stat-item">
-            <text class="stat-value">{{ park.availableBeds }}</text>
+            <text class="stat-value green">{{ park.availableBeds }}</text>
             <text class="stat-label">可用床位</text>
           </view>
           <view v-if="park.staffCount != null" class="stat-item">
-            <text class="stat-value">{{ park.staffCount }}</text>
+            <text class="stat-value orange">{{ park.staffCount }}</text>
             <text class="stat-label">员工数</text>
           </view>
           <view v-if="park.nurseCount != null" class="stat-item">
-            <text class="stat-value">{{ park.nurseCount }}</text>
+            <text class="stat-value blue">{{ park.nurseCount }}</text>
             <text class="stat-label">护理员</text>
           </view>
         </view>
@@ -63,44 +66,57 @@
       </view>
 
       <!-- 价格信息 -->
-      <view v-if="park.minPriceDisplay" class="section-title">价格信息</view>
-      <view v-if="park.minPriceDisplay" class="info-card">
-        <view class="price-row">
-          <text class="price-value">¥{{ park.minPriceDisplay }}{{ park.maxPriceDisplay ? ' - ' + park.maxPriceDisplay : '' }}</text>
-          <text class="price-unit">/{{ park.priceUnit || '月' }}</text>
+      <template v-if="park.minPriceDisplay">
+        <view class="section-title">价格信息</view>
+        <view class="info-card price-highlight">
+          <view class="price-row">
+            <text class="price-symbol">¥</text>
+            <text class="price-value">{{ park.minPriceDisplay }}{{ park.maxPriceDisplay ? ' - ' + park.maxPriceDisplay : '' }}</text>
+            <text class="price-unit">/{{ park.priceUnit || '月' }}</text>
+          </view>
+          <view v-if="park.depositAmount" class="info-row">
+            <text class="info-label">押金</text>
+            <text class="info-value">¥{{ park.depositAmount }}</text>
+          </view>
+          <view v-if="park.contractPeriod" class="info-row">
+            <text class="info-label">合同周期</text>
+            <text class="info-value">{{ park.contractPeriod }}</text>
+          </view>
         </view>
-        <view v-if="park.depositAmount" class="info-row">
-          <text class="info-label">押金</text>
-          <text class="info-value">¥{{ park.depositAmount }}</text>
-        </view>
-        <view v-if="park.contractPeriod" class="info-row">
-          <text class="info-label">合同周期</text>
-          <text class="info-value">{{ park.contractPeriod }}</text>
-        </view>
-      </view>
+      </template>
 
       <!-- 机构简介 -->
-      <view v-if="park.baseDescription" class="section-title">机构简介</view>
-      <view v-if="park.baseDescription" class="info-card">
-        <text class="desc-text">{{ park.baseDescription }}</text>
-      </view>
+      <template v-if="park.baseDescription">
+        <view class="section-title">机构简介</view>
+        <view class="info-card">
+          <text class="desc-text">{{ park.baseDescription }}</text>
+        </view>
+      </template>
 
       <!-- 特色 -->
-      <view v-if="park.specialtyDescription" class="section-title">机构特色</view>
-      <view v-if="park.specialtyDescription" class="info-card">
-        <text class="desc-text">{{ park.specialtyDescription }}</text>
-      </view>
+      <template v-if="park.specialtyDescription">
+        <view class="section-title">机构特色</view>
+        <view class="info-card">
+          <text class="desc-text">{{ park.specialtyDescription }}</text>
+        </view>
+      </template>
 
       <!-- 入住说明 -->
-      <view v-if="park.checkInDescription" class="section-title">入住说明</view>
-      <view v-if="park.checkInDescription" class="info-card">
-        <text class="desc-text">{{ park.checkInDescription }}</text>
-      </view>
+      <template v-if="park.checkInDescription">
+        <view class="section-title">入住说明</view>
+        <view class="info-card">
+          <text class="desc-text">{{ park.checkInDescription }}</text>
+        </view>
+      </template>
     </view>
 
-    <view v-else class="empty-state">
-      <text>机构信息不存在</text>
-    </view>
+    <!-- 空状态 -->
+    <DyEmpty
+      v-else
+      text="机构信息不存在"
+      icon="空"
+      color="gray"
+    />
   </view>
 </template>
 
@@ -109,6 +125,8 @@ import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getParkDetail } from '@/api/park';
 import type { ParkDetail } from '@/types/park';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const park = ref<ParkDetail | null>(null);
 const loading = ref(true);
@@ -133,54 +151,53 @@ onLoad(async (options: any) => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .detail-page {
   min-height: 100vh;
-  background: #f5f7fa;
+  background: $bg-page;
   padding-bottom: 40rpx;
 }
-.loading-state, .empty-state {
-  padding: 120rpx 0;
-  text-align: center;
-  color: #909399;
-  font-size: 28rpx;
+
+.skeleton-wrap {
+  padding: $spacing-md;
 }
+
+/* 名称区 */
 .header-section {
-  background: #fff;
-  padding: 32rpx 24rpx;
-  margin-bottom: 16rpx;
+  background: $gradient-blue;
+  padding: $spacing-xl $spacing-lg $spacing-lg;
 }
 .park-title {
   display: block;
-  font-size: 40rpx;
+  font-size: 42rpx;
   font-weight: bold;
-  color: #303133;
-  margin-bottom: 16rpx;
+  color: #fff;
+  margin-bottom: $spacing-sm;
 }
 .park-tags {
   display: flex;
-  gap: 12rpx;
+  gap: $spacing-sm;
   flex-wrap: wrap;
 }
-.tag {
-  font-size: 22rpx;
-  padding: 6rpx 16rpx;
-  border-radius: 12rpx;
-}
-.tag-type { background: #e8f4ff; color: #409eff; }
-.tag-nature { background: #f0f9eb; color: #67c23a; }
-.tag-hot { background: #fef0f0; color: #f56c6c; }
+
+/* 区块标题 */
 .section-title {
-  padding: 24rpx 24rpx 12rpx;
-  font-size: 30rpx;
+  padding: $spacing-lg $spacing-lg $spacing-sm;
+  font-size: 32rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
 }
+
+/* 信息卡片 */
 .info-card {
-  background: #fff;
-  margin: 0 24rpx 16rpx;
-  border-radius: 16rpx;
-  padding: 24rpx;
+  background: $bg-card;
+  margin: 0 $spacing-lg $spacing-sm;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
 }
 .info-row {
   display: flex;
@@ -189,54 +206,78 @@ onLoad(async (options: any) => {
 .info-label {
   width: 140rpx;
   font-size: 26rpx;
-  color: #909399;
+  color: $text-secondary;
   flex-shrink: 0;
 }
 .info-value {
   flex: 1;
   font-size: 26rpx;
-  color: #303133;
+  color: $text-primary;
 }
+
+/* 统计四宫格 */
 .stat-grid {
   display: flex;
   flex-wrap: wrap;
-  margin-bottom: 16rpx;
+  margin-bottom: $spacing-sm;
 }
 .stat-item {
   width: 25%;
   text-align: center;
-  padding: 16rpx 0;
+  padding: $spacing-sm 0;
 }
 .stat-value {
   display: block;
-  font-size: 40rpx;
+  font-size: 44rpx;
   font-weight: bold;
-  color: #409eff;
+
+  &.blue {
+    color: $brand-primary;
+  }
+  &.green {
+    color: $brand-success;
+  }
+  &.orange {
+    color: $brand-warning;
+  }
 }
 .stat-label {
   display: block;
   font-size: 22rpx;
-  color: #909399;
-  margin-top: 8rpx;
+  color: $text-secondary;
+  margin-top: $spacing-xs;
+}
+
+/* 价格高亮区 */
+.price-highlight {
+  background: linear-gradient(135deg, #fffbeb 0%, $bg-card 100%);
+  border: 1rpx solid rgba(255, 153, 0, 0.2);
 }
 .price-row {
   display: flex;
   align-items: baseline;
   padding: 12rpx 0;
 }
-.price-value {
-  font-size: 48rpx;
+.price-symbol {
+  font-size: 28rpx;
   font-weight: bold;
-  color: #e6a23c;
+  color: $brand-warning;
+}
+.price-value {
+  font-size: 52rpx;
+  font-weight: bold;
+  color: $brand-warning;
 }
 .price-unit {
   font-size: 24rpx;
-  color: #909399;
-  margin-left: 8rpx;
+  color: $text-secondary;
+  margin-left: $spacing-xs;
 }
+
+/* 描述文字 */
 .desc-text {
-  font-size: 26rpx;
-  color: #606266;
-  line-height: 1.7;
+  font-size: 28rpx;
+  color: $text-regular;
+  line-height: 1.8;
 }
 </style>

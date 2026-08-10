@@ -1,10 +1,11 @@
-/* uView 主题变量 */
+/* uView 主题变量覆盖 */
 $u-primary: #409eff;
 $u-warning: #ff9900;
 $u-success: #19be6b;
 $u-error: #fa3534;
 $u-info: #909399;
 
-/* 项目自定义变量 */
-$dayan-primary: #409eff;
-$dayan-bg: #f8f8f8;
+/* 项目设计令牌（用 @ 别名，避免 uni.scss 被注入各目录页面时相对路径失真） */
+@import '@/styles/variables.scss';
+
+/* 公共样式类（通过 @import '@/styles/common' 在页面中按需引入） */

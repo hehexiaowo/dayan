@@ -5,7 +5,7 @@
     <!-- #endif -->
     <!-- #ifndef H5 -->
     <view class="map-placeholder">
-      <text class="map-placeholder-text">🗺️ 地图组件</text>
+      <text class="map-placeholder-text">地图组件</text>
     </view>
     <!-- #endif -->
   </view>

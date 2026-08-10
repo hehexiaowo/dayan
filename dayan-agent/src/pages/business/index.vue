@@ -1,22 +1,24 @@
 <template>
-  <view class="page">
+  <view class="page dy-safe-bottom">
+    <!-- 渐变 header -->
     <view class="header">
       <text class="header-title">展业工具</text>
       <text class="header-sub">查询机构、采购权益、报名活动</text>
     </view>
 
     <!-- 找机构 -->
-    <view class="card" @click="onSection('park')">
-      <view class="card-icon" style="background: #409eff">机</view>
+    <view class="card dy-clickable" @click="onSection('park')">
+      <DyIconBlock text="机" color="blue" size="lg" />
       <view class="card-body">
         <view class="card-title">找机构</view>
         <view class="card-desc">旅居养老 / 活力长居 / 照护长居</view>
       </view>
+      <text class="card-arrow">›</text>
     </view>
 
     <!-- 大雁商城 -->
-    <view class="card" @click="onSection('mall')">
-      <view class="card-icon" style="background: #19be6b">商</view>
+    <view class="card dy-clickable" @click="onSection('mall')">
+      <DyIconBlock text="商" color="green" size="lg" />
       <view class="card-body">
         <view class="card-title">大雁商城</view>
         <view class="card-desc">权益 / 场景 / 课程 / 旅居商品</view>
@@ -25,8 +27,8 @@
     </view>
 
     <!-- 场景活动 -->
-    <view class="card" @click="onSection('activity')">
-      <view class="card-icon" style="background: #ff9900">活</view>
+    <view class="card dy-clickable" @click="onSection('activity')">
+      <DyIconBlock text="活" color="orange" size="lg" />
       <view class="card-body">
         <view class="card-title">场景活动</view>
         <view class="card-desc">参观体验 / 健康讲座 / 节日活动</view>
@@ -37,6 +39,8 @@
 </template>
 
 <script setup lang="ts">
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
+
 function onSection(type: string) {
   if (type === 'park') {
     uni.navigateTo({ url: '/pages/business/park/categories' });
@@ -51,68 +55,70 @@ function onSection(type: string) {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .page {
-  padding: 24rpx 24rpx 60rpx;
+  padding: $spacing-md $spacing-md 0;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: $bg-page;
 }
+
+/* 渐变 header */
 .header {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 28rpx;
-  margin-bottom: 24rpx;
+  background: $gradient-blue;
+  border-radius: $radius-lg;
+  padding: $spacing-xl $spacing-lg;
+  margin-bottom: $spacing-md;
 }
 .header-title {
-  font-size: 34rpx;
+  display: block;
+  font-size: 38rpx;
   font-weight: bold;
-  color: #303133;
+  color: #fff;
 }
 .header-sub {
   display: block;
-  margin-top: 8rpx;
+  margin-top: $spacing-sm;
   font-size: 26rpx;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.85);
 }
+
+/* 功能卡片 */
 .card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 28rpx;
-  margin-bottom: 20rpx;
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
   display: flex;
   align-items: center;
-}
-.card-icon {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 36rpx;
-  font-weight: bold;
-  flex-shrink: 0;
+  box-shadow: $shadow-card;
 }
 .card-body {
-  margin-left: 24rpx;
+  margin-left: $spacing-md;
   flex: 1;
 }
 .card-title {
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
 }
 .card-desc {
-  margin-top: 8rpx;
-  font-size: 26rpx;
-  color: #909399;
+  margin-top: $spacing-xs;
+  font-size: 24rpx;
+  color: $text-secondary;
 }
 .card-tag {
   font-size: 22rpx;
-  color: #ff9900;
-  background: #fff7e6;
-  padding: 4rpx 16rpx;
+  color: $brand-warning;
+  background: $brand-warning-light;
+  padding: 6rpx 18rpx;
   border-radius: 20rpx;
+  flex-shrink: 0;
+}
+.card-arrow {
+  font-size: 40rpx;
+  color: $text-placeholder;
   flex-shrink: 0;
 }
 </style>

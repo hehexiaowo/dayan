@@ -1,5 +1,6 @@
 <template>
   <view class="page">
+    <!-- 渐变 header -->
     <view class="header">
       <text class="header-title">学习中心</text>
       <text class="header-sub">专业赋能，持续提升</text>
@@ -20,73 +21,90 @@
 
     <!-- 内容列表 -->
     <view class="list">
-      <view class="empty">
-        暂无{{ activeTabLabel }}内容
-      </view>
+      <DyEmpty
+        :text="`暂无${activeTabLabel}内容`"
+        :icon="emptyIcon"
+        color="blue"
+      />
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 interface TabItem {
   key: string;
   label: string;
+  icon: string;
 }
 
 const tabs: TabItem[] = [
-  { key: 'article', label: '资讯' },
-  { key: 'course', label: '课程' },
-  { key: 'script', label: '话术' },
+  { key: 'article', label: '资讯', icon: '资' },
+  { key: 'course', label: '课程', icon: '课' },
+  { key: 'script', label: '话术', icon: '话' },
 ];
 
 const activeTab = ref('article');
 const activeTabLabel = computed(() =>
   tabs.find((t) => t.key === activeTab.value)?.label || '',
 );
+const emptyIcon = computed(() =>
+  tabs.find((t) => t.key === activeTab.value)?.icon || '空',
+);
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .page {
-  padding: 24rpx 24rpx 60rpx;
+  padding: $spacing-md $spacing-md 60rpx;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: $bg-page;
 }
+
+/* 渐变 header */
 .header {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 28rpx;
-  margin-bottom: 24rpx;
+  background: $gradient-blue;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
 }
 .header-title {
-  font-size: 34rpx;
+  font-size: 38rpx;
   font-weight: bold;
-  color: #303133;
+  color: #fff;
 }
 .header-sub {
   display: block;
-  margin-top: 8rpx;
+  margin-top: $spacing-xs;
   font-size: 26rpx;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.85);
 }
+
+/* tabs */
 .tabs {
   display: flex;
-  background: #fff;
-  border-radius: 16rpx;
-  margin-bottom: 24rpx;
+  background: $bg-card;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-md;
   overflow: hidden;
+  box-shadow: $shadow-card;
 }
 .tab-item {
   flex: 1;
   text-align: center;
-  padding: 24rpx 0;
+  padding: $spacing-md 0;
   font-size: 28rpx;
-  color: #606266;
+  color: $text-regular;
   position: relative;
+  transition: color $transition-fast;
 }
 .tab-item.active {
-  color: #409eff;
+  color: $brand-primary;
   font-weight: bold;
 }
 .tab-item.active::after {
@@ -96,14 +114,17 @@ const activeTabLabel = computed(() =>
   left: 50%;
   transform: translateX(-50%);
   width: 60rpx;
-  height: 4rpx;
-  background: #409eff;
-  border-radius: 2rpx;
+  height: 6rpx;
+  background: $gradient-blue;
+  border-radius: 3rpx;
 }
-.empty {
-  text-align: center;
-  color: #909399;
-  font-size: 26rpx;
-  padding: 80rpx 0;
+
+/* list */
+.list {
+  min-height: 400rpx;
+  background: $bg-card;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+  padding: $spacing-lg;
 }
 </style>

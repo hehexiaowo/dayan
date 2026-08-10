@@ -1,0 +1,62 @@
+/**
+ * 大雁养老 Agent 端设计令牌
+ *
+ * 统一全项目颜色/间距/圆角/阴影/渐变，消除硬编码 hex。
+ * 各页面 @import '@/styles/variables.scss' 后使用。
+ */
+
+// ===== 品牌色系 =====
+$brand-primary: #409eff;
+$brand-primary-dark: #337ecc;
+$brand-primary-light: #ecf5ff;
+$brand-success: #19be6b;
+$brand-success-light: #edfff3;
+$brand-warning: #ff9900;
+$brand-warning-light: #fff7e6;
+$brand-error: #fa3534;
+$brand-error-light: #fef0f0;
+$brand-info: #909399;
+$brand-info-light: #f4f4f5;
+
+// ===== 文本灰阶（4 级）=====
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-placeholder: #c0c4cc;
+
+// ===== 背景 =====
+$bg-page: #f5f7fa;
+$bg-card: #ffffff;
+$bg-mask: rgba(0, 0, 0, 0.45);
+
+// ===== 边框 =====
+$border-base: #ebeef5;
+$border-light: #f0f0f0;
+
+// ===== 圆角（3 级）=====
+$radius-sm: 8rpx;
+$radius-md: 16rpx;
+$radius-lg: 24rpx;
+
+// ===== 阴影 =====
+$shadow-card: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+$shadow-hover: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+$shadow-fab: 0 8rpx 24rpx rgba(64, 158, 255, 0.35);
+
+// ===== 间距 =====
+$spacing-xs: 8rpx;
+$spacing-sm: 16rpx;
+$spacing-md: 24rpx;
+$spacing-lg: 32rpx;
+$spacing-xl: 48rpx;
+
+// ===== 渐变（图标色块用）=====
+$gradient-blue: linear-gradient(135deg, #409eff, #5f8afe);
+$gradient-green: linear-gradient(135deg, #19be6b, #2bcc7a);
+$gradient-orange: linear-gradient(135deg, #ff9900, #ffb84d);
+$gradient-red: linear-gradient(135deg, #fa3534, #ff6b6b);
+$gradient-gray: linear-gradient(135deg, #909399, #b1b3b8);
+
+// ===== 动画 =====
+$transition-fast: 150ms ease;
+$transition-base: 200ms ease;

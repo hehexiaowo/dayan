@@ -1,27 +1,38 @@
 <template>
   <view class="categories-page">
-    <!-- Hero 区 -->
+    <!-- Hero 渐变区 -->
     <view class="hero">
       <text class="hero-title">全国养老机构网络</text>
       <text class="hero-sub">按居住形态查询，为长辈找到合适的家</text>
     </view>
 
+    <!-- 加载骨架屏 -->
+    <view v-if="loading" class="cat-list">
+      <DySkeleton v-for="i in 3" :key="i" :rows="1" avatar card />
+    </view>
+
     <!-- 分类卡片 -->
-    <view class="cat-list">
+    <view v-else class="cat-list">
       <view
         v-for="cat in categories"
         :key="cat.category"
-        class="cat-card"
+        class="cat-card dy-clickable"
         @click="onCategoryClick(cat)"
       >
-        <view class="cat-icon" :class="'ico-' + cat.category">{{ iconMap[cat.category] }}</view>
+        <DyIconBlock
+          :text="iconText[cat.category]"
+          :color="iconColor[cat.category]"
+          size="lg"
+        />
         <view class="cat-info">
           <text class="cat-name">{{ cat.categoryName }}</text>
           <text class="cat-desc">{{ descMap[cat.category] }}</text>
         </view>
-        <view class="cat-count" :class="{ 'empty': !cat.available }">
-          {{ cat.available ? cat.count + ' 家' : '即将上线' }}
+        <view class="cat-count" :class="{ empty: !cat.available }">
+          <text v-if="cat.available">{{ cat.count }} 家</text>
+          <text v-else>即将上线</text>
         </view>
+        <text v-if="cat.available" class="cat-arrow">›</text>
       </view>
     </view>
   </view>
@@ -31,13 +42,22 @@
 import { ref, onMounted } from 'vue';
 import { getCategories } from '@/api/park';
 import type { CategoryCount, ParkCategory } from '@/types/park';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 
 const categories = ref<CategoryCount[]>([]);
+const loading = ref(true);
 
-const iconMap: Record<ParkCategory, string> = {
-  vital: '🏃',
-  care: '🏥',
-  sojourn: '🏖️',
+const iconText: Record<ParkCategory, string> = {
+  vital: '活',
+  care: '护',
+  sojourn: '旅',
+};
+
+const iconColor: Record<ParkCategory, 'blue' | 'orange' | 'green'> = {
+  vital: 'blue',
+  care: 'orange',
+  sojourn: 'green',
 };
 
 const descMap: Record<ParkCategory, string> = {
@@ -47,6 +67,7 @@ const descMap: Record<ParkCategory, string> = {
 };
 
 async function loadCategories() {
+  loading.value = true;
   try {
     categories.value = await getCategories();
   } catch (e) {
@@ -56,12 +77,14 @@ async function loadCategories() {
       { category: 'care', categoryName: '照护长居', count: 0, available: true },
       { category: 'sojourn', categoryName: '旅居养老', count: 0, available: false },
     ];
+  } finally {
+    loading.value = false;
   }
 }
 
 function onCategoryClick(cat: CategoryCount) {
   if (!cat.available) {
-    uni.showToast({ title: '旅居机构即将上线', icon: 'none' });
+    uni.showToast({ title: `${cat.categoryName}即将上线`, icon: 'none' });
     return;
   }
   uni.navigateTo({
@@ -72,74 +95,81 @@ function onCategoryClick(cat: CategoryCount) {
 onMounted(loadCategories);
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import '@/styles/variables.scss';
+
 .categories-page {
   min-height: 100vh;
-  background: #f5f7fa;
+  background: $bg-page;
 }
+
+/* Hero 区 */
 .hero {
-  background: linear-gradient(135deg, #409eff, #66b1ff);
-  padding: 40rpx 32rpx;
-  color: #fff;
+  background: $gradient-blue;
+  padding: 56rpx $spacing-lg 48rpx;
+  border-bottom-left-radius: $radius-lg;
+  border-bottom-right-radius: $radius-lg;
 }
 .hero-title {
   display: block;
-  font-size: 40rpx;
+  font-size: 42rpx;
   font-weight: bold;
-  margin-bottom: 8rpx;
+  color: #fff;
+  letter-spacing: 2rpx;
 }
 .hero-sub {
-  font-size: 24rpx;
-  opacity: 0.85;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: $spacing-sm;
 }
+
+/* 分类卡片 */
 .cat-list {
-  padding: 24rpx;
+  padding: $spacing-md;
 }
 .cat-card {
-  background: #fff;
-  border-radius: 20rpx;
-  padding: 32rpx;
-  margin-bottom: 20rpx;
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
   display: flex;
   align-items: center;
-  border: 1rpx solid #ebeef5;
+  border: 1rpx solid $border-base;
+  box-shadow: $shadow-card;
 }
-.cat-icon {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 44rpx;
-  flex-shrink: 0;
-}
-.ico-vital { background: #e8f4ff; }
-.ico-care { background: #fdf6ec; }
-.ico-sojourn { background: #f0f9eb; }
 .cat-info {
-  margin-left: 24rpx;
+  margin-left: $spacing-md;
   flex: 1;
 }
 .cat-name {
   display: block;
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
 }
 .cat-desc {
   display: block;
-  font-size: 22rpx;
-  color: #909399;
-  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: $text-secondary;
+  margin-top: $spacing-xs;
 }
 .cat-count {
-  font-size: 26rpx;
-  color: #409eff;
+  font-size: 28rpx;
+  color: $brand-primary;
   font-weight: bold;
   flex-shrink: 0;
+
+  &.empty {
+    font-size: 22rpx;
+    color: $text-placeholder;
+    background: $brand-info-light;
+    padding: 8rpx 20rpx;
+    border-radius: 20rpx;
+  }
 }
-.cat-count.empty {
-  color: #c0c4cc;
+.cat-arrow {
+  font-size: 40rpx;
+  color: $text-placeholder;
+  margin-left: $spacing-sm;
 }
 </style>

@@ -1,13 +1,20 @@
 <template>
   <view class="page">
-    <!-- 个人信息卡 -->
+    <!-- 个人信息卡（渐变） -->
     <view class="profile-card">
       <view class="profile-row">
-        <image
-          class="avatar"
-          :src="agentInfo.avatar || defaultAvatar"
-          mode="aspectFill"
-        />
+        <!-- 本地头像占位（无 CDN 依赖） -->
+        <view class="avatar-wrap">
+          <image
+            v-if="agentInfo.avatar"
+            class="avatar"
+            :src="agentInfo.avatar"
+            mode="aspectFill"
+          />
+          <view v-else class="avatar-fallback">
+            <text class="avatar-text">{{ avatarChar }}</text>
+          </view>
+        </view>
         <view class="profile-text">
           <view class="name">{{ displayName }}</view>
           <view class="channel">
@@ -17,7 +24,7 @@
       </view>
       <view class="profile-meta">
         <text class="meta-item">工号：{{ agentInfo.agentCode || agentCode || '-' }}</text>
-        <text class="meta-item" v-if="agentInfo.agentLevel">
+        <text v-if="agentInfo.agentLevel" class="meta-item">
           等级：{{ agentInfo.agentLevel }}
         </text>
       </view>
@@ -28,12 +35,15 @@
       <view
         v-for="item in menuItems"
         :key="item.key"
-        class="menu-item"
+        class="menu-item dy-clickable"
         @click="onMenu(item)"
       >
-        <view class="menu-icon" :style="{ background: item.color }">
-          <text class="menu-icon-text">{{ item.label.charAt(0) }}</text>
-        </view>
+        <DyIconBlock
+          :text="item.label.charAt(0)"
+          :color="item.color"
+          size="sm"
+          shape="circle"
+        />
         <text class="menu-label">{{ item.label }}</text>
         <text class="menu-arrow">›</text>
       </view>
@@ -47,11 +57,13 @@ import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
 import { getAgentInfo } from '@/api/agent';
 import type { Agent } from '@/types';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
+
+type IconColor = 'blue' | 'green' | 'orange' | 'red' | 'gray';
 
 const userStore = useUserStore();
 
 const agentInfo = ref<Partial<Agent>>({});
-const defaultAvatar = 'https://cdn.uviewui.com/uview/album/1.jpg';
 
 const displayName = computed(() => {
   return (
@@ -63,6 +75,12 @@ const displayName = computed(() => {
   );
 });
 
+/** 头像首字（无图片时显示） */
+const avatarChar = computed(() => {
+  const name = displayName.value;
+  return name ? name.charAt(0) : '代';
+});
+
 const channelCode = computed(() => userStore.channelCode || '');
 const agentCode = computed(
   () => (userStore.userInfo && userStore.userInfo.accountCode) || '',
@@ -71,15 +89,15 @@ const agentCode = computed(
 interface MenuItem {
   key: string;
   label: string;
-  color: string;
+  color: IconColor;
 }
 
 const menuItems: MenuItem[] = [
-  { key: 'stats', label: '经营数据', color: '#409eff' },
-  { key: 'equity', label: '我的权益', color: '#19be6b' },
-  { key: 'orders', label: '我的订单', color: '#ff9900' },
-  { key: 'shares', label: '分享记录', color: '#fa3534' },
-  { key: 'settings', label: '设置', color: '#909399' },
+  { key: 'stats', label: '经营数据', color: 'blue' },
+  { key: 'equity', label: '我的权益', color: 'green' },
+  { key: 'orders', label: '我的订单', color: 'orange' },
+  { key: 'shares', label: '分享记录', color: 'red' },
+  { key: 'settings', label: '设置', color: 'gray' },
 ];
 
 function onMenu(item: MenuItem) {
@@ -112,21 +130,33 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .page {
-  padding: 24rpx 24rpx 60rpx;
+  padding: $spacing-md $spacing-md 60rpx;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: $bg-page;
 }
+
+/* 渐变 profile 卡片 */
 .profile-card {
-  background: linear-gradient(135deg, #409eff 0%, #5f8afe 100%);
-  border-radius: 16rpx;
-  padding: 36rpx 32rpx;
+  background: $gradient-blue;
+  border-radius: $radius-lg;
+  padding: 40rpx $spacing-lg;
   color: #fff;
   box-shadow: 0 8rpx 24rpx rgba(64, 158, 255, 0.25);
 }
 .profile-row {
   display: flex;
   align-items: center;
+}
+
+/* 头像 */
+.avatar-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  flex-shrink: 0;
 }
 .avatar {
   width: 96rpx;
@@ -135,64 +165,69 @@ onShow(() => {
   border: 4rpx solid rgba(255, 255, 255, 0.6);
   background: #fff;
 }
+.avatar-fallback {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  border: 4rpx solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-text {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #fff;
+}
+
 .profile-text {
-  margin-left: 24rpx;
+  margin-left: $spacing-md;
   flex: 1;
 }
 .name {
-  font-size: 36rpx;
+  font-size: 38rpx;
   font-weight: bold;
 }
 .channel {
   font-size: 26rpx;
-  margin-top: 8rpx;
+  margin-top: $spacing-xs;
   opacity: 0.9;
 }
 .profile-meta {
-  margin-top: 24rpx;
+  margin-top: $spacing-md;
   font-size: 24rpx;
   opacity: 0.92;
 }
 .meta-item {
-  margin-right: 32rpx;
+  margin-right: $spacing-lg;
 }
+
+/* 菜单 */
 .menu {
-  margin-top: 24rpx;
-  background: #fff;
-  border-radius: 16rpx;
+  margin-top: $spacing-md;
+  background: $bg-card;
+  border-radius: $radius-md;
   overflow: hidden;
+  box-shadow: $shadow-card;
 }
 .menu-item {
   display: flex;
   align-items: center;
   padding: 28rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  border-bottom: 1rpx solid $border-light;
 }
 .menu-item:last-child {
   border-bottom: none;
 }
-.menu-icon {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.menu-icon-text {
-  color: #fff;
-  font-size: 30rpx;
-  font-weight: bold;
-}
 .menu-label {
-  margin-left: 24rpx;
+  margin-left: $spacing-md;
   font-size: 30rpx;
-  color: #303133;
+  color: $text-primary;
   flex: 1;
 }
 .menu-arrow {
   font-size: 36rpx;
-  color: #c0c4cc;
+  color: $text-placeholder;
 }
 </style>
