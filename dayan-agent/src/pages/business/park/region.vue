@@ -279,7 +279,7 @@ onLoad((options: any) => {
   box-shadow: $shadow-card;
 }
 .map-section.schematic {
-  height: 480rpx;
+  height: 300px;
   padding: $spacing-sm;
   background: $bg-card;
 }
