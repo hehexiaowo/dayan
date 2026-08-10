@@ -177,17 +177,36 @@ function onChangeStatus() {
     success: async (res) => {
       const chosen = items[res.tapIndex];
       if (!chosen) return;
-      try {
-        await updateLead(leadId!, { leadStatus: chosen.value });
-        uni.showToast({ title: '已更新', icon: 'success' });
-        // 本地立即更新，无需整页重载
-        lead.value!.leadStatus = chosen.value;
-        // 状态变跟进中时后端更新了 lastFollowTime，重新拉取以同步
-        if (chosen.value === LeadStatus.FOLLOWING) {
-          await loadDetail();
+      // 终态（已转化/已流失）需二次确认，防止误触
+      const needConfirm = chosen.value === LeadStatus.CONVERTED || chosen.value === LeadStatus.LOST;
+      const doUpdate = async () => {
+        try {
+          await updateLead(leadId!, { leadStatus: chosen.value });
+          uni.showToast({ title: '已更新', icon: 'success' });
+          // 本地立即更新，无需整页重载
+          lead.value!.leadStatus = chosen.value;
+          // 状态变跟进中时后端更新了 lastFollowTime，重新拉取以同步
+          if (chosen.value === LeadStatus.FOLLOWING) {
+            await loadDetail();
+          }
+        } catch {
+          // 错误已由 request 拦截器提示
         }
-      } catch {
-        // 错误已由 request 拦截器提示
+      };
+      if (needConfirm) {
+        uni.showModal({
+          title: chosen.value === LeadStatus.CONVERTED ? '确认转化' : '确认流失',
+          content:
+            chosen.value === LeadStatus.CONVERTED
+              ? '确认将此线索标记为已转化？'
+              : '确认放弃此线索？标记后不可撤销。',
+          confirmColor: chosen.value === LeadStatus.LOST ? '#fa3534' : '#409eff',
+          success: (r) => {
+            if (r.confirm) doUpdate();
+          },
+        });
+      } else {
+        doUpdate();
       }
     },
   });
@@ -294,7 +313,7 @@ onShow(() => {
 .btn-call {
   background: rgba(255, 255, 255, 0.2);
   border-radius: $radius-sm;
-  padding: 4rpx 20rpx;
+  padding: 12rpx 28rpx;
 }
 .btn-call-text {
   font-size: 24rpx;
