@@ -159,11 +159,11 @@ async function loadData() {
 
 // 区域名点击下钻
 function onRegionClick(item: RegionItem) {
-  if (level.value === 'province') {
+    if (level.value === 'province') {
     // 判断直辖市：跳过 city 层
     if (MUNICIPALITIES.includes(item.code)) {
-      // 直辖市直接到 district
-      const cityCodeForMunicipality = item.code.substring(0, 4) + '00';
+      // 直辖市市级码规律：省码前2位 + 0100（如 110000 → 110100）
+      const cityCodeForMunicipality = item.code.substring(0, 2) + '0100';
       uni.navigateTo({
         url: `/pages/business/park/region?category=${category.value}&level=district&provinceCode=${item.code}&cityCode=${cityCodeForMunicipality}`,
       });
