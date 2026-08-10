@@ -20,6 +20,25 @@
       </view>
     </view>
 
+    <!-- 获客工具 -->
+    <view class="tools">
+      <view class="tools-title">获客工具</view>
+      <view class="tools-grid">
+        <view class="tool-item" @click="onTool('card')">
+          <view class="tool-icon" style="background: #409eff">名</view>
+          <text class="tool-label">电子名片</text>
+        </view>
+        <view class="tool-item" @click="onTool('poster')">
+          <view class="tool-icon" style="background: #ff9900">海</view>
+          <text class="tool-label">营销海报</text>
+        </view>
+        <view class="tool-item" @click="onTool('content')">
+          <view class="tool-icon" style="background: #19be6b">享</view>
+          <text class="tool-label">内容分享</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 线索列表 -->
     <view class="list">
       <view v-if="loading && !leads.length" class="empty">加载中...</view>
@@ -35,7 +54,7 @@
           @click="onLeadClick(lead)"
         >
           <view class="card-row">
-            <view class="card-name">{{ lead.clientName || '未命名' }}</view>
+            <view class="card-name">{{ lead.name || '未命名' }}</view>
             <view
               class="card-status"
               :class="statusClass(lead.leadStatus)"
@@ -96,9 +115,13 @@ function onShareCode() {
   uni.showToast({ title: '分享获客码功能开发中', icon: 'none' });
 }
 
+function onTool(type: string) {
+  uni.showToast({ title: '获客工具（Inc 4 上线）', icon: 'none' });
+}
+
 function onLeadClick(lead: Lead) {
   uni.showModal({
-    title: lead.clientName || '线索详情',
+    title: lead.name || '线索详情',
     content: `手机：${lead.phone || '-'}\n状态：${statusText(lead.leadStatus)}`,
     showCancel: false,
   });
@@ -112,9 +135,15 @@ function statusText(s?: LeadStatus | number): string {
     case LeadStatus.FOLLOWING:
     case 2:
       return '跟进中';
-    case LeadStatus.CONVERTED:
+    case LeadStatus.INTENDED:
     case 3:
+      return '意向';
+    case LeadStatus.CONVERTED:
+    case 4:
       return '已转化';
+    case LeadStatus.LOST:
+    case 5:
+      return '已流失';
     default:
       return '未知';
   }
@@ -128,9 +157,15 @@ function statusClass(s?: LeadStatus | number): string {
     case LeadStatus.FOLLOWING:
     case 2:
       return 'st-following';
-    case LeadStatus.CONVERTED:
+    case LeadStatus.INTENDED:
     case 3:
+      return 'st-intended';
+    case LeadStatus.CONVERTED:
+    case 4:
       return 'st-converted';
+    case LeadStatus.LOST:
+    case 5:
+      return 'st-lost';
     default:
       return '';
   }
@@ -202,6 +237,45 @@ onPullDownRefresh(async () => {
   font-size: 24rpx;
 }
 
+/* 获客工具 */
+.tools {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx 28rpx;
+  margin-top: 20rpx;
+}
+.tools-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 20rpx;
+}
+.tools-grid {
+  display: flex;
+  justify-content: space-around;
+}
+.tool-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tool-icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+.tool-label {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #606266;
+}
+
 /* 列表 */
 .list {
   margin-top: 24rpx;
@@ -252,6 +326,14 @@ onPullDownRefresh(async () => {
 .st-converted {
   background: #edfff3;
   color: #19be6b;
+}
+.st-intended {
+  background: #fdf6ec;
+  color: #e6a23c;
+}
+.st-lost {
+  background: #fef0f0;
+  color: #f56c6c;
 }
 
 /* 悬浮按钮 */

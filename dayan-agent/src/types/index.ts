@@ -47,20 +47,26 @@ export interface AgentNotification {
   createdAt?: string;
 }
 
-/** 客户线索状态：1 新 / 2 跟进中 / 3 已转化 */
+/** 线索状态：1 新 / 2 跟进中 / 3 意向 / 4 已转化 / 5 已流失 */
 export enum LeadStatus {
   NEW = 1,
   FOLLOWING = 2,
-  CONVERTED = 3,
+  INTENDED = 3,
+  CONVERTED = 4,
+  LOST = 5,
 }
 
 /** 客户线索（GET /agent-api/leads） */
 export interface Lead {
   leadId: string;
-  clientName: string;
+  leadCode?: string;
+  name: string;
   phone?: string;
-  /** 1 新 / 2 跟进中 / 3 已转化 */
+  /** 1 新 / 2 跟进中 / 3 意向 / 4 已转化 / 5 已流失 */
   leadStatus?: LeadStatus | number;
+  sourceType?: number;
+  intentionLevel?: number;
+  remark?: string;
   createdAt?: string;
 }
 
@@ -79,14 +85,4 @@ export interface Customer {
   /** 1 本人 / 2 家属 / 3 老人 */
   clientType?: ClientType | number;
   bindTime?: string;
-}
-
-/** 活动/内容素材（GET /agent-api/activities） */
-export interface Activity {
-  activityId: string;
-  title: string;
-  summary?: string;
-  coverImage?: string;
-  readCount?: number;
-  createdAt?: string;
 }
