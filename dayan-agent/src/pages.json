@@ -58,18 +58,6 @@
       "style": { "navigationBarTitleText": "旅居养老" }
     },
     {
-      "path": "pages/business/park/sojourn/province",
-      "style": { "navigationBarTitleText": "区域分布" }
-    },
-    {
-      "path": "pages/business/park/sojourn/city",
-      "style": { "navigationBarTitleText": "选择区县" }
-    },
-    {
-      "path": "pages/business/park/sojourn/district",
-      "style": { "navigationBarTitleText": "机构列表" }
-    },
-    {
       "path": "pages/business/park/sojourn/detail",
       "style": { "navigationBarTitleText": "机构详情" }
     }

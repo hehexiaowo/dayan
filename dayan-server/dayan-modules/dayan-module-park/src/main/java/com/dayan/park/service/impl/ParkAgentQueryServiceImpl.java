@@ -123,13 +123,18 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
                 List<ParkCardVO> parks = parkInfoMapper.selectParkCardList(
                         networkTag, query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
                 result.setParkList(parks);
-                String crumb = categoryName(query.getCategory())
-                        + " / " + extractProvinceName(query.getProvinceCode());
-                if (!MUNICIPALITY_CODES.contains(query.getProvinceCode())) {
-                    crumb += " / " + extractCityName(query.getCityCode(), null);
+                // 无区域参数时（如旅居网络扁平列表），面包屑只显示网络名
+                if (query.getProvinceCode() == null || query.getProvinceCode().isBlank()) {
+                    result.setBreadcrumb(categoryName(query.getCategory()));
+                } else {
+                    String crumb = categoryName(query.getCategory())
+                            + " / " + extractProvinceName(query.getProvinceCode());
+                    if (!MUNICIPALITY_CODES.contains(query.getProvinceCode())) {
+                        crumb += " / " + extractCityName(query.getCityCode(), null);
+                    }
+                    crumb += " / " + extractDistrictName(query.getDistrictCode(), parks);
+                    result.setBreadcrumb(crumb);
                 }
-                crumb += " / " + extractDistrictName(query.getDistrictCode(), parks);
-                result.setBreadcrumb(crumb);
             }
             default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的层级: " + query.getLevel());
         }

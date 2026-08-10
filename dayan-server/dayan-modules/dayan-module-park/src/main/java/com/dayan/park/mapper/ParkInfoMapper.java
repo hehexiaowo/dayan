@@ -72,7 +72,7 @@ public interface ParkInfoMapper extends BaseMapper<ParkInfo> {
                                          @Param("cityCode") String cityCode);
 
     /**
-     * 按网络标签 + 省 + 市 + 区查询机构卡片列表。
+     * 按网络标签查询机构卡片列表（省/市/区可选，不传则返回该网络全部机构）。
      */
     @Select("""
             <script>
@@ -83,10 +83,10 @@ public interface ParkInfoMapper extends BaseMapper<ParkInfo> {
                    operate_status, ability_type_description, network_tags
             FROM park_info
             WHERE deleted = 0 AND is_published = 1 AND operate_status = 1
-              AND province_code = #{provinceCode}
-              AND city_code = #{cityCode}
-              AND district_code = #{districtCode}
               AND FIND_IN_SET(#{networkTag}, network_tags)
+              <if test="provinceCode != null and provinceCode != ''">AND province_code = #{provinceCode}</if>
+              <if test="cityCode != null and cityCode != ''">AND city_code = #{cityCode}</if>
+              <if test="districtCode != null and districtCode != ''">AND district_code = #{districtCode}</if>
             ORDER BY sort_order ASC, id ASC
             LIMIT 200
             </script>

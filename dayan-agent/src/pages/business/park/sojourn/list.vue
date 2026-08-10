@@ -1,212 +1,87 @@
 <template>
   <view class="list-page">
-    <!-- ECharts 地图区 -->
-    <view class="map-section">
-      <!-- #ifdef H5 -->
-      <div id="sojourn-list-map" class="map-container"></div>
-      <!-- #endif -->
-      <!-- #ifndef H5 -->
-      <view class="map-placeholder">
-        <text class="map-placeholder-text">地图组件（仅 H5 支持）</text>
-      </view>
-      <!-- #endif -->
-
-      <!-- 统计卡片 -->
-      <view v-if="regions.length" class="stats-card">
-        <view class="stat-item">
-          <text class="stat-value">{{ regions.length }}</text>
-          <text class="stat-label">覆盖省份</text>
-        </view>
-        <view class="stat-divider"></view>
-        <view class="stat-item">
-          <text class="stat-value">{{ totalParks }}</text>
-          <text class="stat-label">旅居机构总数</text>
-        </view>
+    <!-- 头部统计 -->
+    <view class="header-section">
+      <text class="header-title">旅居养老</text>
+      <text class="header-subtitle">精选旅居机构 · 随心住 · 灵活周期</text>
+      <view v-if="!loading" class="header-count">
+        <text class="count-num">{{ parks.length }}</text>
+        <text class="count-label">家机构</text>
       </view>
     </view>
 
-    <!-- 省份表格 -->
-    <view class="table-section">
-      <view class="table-header">
-        <text class="col-name">省份</text>
-        <text class="col-count">机构数</text>
-      </view>
+    <!-- 机构卡片列表 -->
+    <view class="park-list">
       <view
-        v-for="item in regions"
-        :key="item.code"
-        class="table-row dy-clickable"
-        @click="onProvinceClick(item)"
+        v-for="park in parks"
+        :key="park.parkCode"
+        class="park-card dy-clickable"
+        @click="onParkClick(park)"
       >
-        <text class="col-name">{{ item.name }}</text>
-        <view class="col-count-wrap">
-          <text class="col-count">{{ item.count }}</text>
-          <text class="arrow">›</text>
+        <DyIconBlock
+          :text="park.shortName?.charAt(0) || '机'"
+          color="green"
+          size="md"
+        />
+        <view class="park-info">
+          <text class="park-name">{{ park.fullName }}</text>
+          <text class="park-addr">{{ formatAddress(park) }}</text>
+          <view class="park-tags">
+            <text v-if="park.minPriceDisplay" class="tag tag-price">
+              ¥{{ park.minPriceDisplay }}{{ park.maxPriceDisplay ? '-' + park.maxPriceDisplay : '' }}/{{ park.priceUnit || '月' }}
+            </text>
+            <text v-if="park.availableBeds != null" class="tag tag-bed">
+              余位 {{ park.availableBeds }}
+            </text>
+            <text v-for="tag in parseNetworkTags(park.networkTags)" :key="tag.label" class="tag" :class="'tag-' + tag.color">
+              {{ tag.label }}
+            </text>
+          </view>
         </view>
+        <text class="park-arrow">›</text>
       </view>
-      <DyEmpty v-if="!loading && !regions.length" text="暂无旅居机构数据" icon="空" color="gray" />
+      <DyEmpty v-if="!loading && !parks.length" text="暂无旅居机构" icon="空" color="gray" />
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
-import * as echarts from 'echarts';
+import { ref, onMounted } from 'vue';
 import { getRegions } from '@/api/park';
-import type { RegionItem } from '@/types/park';
+import type { ParkCard } from '@/types/park';
+import { parseNetworkTags } from '@/types/park';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
-const regions = ref<RegionItem[]>([]);
+const parks = ref<ParkCard[]>([]);
 const loading = ref(true);
-let myChart: echarts.ECharts | null = null;
-
-const totalParks = computed(() => regions.value.reduce((s, i) => s + i.count, 0));
-
-function normalizeName(name: string, code: string): string {
-  let n = name.replace(/省$/, '');
-  const autonomousMap: Record<string, string> = {
-    '640000': '宁夏',
-    '650000': '新疆',
-    '450000': '广西',
-    '150000': '内蒙古',
-    '540000': '西藏',
-  };
-  if (autonomousMap[code]) n = autonomousMap[code];
-  n = n.replace(/市$/, '');
-  return n;
-}
 
 async function fetchData() {
   loading.value = true;
   try {
     const result = await getRegions({
       category: 'sojourn',
-      level: 'province',
+      level: 'park',
     });
-    regions.value = result.items || [];
-    await nextTick();
-    setTimeout(initChart, 300);
+    parks.value = result.parkList || [];
   } catch {
-    regions.value = [];
+    parks.value = [];
   } finally {
     loading.value = false;
   }
 }
 
-async function initChart() {
-  // #ifdef H5
-  const container = document.getElementById('sojourn-list-map');
-  if (!container) return;
-
-  let chinaGeo: any = null;
-  try {
-    const resp = await fetch('/static/geo/china.json');
-    chinaGeo = await resp.json();
-  } catch {
-    console.warn('[sojourn/list] china.json 加载失败');
-    return;
-  }
-
-  const centroidMap: Record<string, [number, number]> = {};
-  chinaGeo.features.forEach((f: any) => {
-    const cp = f.properties?.centroid || f.properties?.center || f.properties?.cp;
-    if (cp) centroidMap[f.properties.name] = [cp[0], cp[1]];
-  });
-
-  echarts.registerMap('china', chinaGeo);
-  myChart = echarts.init(container);
-
-  const scatterData = regions.value
-    .filter((r) => r.count > 0)
-    .map((r) => {
-      const normalName = normalizeName(r.name, r.code);
-      const coord = centroidMap[normalName];
-      return {
-        name: r.name,
-        value: coord ? [...coord, r.count] : [],
-        code: r.code,
-      };
-    })
-    .filter((d) => d.value.length > 0);
-
-  myChart.setOption({
-    geo: {
-      map: 'china',
-      roam: true,
-      scaleLimit: { min: 1, max: 10 },
-      zoom: 1.2,
-      top: 20,
-      label: {
-        show: true,
-        fontSize: 8,
-        color: 'rgba(0,0,0,0.6)',
-      },
-      itemStyle: {
-        areaColor: '#edfff3',
-        borderColor: 'rgba(0, 0, 0, 0.2)',
-      },
-      emphasis: {
-        itemStyle: { areaColor: '#edfff3' },
-        label: { borderWidth: 0 },
-      },
-    },
-    tooltip: {
-      trigger: 'item',
-      formatter: (p: any) =>
-        p.data ? `${p.data.name}<br/>旅居机构：${p.data.value?.[2] || 0} 家` : p.name,
-    },
-    series: [
-      {
-        type: 'effectScatter',
-        coordinateSystem: 'geo',
-        rippleEffect: { period: 4, scale: 4, brushType: 'fill' },
-        symbolSize: 8,
-        itemStyle: {
-          color: '#19be6b',
-          shadowBlur: 8,
-          shadowColor: 'rgba(25,190,107,0.5)',
-        },
-        data: scatterData,
-      },
-    ],
-  });
-
-  myChart.on('click', (params: any) => {
-    if (params.data?.code) {
-      navigateToProvince(params.data.code);
-    }
-  });
-
-  myChart.on('mouseover', () => {
-    myChart?.dispatchAction({ type: 'downplay' });
-  });
-
-  window.addEventListener('resize', handleResize);
-  // #endif
-}
-
-function handleResize() {
-  myChart?.resize();
-}
-
-function onProvinceClick(item: RegionItem) {
-  navigateToProvince(item.code);
-}
-
-function navigateToProvince(provinceCode: string) {
+function onParkClick(park: ParkCard) {
   uni.navigateTo({
-    url: `/pages/business/park/sojourn/province?provinceCode=${provinceCode}`,
+    url: `/pages/business/park/sojourn/detail?parkCode=${park.parkCode}`,
   });
+}
+
+function formatAddress(park: ParkCard): string {
+  return [park.province, park.city, park.district, park.address].filter(Boolean).join(' ');
 }
 
 onMounted(fetchData);
-
-onUnmounted(() => {
-  // #ifdef H5
-  window.removeEventListener('resize', handleResize);
-  myChart?.dispose();
-  myChart = null;
-  // #endif
-});
 </script>
 
 <style lang="scss" scoped>
@@ -217,105 +92,112 @@ onUnmounted(() => {
   background: $bg-page;
 }
 
-.map-section {
-  position: relative;
-  background: $bg-card;
+.header-section {
+  background: linear-gradient(135deg, $brand-success 0%, darken($brand-success, 8%) 100%);
+  padding: $spacing-xl $spacing-md $spacing-lg;
+  text-align: center;
   border-bottom-left-radius: $radius-lg;
   border-bottom-right-radius: $radius-lg;
   box-shadow: $shadow-card;
-  overflow: hidden;
 }
-.map-container {
-  width: 100%;
-  height: 300px;
-}
-.map-placeholder {
-  width: 100%;
-  height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #edfff3, #d4fce7);
-}
-.map-placeholder-text {
-  font-size: 28rpx;
-  color: $text-placeholder;
-}
-
-.stats-card {
-  position: absolute;
-  bottom: $spacing-sm;
-  left: $spacing-md;
-  right: $spacing-md;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: $radius-md;
-  padding: $spacing-sm $spacing-md;
-  display: flex;
-  align-items: center;
-  box-shadow: $shadow-card;
-}
-.stat-item {
-  flex: 1;
-  text-align: center;
-}
-.stat-value {
+.header-title {
   display: block;
   font-size: 40rpx;
   font-weight: bold;
-  color: $brand-success;
+  color: #fff;
 }
-.stat-label {
+.header-subtitle {
   display: block;
-  font-size: 22rpx;
-  color: $text-secondary;
-  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: $spacing-xs;
 }
-.stat-divider {
-  width: 1rpx;
-  height: 48rpx;
-  background: $border-base;
+.header-count {
+  margin-top: $spacing-sm;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+.count-num {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #fff;
+}
+.count-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-left: 8rpx;
 }
 
-.table-section {
+.park-list {
   padding: $spacing-md;
 }
-.table-header {
+
+.park-card {
   display: flex;
-  justify-content: space-between;
-  padding: $spacing-sm $spacing-md;
-  font-size: 24rpx;
-  color: $text-secondary;
-  border-bottom: 1rpx solid $border-base;
-}
-.table-row {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 28rpx $spacing-md;
   background: $bg-card;
   border-radius: $radius-md;
-  margin-top: $spacing-sm;
+  padding: $spacing-md;
+  margin-bottom: $spacing-sm;
   box-shadow: $shadow-card;
 }
-.col-name {
+
+.park-info {
   flex: 1;
+  margin-left: $spacing-md;
+  overflow: hidden;
+}
+.park-name {
+  display: block;
   font-size: 30rpx;
+  font-weight: 600;
   color: $text-primary;
-  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.table-header .col-name {
-  font-weight: normal;
+.park-addr {
+  display: block;
+  font-size: 24rpx;
+  color: $text-secondary;
+  margin-top: 6rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.col-count-wrap {
+.park-tags {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 10rpx;
 }
-.col-count {
-  font-size: 28rpx;
+.tag {
+  font-size: 22rpx;
+  padding: 2rpx 14rpx;
+  border-radius: $radius-sm;
+}
+.tag-price {
+  background: $brand-success-light;
   color: $brand-success;
-  font-weight: bold;
 }
-.arrow {
+.tag-bed {
+  background: $brand-info-light;
+  color: $brand-info;
+}
+.tag-blue {
+  background: $brand-primary-light;
+  color: $brand-primary;
+}
+.tag-orange {
+  background: $brand-warning-light;
+  color: $brand-warning;
+}
+.tag-green {
+  background: $brand-success-light;
+  color: $brand-success;
+}
+.park-arrow {
   font-size: 36rpx;
   color: $text-placeholder;
   margin-left: $spacing-sm;
