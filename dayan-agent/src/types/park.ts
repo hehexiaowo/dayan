@@ -5,6 +5,23 @@
 /** 分类标识 */
 export type ParkCategory = 'vital' | 'care' | 'sojourn';
 
+/** 网络标签 → 中文名 + 主题色映射 */
+export const NETWORK_TAG_LABELS: Record<string, { label: string; color: string }> = {
+  vital: { label: '活力长居', color: 'blue' },
+  care: { label: '照护长居', color: 'orange' },
+  sojourn: { label: '旅居养老', color: 'green' },
+};
+
+/** 将逗号分隔的网络标签字符串解析为标签数组 */
+export function parseNetworkTags(raw?: string): Array<{ label: string; color: string }> {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((t) => t.trim())
+    .filter((t) => NETWORK_TAG_LABELS[t])
+    .map((t) => NETWORK_TAG_LABELS[t]);
+}
+
 /** 下钻层级 */
 export type DrillLevel = 'province' | 'city' | 'district' | 'park';
 
@@ -44,6 +61,8 @@ export interface ParkCard {
   priceUnit?: string;
   operateStatus?: number;
   abilityTypeDescription?: string;
+  /** 网络标签（逗号分隔：vital/care/sojourn） */
+  networkTags?: string;
 }
 
 /** 区域下钻结果 */
@@ -66,6 +85,8 @@ export interface ParkDetail {
   brandLogo?: string;
   abilityType?: number;
   abilityTypeDescription?: string;
+  /** 网络标签（vital/care/sojourn 多选） */
+  networkTags?: string[];
   natureType?: number;
   natureTypeDescription?: string;
   specialtyTag?: string;

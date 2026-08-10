@@ -41,8 +41,8 @@
             <text v-if="park.availableBeds != null" class="tag tag-bed">
               余位 {{ park.availableBeds }}
             </text>
-            <text v-if="park.abilityTypeDescription" class="tag tag-type">
-              {{ park.abilityTypeDescription }}
+            <text v-for="tag in parseNetworkTags(park.networkTags)" :key="tag.label" class="tag" :class="'tag-' + tag.color">
+              {{ tag.label }}
             </text>
           </view>
         </view>
@@ -63,6 +63,7 @@ import type L from 'leaflet';
 import { getRegions } from '@/api/park';
 import { PROVINCE_CENTERS } from '@/utils/region';
 import type { ParkCard } from '@/types/park';
+import { parseNetworkTags } from '@/types/park';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
@@ -271,6 +272,18 @@ onUnmounted(() => {
 .tag-type {
   background: $brand-warning-light;
   color: $brand-warning;
+}
+.tag-blue {
+  background: $brand-primary-light;
+  color: $brand-primary;
+}
+.tag-orange {
+  background: $brand-warning-light;
+  color: $brand-warning;
+}
+.tag-green {
+  background: $brand-success-light;
+  color: $brand-success;
 }
 .park-arrow {
   color: $text-placeholder;

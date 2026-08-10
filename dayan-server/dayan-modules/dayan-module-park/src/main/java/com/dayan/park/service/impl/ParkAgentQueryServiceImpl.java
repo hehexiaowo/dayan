@@ -48,6 +48,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -158,6 +159,10 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         }
         ParkInfoVO vo = new ParkInfoVO();
         BeanUtils.copyProperties(park, vo);
+        vo.setNetworkTags(
+                park.getNetworkTags() != null
+                        ? Arrays.asList(park.getNetworkTags().split(","))
+                        : null);
         return vo;
     }
 
@@ -179,6 +184,10 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         // 2. 主信息
         ParkInfoVO infoVO = new ParkInfoVO();
         BeanUtils.copyProperties(park, infoVO);
+        infoVO.setNetworkTags(
+                park.getNetworkTags() != null
+                        ? Arrays.asList(park.getNetworkTags().split(","))
+                        : null);
         vo.setParkInfo(infoVO);
 
         // 3. 子实体（条件：park_code + status=1 + deleted=0，deleted 由 @TableLogic 自动过滤）

@@ -42,7 +42,7 @@
       <view class="info-card">
         <text class="park-name">{{ park.fullName }}</text>
         <view class="park-tags">
-          <text v-if="park.abilityTypeDescription" class="dy-tag dy-tag-blue">{{ park.abilityTypeDescription }}</text>
+          <text v-for="tag in networkTagItems" :key="tag.label" class="dy-tag" :class="'dy-tag-' + tag.color">{{ tag.label }}</text>
           <text v-if="park.natureTypeDescription" class="dy-tag dy-tag-green">{{ park.natureTypeDescription }}</text>
           <text v-if="park.isHot === 1" class="dy-tag dy-tag-red">热门</text>
         </view>
@@ -322,6 +322,7 @@ import { ref, computed, watch, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getParkFullDetail } from '@/api/park';
 import type { ParkFullDetail, ParkDetail, ParkRoomType, ParkPeriphery } from '@/types/park';
+import { NETWORK_TAG_LABELS } from '@/types/park';
 import { formatFileUrl, parseImageList } from '@/utils/file';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -340,6 +341,13 @@ let detailMap: any = null;
 // #endif
 
 const park = computed<ParkDetail>(() => detail.value?.parkInfo || ({} as ParkDetail));
+
+/** 网络归属标签（直接从 networkTags 字段渲染） */
+const networkTagItems = computed(() =>
+  (park.value.networkTags || [])
+    .filter((t) => NETWORK_TAG_LABELS[t])
+    .map((t) => NETWORK_TAG_LABELS[t]),
+);
 
 /** Banner 图片：从 assets 取 type=1(图片)，isCover 优先 */
 const bannerImages = computed(() => {

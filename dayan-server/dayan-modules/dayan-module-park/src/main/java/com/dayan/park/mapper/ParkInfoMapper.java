@@ -80,7 +80,7 @@ public interface ParkInfoMapper extends BaseMapper<ParkInfo> {
                    province, province_code, city, city_code, district, district_code,
                    longitude, latitude, total_beds, available_beds,
                    min_price_display, max_price_display, price_unit,
-                   operate_status, ability_type_description
+                   operate_status, ability_type_description, network_tags
             FROM park_info
             WHERE deleted = 0 AND is_published = 1 AND operate_status = 1
               AND province_code = #{provinceCode}

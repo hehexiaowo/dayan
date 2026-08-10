@@ -37,4 +37,6 @@ public class ParkCardVO {
     // 运营状态
     private Integer operateStatus;
     private String abilityTypeDescription;
+    /** 网络标签（逗号分隔：vital/care/sojourn） */
+    private String networkTags;
 }
