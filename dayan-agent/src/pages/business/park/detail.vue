@@ -26,7 +26,10 @@
         </view>
         <view v-if="park.serviceHotline" class="info-row">
           <text class="info-label">电话</text>
-          <text class="info-value">{{ park.serviceHotline }}</text>
+          <text class="info-value phone-link" @click="onCall">{{ park.serviceHotline }}</text>
+          <view class="btn-call dy-clickable" @click="onCall">
+            <text class="btn-call-text">拨打</text>
+          </view>
         </view>
         <view v-if="park.openingTime" class="info-row">
           <text class="info-label">开业</text>
@@ -135,6 +138,11 @@ function formatAddress(p: ParkDetail): string {
   return [p.province, p.city, p.district, p.address].filter(Boolean).join(' ');
 }
 
+function onCall() {
+  if (!park.value?.serviceHotline) return;
+  uni.makePhoneCall({ phoneNumber: park.value.serviceHotline });
+}
+
 onLoad(async (options: any) => {
   const parkCode = options?.parkCode;
   if (!parkCode) {
@@ -214,6 +222,20 @@ onLoad(async (options: any) => {
   font-size: 26rpx;
   color: $text-primary;
 }
+
+/* 电话拨打 */
+.phone-link { color: $brand-primary; }
+.btn-call {
+  background: $brand-primary-light;
+  border-radius: $radius-sm;
+  padding: 12rpx 28rpx;
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
+  flex-shrink: 0;
+  margin-left: $spacing-sm;
+}
+.btn-call-text { font-size: 24rpx; color: $brand-primary; }
 
 /* 统计四宫格 */
 .stat-grid {
