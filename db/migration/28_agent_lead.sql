@@ -37,7 +37,6 @@ CREATE TABLE `agent_lead` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_channel_lead_code` (`channel_code`, `lead_code`),
   KEY `idx_agent_code` (`agent_code`),
-  KEY `idx_channel_code` (`channel_code`),
   KEY `idx_lead_status` (`lead_status`),
   KEY `idx_phone` (`phone`),
   KEY `idx_source_type` (`source_type`)
