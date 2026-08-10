@@ -115,3 +115,149 @@ export interface RegionQuery {
 
 /** 直辖市 provinceCode 列表（前端跳过 city 层级判断用） */
 export const MUNICIPALITIES = ['110000', '120000', '310000', '500000'];
+
+// ===== 详情页子实体类型（与后端 VO 字段对齐） =====
+
+/** 媒体素材 */
+export interface ParkAsset {
+  id: number;
+  parkCode?: string;
+  assetType?: number; // 1=图 2=视频 3=文件 4=VR
+  assetUrl?: string;
+  assetName?: string;
+  isCover?: number;
+  coverUrl?: string;
+  thumbnailUrl?: string;
+  sortOrder?: number;
+}
+
+/** 房型 */
+export interface ParkRoomType {
+  id: number;
+  roomTypeName?: string;
+  area?: number;
+  orientation?: string;
+  bedCount?: number;
+  totalRooms?: number;
+  availableRooms?: number;
+  hasBathroom?: number;
+  hasKitchen?: number;
+  hasBalcony?: number;
+  hasTv?: number;
+  hasAircon?: number;
+  hasFridge?: number;
+  hasWasher?: number;
+  hasWifi?: number;
+  facilities?: string;
+  description?: string;
+  coverImage?: string;
+  images?: string;
+}
+
+/** 收费方案 */
+export interface ParkPricing {
+  id: number;
+  planName?: string;
+  chargeType?: number; // 1=房间费 2=照护费 3=餐费 4=押金 5=设施费 6=服务费 9=其他
+  refName?: string;
+  billingCycle?: number; // 1=月 2=季 3=半年 4=年 5=一次性
+  priceUnit?: string;
+  originalPrice?: number;
+  salePrice?: number;
+  discountRate?: number;
+  includesItems?: string;
+  isCurrent?: number;
+  isPromotion?: number;
+  promotionDescription?: string;
+}
+
+/** 照护等级 */
+export interface ParkCareType {
+  id: number;
+  careTypeName?: string;
+  careLevel?: number;
+  careTarget?: string;
+  careItems?: string;
+  careFrequency?: string;
+  nursePatientRatio?: string;
+  description?: string;
+}
+
+/** 餐饮类型 */
+export interface ParkFoodType {
+  id: number;
+  foodTypeName?: string;
+  mealPlan?: number;
+  dietFeatures?: string;
+  sampleMenu?: string;
+  description?: string;
+  coverImage?: string;
+}
+
+/** 设施类型 */
+export interface ParkFacilityType {
+  id: number;
+  facilityTypeName?: string;
+  facilityTypeCategory?: number;
+  buildingName?: string;
+  openTime?: string;
+  facilityTypeDescription?: string;
+  coverImage?: string;
+}
+
+/** 服务类型 */
+export interface ParkServiceType {
+  id: number;
+  serviceTypeName?: string;
+  serviceTypeCategory?: number;
+  serviceTypeDescription?: string;
+  serviceTypeFrequency?: string;
+  coverImage?: string;
+}
+
+/** 周边配套 */
+export interface ParkPeriphery {
+  id: number;
+  peripheryType?: number; // 分类：交通/景点/医疗/购物等
+  placeName?: string;
+  placeAddress?: string;
+  distance?: string;
+  detailDescription?: string;
+}
+
+/** 评分 */
+export interface ParkScore {
+  id: number;
+  scoreTotal?: number;
+  scoreEnvironment?: number;
+  scoreRecreation?: number;
+  scoreNursing?: number;
+  scoreFood?: number;
+  scoreService?: number;
+  scorePrice?: number;
+  scoreDescription?: string;
+}
+
+/** 图文展示板块 */
+export interface ParkDisplayBlock {
+  id: number;
+  blockType?: string;
+  blockTitle?: string;
+  content?: string;
+  images?: string;
+}
+
+/** 机构完整详情（主表 + 全部子实体聚合） */
+export interface ParkFullDetail {
+  parkInfo: ParkDetail;
+  assets?: ParkAsset[];
+  roomTypes?: ParkRoomType[];
+  pricingList?: ParkPricing[];
+  careTypes?: ParkCareType[];
+  foodTypes?: ParkFoodType[];
+  facilityTypes?: ParkFacilityType[];
+  serviceTypes?: ParkServiceType[];
+  peripheries?: ParkPeriphery[];
+  score?: ParkScore | null;
+  displayBlocks?: ParkDisplayBlock[];
+}

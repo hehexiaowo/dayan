@@ -1,5 +1,5 @@
 import request from '@/utils/request';
-import type { CategoryCount, RegionDrillResult, RegionQuery, ParkDetail } from '@/types/park';
+import type { CategoryCount, RegionDrillResult, RegionQuery, ParkDetail, ParkFullDetail } from '@/types/park';
 
 /**
  * 三分类机构数量统计
@@ -31,6 +31,17 @@ export function getRegions(params: RegionQuery): Promise<RegionDrillResult> {
 export function getParkDetail(parkCode: string): Promise<ParkDetail> {
   return request<ParkDetail>({
     url: `/park/${parkCode}`,
+    method: 'GET',
+  });
+}
+
+/**
+ * 机构完整详情（聚合主表+全部子实体）
+ * GET /agent-api/park/{parkCode}/full
+ */
+export function getParkFullDetail(parkCode: string): Promise<ParkFullDetail> {
+  return request<ParkFullDetail>({
+    url: `/park/${parkCode}/full`,
     method: 'GET',
   });
 }
