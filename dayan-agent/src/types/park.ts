@@ -52,6 +52,8 @@ export interface RegionDrillResult {
   breadcrumb: string;
   items?: RegionItem[];
   parkList?: ParkCard[];
+  centerLng?: number;
+  centerLat?: number;
 }
 
 /** 机构详情（完整字段，与后端 ParkInfoVO 对齐） */
