@@ -147,7 +147,9 @@ const crumbs = computed(() =>
   crumbLabels.value.map((label, i) => ({
     label,
     level: LEVELS[i] as DrillLevel | undefined,
-    clickable: i < LEVELS.indexOf(level.value),
+    clickable:
+      i < LEVELS.indexOf(level.value) &&
+      !(LEVELS[i] === 'city' && MUNICIPALITIES.includes(provinceCode.value)),
   })),
 );
 
@@ -187,6 +189,7 @@ function drill(item: RegionItem) {
 
 async function loadData() {
   loading.value = true;
+  center.value = null; // 加载期间不显示旧区域中心
   loadError.value = false;
   try {
     const params: RegionQuery = { category: category.value, level: level.value };
