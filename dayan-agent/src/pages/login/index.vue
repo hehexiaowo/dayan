@@ -26,7 +26,7 @@
         class="btn btn-outline"
         :class="{ 'is-disabled': loadingChannels }"
         :disabled="loadingChannels"
-        @click="loadChannels"
+        @click="onManualQuery"
       >
         <text v-if="loadingChannels">查询中...</text>
         <text v-else>查询关联渠道</text>
@@ -61,6 +61,7 @@
             placeholder="请输入密码"
             placeholder-class="input-placeholder"
             class="form-input"
+            style="padding-right: 120rpx"
           />
           <text class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
         </view>
@@ -85,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import type { ChannelOption } from '@/api/auth';
 
@@ -99,13 +100,19 @@ const loadingChannels = ref(false);
 const submitting = ref(false);
 
 let channelTimer: ReturnType<typeof setTimeout> | null = null;
+let channelSeq = 0;
 watch(mobile, (val) => {
+  channelSeq++;
   channels.value = [];
   selectedChannel.value = '';
   if (channelTimer) clearTimeout(channelTimer);
   if (/^1\d{10}$/.test(val)) {
     channelTimer = setTimeout(() => loadChannels(), 500);
   }
+});
+
+onUnmounted(() => {
+  if (channelTimer) clearTimeout(channelTimer);
 });
 
 onMounted(() => {
@@ -117,9 +124,13 @@ async function loadChannels() {
     uni.showToast({ title: '请输入手机号', icon: 'none' });
     return;
   }
+  // 序号守卫：改号/重复触发时，旧响应落地即丢弃
+  const seq = ++channelSeq;
   loadingChannels.value = true;
   try {
-    channels.value = await userStore.getChannels(mobile.value);
+    const result = await userStore.getChannels(mobile.value);
+    if (seq !== channelSeq) return;
+    channels.value = result;
     if (channels.value.length === 1) {
       selectedChannel.value = channels.value[0].channelCode;
     }
@@ -129,8 +140,13 @@ async function loadChannels() {
   } catch (e) {
     // 错误已由 request 拦截器提示
   } finally {
-    loadingChannels.value = false;
+    if (seq === channelSeq) loadingChannels.value = false;
   }
+}
+
+function onManualQuery() {
+  if (channelTimer) clearTimeout(channelTimer);
+  loadChannels();
 }
 
 async function handleLogin() {
