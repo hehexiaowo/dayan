@@ -58,16 +58,27 @@ export enum LeadStatus {
 
 /** 客户线索（GET /agent-api/leads） */
 export interface Lead {
-  leadId: string;
+  id: number;
   leadCode?: string;
+  agentCode?: string;
+  channelCode?: string;
   name: string;
   phone?: string;
+  gender?: number;
+  age?: number;
   /** 1 新 / 2 跟进中 / 3 意向 / 4 已转化 / 5 已流失 */
   leadStatus?: LeadStatus | number;
   sourceType?: number;
+  sourceRef?: string;
   intentionLevel?: number;
+  interestType?: string;
+  region?: string;
+  lastFollowTime?: string;
+  convertedClientCode?: string;
+  convertedAt?: string;
   remark?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 /** 客户类型：1 本人 / 2 家属 / 3 老人 */

@@ -88,7 +88,7 @@
         <view v-else>
           <view
             v-for="lead in filteredLeads"
-            :key="lead.leadId"
+            :key="lead.id"
             class="card dy-clickable"
             @click="onLeadClick(lead)"
           >
@@ -125,9 +125,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { onPullDownRefresh } from '@dcloudio/uni-app';
-import { getLeads } from '@/api/lead';
+import { getLeads, createLead } from '@/api/lead';
 import { LeadStatus } from '@/types';
 import type { Lead } from '@/types';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
@@ -170,7 +170,10 @@ function countByStatus(status: LeadStatus): number {
 async function loadList() {
   loading.value = true;
   try {
-    const res = await getLeads({ keyword: keyword.value || undefined });
+    const res = await getLeads({
+      keyword: keyword.value || undefined,
+      leadStatus: activeStatus.value ?? undefined,
+    });
     leads.value = res?.records || [];
   } catch (e) {
     leads.value = [];
@@ -179,17 +182,42 @@ async function loadList() {
   }
 }
 
+/** Tab 切换时重新加载（带状态筛选参数） */
+watch(activeStatus, () => loadList());
+
 function onSearch() {
   loadList();
 }
 
 function onAdd() {
+  // 用系统弹窗收集姓名+手机号（轻量表单，后续可升级为独立页面）
   uni.showModal({
     title: '新增线索',
-    content: '线索录入表单开发中',
-    showCancel: true,
-    confirmText: '我知道了',
-    success: () => {},
+    editable: true,
+    placeholderText: '请输入客户姓名',
+    success: (resName) => {
+      if (!resName.confirm || !resName.content?.trim()) return;
+      const name = resName.content.trim();
+      uni.showModal({
+        title: '新增线索',
+        editable: true,
+        placeholderText: '请输入手机号',
+        success: async (resPhone) => {
+          if (!resPhone.confirm) return;
+          try {
+            await createLead({
+              name,
+              phone: resPhone.content?.trim() || undefined,
+              sourceType: 1,
+            });
+            uni.showToast({ title: '添加成功', icon: 'success' });
+            loadList();
+          } catch (e) {
+            // 错误已由 request 拦截器提示
+          }
+        },
+      });
+    },
   });
 }
 
