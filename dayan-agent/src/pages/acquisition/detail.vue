@@ -125,6 +125,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getLeadDetail, updateLead, deleteLead } from '@/api/lead';
 import { LeadStatus } from '@/types';
 import type { Lead } from '@/types';
+import { statusText, statusClass, avatarColor, genderText, intentionText, intentionClass, sourceText, formatTime } from '@/utils/lead';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -209,131 +210,6 @@ function onDelete() {
       }
     },
   });
-}
-
-function statusText(s?: LeadStatus | number): string {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return '新线索';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return '跟进中';
-    case LeadStatus.INTENDED:
-    case 3:
-      return '意向';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return '已转化';
-    case LeadStatus.LOST:
-    case 5:
-      return '已流失';
-    default:
-      return '未知';
-  }
-}
-
-function statusClass(s?: LeadStatus | number): string {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return 'st-new';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return 'st-following';
-    case LeadStatus.INTENDED:
-    case 3:
-      return 'st-intended';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return 'st-converted';
-    case LeadStatus.LOST:
-    case 5:
-      return 'st-lost';
-    default:
-      return '';
-  }
-}
-
-function avatarColor(s?: LeadStatus | number): 'blue' | 'green' | 'orange' | 'red' | 'gray' {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return 'blue';
-    case LeadStatus.FOLLOWING:
-    case 2:
-    case LeadStatus.INTENDED:
-    case 3:
-      return 'orange';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return 'green';
-    case LeadStatus.LOST:
-    case 5:
-      return 'gray';
-    default:
-      return 'blue';
-  }
-}
-
-function genderText(g?: number): string {
-  switch (g) {
-    case 1:
-      return '男';
-    case 2:
-      return '女';
-    default:
-      return '未知';
-  }
-}
-
-function intentionText(level?: number): string {
-  switch (level) {
-    case 3:
-      return '高';
-    case 2:
-      return '中';
-    case 1:
-      return '低';
-    default:
-      return '-';
-  }
-}
-
-function intentionClass(level?: number): string {
-  switch (level) {
-    case 3:
-      return 'it-high';
-    case 2:
-      return 'it-mid';
-    case 1:
-      return 'it-low';
-    default:
-      return '';
-  }
-}
-
-function sourceText(s?: number): string {
-  switch (s) {
-    case 1:
-      return '手工录入';
-    case 2:
-      return '分享扫码';
-    case 3:
-      return '活动接触';
-    case 4:
-      return '转介绍';
-    case 5:
-      return '内容引流';
-    default:
-      return '未知';
-  }
-}
-
-function formatTime(t?: string): string {
-  if (!t) return '-';
-  // 后端返回 ISO 格式，截取到分钟
-  return t.replace('T', ' ').slice(0, 16);
 }
 
 onLoad((options: any) => {

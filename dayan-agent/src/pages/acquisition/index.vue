@@ -108,8 +108,8 @@
                 </view>
               </view>
               <view class="card-row-bottom">
-                <text class="card-phone">{{ formatPhone(lead.phone) }}</text>
-                <text v-if="lead.createdAt" class="card-time">{{ lead.createdAt }}</text>
+                <text class="card-phone">手机：{{ lead.phone || '-' }}</text>
+                <text v-if="lead.createdAt" class="card-time">{{ formatTime(lead.createdAt, true) }}</text>
               </view>
             </view>
           </view>
@@ -130,6 +130,7 @@ import { onPullDownRefresh, onShow } from '@dcloudio/uni-app';
 import { getLeads } from '@/api/lead';
 import { LeadStatus } from '@/types';
 import type { Lead } from '@/types';
+import { statusText, statusClass, avatarColor, formatTime } from '@/utils/lead';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -201,78 +202,6 @@ function onTool(type: string) {
 
 function onLeadClick(lead: Lead) {
   uni.navigateTo({ url: '/pages/acquisition/detail?id=' + lead.id });
-}
-
-function statusText(s?: LeadStatus | number): string {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return '新线索';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return '跟进中';
-    case LeadStatus.INTENDED:
-    case 3:
-      return '意向';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return '已转化';
-    case LeadStatus.LOST:
-    case 5:
-      return '已流失';
-    default:
-      return '未知';
-  }
-}
-
-function statusClass(s?: LeadStatus | number): string {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return 'st-new';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return 'st-following';
-    case LeadStatus.INTENDED:
-    case 3:
-      return 'st-intended';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return 'st-converted';
-    case LeadStatus.LOST:
-    case 5:
-      return 'st-lost';
-    default:
-      return '';
-  }
-}
-
-/** 根据线索状态返回头像色块颜色 */
-function avatarColor(s?: LeadStatus | number): 'blue' | 'green' | 'orange' | 'red' | 'gray' {
-  switch (s) {
-    case LeadStatus.NEW:
-    case 1:
-      return 'blue';
-    case LeadStatus.FOLLOWING:
-    case 2:
-      return 'orange';
-    case LeadStatus.INTENDED:
-    case 3:
-      return 'orange';
-    case LeadStatus.CONVERTED:
-    case 4:
-      return 'green';
-    case LeadStatus.LOST:
-    case 5:
-      return 'gray';
-    default:
-      return 'blue';
-  }
-}
-
-function formatPhone(phone?: string): string {
-  if (!phone) return '手机：-';
-  return `手机：${phone}`;
 }
 
 onMounted(() => {
@@ -537,8 +466,8 @@ onPullDownRefresh(async () => {
   color: $brand-success;
 }
 .st-intended {
-  background: #fdf6ec;
-  color: #e6a23c;
+  background: $brand-error-light;
+  color: $brand-error;
 }
 .st-lost {
   background: $brand-info-light;
