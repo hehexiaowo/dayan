@@ -54,13 +54,16 @@
 
       <view class="form-item">
         <text class="form-label">密码</text>
-        <input
-          v-model="password"
-          password
-          placeholder="请输入密码"
-          placeholder-class="input-placeholder"
-          class="form-input"
-        />
+        <view class="pwd-wrap">
+          <input
+            v-model="password"
+            :password="!showPwd"
+            placeholder="请输入密码"
+            placeholder-class="input-placeholder"
+            class="form-input"
+          />
+          <text class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
+        </view>
       </view>
 
       <button
@@ -82,17 +85,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import type { ChannelOption } from '@/api/auth';
 
 const userStore = useUserStore();
 const mobile = ref('');
 const password = ref('');
+const showPwd = ref(false);
 const channels = ref<ChannelOption[]>([]);
 const selectedChannel = ref('');
 const loadingChannels = ref(false);
 const submitting = ref(false);
+
+let channelTimer: ReturnType<typeof setTimeout> | null = null;
+watch(mobile, (val) => {
+  channels.value = [];
+  selectedChannel.value = '';
+  if (channelTimer) clearTimeout(channelTimer);
+  if (/^1\d{10}$/.test(val)) {
+    channelTimer = setTimeout(() => loadChannels(), 500);
+  }
+});
+
+onMounted(() => {
+  mobile.value = uni.getStorageSync('agent_remember_mobile') || '';
+});
 
 async function loadChannels() {
   if (!mobile.value) {
@@ -131,6 +149,7 @@ async function handleLogin() {
       identifier: mobile.value,
       password: password.value,
     });
+    uni.setStorageSync('agent_remember_mobile', mobile.value);
     uni.showToast({ title: '登录成功', icon: 'success' });
     setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
   } catch (e) {
@@ -216,6 +235,20 @@ async function handleLogin() {
 .input-placeholder {
   color: $text-placeholder;
   font-size: 28rpx;
+}
+
+.pwd-wrap {
+  position: relative;
+}
+
+.pwd-toggle {
+  position: absolute;
+  right: 24rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 26rpx;
+  color: $brand-primary;
+  padding: 8rpx;
 }
 
 /* 按钮 */
