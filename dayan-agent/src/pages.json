@@ -14,8 +14,20 @@
       "style": { "navigationBarTitleText": "找机构" }
     },
     {
-      "path": "pages/business/park/region",
-      "style": { "navigationBarTitleText": "机构查询" }
+      "path": "pages/business/park/list",
+      "style": { "navigationBarTitleText": "机构分布" }
+    },
+    {
+      "path": "pages/business/park/province",
+      "style": { "navigationBarTitleText": "区域分布" }
+    },
+    {
+      "path": "pages/business/park/city",
+      "style": { "navigationBarTitleText": "选择区县" }
+    },
+    {
+      "path": "pages/business/park/district",
+      "style": { "navigationBarTitleText": "机构列表" }
     },
     {
       "path": "pages/business/park/detail",

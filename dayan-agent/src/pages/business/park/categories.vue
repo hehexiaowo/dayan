@@ -88,7 +88,7 @@ function onCategoryClick(cat: CategoryCount) {
     return;
   }
   uni.navigateTo({
-    url: `/pages/business/park/region?category=${cat.category}&level=province`,
+    url: `/pages/business/park/list?category=${cat.category}`,
   });
 }
 
