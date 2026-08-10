@@ -31,7 +31,6 @@
         <dependency>
             <groupId>com.dayan</groupId>
             <artifactId>dayan-module-park</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.dayan</groupId>

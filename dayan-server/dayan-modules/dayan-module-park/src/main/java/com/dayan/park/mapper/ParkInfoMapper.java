@@ -90,6 +90,7 @@ public interface ParkInfoMapper extends BaseMapper<ParkInfo> {
               AND ability_type IN
               <foreach collection="abilityTypes" item="t" open="(" separator="," close=")">#{t}</foreach>
             ORDER BY sort_order ASC, id ASC
+            LIMIT 200
             </script>
             """)
     List<ParkCardVO> selectParkCardList(@Param("abilityTypes") List<Integer> abilityTypes,

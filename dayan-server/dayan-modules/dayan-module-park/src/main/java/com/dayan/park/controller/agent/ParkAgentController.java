@@ -3,7 +3,6 @@ package com.dayan.park.controller.agent;
 import com.dayan.common.core.resp.R;
 import com.dayan.park.dto.RegionQueryDTO;
 import com.dayan.park.service.ParkAgentQueryService;
-import com.dayan.park.service.ParkInfoService;
 import com.dayan.park.vo.CategoryCountVO;
 import com.dayan.park.vo.ParkInfoVO;
 import com.dayan.park.vo.RegionDrillResult;
@@ -24,6 +23,9 @@ import java.util.List;
  * <p>被 dayan-agent 启动器加载（ComponentScan 保留 controller/agent 包）。
  * 鉴权靠 Sa-Token 登录态拦截（Agent-Token 头），不用 @SaCheckPermission。
  * park_info 是平台共享表，不需 channel_code 隔离。
+ *
+ * <p>所有查询都强制 is_published=1 + operate_status=1 + deleted=0，
+ * agent 端只能看到已上线的机构。
  */
 @Tag(name = "Agent 端-机构查询")
 @Validated
@@ -33,7 +35,6 @@ import java.util.List;
 public class ParkAgentController {
 
     private final ParkAgentQueryService parkAgentQueryService;
-    private final ParkInfoService parkInfoService;
 
     /**
      * 三分类机构数量统计（分类入口页用）。
@@ -57,12 +58,12 @@ public class ParkAgentController {
     }
 
     /**
-     * 机构详情。
+     * 机构详情（仅返回已发布+已上线机构）。
      * GET /agent-api/park/{parkCode}
      */
     @Operation(summary = "机构详情")
     @GetMapping("/{parkCode}")
     public R<ParkInfoVO> detail(@PathVariable String parkCode) {
-        return R.ok(parkInfoService.getDetail(parkCode));
+        return R.ok(parkAgentQueryService.getPublishedDetail(parkCode));
     }
 }

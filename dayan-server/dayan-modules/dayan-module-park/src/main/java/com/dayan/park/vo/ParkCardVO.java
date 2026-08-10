@@ -2,6 +2,8 @@ package com.dayan.park.vo;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * 机构列表卡片精简 VO（agent 端用，字段比 ParkInfoVO 少）。
  */
@@ -20,8 +22,8 @@ public class ParkCardVO {
     private String cityCode;
     private String district;
     private String districtCode;
-    private java.math.BigDecimal longitude;
-    private java.math.BigDecimal latitude;
+    private BigDecimal longitude;
+    private BigDecimal latitude;
 
     // 床位
     private Integer totalBeds;

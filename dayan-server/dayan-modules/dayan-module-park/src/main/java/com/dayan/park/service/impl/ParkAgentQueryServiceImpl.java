@@ -1,13 +1,19 @@
 package com.dayan.park.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.park.dto.RegionQueryDTO;
+import com.dayan.park.entity.ParkInfo;
 import com.dayan.park.mapper.ParkInfoMapper;
 import com.dayan.park.service.ParkAgentQueryService;
 import com.dayan.park.vo.CategoryCountVO;
 import com.dayan.park.vo.ParkCardVO;
+import com.dayan.park.vo.ParkInfoVO;
 import com.dayan.park.vo.RegionDrillResult;
 import com.dayan.park.vo.RegionItem;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -74,10 +80,27 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
                         + " / " + extractCityName(query.getCityCode(), null)
                         + " / " + extractDistrictName(query.getDistrictCode(), parks));
             }
-            default -> throw new IllegalArgumentException("不支持的层级: " + query.getLevel());
+            default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的层级: " + query.getLevel());
         }
 
         return result;
+    }
+
+    @Override
+    public ParkInfoVO getPublishedDetail(String parkCode) {
+        // agent 端只查已发布(is_published=1) + 已上线(operate_status=1) + 未删除的机构
+        ParkInfo park = parkInfoMapper.selectOne(new LambdaQueryWrapper<ParkInfo>()
+                .eq(ParkInfo::getParkCode, parkCode)
+                .eq(ParkInfo::getIsPublished, 1)
+                .eq(ParkInfo::getOperateStatus, 1)
+                .eq(ParkInfo::getDeleted, 0)
+                .last("LIMIT 1"));
+        if (park == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "机构不存在或未上线: " + parkCode);
+        }
+        ParkInfoVO vo = new ParkInfoVO();
+        BeanUtils.copyProperties(park, vo);
+        return vo;
     }
 
     // ===== 内部方法 =====
@@ -94,7 +117,7 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
             case "vital" -> VITAL_TYPES;
             case "care" -> CARE_TYPES;
             case "sojourn" -> List.of(); // 旅居无数据
-            default -> throw new IllegalArgumentException("不支持的分类: " + category);
+            default -> throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的分类: " + category);
         };
     }
 
@@ -133,7 +156,7 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
 
     /** 从区县列表/机构列表中找城市名 */
     private String extractCityName(String cityCode, List<RegionItem> districts) {
-        if (cityCode == null) return "";
+        if (cityCode == null || cityCode.length() < 2) return "";
         // 直辖市 cityCode 如 110100 对应"北京市"，简化为通用映射
         return switch (cityCode.substring(0, 2)) {
             case "11" -> "北京市";
