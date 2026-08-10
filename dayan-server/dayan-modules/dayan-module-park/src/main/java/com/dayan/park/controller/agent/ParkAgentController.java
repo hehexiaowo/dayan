@@ -4,6 +4,7 @@ import com.dayan.common.core.resp.R;
 import com.dayan.park.dto.RegionQueryDTO;
 import com.dayan.park.service.ParkAgentQueryService;
 import com.dayan.park.vo.CategoryCountVO;
+import com.dayan.park.vo.ParkFullDetailVO;
 import com.dayan.park.vo.ParkInfoVO;
 import com.dayan.park.vo.RegionDrillResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,5 +66,15 @@ public class ParkAgentController {
     @GetMapping("/{parkCode}")
     public R<ParkInfoVO> detail(@PathVariable String parkCode) {
         return R.ok(parkAgentQueryService.getPublishedDetail(parkCode));
+    }
+
+    /**
+     * 机构完整详情（主表 + 全部子实体聚合，供详情页 Tab 展示）。
+     * GET /agent-api/park/{parkCode}/full
+     */
+    @Operation(summary = "机构完整详情（聚合）")
+    @GetMapping("/{parkCode}/full")
+    public R<ParkFullDetailVO> fullDetail(@PathVariable String parkCode) {
+        return R.ok(parkAgentQueryService.getFullDetail(parkCode));
     }
 }

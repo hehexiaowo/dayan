@@ -2,6 +2,7 @@ package com.dayan.park.service;
 
 import com.dayan.park.dto.RegionQueryDTO;
 import com.dayan.park.vo.CategoryCountVO;
+import com.dayan.park.vo.ParkFullDetailVO;
 import com.dayan.park.vo.ParkInfoVO;
 import com.dayan.park.vo.RegionDrillResult;
 
@@ -40,4 +41,17 @@ public interface ParkAgentQueryService {
      * @throws com.dayan.common.core.exception.BusinessException 机构不存在或未发布
      */
     ParkInfoVO getPublishedDetail(String parkCode);
+
+    /**
+     * 获取机构完整详情（主表 + 全部子实体聚合）。
+     *
+     * <p>供前端详情页 Tab 展示：基础信息/房型/收费/照护/餐饮/周边等。
+     * 仅返回已发布(is_published=1) + 已上线(operate_status=1) + 未删除的机构，
+     * 子实体也只取 status=1 + 未删除的。
+     *
+     * @param parkCode 机构编码
+     * @return 完整详情 VO
+     * @throws com.dayan.common.core.exception.BusinessException 机构不存在或未发布
+     */
+    ParkFullDetailVO getFullDetail(String parkCode);
 }

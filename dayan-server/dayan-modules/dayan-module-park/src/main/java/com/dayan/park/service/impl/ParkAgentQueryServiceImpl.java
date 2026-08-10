@@ -4,12 +4,43 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.park.dto.RegionQueryDTO;
+import com.dayan.park.entity.ParkAsset;
+import com.dayan.park.entity.ParkCareType;
+import com.dayan.park.entity.ParkDisplayBlock;
+import com.dayan.park.entity.ParkFacilityType;
+import com.dayan.park.entity.ParkFoodType;
 import com.dayan.park.entity.ParkInfo;
+import com.dayan.park.entity.ParkPeriphery;
+import com.dayan.park.entity.ParkPricing;
+import com.dayan.park.entity.ParkRoomType;
+import com.dayan.park.entity.ParkScore;
+import com.dayan.park.entity.ParkServiceType;
+import com.dayan.park.mapper.ParkAssetMapper;
+import com.dayan.park.mapper.ParkCareTypeMapper;
+import com.dayan.park.mapper.ParkDisplayBlockMapper;
+import com.dayan.park.mapper.ParkFacilityTypeMapper;
+import com.dayan.park.mapper.ParkFoodTypeMapper;
 import com.dayan.park.mapper.ParkInfoMapper;
+import com.dayan.park.mapper.ParkPeripheryMapper;
+import com.dayan.park.mapper.ParkPricingMapper;
+import com.dayan.park.mapper.ParkRoomTypeMapper;
+import com.dayan.park.mapper.ParkScoreMapper;
+import com.dayan.park.mapper.ParkServiceTypeMapper;
 import com.dayan.park.service.ParkAgentQueryService;
 import com.dayan.park.vo.CategoryCountVO;
+import com.dayan.park.vo.ParkAssetVO;
 import com.dayan.park.vo.ParkCardVO;
+import com.dayan.park.vo.ParkCareTypeVO;
+import com.dayan.park.vo.ParkDisplayBlockVO;
+import com.dayan.park.vo.ParkFacilityTypeVO;
+import com.dayan.park.vo.ParkFoodTypeVO;
+import com.dayan.park.vo.ParkFullDetailVO;
 import com.dayan.park.vo.ParkInfoVO;
+import com.dayan.park.vo.ParkPeripheryVO;
+import com.dayan.park.vo.ParkPricingVO;
+import com.dayan.park.vo.ParkRoomTypeVO;
+import com.dayan.park.vo.ParkScoreVO;
+import com.dayan.park.vo.ParkServiceTypeVO;
 import com.dayan.park.vo.RegionCenterVO;
 import com.dayan.park.vo.RegionDrillResult;
 import com.dayan.park.vo.RegionItem;
@@ -27,6 +58,16 @@ import java.util.List;
 public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
 
     private final ParkInfoMapper parkInfoMapper;
+    private final ParkAssetMapper parkAssetMapper;
+    private final ParkRoomTypeMapper parkRoomTypeMapper;
+    private final ParkPricingMapper parkPricingMapper;
+    private final ParkCareTypeMapper parkCareTypeMapper;
+    private final ParkFoodTypeMapper parkFoodTypeMapper;
+    private final ParkFacilityTypeMapper parkFacilityTypeMapper;
+    private final ParkServiceTypeMapper parkServiceTypeMapper;
+    private final ParkPeripheryMapper parkPeripheryMapper;
+    private final ParkScoreMapper parkScoreMapper;
+    private final ParkDisplayBlockMapper parkDisplayBlockMapper;
 
     /** 活力长居：CCRC */
     private static final List<Integer> VITAL_TYPES = List.of(1);
@@ -123,6 +164,76 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         return vo;
     }
 
+    @Override
+    public ParkFullDetailVO getFullDetail(String parkCode) {
+        // 1. 查主表（仅已发布+已上线+未删除）
+        ParkInfo park = parkInfoMapper.selectOne(new LambdaQueryWrapper<ParkInfo>()
+                .eq(ParkInfo::getParkCode, parkCode)
+                .eq(ParkInfo::getIsPublished, 1)
+                .eq(ParkInfo::getOperateStatus, 1)
+                .eq(ParkInfo::getDeleted, 0)
+                .last("LIMIT 1"));
+        if (park == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "机构不存在或未上线: " + parkCode);
+        }
+
+        ParkFullDetailVO vo = new ParkFullDetailVO();
+
+        // 2. 主信息
+        ParkInfoVO infoVO = new ParkInfoVO();
+        BeanUtils.copyProperties(park, infoVO);
+        vo.setParkInfo(infoVO);
+
+        // 3. 子实体（条件：park_code + status=1 + deleted=0，deleted 由 @TableLogic 自动过滤）
+        vo.setAssets(copyList(
+                parkAssetMapper.selectList(activeWrapper(parkCode, ParkAsset::getParkCode, ParkAsset::getStatus)),
+                ParkAssetVO::new));
+
+        vo.setRoomTypes(copyList(
+                parkRoomTypeMapper.selectList(activeWrapper(parkCode, ParkRoomType::getParkCode, ParkRoomType::getStatus)),
+                ParkRoomTypeVO::new));
+
+        vo.setPricingList(copyList(
+                parkPricingMapper.selectList(activeWrapper(parkCode, ParkPricing::getParkCode, ParkPricing::getStatus)),
+                ParkPricingVO::new));
+
+        vo.setCareTypes(copyList(
+                parkCareTypeMapper.selectList(activeWrapper(parkCode, ParkCareType::getParkCode, ParkCareType::getStatus)),
+                ParkCareTypeVO::new));
+
+        vo.setFoodTypes(copyList(
+                parkFoodTypeMapper.selectList(activeWrapper(parkCode, ParkFoodType::getParkCode, ParkFoodType::getStatus)),
+                ParkFoodTypeVO::new));
+
+        vo.setFacilityTypes(copyList(
+                parkFacilityTypeMapper.selectList(activeWrapper(parkCode, ParkFacilityType::getParkCode, ParkFacilityType::getStatus)),
+                ParkFacilityTypeVO::new));
+
+        vo.setServiceTypes(copyList(
+                parkServiceTypeMapper.selectList(activeWrapper(parkCode, ParkServiceType::getParkCode, ParkServiceType::getStatus)),
+                ParkServiceTypeVO::new));
+
+        vo.setPeripheries(copyList(
+                parkPeripheryMapper.selectList(activeWrapper(parkCode, ParkPeriphery::getParkCode, ParkPeriphery::getStatus)),
+                ParkPeripheryVO::new));
+
+        vo.setDisplayBlocks(copyList(
+                parkDisplayBlockMapper.selectList(activeWrapper(parkCode, ParkDisplayBlock::getParkCode, ParkDisplayBlock::getStatus)),
+                ParkDisplayBlockVO::new));
+
+        // 4. 评分（单条，无 status 字段，只按 parkCode 查）
+        ParkScore score = parkScoreMapper.selectOne(new LambdaQueryWrapper<ParkScore>()
+                .eq(ParkScore::getParkCode, parkCode)
+                .last("LIMIT 1"));
+        if (score != null) {
+            ParkScoreVO scoreVO = new ParkScoreVO();
+            BeanUtils.copyProperties(score, scoreVO);
+            vo.setScore(scoreVO);
+        }
+
+        return vo;
+    }
+
     // ===== 内部方法 =====
 
     private Integer countByAbilityTypes(List<Integer> abilityTypes) {
@@ -199,5 +310,29 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
                 .map(ParkCardVO::getDistrict)
                 .findFirst()
                 .orElse("");
+    }
+
+    /**
+     * 构建子实体通用查询条件：parkCode + status=1（deleted 由 @TableLogic 自动过滤）。
+     */
+    private <T> LambdaQueryWrapper<T> activeWrapper(
+            String parkCode,
+            com.baomidou.mybatisplus.core.toolkit.support.SFunction<T, String> parkCodeGetter,
+            com.baomidou.mybatisplus.core.toolkit.support.SFunction<T, Integer> statusGetter) {
+        return new LambdaQueryWrapper<T>()
+                .eq(parkCodeGetter, parkCode)
+                .eq(statusGetter, 1);
+    }
+
+    /**
+     * 批量 entity → VO 拷贝。
+     */
+    private <E, V> List<V> copyList(List<E> entities, java.util.function.Supplier<V> voSupplier) {
+        if (entities == null || entities.isEmpty()) return List.of();
+        return entities.stream().map(e -> {
+            V vo = voSupplier.get();
+            BeanUtils.copyProperties(e, vo);
+            return vo;
+        }).toList();
     }
 }
