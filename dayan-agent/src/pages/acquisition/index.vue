@@ -238,8 +238,11 @@ function onTool(type: string) {
     uni.navigateTo({ url: '/pages/acquisition/card/index' });
     return;
   }
+  if (type === 'tools') {
+    uni.navigateTo({ url: '/pages/acquisition/tools/index' });
+    return;
+  }
   const labels: Record<string, string> = {
-    tools: '工具获客',
     poster: '营销海报',
   };
   uni.showToast({ title: `${labels[type] || '工具'}（开发中）`, icon: 'none' });
