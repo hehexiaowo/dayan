@@ -262,6 +262,8 @@ export interface ContentArticle {
   collectCount?: number;
   publishTime?: string;
   contentStatus?: number;
+  sourceType?: number;
+  sourceUrl?: string;
   /** 前端计算：当前代理是否已收藏（非后端字段） */
   isFavorited?: boolean;
 }

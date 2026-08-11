@@ -40,10 +40,61 @@
         </view>
       </view>
 
-      <!-- 正文 -->
+      <!-- 正文 — 按 contentType 分形式渲染 -->
       <view class="body-card">
-        <rich-text v-if="isHtmlBody" :nodes="article.contentBody || ''" />
-        <text v-else class="body-text">{{ article.contentBody || article.summary || '暂无内容' }}</text>
+        <!-- 视频 -->
+        <template v-if="article.contentType === 2">
+          <video
+            v-if="mediaUrl"
+            :src="mediaUrl"
+            controls
+            class="video-player"
+            object-fit="contain"
+          />
+          <text v-if="mediaDesc" class="media-desc">{{ mediaDesc }}</text>
+          <text v-if="!mediaUrl" class="body-text">视频加载失败</text>
+        </template>
+
+        <!-- 图片集 -->
+        <template v-else-if="article.contentType === 3">
+          <view class="gallery">
+            <image
+              v-for="(img, i) in galleryImages"
+              :key="i"
+              :src="img"
+              mode="aspectFill"
+              class="gallery-img dy-clickable"
+              @click="previewImage(i)"
+            />
+          </view>
+          <text v-if="article.summary" class="gallery-caption">{{ article.summary }}</text>
+        </template>
+
+        <!-- 文件 -->
+        <template v-else-if="article.contentType === 6">
+          <view class="file-card dy-clickable" @click="openFile">
+            <text class="file-icon">📄</text>
+            <view class="file-info">
+              <text class="file-name">{{ fileInfo.name }}</text>
+              <text v-if="fileInfo.size" class="file-size">{{ fileInfo.size }}</text>
+            </view>
+            <text class="file-action">下载</text>
+          </view>
+          <text v-if="article.summary" class="body-text" style="margin-top: 20rpx;">{{ article.summary }}</text>
+        </template>
+
+        <!-- 图文（默认 / type=1） -->
+        <template v-else>
+          <rich-text v-if="isHtmlBody" :nodes="article.contentBody || ''" />
+          <text v-else class="body-text">{{ article.contentBody || article.summary || '暂无内容' }}</text>
+        </template>
+      </view>
+
+      <!-- 转载来源 -->
+      <view v-if="article.sourceUrl" class="source-bar dy-clickable" @click="openSource">
+        <text class="source-label">{{ article.sourceType === 2 ? '转载自' : '原文链接' }}</text>
+        <text class="source-url one-line">{{ article.sourceUrl }}</text>
+        <text class="source-arrow">↗</text>
       </view>
 
       <!-- 底部操作栏 -->
@@ -91,6 +142,55 @@ interface Badge {
 const isHtmlBody = computed(() => {
   const body = article.value?.contentBody;
   return !!body && body.trim().startsWith('<');
+});
+
+/** 视频地址（type=2，content_body 存 URL 或 JSON {url,desc}） */
+const mediaUrl = computed(() => {
+  if (article.value?.contentType !== 2) return '';
+  const body = article.value.contentBody || '';
+  try {
+    const parsed = JSON.parse(body);
+    return formatFileUrl(parsed.url || '');
+  } catch {
+    return formatFileUrl(body.trim());
+  }
+});
+
+const mediaDesc = computed(() => {
+  if (article.value?.contentType !== 2) return '';
+  const body = article.value.contentBody || '';
+  try {
+    const parsed = JSON.parse(body);
+    return parsed.desc || '';
+  } catch {
+    return '';
+  }
+});
+
+/** 图片集（type=3，content_body 存 JSON 数组） */
+const galleryImages = computed<string[]>(() => {
+  if (article.value?.contentType !== 3) return [];
+  try {
+    const parsed = JSON.parse(article.value.contentBody || '[]');
+    return Array.isArray(parsed) ? parsed.map((s: unknown) => formatFileUrl(String(s))) : [];
+  } catch {
+    return [];
+  }
+});
+
+/** 文件信息（type=6，content_body 存 JSON {fileName,fileUrl,fileSize}） */
+const fileInfo = computed(() => {
+  if (article.value?.contentType !== 6) return { name: '', url: '', size: '' };
+  try {
+    const parsed = JSON.parse(article.value.contentBody || '{}');
+    return {
+      name: parsed.fileName || '未知文件',
+      url: formatFileUrl(parsed.fileUrl || ''),
+      size: parsed.fileSize || '',
+    };
+  } catch {
+    return { name: '附件', url: '', size: '' };
+  }
 });
 
 const tagList = computed<string[]>(() => {
@@ -161,6 +261,49 @@ async function toggleFavorite() {
 
 function onShare() {
   uni.showToast({ title: '分享功能开发中', icon: 'none' });
+}
+
+/** 图片预览（全屏左右滑动） */
+function previewImage(index: number) {
+  uni.previewImage({ urls: galleryImages.value, current: galleryImages.value[index] });
+}
+
+/** 打开文件 */
+function openFile() {
+  if (!fileInfo.value.url) {
+    uni.showToast({ title: '文件地址无效', icon: 'none' });
+    return;
+  }
+  // #ifdef H5
+  window.open(fileInfo.value.url, '_blank');
+  // #endif
+  // #ifndef H5
+  uni.downloadFile({
+    url: fileInfo.value.url,
+    success: (res) => {
+      uni.openDocument({
+        filePath: res.tempFilePath,
+        fail: () => uni.showToast({ title: '无法打开此文件', icon: 'none' }),
+      });
+    },
+    fail: () => uni.showToast({ title: '下载失败', icon: 'none' }),
+  });
+  // #endif
+}
+
+/** 打开转载原文 */
+function openSource() {
+  const url = article.value?.sourceUrl;
+  if (!url) return;
+  // #ifdef H5
+  window.open(url, '_blank');
+  // #endif
+  // #ifndef H5
+  uni.setClipboardData({
+    data: url,
+    success: () => uni.showToast({ title: '链接已复制', icon: 'none' }),
+  });
+  // #endif
 }
 
 onLoad((query) => {
@@ -287,6 +430,112 @@ onLoad((query) => {
   color: $text-primary;
   line-height: 2;
   white-space: pre-wrap;
+}
+
+/* 视频播放器 */
+.video-player {
+  width: 100%;
+  border-radius: $radius-md;
+  background: #000;
+}
+.media-desc {
+  display: block;
+  margin-top: $spacing-sm;
+  font-size: 26rpx;
+  color: $text-secondary;
+  line-height: 1.6;
+}
+
+/* 图片集 */
+.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+.gallery-img {
+  width: calc((100% - 12rpx) / 3);
+  height: 200rpx;
+  border-radius: $radius-sm;
+  background: $bg-page;
+}
+.gallery-caption {
+  display: block;
+  width: 100%;
+  margin-top: $spacing-md;
+  font-size: 26rpx;
+  color: $text-secondary;
+  line-height: 1.6;
+}
+
+/* 文件卡片 */
+.file-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  background: $bg-page;
+}
+.file-icon {
+  font-size: 48rpx;
+}
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+.file-name {
+  display: block;
+  font-size: 28rpx;
+  color: $text-primary;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-size {
+  font-size: 22rpx;
+  color: $text-placeholder;
+}
+.file-action {
+  flex-shrink: 0;
+  font-size: 26rpx;
+  color: $brand-primary;
+  font-weight: 500;
+  padding: 8rpx 24rpx;
+  border: 2rpx solid $brand-primary;
+  border-radius: $radius-sm;
+}
+
+/* 转载来源 */
+.source-bar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+  padding: $spacing-md;
+  background: $brand-primary-light;
+  border-radius: $radius-md;
+}
+.source-label {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: $brand-primary;
+  font-weight: 500;
+}
+.source-url {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  color: $text-secondary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.source-arrow {
+  flex-shrink: 0;
+  font-size: 28rpx;
+  color: $brand-primary;
 }
 
 /* 底部操作栏 */

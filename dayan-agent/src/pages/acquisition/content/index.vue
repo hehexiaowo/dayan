@@ -62,7 +62,8 @@
           <!-- 有封面：左文右图 -->
           <view v-if="formatFileUrl(article.coverImage)" class="card-with-image">
             <view class="card-text-area">
-              <view v-if="getBadges(article).length" class="badge-row">
+              <view class="badge-row">
+                <text class="badge badge-type">{{ getTypeLabel(article.contentType) }}</text>
                 <text
                   v-for="badge in getBadges(article)"
                   :key="badge.cls"
@@ -90,7 +91,8 @@
           </view>
           <!-- 无封面：纯文字 -->
           <view v-else>
-            <view v-if="getBadges(article).length" class="badge-row">
+            <view class="badge-row">
+              <text class="badge badge-type">{{ getTypeLabel(article.contentType) }}</text>
               <text
                 v-for="badge in getBadges(article)"
                 :key="badge.cls"
@@ -243,6 +245,16 @@ function goDetail(contentCode: string) {
   uni.navigateTo({ url: `/pages/acquisition/content/detail?code=${contentCode}` });
 }
 
+/** 内容形式标签 */
+function getTypeLabel(type?: number): string {
+  switch (type) {
+    case 2: return '视频';
+    case 3: return '图集';
+    case 6: return '文件';
+    default: return '图文';
+  }
+}
+
 /** 置顶 > 热 > 新 */
 function getBadges(article: ContentArticle): Badge[] {
   const badges: Badge[] = [];
@@ -392,6 +404,10 @@ onPullDownRefresh(async () => {
 .badge-top {
   background: $brand-error-light;
   color: $brand-error;
+}
+.badge-type {
+  background: $bg-page;
+  color: $text-secondary;
 }
 .badge-hot {
   background: $brand-warning-light;
