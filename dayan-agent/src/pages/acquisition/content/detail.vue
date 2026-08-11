@@ -342,9 +342,33 @@ async function generatePoster() {
   }
 }
 
-/** Canvas 绘制海报 */
+/**
+ * Canvas 绘制海报 — 品牌化专业排版。
+ *
+ * 布局（600×960）：
+ *  ┌────────────────────────────┐
+ *  │     封面图（全出血 600×340） │  Hero
+ *  │     ◐ 渐变过渡到白色         │
+ *  ├────────────────────────────┤
+ *  │  [分类标签]                 │
+ *  │  文章标题（大号加粗）         │
+ *  │  摘要（灰色小字）            │
+ *  │  ── 品牌色短装饰线           │
+ *  ├────────────────────────────┤
+ *  │ ┌─── 代理人卡片（圆角背景）─┐│
+ *  │ │ ●  姓名 · 职务           ││
+ *  │ │    📱 电话号码     ┌───┐ ││
+ *  │ │                  │QR │ ││
+ *  │ │  长按识别阅读全文  └───┘ ││
+ *  └─┴──────────────────────────┴┘
+ *  │   大雁养老 · 专业养老服务平台  │  Footer
+ *  └────────────────────────────┘
+ */
 async function drawPoster(): Promise<string> {
-  const W = 600, H = 900;
+  const W = 600, H = 960;
+  const PAD = 40;
+  const BRAND = '#337ecc';
+
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -352,114 +376,238 @@ async function drawPoster(): Promise<string> {
 
   const a = article.value!;
 
-  // 1. 白色背景
+  // ===== 背景 =====
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, W, H);
 
-  let y = 40;
-
-  // 2. 封面图（16:9）
+  // ===== 1. 封面图（全出血，居中裁切到 600×340） =====
+  const COVER_H = 340;
   const coverSrc = formatFileUrl(a.coverImage);
   if (coverSrc) {
     try {
       const img = await loadImage(coverSrc);
-      const imgH = Math.min(300, (img.height / img.width) * (W - 80));
-      ctx.drawImage(img, 40, y, W - 80, imgH);
-      y += imgH + 20;
+      drawImageCover(ctx, img, 0, 0, W, COVER_H);
     } catch {
-      y = drawPlaceholderHeader(ctx, W, y);
+      drawCoverPlaceholder(ctx, W, COVER_H, BRAND);
     }
   } else {
-    y = drawPlaceholderHeader(ctx, W, y);
+    drawCoverPlaceholder(ctx, W, COVER_H, BRAND);
   }
 
-  // 3. 标题（加粗，自动换行）
-  ctx.fillStyle = '#303133';
-  ctx.font = 'bold 28px sans-serif';
-  y = wrapText(ctx, a.title || '', 40, y, W - 80, 40) + 16;
+  // 封面底部渐变过渡到白色
+  const fade = ctx.createLinearGradient(0, COVER_H - 50, 0, COVER_H);
+  fade.addColorStop(0, 'rgba(255,255,255,0)');
+  fade.addColorStop(1, 'rgba(255,255,255,1)');
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, COVER_H - 50, W, 50);
 
-  // 4. 摘要（灰色）
+  // ===== 2. 分类标签（小药丸） =====
+  let y = COVER_H + 20;
+  if (a.categoryName) {
+    const badgeText = a.categoryName;
+    ctx.font = '18px sans-serif';
+    const badgeW = ctx.measureText(badgeText).width + 28;
+    ctx.fillStyle = BRAND;
+    roundRect(ctx, PAD, y, badgeW, 30, 15);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(badgeText, PAD + 14, y + 16);
+    ctx.textBaseline = 'alphabetic';
+    y += 46;
+  } else {
+    y += 10;
+  }
+
+  // ===== 3. 标题（大号加粗） =====
+  ctx.fillStyle = '#1a1a2e';
+  ctx.font = 'bold 30px sans-serif';
+  y = wrapText(ctx, a.title || '', PAD, y + 30, W - PAD * 2, 44, 2) + 14;
+
+  // ===== 4. 摘要（灰色，最多 2 行） =====
   if (a.summary) {
-    ctx.fillStyle = '#909399';
-    ctx.font = '22px sans-serif';
-    y = wrapText(ctx, a.summary, 40, y, W - 80, 34) + 20;
+    ctx.fillStyle = '#888888';
+    ctx.font = '20px sans-serif';
+    y = wrapText(ctx, a.summary, PAD, y + 20, W - PAD * 2, 32, 2) + 10;
   }
 
-  // 5. 分割线
-  y += 10;
-  ctx.strokeStyle = '#ebeef5';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(40, y);
-  ctx.lineTo(W - 40, y);
-  ctx.stroke();
-  y += 30;
+  // ===== 5. 装饰短线（品牌色） =====
+  y += 16;
+  ctx.fillStyle = BRAND;
+  roundRect(ctx, PAD, y, 48, 4, 2);
+  ctx.fill();
 
-  // 6. 分享人信息（从 localStorage 获取当前代理人）
+  // ===== 6. 代理人卡片 =====
   const agentUser = uni.getStorageSync('agent_user') as any;
   const agentName = agentUser?.realName || a.authorName || '养老顾问';
+  const agentPhone = agentUser?.phone || '';
 
-  // 头像（圆形）
-  const avatarSize = 70;
-  const avatarX = 40;
-  const avatarY = y;
+  const CARD_X = 24, CARD_Y = y + 24, CARD_W = W - 48, CARD_H = 250;
+  const CARD_R = 20;
+
+  // 卡片背景 + 阴影
+  ctx.shadowColor = 'rgba(0,0,0,0.06)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = '#f7f8fa';
+  roundRect(ctx, CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // 6a. 头像（圆形）
+  const AVATAR = 76;
+  const ax = CARD_X + 28;
+  const ay = CARD_Y + 28;
   const avatarSrc = formatFileUrl(agentUser?.avatar);
   if (avatarSrc) {
     try {
       const avatar = await loadImage(avatarSrc);
       ctx.save();
       ctx.beginPath();
-      ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+      ctx.arc(ax + AVATAR / 2, ay + AVATAR / 2, AVATAR / 2, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+      ctx.drawImage(avatar, ax, ay, AVATAR, AVATAR);
       ctx.restore();
     } catch {
-      drawAvatarFallback(ctx, avatarX, avatarY, avatarSize, agentName);
+      drawAvatarFallback(ctx, ax, ay, AVATAR, agentName, BRAND);
     }
   } else {
-    drawAvatarFallback(ctx, avatarX, avatarY, avatarSize, agentName);
+    drawAvatarFallback(ctx, ax, ay, AVATAR, agentName, BRAND);
   }
 
-  // 姓名 / 电话
-  ctx.fillStyle = '#303133';
-  ctx.font = 'bold 26px sans-serif';
-  ctx.fillText(agentName, avatarX + avatarSize + 20, avatarY + 30);
+  // 6b. 姓名 + 职务
+  const nameX = ax + AVATAR + 20;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.font = 'bold 27px sans-serif';
+  ctx.fillText(agentName, nameX, ay + 32);
 
   ctx.fillStyle = '#909399';
-  ctx.font = '20px sans-serif';
-  ctx.fillText('专业养老顾问 · 为您服务', avatarX + avatarSize + 20, avatarY + 58);
+  ctx.font = '19px sans-serif';
+  ctx.fillText('专业养老顾问 · 为您服务', nameX, ay + 60);
 
-  y += avatarSize + 40;
-
-  // 7. QR 码
-  const qrSize = 120;
-  const qrX = W - qrSize - 40;
-  const qrY = y;
-  try {
-    const qrDataUrl = await QRCode.toDataURL(getShareUrl(), { width: qrSize, margin: 1 });
-    const qrImg = await loadImage(qrDataUrl);
-    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-  } catch {
-    // QR 失败画占位框
-    ctx.strokeStyle = '#409eff';
-    ctx.strokeRect(qrX, qrY, qrSize, qrSize);
+  // 6c. 电话
+  if (agentPhone) {
+    ctx.fillStyle = '#555555';
+    ctx.font = '22px sans-serif';
+    ctx.fillText('📱  ' + agentPhone, nameX, ay + 95);
   }
 
-  // QR 提示文字
-  ctx.fillStyle = '#606266';
-  ctx.font = '18px sans-serif';
-  ctx.fillText('长按识别', qrX, qrY + qrSize + 26);
-  ctx.fillText('阅读全文', qrX, qrY + qrSize + 50);
+  // 6d. 卡内分割线
+  const dividerY = CARD_Y + CARD_H - 110;
+  ctx.strokeStyle = '#e8eaed';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(CARD_X + 28, dividerY);
+  ctx.lineTo(CARD_X + CARD_W - 28, dividerY);
+  ctx.stroke();
 
-  // 8. 底部品牌
-  ctx.fillStyle = '#c0c4cc';
-  ctx.font = '16px sans-serif';
+  // 6e. QR 码（右对齐）
+  const QR = 88;
+  const qrX = CARD_X + CARD_W - QR - 28;
+  const qrY = dividerY + 12;
+  try {
+    const qrDataUrl = await QRCode.toDataURL(getShareUrl(), { width: QR, margin: 0 });
+    const qrImg = await loadImage(qrDataUrl);
+    // 白底框
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(qrX - 4, qrY - 4, QR + 8, QR + 8);
+    ctx.drawImage(qrImg, qrX, qrY, QR, QR);
+  } catch {
+    ctx.strokeStyle = BRAND;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(qrX, qrY, QR, QR);
+  }
+
+  // 6f. QR 左侧提示文字
+  ctx.fillStyle = '#1a1a2e';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('扫码阅读全文', CARD_X + 28, dividerY + 42);
+  ctx.fillStyle = '#999999';
+  ctx.font = '17px sans-serif';
+  ctx.fillText('了解更多详情', CARD_X + 28, dividerY + 68);
+
+  // ===== 7. 品牌页脚 =====
   ctx.textAlign = 'center';
-  ctx.fillText('大雁养老 · 专业养老服务平台', W / 2, H - 24);
+  ctx.font = 'bold 20px sans-serif';
+  const brandText = '大雁养老';
+  const subText = ' · 专业养老服务平台';
+  const brandW = ctx.measureText(brandText).width;
+  ctx.font = '20px sans-serif';
+  const subW = ctx.measureText(subText).width;
+  const totalW = brandW + subW;
+  const startX = (W - totalW) / 2;
+
   ctx.textAlign = 'left';
+  ctx.fillStyle = BRAND;
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText(brandText, startX, H - 36);
+  ctx.fillStyle = '#c0c4cc';
+  ctx.font = '20px sans-serif';
+  ctx.fillText(subText, startX + brandW, H - 36);
 
   return canvas.toDataURL('image/png');
+}
+
+/** 居中裁切绘制图片（类似 CSS object-fit: cover） */
+function drawImageCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, dx: number, dy: number, dw: number, dh: number) {
+  const imgRatio = img.width / img.height;
+  const destRatio = dw / dh;
+  let sx = 0, sy = 0, sw = img.width, sh = img.height;
+  if (imgRatio > destRatio) {
+    sw = img.height * destRatio;
+    sx = (img.width - sw) / 2;
+  } else {
+    sh = img.width / destRatio;
+    sy = (img.height - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+}
+
+/** 圆角矩形路径（不 fill，由调用方 fill/stroke） */
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+/** 无封面时的品牌渐变占位 */
+function drawCoverPlaceholder(ctx: CanvasRenderingContext2D, W: number, H: number, brand: string) {
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, '#2c6faf');
+  grad.addColorStop(0.5, brand);
+  grad.addColorStop(1, '#5ba3d8');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 装饰圆
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.arc(W * 0.2, H * 0.3, 80, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(W * 0.85, H * 0.7, 120, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 品牌文字
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('大雁养老', W / 2, H / 2 - 6);
+  ctx.font = '20px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fillText('专业养老服务平台', W / 2, H / 2 + 28);
+  ctx.textAlign = 'left';
 }
 
 /** 加载图片（支持 CORS） */
@@ -473,14 +621,25 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Canvas 文字换行 */
-function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number): number {
+/** Canvas 文字换行（支持最大行数截断） */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines = 99): number {
   const chars = text.split('');
   let line = '';
   let yPos = y;
+  let lineCount = 0;
   for (const char of chars) {
     const testLine = line + char;
     if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+      lineCount++;
+      if (lineCount >= maxLines) {
+        // 截断加省略号
+        let truncated = line;
+        while (ctx.measureText(truncated + '…').width > maxWidth && truncated.length > 0) {
+          truncated = truncated.slice(0, -1);
+        }
+        ctx.fillText(truncated + '…', x, yPos);
+        return yPos;
+      }
       ctx.fillText(line, x, yPos);
       line = char;
       yPos += lineHeight;
@@ -492,29 +651,14 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
   return yPos;
 }
 
-/** 无封面时的占位头部 */
-function drawPlaceholderHeader(ctx: CanvasRenderingContext2D, W: number, y: number): number {
-  const grad = ctx.createLinearGradient(40, y, W - 40, y + 160);
-  grad.addColorStop(0, '#337ecc');
-  grad.addColorStop(1, '#409eff');
-  ctx.fillStyle = grad;
-  ctx.fillRect(40, y, W - 80, 160);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '24px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('大雁养老', W / 2, y + 90);
-  ctx.textAlign = 'left';
-  return y + 180;
-}
-
 /** 头像加载失败的文字占位 */
-function drawAvatarFallback(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, name: string) {
-  ctx.fillStyle = '#409eff';
+function drawAvatarFallback(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, name: string, brand = '#409eff') {
+  ctx.fillStyle = brand;
   ctx.beginPath();
   ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 28px sans-serif';
+  ctx.font = `bold ${Math.floor(size * 0.4)}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(name.charAt(0) || '?', x + size / 2, y + size / 2);
