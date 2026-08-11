@@ -13,6 +13,7 @@ import com.dayan.equity.vo.EquityDepotVO;
 import com.dayan.common.core.resp.PageResult;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 权益卡/函（equity_depot）服务 —— 核心链路。
@@ -30,6 +31,9 @@ public interface EquityDepotService {
 
     /** 查询实体（不存在抛业务异常） */
     EquityDepot requireEquity(String equityCode);
+
+    /** 按代理人分组统计各状态权益数量（key=equityStatus, value=count） */
+    Map<Integer, Long> countByAgentCode(String agentCode);
 
     // ====== 核心链路 ======
 

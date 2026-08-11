@@ -23,4 +23,6 @@ public class EquityDepotQueryDTO {
     private Integer equityStatus;
     private String activateCode;
     private String bindCode;
+    /** 模糊搜索关键词（匹配 equityNo 卡号） */
+    private String keyword;
 }

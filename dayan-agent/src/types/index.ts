@@ -98,3 +98,67 @@ export interface Customer {
   clientType?: ClientType | number;
   bindTime?: string;
 }
+
+// ===== 权益卡 =====
+
+/** 权益状态：0 库存 / 1 出库 / 2 激活 / 3 使用中 / 4 完成 / 5 过期 / 6 作废 / 7 更换中 */
+export enum EquityStatus {
+  STOCK = 0,
+  OUTBOUND = 1,
+  ACTIVATED = 2,
+  IN_USE = 3,
+  COMPLETED = 4,
+  EXPIRED = 5,
+  VOID = 6,
+  CHANGING = 7,
+}
+
+/** 载体类型：1 权益卡 / 2 权益函 */
+export const CARRIER_CARD = 1;
+export const CARRIER_LETTER = 2;
+
+/** 权益卡/函（GET /agent-api/equities） */
+export interface EquityCard {
+  id: string;
+  equityCode: string;
+  equityNo: string;
+  goodsCode?: string;
+  goodsName?: string;
+  personCount?: number;
+  validDays?: number;
+  agentCode?: string;
+  clientCode?: string;
+  /** 客户姓名（从激活记录快照） */
+  clientName?: string;
+  /** 客户手机（从激活记录快照） */
+  clientPhone?: string;
+  /** 载体类型：1 卡 / 2 函 */
+  carrierType?: number;
+  activateCode?: string;
+  bindCode?: string;
+  qrCodeUrl?: string;
+  /** 权益状态 */
+  equityStatus?: EquityStatus | number;
+  activateTime?: string;
+  firstUseTime?: string;
+  lastUseTime?: string;
+  expireTime?: string;
+  produceTime?: string;
+  remark?: string;
+  createdAt?: string;
+}
+
+/** 权益卡查询参数 */
+export interface EquityQuery extends PageQuery {
+  equityStatus?: number | null;
+}
+
+/** 权益卡状态统计（GET /agent-api/equities/stats） */
+export interface EquityStats {
+  total: number;
+  stock: number;
+  outbound: number;
+  activated: number;
+  inUse: number;
+  completed: number;
+}

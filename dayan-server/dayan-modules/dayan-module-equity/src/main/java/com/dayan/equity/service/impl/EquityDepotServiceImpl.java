@@ -149,24 +149,33 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         LambdaQueryWrapper<EquityDepot> wrapper = buildQueryWrapper(query);
         Page<EquityDepot> page = depotMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
-        Map<String, OrderEquityVO> orderMap = buildOrderNameMap(page.getRecords());
-        List<EquityDepotVO> records = page.getRecords().stream()
-                .map(e -> toVO(e, orderMap)).collect(Collectors.toList());
-        return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), records);
+        List<EquityDepot> records = page.getRecords();
+        Map<String, OrderEquityVO> orderMap = buildOrderNameMap(records);
+        Map<String, String> goodsNameMap = buildGoodsNameMap(records);
+        Map<String, EquityActivate> activateMap = buildActivateClientMap(records);
+        List<EquityDepotVO> vos = records.stream()
+                .map(e -> toVO(e, orderMap, goodsNameMap, activateMap)).collect(Collectors.toList());
+        return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), vos);
     }
 
     @Override
     public List<EquityDepotVO> list(EquityDepotQueryDTO query) {
         List<EquityDepot> records = depotMapper.selectList(buildQueryWrapper(query));
         Map<String, OrderEquityVO> orderMap = buildOrderNameMap(records);
-        return records.stream().map(e -> toVO(e, orderMap)).collect(Collectors.toList());
+        Map<String, String> goodsNameMap = buildGoodsNameMap(records);
+        Map<String, EquityActivate> activateMap = buildActivateClientMap(records);
+        return records.stream()
+                .map(e -> toVO(e, orderMap, goodsNameMap, activateMap)).collect(Collectors.toList());
     }
 
     @Override
     public EquityDepotVO getDetail(String equityCode) {
         EquityDepot entity = requireEquity(equityCode);
-        Map<String, OrderEquityVO> orderMap = buildOrderNameMap(List.of(entity));
-        return toVO(entity, orderMap);
+        List<EquityDepot> records = List.of(entity);
+        Map<String, OrderEquityVO> orderMap = buildOrderNameMap(records);
+        Map<String, String> goodsNameMap = buildGoodsNameMap(records);
+        Map<String, EquityActivate> activateMap = buildActivateClientMap(records);
+        return toVO(entity, orderMap, goodsNameMap, activateMap);
     }
 
     @Override
@@ -178,6 +187,18 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "权益不存在: " + equityCode);
         }
         return depot;
+    }
+
+    @Override
+    public Map<Integer, Long> countByAgentCode(String agentCode) {
+        List<EquityDepot> records = depotMapper.selectList(
+                new LambdaQueryWrapper<EquityDepot>()
+                        .eq(EquityDepot::getAgentCode, agentCode));
+        Map<Integer, Long> result = new HashMap<>();
+        for (EquityDepot d : records) {
+            result.merge(d.getEquityStatus(), 1L, Long::sum);
+        }
+        return result;
     }
 
     // ====== 核心链路：批量入库（stockIn） ======
@@ -762,6 +783,11 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         if (query.getBindCode() != null && !query.getBindCode().isEmpty()) {
             wrapper.eq(EquityDepot::getBindCode, query.getBindCode());
         }
+        if (query.getKeyword() != null && !query.getKeyword().isEmpty()) {
+            wrapper.and(w -> w.like(EquityDepot::getEquityNo, query.getKeyword())
+                    .or().like(EquityDepot::getActivateCode, query.getKeyword())
+                    .or().like(EquityDepot::getBindCode, query.getKeyword()));
+        }
         return wrapper;
     }
 
@@ -781,11 +807,56 @@ public class EquityDepotServiceImpl implements EquityDepotService {
                 .collect(Collectors.toMap(OrderEquityVO::getOrderCode, o -> o, (a, b) -> a));
     }
 
-    private EquityDepotVO toVO(EquityDepot entity) {
-        return toVO(entity, Collections.emptyMap());
+    /**
+     * 批量查询商品名称，构建 goodsCode → goodsName 映射。
+     * 用于 order 快照缺失时 fallback 取商品名（N+1 安全，按去重 goodsCode 逐个查）。
+     */
+    private Map<String, String> buildGoodsNameMap(List<EquityDepot> records) {
+        Set<String> goodsCodes = records.stream()
+                .map(EquityDepot::getGoodsCode)
+                .filter(Objects::nonNull)
+                .filter(c -> !c.isEmpty())
+                .collect(Collectors.toSet());
+        if (goodsCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> result = new HashMap<>();
+        for (String code : goodsCodes) {
+            try {
+                GoodsInfo goods = goodsInfoService.requireGoods(code);
+                result.put(code, goods.getGoodsName());
+            } catch (Exception e) {
+                // 商品不存在则跳过
+            }
+        }
+        return result;
     }
 
-    private EquityDepotVO toVO(EquityDepot entity, Map<String, OrderEquityVO> orderMap) {
+    /**
+     * 批量查询激活记录，构建 equityCode → EquityActivate 映射。
+     * 用于补 clientFullName/clientPhone（N+1 安全，单次 IN 查询）。
+     */
+    private Map<String, EquityActivate> buildActivateClientMap(List<EquityDepot> records) {
+        Set<String> equityCodes = records.stream()
+                .map(EquityDepot::getEquityCode)
+                .filter(Objects::nonNull)
+                .filter(c -> !c.isEmpty())
+                .collect(Collectors.toSet());
+        if (equityCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return activateMapper.selectList(
+                new LambdaQueryWrapper<EquityActivate>()
+                        .in(EquityActivate::getEquityCode, equityCodes)
+        ).stream().collect(Collectors.toMap(EquityActivate::getEquityCode, a -> a, (a, b) -> a));
+    }
+
+    private EquityDepotVO toVO(EquityDepot entity) {
+        return toVO(entity, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
+    }
+
+    private EquityDepotVO toVO(EquityDepot entity, Map<String, OrderEquityVO> orderMap,
+                                Map<String, String> goodsNameMap, Map<String, EquityActivate> activateMap) {
         EquityDepotVO vo = new EquityDepotVO();
         vo.setId(entity.getId());
         vo.setEquityCode(entity.getEquityCode());
@@ -821,6 +892,16 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         if (order != null) {
             vo.setGoodsName(order.getGoodsName());
             vo.setSkuName(order.getSkuName());
+        }
+        // goodsName fallback：order 快照为空时从 goods_info 补
+        if (vo.getGoodsName() == null && entity.getGoodsCode() != null) {
+            vo.setGoodsName(goodsNameMap.get(entity.getGoodsCode()));
+        }
+        // 客户信息：从激活记录快照补（仅已激活卡片有值）
+        EquityActivate activate = entity.getEquityCode() != null ? activateMap.get(entity.getEquityCode()) : null;
+        if (activate != null) {
+            vo.setClientName(activate.getClientFullName());
+            vo.setClientPhone(activate.getClientPhone());
         }
         vo.setEquityStatus(entity.getEquityStatus());
         vo.setVoidReason(entity.getVoidReason());
