@@ -5,8 +5,18 @@
     </template>
 
     <template v-else-if="article">
-      <!-- 文章信息 -->
-      <view class="info-card">
+      <!-- 视频类型：播放器置顶 -->
+      <view v-if="article.contentType === 2 && mediaUrl" class="video-top">
+        <video
+          :src="mediaUrl"
+          controls
+          class="video-player-top"
+          object-fit="contain"
+        />
+      </view>
+
+      <!-- 信息区（标题/副标题/作者/标签） -->
+      <view class="info-section">
         <view v-if="getBadges(article).length" class="badge-row">
           <text
             v-for="badge in getBadges(article)"
@@ -18,74 +28,72 @@
         <text class="title">{{ article.title }}</text>
         <text v-if="article.subtitle" class="subtitle">{{ article.subtitle }}</text>
         <view class="meta-row">
-          <view v-if="article.authorName" class="author-chip">
-            <text class="author-name">{{ article.authorName }}</text>
-          </view>
-          <text v-if="article.publishTime" class="meta-date">{{ formatDate(article.publishTime) }}</text>
-          <text v-if="article.viewCount != null" class="meta-views">{{ formatCount(article.viewCount) }} 阅读</text>
-          <text v-if="article.collectCount" class="meta-views">{{ article.collectCount }} 收藏</text>
+          <text v-if="article.authorName" class="author-name">{{ article.authorName }}</text>
+          <text v-if="article.publishTime" class="meta-text">{{ formatDate(article.publishTime) }}</text>
+          <text v-if="article.viewCount != null" class="meta-text">
+            {{ formatCount(article.viewCount) }} {{ article.contentType === 2 ? '播放' : article.contentType === 6 ? '下载' : '阅读' }}
+          </text>
+          <text v-if="article.collectCount" class="meta-text">{{ article.collectCount }} 收藏</text>
         </view>
-        <!-- 标签 -->
         <view v-if="tagList.length" class="tag-row">
-          <text v-for="tag in tagList" :key="tag" class="tag">#{{ tag }}</text>
+          <text v-for="tag in tagList" :key="tag" class="tag-chip">{{ tag }}</text>
         </view>
       </view>
 
-      <!-- 正文 — 按 contentType 分形式渲染 -->
-      <view class="body-card">
-        <!-- 视频 -->
+      <!-- 正文区（与信息区无间隙衔接） -->
+      <view class="body-section">
+        <!-- 视频：描述文字 -->
         <template v-if="article.contentType === 2">
-          <video
-            v-if="mediaUrl"
-            :src="mediaUrl"
-            controls
-            class="video-player"
-            object-fit="contain"
-          />
-          <text v-if="mediaDesc" class="media-desc">{{ mediaDesc }}</text>
-          <text v-if="!mediaUrl" class="body-text">视频加载失败</text>
+          <text v-if="mediaDesc" class="body-text">{{ mediaDesc }}</text>
         </template>
 
-        <!-- 图片集 -->
+        <!-- 图集：2列大图墙 -->
         <template v-else-if="article.contentType === 3">
-          <view class="gallery">
+          <view class="gallery-grid">
             <image
               v-for="(img, i) in galleryImages"
               :key="i"
               :src="img"
               mode="aspectFill"
-              class="gallery-img dy-clickable"
+              class="gallery-grid-img dy-clickable"
               @click="previewImage(i)"
             />
           </view>
-          <text v-if="article.summary" class="gallery-caption">{{ article.summary }}</text>
+          <text v-if="article.summary" class="body-text gallery-caption">{{ article.summary }}</text>
         </template>
 
-        <!-- 文件 -->
+        <!-- 文件：大号下载卡 -->
         <template v-else-if="article.contentType === 6">
-          <view class="file-card dy-clickable" @click="openFile">
-            <text class="file-icon">📄</text>
-            <view class="file-info">
-              <text class="file-name">{{ fileInfo.name }}</text>
-              <text v-if="fileInfo.size" class="file-size">{{ fileInfo.size }}</text>
+          <view class="file-card-large">
+            <view class="file-card-header">
+              <view class="file-icon-big">
+                <text class="file-icon-big-text">📄</text>
+                <text v-if="fileInfo.ext" class="file-ext-tag">{{ fileInfo.ext }}</text>
+              </view>
+              <view class="file-card-info">
+                <text class="file-card-name">{{ fileInfo.name }}</text>
+                <text class="file-card-meta">{{ fileInfo.ext && fileInfo.size ? fileInfo.ext + ' · ' + fileInfo.size : (fileInfo.ext || fileInfo.size) }}</text>
+              </view>
             </view>
-            <text class="file-action">下载</text>
+            <view class="download-btn dy-clickable" @click="openFile">
+              <text class="download-text">📥 下载文件</text>
+            </view>
           </view>
-          <text v-if="article.summary" class="body-text" style="margin-top: 20rpx;">{{ article.summary }}</text>
+          <text v-if="article.summary" class="body-text">{{ article.summary }}</text>
         </template>
 
-        <!-- 图文（默认 / type=1） -->
+        <!-- 图文（默认） -->
         <template v-else>
           <rich-text v-if="isHtmlBody" :nodes="article.contentBody || ''" />
           <text v-else class="body-text">{{ article.contentBody || article.summary || '暂无内容' }}</text>
         </template>
-      </view>
 
-      <!-- 转载来源 -->
-      <view v-if="article.sourceUrl" class="source-bar dy-clickable" @click="openSource">
-        <text class="source-label">{{ article.sourceType === 2 ? '转载自' : '原文链接' }}</text>
-        <text class="source-url one-line">{{ article.sourceUrl }}</text>
-        <text class="source-arrow">↗</text>
+        <!-- 转载来源（嵌在正文末尾） -->
+        <view v-if="article.sourceUrl" class="source-bar dy-clickable" @click="openSource">
+          <text class="source-label">{{ article.sourceType === 2 ? '转载自' : '原文链接' }}</text>
+          <text class="source-url one-line">{{ article.sourceUrl }}</text>
+          <text class="source-arrow">↗</text>
+        </view>
       </view>
 
       <!-- 底部操作栏 -->
@@ -171,16 +179,19 @@ const galleryImages = computed<string[]>(() => {
 
 /** 文件信息（type=6，content_body 存 JSON {fileName,fileUrl,fileSize}） */
 const fileInfo = computed(() => {
-  if (article.value?.contentType !== 6) return { name: '', url: '', size: '' };
+  const fallback = { name: '附件', url: '', size: '', ext: '' };
+  if (article.value?.contentType !== 6) return fallback;
   try {
     const parsed = JSON.parse(article.value.contentBody || '{}');
+    const name = parsed.fileName || '附件';
     return {
-      name: parsed.fileName || '未知文件',
+      name,
       url: formatFileUrl(parsed.fileUrl || ''),
       size: parsed.fileSize || '',
+      ext: name.includes('.') ? name.split('.').pop()!.toUpperCase() : '',
     };
   } catch {
-    return { name: '附件', url: '', size: '' };
+    return fallback;
   }
 });
 
@@ -191,7 +202,6 @@ const tagList = computed<string[]>(() => {
     const parsed = JSON.parse(tags);
     return Array.isArray(parsed) ? parsed.map(String) : [];
   } catch {
-    // 非 JSON，按逗号分隔
     return tags.split(/[,，]/).map((t) => t.trim()).filter(Boolean);
   }
 });
@@ -226,6 +236,9 @@ async function loadDetail() {
   loading.value = true;
   try {
     article.value = await getContentDetail(contentCode.value);
+    // 动态导航栏标题
+    const titleMap: Record<number, string> = { 1: '文章详情', 2: '视频', 3: '图集', 6: '文件详情' };
+    uni.setNavigationBarTitle({ title: titleMap[article.value.contentType ?? 1] || '详情' });
     // 查收藏状态
     const codes = await getFavoritedCodesApi(TARGET_TYPE.CONTENT);
     isFavorited.value = codes.includes(contentCode.value);
@@ -316,13 +329,21 @@ onLoad((query) => {
   background: $bg-page;
 }
 
-/* 文章信息 */
-.info-card {
-  background: $bg-card;
-  padding: $spacing-lg $spacing-md;
+/* ====== 视频置顶 ====== */
+.video-top {
+  width: 100%;
+  background: #000;
+}
+.video-player-top {
+  width: 100%;
+  height: 420rpx;
 }
 
-/* badge */
+/* ====== 信息区 ====== */
+.info-section {
+  background: $bg-card;
+  padding: $spacing-lg $spacing-md $spacing-md;
+}
 .badge-row {
   display: flex;
   gap: 8rpx;
@@ -337,18 +358,9 @@ onLoad((query) => {
   border-radius: 6rpx;
   font-weight: 500;
 }
-.badge-top {
-  background: $brand-error-light;
-  color: $brand-error;
-}
-.badge-hot {
-  background: $brand-warning-light;
-  color: $brand-warning;
-}
-.badge-new {
-  background: $brand-primary-light;
-  color: $brand-primary;
-}
+.badge-top { background: $brand-error-light; color: $brand-error; }
+.badge-hot { background: $brand-warning-light; color: $brand-warning; }
+.badge-new { background: $brand-primary-light; color: $brand-primary; }
 
 .title {
   display: block;
@@ -359,114 +371,116 @@ onLoad((query) => {
 }
 .subtitle {
   display: block;
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: $text-secondary;
-  margin-top: $spacing-sm;
+  margin-top: 8rpx;
   line-height: 1.5;
 }
 .meta-row {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-  margin-top: $spacing-md;
   flex-wrap: wrap;
-}
-.author-chip {
-  background: $brand-primary-light;
-  border-radius: $radius-sm;
-  padding: 4rpx 16rpx;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
 }
 .author-name {
   font-size: 24rpx;
   color: $brand-primary;
+  font-weight: 500;
 }
-.meta-date,
-.meta-views {
+.meta-text {
   font-size: 24rpx;
   color: $text-placeholder;
 }
-
-/* 标签 */
 .tag-row {
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-sm;
   margin-top: $spacing-sm;
 }
-.tag {
+.tag-chip {
   font-size: 22rpx;
-  color: $brand-primary;
-  background: $brand-primary-light;
-  padding: 4rpx 14rpx;
-  border-radius: $radius-sm;
+  color: $text-secondary;
+  background: $bg-page;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
 }
 
-/* 正文 */
-.body-card {
+/* ====== 正文区（与信息区无缝衔接） ====== */
+.body-section {
   background: $bg-card;
-  padding: $spacing-lg $spacing-md;
-  margin-top: $spacing-sm;
+  padding: $spacing-md $spacing-md $spacing-lg;
+  margin-top: 0;
 }
 .body-text {
+  display: block;
   font-size: 30rpx;
   color: $text-primary;
   line-height: 2;
   white-space: pre-wrap;
 }
-
-/* 视频播放器 */
-.video-player {
-  width: 100%;
-  border-radius: $radius-md;
-  background: #000;
-}
-.media-desc {
-  display: block;
-  margin-top: $spacing-sm;
+.gallery-caption {
+  margin-top: $spacing-md;
   font-size: 26rpx;
   color: $text-secondary;
-  line-height: 1.6;
 }
 
-/* 图片集 */
-.gallery {
+/* ====== 图集 2列大图 ====== */
+.gallery-grid {
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-sm;
 }
-.gallery-img {
-  width: calc((100% - 12rpx) / 3);
-  height: 200rpx;
+.gallery-grid-img {
+  width: calc((100% - 12rpx) / 2);
+  height: 340rpx;
   border-radius: $radius-sm;
   background: $bg-page;
 }
-.gallery-caption {
-  display: block;
-  width: 100%;
-  margin-top: $spacing-md;
-  font-size: 26rpx;
-  color: $text-secondary;
-  line-height: 1.6;
-}
 
-/* 文件卡片 */
-.file-card {
+/* ====== 文件大号下载卡 ====== */
+.file-card-large {
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+.file-card-header {
   display: flex;
   align-items: center;
   gap: $spacing-md;
-  padding: $spacing-md;
-  border: 2rpx solid $border-base;
-  border-radius: $radius-md;
-  background: $bg-page;
+  padding: $spacing-lg $spacing-md;
 }
-.file-icon {
-  font-size: 48rpx;
+.file-icon-big {
+  position: relative;
+  width: 80rpx;
+  height: 80rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $brand-primary-light;
+  border-radius: $radius-sm;
 }
-.file-info {
+.file-icon-big-text {
+  font-size: 40rpx;
+}
+.file-ext-tag {
+  position: absolute;
+  bottom: -6rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16rpx;
+  line-height: 1;
+  padding: 2rpx 10rpx;
+  background: $brand-primary;
+  color: #fff;
+  border-radius: 4rpx;
+}
+.file-card-info {
   flex: 1;
   min-width: 0;
 }
-.file-name {
+.file-card-name {
   display: block;
   font-size: 28rpx;
   color: $text-primary;
@@ -475,26 +489,30 @@ onLoad((query) => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.file-size {
-  font-size: 22rpx;
+.file-card-meta {
+  font-size: 24rpx;
   color: $text-placeholder;
+  margin-top: 4rpx;
 }
-.file-action {
-  flex-shrink: 0;
-  font-size: 26rpx;
-  color: $brand-primary;
+.download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md;
+  background: $gradient-blue;
+}
+.download-text {
+  font-size: 28rpx;
+  color: #fff;
   font-weight: 500;
-  padding: 8rpx 24rpx;
-  border: 2rpx solid $brand-primary;
-  border-radius: $radius-sm;
 }
 
-/* 转载来源 */
+/* ====== 转载来源 ====== */
 .source-bar {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  margin-top: $spacing-sm;
+  margin-top: $spacing-md;
   padding: $spacing-md;
   background: $brand-primary-light;
   border-radius: $radius-md;
@@ -520,7 +538,7 @@ onLoad((query) => {
   color: $brand-primary;
 }
 
-/* 底部操作栏 */
+/* ====== 底部操作栏 ====== */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -565,9 +583,6 @@ onLoad((query) => {
   color: #fff;
 }
 .action-text {
-  font-size: 28rpx;
-}
-.share-btn .action-text {
-  color: #fff;
+  color: inherit;
 }
 </style>
