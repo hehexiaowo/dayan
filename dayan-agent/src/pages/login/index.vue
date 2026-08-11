@@ -39,8 +39,7 @@
             <view v-if="selectedChannel === ch.channelCode" class="radio-dot" />
           </view>
           <view class="channel-info">
-            <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}</text>
-            <text class="channel-code">{{ ch.channelCode }}</text>
+            <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}（{{ ch.channelCode }}）</text>
           </view>
         </view>
       </view>
@@ -506,21 +505,10 @@ async function onWxLogin() {
   background: $gradient-blue;
 }
 
-.channel-info {
-  display: flex;
-  flex-direction: column;
-}
-
 .channel-name {
   font-size: 28rpx;
   color: $text-primary;
   font-weight: 500;
-}
-
-.channel-code {
-  font-size: 22rpx;
-  color: $text-secondary;
-  margin-top: 4rpx;
 }
 
 /* Tab 切换 */
