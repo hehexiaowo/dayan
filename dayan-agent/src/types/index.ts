@@ -94,6 +94,7 @@ export const AGENT_LEVEL_MAP: Record<number, string> = {
 
 /** 通知/待办（GET /agent-api/notifications） */
 export interface AgentNotification {
+  id: string;
   title: string;
   content?: string;
   type?: number;
