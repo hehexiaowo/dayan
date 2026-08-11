@@ -181,7 +181,8 @@ let channelTimer: ReturnType<typeof setTimeout> | null = null;
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let channelSeq = 0;
 
-// 输入后自动查询关联渠道（手机号输完或用户名≥4字时触发）
+// 输入后自动查询关联渠道
+// 验证码 Tab：只接受完整手机号；密码 Tab：手机号或用户名(≥4字)均可
 watch(identifier, (val) => {
   channelSeq++;
   loadingChannels.value = false;
@@ -190,10 +191,17 @@ watch(identifier, (val) => {
   if (channelTimer) clearTimeout(channelTimer);
   const trimmed = val.trim();
   if (!trimmed) return;
-  // 完整手机号立即查(500ms)；非数字输入(用户名)且≥4字延迟查(800ms)
   const isPhone = /^1\d{10}$/.test(trimmed);
-  if (isPhone || trimmed.length >= 4) {
-    channelTimer = setTimeout(() => loadChannels(), isPhone ? 500 : 800);
+  if (loginTab.value === 'sms') {
+    // 验证码登录只能发手机号，非完整手机号不查询
+    if (isPhone) {
+      channelTimer = setTimeout(() => loadChannels(), 500);
+    }
+  } else {
+    // 密码登录：手机号立即查(500ms)；用户名≥4字延迟查(800ms)
+    if (isPhone || trimmed.length >= 4) {
+      channelTimer = setTimeout(() => loadChannels(), isPhone ? 500 : 800);
+    }
   }
 });
 
