@@ -349,8 +349,19 @@ const networkTagItems = computed(() =>
     .map((t) => NETWORK_TAG_LABELS[t]),
 );
 
-/** Banner 图片：从 assets 取 type=1(图片)，isCover 优先 */
+/** Banner 图片：优先从 vitalConfig.banners 取，fallback 到全部 type=1 图 */
+const NETWORK = 'vital' as const;
+const CONFIG_FIELD: Record<string, 'vitalConfig' | 'careConfig' | 'sojournConfig'> = { vital: 'vitalConfig', care: 'careConfig', sojourn: 'sojournConfig' };
 const bannerImages = computed(() => {
+  const configRaw = park.value[CONFIG_FIELD[NETWORK]];
+  if (configRaw) {
+    try {
+      const parsed = JSON.parse(configRaw);
+      if (Array.isArray(parsed.banners) && parsed.banners.length) {
+        return parsed.banners.map((k: string) => formatFileUrl(k)).filter(Boolean);
+      }
+    } catch {}
+  }
   const assets = detail.value?.assets || [];
   return assets
     .filter((a) => a.assetType === 1)

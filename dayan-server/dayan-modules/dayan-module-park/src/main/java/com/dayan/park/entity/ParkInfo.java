@@ -70,6 +70,15 @@ public class ParkInfo extends BaseEntity {
     /** 网络标签（逗号分隔：vital=活力长居,care=照护长居,sojourn=旅居养老） */
     private String networkTags;
 
+    /** 活力长居展示配置JSON（banners+thumbnail） */
+    private String vitalConfig;
+
+    /** 照护长居展示配置JSON（banners+thumbnail） */
+    private String careConfig;
+
+    /** 旅居展示配置JSON（banners+thumbnail） */
+    private String sojournConfig;
+
     /** 机构性质 */
     private Integer natureType;
 

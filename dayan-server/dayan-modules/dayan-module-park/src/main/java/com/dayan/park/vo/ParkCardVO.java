@@ -39,4 +39,6 @@ public class ParkCardVO {
     private String abilityTypeDescription;
     /** 网络标签（逗号分隔：vital/care/sojourn） */
     private String networkTags;
+    /** 列表缩略图 key（从对应网络 config JSON 提取） */
+    private String thumbnailUrl;
 }

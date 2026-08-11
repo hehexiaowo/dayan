@@ -63,6 +63,8 @@ export interface ParkCard {
   abilityTypeDescription?: string;
   /** 网络标签（逗号分隔：vital/care/sojourn） */
   networkTags?: string;
+  /** 列表缩略图 key（从对应网络 config JSON 提取） */
+  thumbnailUrl?: string;
 }
 
 /** 区域下钻结果 */
@@ -87,6 +89,12 @@ export interface ParkDetail {
   abilityTypeDescription?: string;
   /** 网络标签（vital/care/sojourn 多选） */
   networkTags?: string[];
+  /** 活力长居展示配置JSON（{banners:[], thumbnail:""}） */
+  vitalConfig?: string;
+  /** 照护长居展示配置JSON */
+  careConfig?: string;
+  /** 旅居展示配置JSON */
+  sojournConfig?: string;
   natureType?: number;
   natureTypeDescription?: string;
   specialtyTag?: string;

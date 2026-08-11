@@ -26,7 +26,9 @@
         class="park-card dy-clickable"
         @click="onParkClick(park)"
       >
+        <image v-if="park.thumbnailUrl" class="park-thumb" :src="formatFileUrl(park.thumbnailUrl)" mode="aspectFill" />
         <DyIconBlock
+          v-else
           :text="park.shortName?.charAt(0) || '机'"
           color="blue"
           size="md"
@@ -61,6 +63,7 @@ import { initMap, addMarkers, searchByName, destroyMap, type MapMarkerItem } fro
 import type L from 'leaflet';
 // #endif
 import { getRegions } from '@/api/park';
+import { formatFileUrl } from '@/utils/file';
 import { PROVINCE_CENTERS } from '@/utils/region';
 import type { ParkCard } from '@/types/park';
 import { parseNetworkTags } from '@/types/park';
@@ -231,6 +234,12 @@ onUnmounted(() => {
   background: $bg-card;
   border-radius: $radius-md;
   box-shadow: $shadow-card;
+}
+.park-thumb {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: $radius-sm;
+  flex-shrink: 0;
 }
 .park-info {
   margin-left: $spacing-md;

@@ -73,6 +73,7 @@ public interface ParkInfoMapper extends BaseMapper<ParkInfo> {
 
     /**
      * 按网络标签查询机构卡片列表（省/市/区可选，不传则返回该网络全部机构）。
+     * 缩略图从对应网络的 config JSON 中提取（thumbnail 字段）。
      */
     @Select("""
             <script>
@@ -80,7 +81,12 @@ public interface ParkInfoMapper extends BaseMapper<ParkInfo> {
                    province, province_code, city, city_code, district, district_code,
                    longitude, latitude, total_beds, available_beds,
                    min_price_display, max_price_display, price_unit,
-                   operate_status, ability_type_description, network_tags
+                   operate_status, ability_type_description, network_tags,
+                   CASE #{networkTag}
+                     WHEN 'vital'   THEN vital_config->>'$.thumbnail'
+                     WHEN 'care'    THEN care_config->>'$.thumbnail'
+                     WHEN 'sojourn' THEN sojourn_config->>'$.thumbnail'
+                   END AS thumbnail_url
             FROM park_info
             WHERE deleted = 0 AND is_published = 1 AND operate_status = 1
               AND FIND_IN_SET(#{networkTag}, network_tags)

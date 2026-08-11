@@ -18,7 +18,9 @@
         class="park-card dy-clickable"
         @click="onParkClick(park)"
       >
+        <image v-if="park.thumbnailUrl" class="park-thumb" :src="formatFileUrl(park.thumbnailUrl)" mode="aspectFill" />
         <DyIconBlock
+          v-else
           :text="park.shortName?.charAt(0) || '机'"
           color="green"
           size="md"
@@ -50,6 +52,7 @@ import { ref, onMounted } from 'vue';
 import { getRegions } from '@/api/park';
 import type { ParkCard } from '@/types/park';
 import { parseNetworkTags } from '@/types/park';
+import { formatFileUrl } from '@/utils/file';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
@@ -141,6 +144,12 @@ onMounted(fetchData);
   padding: $spacing-md;
   margin-bottom: $spacing-sm;
   box-shadow: $shadow-card;
+}
+.park-thumb {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: $radius-sm;
+  flex-shrink: 0;
 }
 
 .park-info {

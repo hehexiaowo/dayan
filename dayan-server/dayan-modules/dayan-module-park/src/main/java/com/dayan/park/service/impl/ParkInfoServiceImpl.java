@@ -108,6 +108,9 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         entity.setAbilityTypeDescription(dto.getAbilityTypeDescription());
         entity.setNetworkTags(
                 dto.getNetworkTags() != null ? String.join(",", dto.getNetworkTags()) : null);
+        entity.setVitalConfig(dto.getVitalConfig());
+        entity.setCareConfig(dto.getCareConfig());
+        entity.setSojournConfig(dto.getSojournConfig());
         entity.setNatureType(dto.getNatureType());
         entity.setNatureTypeDescription(dto.getNatureTypeDescription());
         entity.setSpecialtyTag(dto.getSpecialtyTag());
@@ -188,6 +191,9 @@ public class ParkInfoServiceImpl implements ParkInfoService {
             update.setAbilityTypeDescription(dto.getAbilityTypeDescription());
         if (dto.getNetworkTags() != null)
             update.setNetworkTags(String.join(",", dto.getNetworkTags()));
+        if (dto.getVitalConfig() != null) update.setVitalConfig(dto.getVitalConfig());
+        if (dto.getCareConfig() != null) update.setCareConfig(dto.getCareConfig());
+        if (dto.getSojournConfig() != null) update.setSojournConfig(dto.getSojournConfig());
         if (dto.getNatureType() != null) update.setNatureType(dto.getNatureType());
         if (dto.getNatureTypeDescription() != null)
             update.setNatureTypeDescription(dto.getNatureTypeDescription());

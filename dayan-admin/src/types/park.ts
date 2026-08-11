@@ -110,6 +110,12 @@ export interface ParkInfo {
   abilityType?: number
   /** 网络归属（多选：vital=活力长居/care=照护长居/sojourn=旅居养老） */
   networkTags?: string[]
+  /** 活力长居展示配置JSON（{banners:[], thumbnail:""}） */
+  vitalConfig?: string
+  /** 照护长居展示配置JSON */
+  careConfig?: string
+  /** 旅居展示配置JSON */
+  sojournConfig?: string
   /** 性质类型：1公办/2民办/3公建民营/4合资 */
   natureType?: number
   /** 特色标签 */

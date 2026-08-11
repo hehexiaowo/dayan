@@ -31,6 +31,12 @@ public class ParkInfoVO {
     private String abilityTypeDescription;
     /** 网络标签（vital/care/sojourn 多选） */
     private List<String> networkTags;
+    /** 活力长居展示配置JSON */
+    private String vitalConfig;
+    /** 照护长居展示配置JSON */
+    private String careConfig;
+    /** 旅居展示配置JSON */
+    private String sojournConfig;
     private Integer natureType;
     private String natureTypeDescription;
     private String specialtyTag;
