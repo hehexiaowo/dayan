@@ -15,28 +15,19 @@
         <text class="form-label">{{ loginTab === 'sms' ? '手机号' : '手机号 / 用户名' }}</text>
         <input
           v-model="identifier"
-          placeholder="请输入手机号"
+          :placeholder="loginTab === 'sms' ? '请输入手机号' : '请输入手机号或用户名'"
           placeholder-class="input-placeholder"
-          inputmode="numeric"
-          maxlength="11"
+          :inputmode="loginTab === 'sms' ? 'numeric' : 'text'"
+          :maxlength="loginTab === 'sms' ? 11 : 64"
           class="dy-input"
         />
       </view>
 
-      <!-- 查询关联渠道 -->
-      <button
-        class="dy-btn dy-btn-outline"
-        :class="{ 'dy-btn-disabled': loadingChannels }"
-        :disabled="loadingChannels"
-        @click="onManualQuery"
-      >
-        <text v-if="loadingChannels">查询中...</text>
-        <text v-else>查询关联渠道</text>
-      </button>
-
-      <!-- 渠道列表 -->
-      <view v-if="channels.length" class="channel-list">
-        <text class="channel-hint">请选择所属渠道</text>
+      <!-- 渠道列表（输入后自动查询） -->
+      <view v-if="channels.length || loadingChannels" class="channel-list">
+        <text class="channel-hint">
+          {{ loadingChannels ? '正在查询关联渠道...' : '请选择所属渠道' }}
+        </text>
         <view
           v-for="ch in channels"
           :key="ch.channelCode"
@@ -191,15 +182,19 @@ let channelTimer: ReturnType<typeof setTimeout> | null = null;
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let channelSeq = 0;
 
-// 手机号自动触发渠道查询
+// 输入后自动查询关联渠道（手机号输完或用户名≥4字时触发）
 watch(identifier, (val) => {
   channelSeq++;
   loadingChannels.value = false;
   channels.value = [];
   selectedChannel.value = '';
   if (channelTimer) clearTimeout(channelTimer);
-  if (/^1\d{10}$/.test(val)) {
-    channelTimer = setTimeout(() => loadChannels(), 500);
+  const trimmed = val.trim();
+  if (!trimmed) return;
+  // 完整手机号立即查(500ms)；非数字输入(用户名)且≥4字延迟查(800ms)
+  const isPhone = /^1\d{10}$/.test(trimmed);
+  if (isPhone || trimmed.length >= 4) {
+    channelTimer = setTimeout(() => loadChannels(), isPhone ? 500 : 800);
   }
 });
 
@@ -213,10 +208,7 @@ onMounted(() => {
 });
 
 async function loadChannels() {
-  if (!identifier.value) {
-    uni.showToast({ title: '请输入手机号', icon: 'none' });
-    return;
-  }
+  if (!identifier.value) return;
   const seq = ++channelSeq;
   loadingChannels.value = true;
   try {
@@ -226,19 +218,11 @@ async function loadChannels() {
     if (channels.value.length === 1) {
       selectedChannel.value = channels.value[0].channelCode;
     }
-    if (channels.value.length === 0) {
-      uni.showToast({ title: '未找到关联渠道', icon: 'none' });
-    }
   } catch {
     // 错误已由 request 拦截器提示
   } finally {
     if (seq === channelSeq) loadingChannels.value = false;
   }
-}
-
-function onManualQuery() {
-  if (channelTimer) clearTimeout(channelTimer);
-  loadChannels();
 }
 
 /** 发送验证码 */
