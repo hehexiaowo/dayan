@@ -62,10 +62,10 @@
       <view class="status-tabs">
         <view
           v-for="tab in statusTabs"
-          :key="String(tab.value)"
+          :key="tab.key"
           class="status-tab dy-clickable"
-          :class="{ active: activeStatus === tab.value }"
-          @click="activeStatus = tab.value"
+          :class="{ active: activeTab === tab.key }"
+          @click="activeTab = tab.key"
         >
           <text class="status-tab-text">{{ tab.label }}</text>
           <text v-if="tab.count > 0" class="status-tab-count">{{ tab.count }}</text>
@@ -95,7 +95,7 @@
           :text="emptyText"
           icon="线"
           color="blue"
-          :action-text="activeStatus === null && !keyword ? '新增线索' : ''"
+          :action-text="activeTab === 'all' && !keyword ? '新增线索' : ''"
           @action="onAdd"
         />
 
@@ -155,36 +155,50 @@ const leads = ref<Lead[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
 
-/** 当前选中的状态筛选，null = 全部 */
-const activeStatus = ref<LeadStatus | null>(null);
+/** 当前选中的 Tab key，'all' = 全部 */
+const activeTab = ref<string>('all');
+
+/** Tab key → 线索状态映射（all = 不限） */
+const tabStatusMap: Record<string, LeadStatus[] | undefined> = {
+  all: undefined,
+  lead: [LeadStatus.NEW, LeadStatus.FOLLOWING],
+  intent: [LeadStatus.INTENDED],
+  convert: [LeadStatus.CONVERTED],
+  abandon: [LeadStatus.LOST],
+};
 
 /** 状态筛选 Tab 定义 */
 const statusTabs = computed(() => [
-  { label: '全部', value: null as LeadStatus | null, count: leads.value.length },
-  { label: '新线索', value: LeadStatus.NEW, count: countByStatus(LeadStatus.NEW) },
-  { label: '跟进中', value: LeadStatus.FOLLOWING, count: countByStatus(LeadStatus.FOLLOWING) },
-  { label: '意向', value: LeadStatus.INTENDED, count: countByStatus(LeadStatus.INTENDED) },
-  { label: '已转化', value: LeadStatus.CONVERTED, count: countByStatus(LeadStatus.CONVERTED) },
-  { label: '已流失', value: LeadStatus.LOST, count: countByStatus(LeadStatus.LOST) },
+  { key: 'all', label: '全部', count: leads.value.length },
+  { key: 'lead', label: '线索', count: countByStatuses(LeadStatus.NEW, LeadStatus.FOLLOWING) },
+  { key: 'intent', label: '意向', count: countByStatus(LeadStatus.INTENDED) },
+  { key: 'convert', label: '转化', count: countByStatus(LeadStatus.CONVERTED) },
+  { key: 'abandon', label: '放弃', count: countByStatus(LeadStatus.LOST) },
 ]);
 
 /** 按当前 Tab + 关键字过滤的线索列表 */
 const filteredLeads = computed(() => {
   const kw = keyword.value.trim();
   let list = leads.value;
-  if (activeStatus.value !== null) list = list.filter((l) => l.leadStatus === activeStatus.value);
+  const statuses = tabStatusMap[activeTab.value];
+  if (statuses) list = list.filter((l) => statuses.some((s) => s === l.leadStatus));
   if (kw) list = list.filter((l) => (l.name || '').includes(kw) || (l.phone || '').includes(kw));
   return list;
 });
 
 /** 空状态文案 */
 const emptyText = computed(() => {
-  if (activeStatus.value === null) return '暂无线索';
-  return `暂无${statusText(activeStatus.value)}线索`;
+  if (activeTab.value === 'all') return '暂无线索';
+  const tab = statusTabs.value.find((t) => t.key === activeTab.value);
+  return `暂无${tab?.label || ''}线索`;
 });
 
 function countByStatus(status: LeadStatus): number {
   return leads.value.filter((l) => l.leadStatus === status).length;
+}
+
+function countByStatuses(...statuses: LeadStatus[]): number {
+  return leads.value.filter((l) => statuses.some((s) => s === l.leadStatus)).length;
 }
 
 async function loadList() {
