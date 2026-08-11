@@ -208,7 +208,7 @@ function onSearch() {
 }
 
 function onAdd() {
-  uni.navigateTo({ url: '/pages/acquisition/form' });
+  uni.navigateTo({ url: '/pages/acquisition/lead/form' });
 }
 
 function onShareCode() {
@@ -216,8 +216,11 @@ function onShareCode() {
 }
 
 function onTool(type: string) {
+  if (type === 'content') {
+    uni.navigateTo({ url: '/pages/acquisition/content/index' });
+    return;
+  }
   const labels: Record<string, string> = {
-    content: '内容获客',
     survey: '问卷获客',
     poster: '营销海报',
     card: '电子名片',
@@ -226,7 +229,7 @@ function onTool(type: string) {
 }
 
 function onLeadClick(lead: Lead) {
-  uni.navigateTo({ url: '/pages/acquisition/detail?id=' + lead.id });
+  uni.navigateTo({ url: '/pages/acquisition/lead/detail?id=' + lead.id });
 }
 
 // 每次进入/返回页面统一刷新（首次加载、状态变更、新增、删除后同步）

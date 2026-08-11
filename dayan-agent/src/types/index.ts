@@ -182,3 +182,23 @@ export interface GoodsProduct {
   salesCount?: number;
   goodsStatus?: number;
 }
+
+// ===== 内容文章 =====
+
+/** 内容文章（对齐后端 ContentInfoVO 展示子集） */
+export interface ContentArticle {
+  contentCode: string;
+  title: string;
+  subtitle?: string;
+  contentType?: number;
+  authorName?: string;
+  authorAvatar?: string;
+  coverImage?: string;
+  summary?: string;
+  contentBody?: string;
+  viewCount?: number;
+  likeCount?: number;
+  shareCount?: number;
+  publishTime?: string;
+  contentStatus?: number;
+}

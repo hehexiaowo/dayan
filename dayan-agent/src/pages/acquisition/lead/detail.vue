@@ -164,7 +164,7 @@ function onCall() {
 
 function onEdit() {
   if (!leadId) return;
-  uni.navigateTo({ url: '/pages/acquisition/form?id=' + leadId });
+  uni.navigateTo({ url: '/pages/acquisition/lead/form?id=' + leadId });
 }
 
 function onChangeStatus() {
