@@ -16,6 +16,7 @@ onHide(() => {
 @import 'uview-ui/theme.scss';
 @import 'uview-ui/index.scss';
 @import '@/styles/variables.scss';
+@import '@/styles/common.scss';
 
 /* 全局样式 */
 page {

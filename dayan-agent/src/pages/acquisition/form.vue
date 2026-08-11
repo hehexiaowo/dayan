@@ -15,7 +15,7 @@
           <text class="form-label">姓名 <text class="required">*</text></text>
           <input
             v-model="form.name"
-            class="form-input"
+            class="dy-input"
             placeholder="请输入客户姓名"
             placeholder-class="input-placeholder"
             maxlength="100"
@@ -27,7 +27,7 @@
           <text class="form-label">手机号</text>
           <input
             v-model="form.phone"
-            class="form-input"
+            class="dy-input"
             placeholder="请输入11位手机号"
             placeholder-class="input-placeholder"
             inputmode="numeric"
@@ -56,7 +56,7 @@
           <text class="form-label">年龄</text>
           <input
             v-model="form.age"
-            class="form-input"
+            class="dy-input"
             placeholder="请输入年龄"
             placeholder-class="input-placeholder"
             type="number"
@@ -105,7 +105,7 @@
           <text class="form-label">关注区域</text>
           <input
             v-model="form.region"
-            class="form-input"
+            class="dy-input"
             placeholder="如：北京朝阳区"
             placeholder-class="input-placeholder"
             maxlength="200"
@@ -117,7 +117,7 @@
           <text class="form-label">备注</text>
           <textarea
             v-model="form.remark"
-            class="form-textarea"
+            class="dy-textarea"
             placeholder="补充线索的备注信息"
             placeholder-class="input-placeholder"
             maxlength="500"
@@ -128,7 +128,7 @@
 
       <!-- 提交按钮 -->
       <view class="btn-area">
-        <button class="btn btn-primary" :class="{ 'is-disabled': submitting }" :disabled="submitting" @click="onSubmit">
+        <button class="dy-btn dy-btn-primary" :class="{ 'dy-btn-disabled': submitting }" :disabled="submitting" @click="onSubmit">
           {{ submitting ? '提交中...' : isEdit ? '保存修改' : '新增线索' }}
         </button>
       </view>
@@ -316,36 +316,6 @@ onLoad(async (options: any) => {
   color: $brand-error;
 }
 
-.form-input {
-  width: 100%;
-  border: 2rpx solid $border-base;
-  border-radius: $radius-md;
-  padding: 24rpx 28rpx;
-  font-size: 30rpx;
-  color: $text-primary;
-  transition: border-color $transition-base;
-  background: $bg-card;
-
-  &:focus {
-    border-color: $brand-primary;
-  }
-}
-
-.form-textarea {
-  width: 100%;
-  border: 2rpx solid $border-base;
-  border-radius: $radius-md;
-  padding: 24rpx 28rpx;
-  font-size: 30rpx;
-  color: $text-primary;
-  min-height: 120rpx;
-  transition: border-color $transition-base;
-
-  &:focus {
-    border-color: $brand-primary;
-  }
-}
-
 .input-placeholder {
   color: $text-placeholder;
   font-size: 28rpx;
@@ -406,26 +376,5 @@ onLoad(async (options: any) => {
 /* 提交按钮区 */
 .btn-area {
   padding: $spacing-lg;
-}
-.btn {
-  width: 100%;
-  border-radius: $radius-md;
-  font-size: 32rpx;
-  font-weight: 500;
-  padding: 24rpx 0;
-  transition: all $transition-base;
-
-  &:active {
-    transform: scale(0.98);
-  }
-
-  &.is-disabled {
-    opacity: 0.6;
-  }
-}
-.btn-primary {
-  background: $gradient-blue;
-  color: #fff;
-  box-shadow: 0 8rpx 20rpx rgba(64, 158, 255, 0.3);
 }
 </style>

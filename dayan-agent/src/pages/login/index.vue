@@ -18,13 +18,13 @@
           placeholder-class="input-placeholder"
           inputmode="numeric"
           maxlength="11"
-          class="form-input"
+          class="dy-input"
         />
       </view>
 
       <button
-        class="btn btn-outline"
-        :class="{ 'is-disabled': loadingChannels }"
+        class="dy-btn dy-btn-outline"
+        :class="{ 'dy-btn-disabled': loadingChannels }"
         :disabled="loadingChannels"
         @click="onManualQuery"
       >
@@ -60,7 +60,7 @@
             :password="!showPwd"
             placeholder="请输入密码"
             placeholder-class="input-placeholder"
-            class="form-input"
+            class="dy-input"
             style="padding-right: 120rpx"
           />
           <text class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
@@ -68,8 +68,8 @@
       </view>
 
       <button
-        class="btn btn-primary"
-        :class="{ 'is-disabled': submitting }"
+        class="dy-btn dy-btn-primary"
+        :class="{ 'dy-btn-disabled': submitting }"
         :disabled="submitting"
         @click="handleLogin"
       >
@@ -235,23 +235,14 @@ async function handleLogin() {
   font-weight: 500;
 }
 
-.form-input {
-  width: 100%;
-  border: 2rpx solid $border-base;
-  border-radius: $radius-md;
-  padding: 24rpx 28rpx;
-  font-size: 30rpx;
-  color: $text-primary;
-  transition: border-color $transition-base;
-
-  &:focus {
-    border-color: $brand-primary;
-  }
-}
-
 .input-placeholder {
   color: $text-placeholder;
   font-size: 28rpx;
+}
+
+/* 登录页按钮间距（共享 .dy-btn 无 margin） */
+.form-card .dy-btn {
+  margin-top: $spacing-sm;
 }
 
 .pwd-wrap {
@@ -266,37 +257,6 @@ async function handleLogin() {
   font-size: 26rpx;
   color: $brand-primary;
   padding: 8rpx;
-}
-
-/* 按钮 */
-.btn {
-  width: 100%;
-  border-radius: $radius-md;
-  font-size: 32rpx;
-  font-weight: 500;
-  padding: 24rpx 0;
-  margin-top: $spacing-sm;
-  transition: all $transition-base;
-
-  &:active {
-    transform: scale(0.98);
-  }
-
-  &.is-disabled {
-    opacity: 0.6;
-  }
-}
-
-.btn-primary {
-  background: $gradient-blue;
-  color: #fff;
-  box-shadow: 0 8rpx 20rpx rgba(64, 158, 255, 0.3);
-}
-
-.btn-outline {
-  background: $bg-card;
-  color: $brand-primary;
-  border: 2rpx solid $brand-primary;
 }
 
 /* 渠道列表 */

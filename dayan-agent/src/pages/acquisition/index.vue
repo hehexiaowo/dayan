@@ -271,12 +271,14 @@ onPullDownRefresh(async () => {
 }
 .search-input {
   width: 100%;
+  height: $control-height-sm;
   border: none;
   border-radius: $radius-md;
-  padding: 18rpx 20rpx 18rpx 56rpx;
+  padding: 0 20rpx 0 56rpx;
   font-size: 28rpx;
   background: rgba(255, 255, 255, 0.9);
   color: $text-primary;
+  box-sizing: border-box;
 }
 .search-placeholder {
   color: $text-placeholder;
@@ -296,8 +298,8 @@ onPullDownRefresh(async () => {
   color: $brand-primary;
   font-size: 26rpx;
   padding: 0 28rpx;
-  height: 68rpx;
-  line-height: 68rpx;
+  height: $control-height-sm;
+  line-height: $control-height-sm;
   border-radius: $radius-md;
   font-weight: 500;
 }

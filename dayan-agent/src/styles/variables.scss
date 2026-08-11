@@ -50,6 +50,10 @@ $spacing-md: 24rpx;
 $spacing-lg: 32rpx;
 $spacing-xl: 48rpx;
 
+// ===== 表单控件高度（44px 触控基准）=====
+$control-height: 88rpx;       // 表单输入框、主按钮统一高度
+$control-height-sm: 72rpx;    // 搜索栏等内联控件
+
 // ===== 渐变（图标色块用）=====
 $gradient-blue: linear-gradient(135deg, #409eff, #5f8afe);
 $gradient-green: linear-gradient(135deg, #19be6b, #2bcc7a);

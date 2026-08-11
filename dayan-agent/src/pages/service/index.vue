@@ -181,11 +181,13 @@ onPullDownRefresh(async () => {
 }
 .search-input {
   flex: 1;
-  border: 1rpx solid $border-base;
-  border-radius: $radius-sm;
-  padding: 16rpx 20rpx;
+  height: $control-height-sm;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  padding: 0 20rpx;
   font-size: 28rpx;
   background: $bg-page;
+  box-sizing: border-box;
 }
 .search-clear {
   padding: 0 16rpx;
@@ -194,11 +196,13 @@ onPullDownRefresh(async () => {
 }
 .btn-search {
   margin-left: $spacing-sm;
+  height: $control-height-sm;
+  line-height: $control-height-sm;
   background: $gradient-blue;
   color: #fff;
   font-size: 26rpx;
-  padding: 14rpx 32rpx;
-  border-radius: $radius-sm;
+  padding: 0 32rpx;
+  border-radius: $radius-md;
   box-shadow: 0 4rpx 12rpx rgba(64, 158, 255, 0.3);
 }
 

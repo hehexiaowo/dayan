@@ -99,3 +99,97 @@
   background: $brand-info-light;
   color: $brand-info;
 }
+
+// ===== 统一表单输入框（全宽，用于登录/表单页）=====
+// 注意：uni-app H5 编译 <input> 为 <uni-input> 自定义元素，默认 display:inline 会忽略 height。
+//       必须 display:block 才能让 height 生效，内部 .uni-input-wrapper(100%) 才能撑满。
+.dy-input {
+  display: block;
+  width: 100%;
+  height: $control-height;
+  padding: 0 $spacing-md;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  font-size: 30rpx;
+  color: $text-primary;
+  background: $bg-card;
+  box-sizing: border-box;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    border-color: $brand-primary;
+  }
+}
+
+// ===== 统一文本域 =====
+.dy-textarea {
+  display: block;
+  width: 100%;
+  min-height: 120rpx;
+  padding: $spacing-sm $spacing-md;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  font-size: 30rpx;
+  color: $text-primary;
+  background: $bg-card;
+  box-sizing: border-box;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    border-color: $brand-primary;
+  }
+}
+
+// ===== 统一搜索输入框（内联，比表单输入框矮）=====
+.dy-search {
+  display: block;
+  flex: 1;
+  height: $control-height-sm;
+  padding: 0 $spacing-md;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  font-size: 28rpx;
+  color: $text-primary;
+  background: $bg-card;
+  box-sizing: border-box;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    border-color: $brand-primary;
+  }
+}
+
+// ===== 统一按钮（全宽主按钮）=====
+.dy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: $control-height;
+  border-radius: $radius-md;
+  font-size: 30rpx;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform $transition-fast, opacity $transition-fast;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.dy-btn-primary {
+  background: $gradient-blue;
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(64, 158, 255, 0.3);
+}
+
+.dy-btn-outline {
+  background: $bg-card;
+  color: $brand-primary;
+  border: 2rpx solid $brand-primary;
+}
+
+.dy-btn-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}

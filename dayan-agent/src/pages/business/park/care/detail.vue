@@ -29,7 +29,7 @@
           :indicator-dots="false"
           @change="onSwiperChange"
         >
-          <swiper-item v-for="(img, i) in bannerImages" :key="i" @click="previewBanner(i)">
+          <swiper-item v-for="(img, i) in bannerImages" :key="i" @click="previewBanner(Number(i))">
             <image :src="img" class="banner-img" mode="aspectFill" />
           </swiper-item>
         </swiper>
