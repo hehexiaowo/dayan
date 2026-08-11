@@ -14,6 +14,7 @@
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务", "enablePullDownRefresh": true } },
     { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } },
     { "path": "pages/profile/settings", "style": { "navigationBarTitleText": "设置" } },
+    { "path": "pages/profile/edit", "style": { "navigationBarTitleText": "个人资料" } },
     {
       "path": "pages/business/park/categories",
       "style": { "navigationBarTitleText": "找机构" }
