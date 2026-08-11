@@ -3,9 +3,12 @@ package com.dayan.agent.service.impl;
 import cn.dev33.satoken.stp.StpLogic;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.agent.dto.AgentLoginDTO;
+import com.dayan.agent.dto.SmsLoginDTO;
 import com.dayan.agent.entity.AgentAccount;
 import com.dayan.agent.mapper.AgentAccountMapper;
 import com.dayan.agent.service.AgentAuthService;
+import com.dayan.agent.service.AgentSmsCodeService;
+import com.dayan.agent.service.WeChatLoginService;
 import com.dayan.agent.vo.AgentLoginVO;
 import com.dayan.agent.vo.ChannelOptionVO;
 import com.dayan.channel.entity.ChannelInfo;
@@ -24,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -32,15 +34,15 @@ import java.util.stream.Collectors;
  *
  * <p>登录流程：
  * <ol>
- *   <li>按 channelCode + (phone 或 open_id) 查询 agent_account</li>
+ *   <li>按 channelCode + (phone/open_id/username) 查询 agent_account</li>
  *   <li>校验账号状态（锁定/禁用）</li>
- *   <li>BCrypt 校验密码</li>
+ *   <li>密码登录：BCrypt 校验密码；验证码登录：校验 Redis 验证码</li>
  *   <li>Sa-Token login（loginType=agent，独立命名空间）</li>
  *   <li>Session 存入 channelCode</li>
  *   <li>更新登录时间</li>
  * </ol>
  *
- * <p>选渠道特性：{@link #listChannels} 按 mobile/openId 查询并按 channel_code 去重返回渠道列表。
+ * <p>选渠道特性：{@link #listChannels} 按 mobile/openId/username 查询并按 channel_code 去重返回渠道列表。
  */
 @Slf4j
 @Service
@@ -50,6 +52,8 @@ public class AgentAuthServiceImpl implements AgentAuthService {
     private final AgentAccountMapper accountMapper;
     private final ChannelInfoMapper channelInfoMapper;
     private final PasswordService passwordService;
+    private final AgentSmsCodeService smsCodeService;
+    private final WeChatLoginService weChatLoginService;
 
     @Override
     public List<ChannelOptionVO> listChannels(String mobile, String openId) {
@@ -58,10 +62,11 @@ public class AgentAuthServiceImpl implements AgentAuthService {
         }
         LambdaQueryWrapper<AgentAccount> wrapper = new LambdaQueryWrapper<AgentAccount>()
                 .select(AgentAccount::getChannelCode);
-        // mobile 或 openId 命中即返回
         wrapper.and(w -> {
             if (mobile != null && !mobile.isBlank()) {
-                w.eq(AgentAccount::getPhone, mobile).or();
+                // mobile 参数同时匹配 phone 和 username，使密码 Tab 输入用户名也能查到渠道
+                w.eq(AgentAccount::getPhone, mobile)
+                        .or().eq(AgentAccount::getUsername, mobile).or();
             }
             if (openId != null && !openId.isBlank()) {
                 w.eq(AgentAccount::getOpenId, openId);
@@ -76,7 +81,6 @@ public class AgentAuthServiceImpl implements AgentAuthService {
         if (codes.isEmpty()) {
             return List.of();
         }
-        // 批量联查 channel_info 回填简称/全称，避免 N+1
         Map<String, ChannelInfo> channelMap = resolveChannelNames(codes);
         return codes.stream()
                 .map(code -> {
@@ -90,58 +94,90 @@ public class AgentAuthServiceImpl implements AgentAuthService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 按 channelCode 集合一次性查 channel_info，组装 Map 便于回填。
-     */
-    private Map<String, ChannelInfo> resolveChannelNames(List<String> channelCodes) {
-        List<ChannelInfo> channels = channelInfoMapper.selectList(
-                new LambdaQueryWrapper<ChannelInfo>()
-                        .in(ChannelInfo::getChannelCode, channelCodes)
-                        .select(ChannelInfo::getChannelCode,
-                                ChannelInfo::getShortName,
-                                ChannelInfo::getFullName));
-        return channels.stream()
-                .collect(Collectors.toMap(ChannelInfo::getChannelCode, ch -> ch, (a, b) -> a));
-    }
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AgentLoginVO login(AgentLoginDTO dto) {
-        // 1. 按 channelCode + (phone 或 open_id) 查询账号
+        AgentAccount account = findByIdentifier(dto.getChannelCode(), dto.getIdentifier());
+        verifyPassword(account, dto.getPassword());
+        return doLogin(account);
+    }
+
+    @Override
+    public AgentLoginVO smsLogin(SmsLoginDTO dto) {
+        // 1. 校验验证码
+        if (!smsCodeService.verifyAndConsume(dto.getMobile(), dto.getCode())) {
+            throw new BusinessException(ErrorCode.BUSINESS, "验证码错误或已过期");
+        }
+        // 2. 查账号
+        AgentAccount account = accountMapper.selectOne(new LambdaQueryWrapper<AgentAccount>()
+                .eq(AgentAccount::getChannelCode, dto.getChannelCode())
+                .eq(AgentAccount::getPhone, dto.getMobile())
+                .last("LIMIT 1"));
+        if (account == null) {
+            throw new BusinessException(ErrorCode.BUSINESS, "账号不存在");
+        }
+        checkAccountStatus(account);
+        return doLogin(account);
+    }
+
+    @Override
+    public AgentLoginVO wxLogin(String code, String channelCode) {
+        // 1. code → openId（骨架实现会抛异常）
+        String openId = weChatLoginService.code2Session(code, channelCode);
+        // 2. 按 openId + channelCode 查账号
+        AgentAccount account = accountMapper.selectOne(new LambdaQueryWrapper<AgentAccount>()
+                .eq(AgentAccount::getChannelCode, channelCode)
+                .eq(AgentAccount::getOpenId, openId)
+                .last("LIMIT 1"));
+        if (account == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "该微信未绑定代理人账号");
+        }
+        checkAccountStatus(account);
+        return doLogin(account);
+    }
+
+    // ==================== 内部方法 ====================
+
+    /**
+     * 按 channelCode + identifier（phone / open_id / username）查账号。
+     */
+    private AgentAccount findByIdentifier(String channelCode, String identifier) {
         LambdaQueryWrapper<AgentAccount> wrapper = new LambdaQueryWrapper<AgentAccount>()
-                .eq(AgentAccount::getChannelCode, dto.getChannelCode());
-        wrapper.and(w -> w.eq(AgentAccount::getPhone, dto.getIdentifier())
-                .or()
-                .eq(AgentAccount::getOpenId, dto.getIdentifier()))
+                .eq(AgentAccount::getChannelCode, channelCode);
+        wrapper.and(w -> w.eq(AgentAccount::getPhone, identifier)
+                .or().eq(AgentAccount::getOpenId, identifier)
+                .or().eq(AgentAccount::getUsername, identifier))
                 .last("LIMIT 1");
-        AgentAccount account = accountMapper.selectOne(wrapper);
+        return accountMapper.selectOne(wrapper);
+    }
+
+    private void verifyPassword(AgentAccount account, String rawPassword) {
         if (account == null) {
             throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
         }
+        checkAccountStatus(account);
+        if (!passwordService.matches(rawPassword, account.getPassword())) {
+            throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
+        }
+    }
 
-        // 2. 校验账号状态
+    private void checkAccountStatus(AgentAccount account) {
         if (account.getAccountStatus() != null && account.getAccountStatus() == 0) {
             throw new AccountLockedException("账号已被锁定，请联系管理员");
         }
         if (account.getAccountStatus() != null && account.getAccountStatus() == 2) {
             throw new BusinessException(ErrorCode.BUSINESS, "账号已被禁用");
         }
+    }
 
-        // 3. BCrypt 校验密码
-        if (!passwordService.matches(dto.getPassword(), account.getPassword())) {
-            throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
-        }
-
-        // 4. Sa-Token 登录（agent 命名空间）
+    private AgentLoginVO doLogin(AgentAccount account) {
         StpLogic logic = StpKit.AGENT;
         logic.login(account.getAgentCode());
         logic.getSession().set("channelCode", account.getChannelCode());
         logic.getSession().set("agentCode", account.getAgentCode());
         logic.getSession().set("accountType", AccountType.AGENT.getLoginType());
-        // AgentAccount 无 realName 字段，用 username 作为操作人姓名落库审计
         logic.getSession().set("accountName", account.getUsername());
 
-        // 5. 更新登录时间
         AgentAccount update = new AgentAccount();
         update.setId(account.getId());
         update.setLastLoginTime(LocalDateTime.now());
@@ -156,6 +192,17 @@ public class AgentAuthServiceImpl implements AgentAuthService {
                 .agentCode(account.getAgentCode())
                 .channelCode(account.getChannelCode())
                 .build();
+    }
+
+    private Map<String, ChannelInfo> resolveChannelNames(List<String> channelCodes) {
+        List<ChannelInfo> channels = channelInfoMapper.selectList(
+                new LambdaQueryWrapper<ChannelInfo>()
+                        .in(ChannelInfo::getChannelCode, channelCodes)
+                        .select(ChannelInfo::getChannelCode,
+                                ChannelInfo::getShortName,
+                                ChannelInfo::getFullName));
+        return channels.stream()
+                .collect(Collectors.toMap(ChannelInfo::getChannelCode, ch -> ch, (a, b) -> a));
     }
 
     @Override

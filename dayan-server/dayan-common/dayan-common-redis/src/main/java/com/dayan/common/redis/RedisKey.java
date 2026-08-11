@@ -25,6 +25,12 @@ public final class RedisKey {
     /** Token 会话：dayan:auth:token:{accountType}（Sa-Token 内部管理） */
     public static final String AUTH_TOKEN = PREFIX + ":auth:token";
 
+    /** 短信验证码：dayan:sms:code:{scene}:{mobile}（String，TTL 5min） */
+    public static final String SMS_CODE = PREFIX + ":sms:code";
+
+    /** 短信发送冷却：dayan:sms:cooldown:{scene}:{mobile}（存在即不可重发，TTL 60s） */
+    public static final String SMS_COOLDOWN = PREFIX + ":sms:cooldown";
+
     public static String codeSeq(String prefix, long channelCode) {
         return CODE_SEQ + ":" + prefix + ":" + channelCode;
     }
@@ -35,5 +41,15 @@ public final class RedisKey {
 
     public static String authFail(String accountType, String loginKey) {
         return AUTH_FAIL + ":" + accountType + ":" + loginKey;
+    }
+
+    /** 短信验证码 Key：dayan:sms:code:{scene}:{mobile} */
+    public static String smsCode(String scene, String mobile) {
+        return SMS_CODE + ":" + scene + ":" + mobile;
+    }
+
+    /** 短信发送冷却 Key：dayan:sms:cooldown:{scene}:{mobile} */
+    public static String smsCooldown(String scene, String mobile) {
+        return SMS_COOLDOWN + ":" + scene + ":" + mobile;
     }
 }

@@ -36,9 +36,12 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(new SaInterceptor())
                 .addPathPatterns("/**")
                 .excludePathPatterns(
-                        // 认证相关（登录、登出）
+                        // 认证相关（登录、登出、验证码、微信）
                         "/auth/login",
                         "/auth/logout",
+                        "/auth/sms/send",
+                        "/auth/sms/login",
+                        "/auth/wx/login",
                         // API 文档（Knife4j / Springdoc / Swagger）
                         "/doc.html",
                         "/swagger-ui/**",

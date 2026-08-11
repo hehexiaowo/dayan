@@ -10,10 +10,11 @@
 
     <!-- 表单卡片 -->
     <view class="form-card">
+      <!-- 共享：手机号/用户名 -->
       <view class="form-item">
-        <text class="form-label">手机号</text>
+        <text class="form-label">{{ loginTab === 'sms' ? '手机号' : '手机号 / 用户名' }}</text>
         <input
-          v-model="mobile"
+          v-model="identifier"
           placeholder="请输入手机号"
           placeholder-class="input-placeholder"
           inputmode="numeric"
@@ -22,6 +23,7 @@
         />
       </view>
 
+      <!-- 查询关联渠道 -->
       <button
         class="dy-btn dy-btn-outline"
         :class="{ 'dy-btn-disabled': loadingChannels }"
@@ -52,31 +54,105 @@
         </view>
       </view>
 
-      <view class="form-item">
-        <text class="form-label">密码</text>
-        <view class="pwd-wrap">
-          <input
-            v-model="password"
-            :password="!showPwd"
-            placeholder="请输入密码"
-            placeholder-class="input-placeholder"
-            class="dy-input"
-            style="padding-right: 120rpx"
-          />
-          <text class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
+      <!-- Tab 切换 -->
+      <view class="tab-bar">
+        <view
+          class="tab-item"
+          :class="{ active: loginTab === 'sms' }"
+          @click="loginTab = 'sms'"
+        >
+          <text class="tab-text">验证码登录</text>
+          <view v-if="loginTab === 'sms'" class="tab-underline" />
+        </view>
+        <view
+          class="tab-item"
+          :class="{ active: loginTab === 'pwd' }"
+          @click="loginTab = 'pwd'"
+        >
+          <text class="tab-text">密码登录</text>
+          <view v-if="loginTab === 'pwd'" class="tab-underline" />
         </view>
       </view>
 
-      <button
-        class="dy-btn dy-btn-primary"
-        :class="{ 'dy-btn-disabled': submitting }"
-        :disabled="submitting"
-        @click="handleLogin"
-      >
-        <text v-if="submitting">登录中...</text>
-        <text v-else>登 录</text>
-      </button>
+      <!-- 验证码登录 -->
+      <view v-if="loginTab === 'sms'" class="tab-content">
+        <view class="form-item">
+          <text class="form-label">验证码</text>
+          <view class="code-wrap">
+            <input
+              v-model="smsCode"
+              placeholder="请输入验证码"
+              placeholder-class="input-placeholder"
+              inputmode="numeric"
+              maxlength="6"
+              class="dy-input code-input"
+            />
+            <view
+              class="code-btn"
+              :class="{ disabled: countdown > 0 || sendingCode }"
+              @click="onSendCode"
+            >
+              <text v-if="sendingCode">发送中</text>
+              <text v-else-if="countdown > 0">{{ countdown }}s</text>
+              <text v-else>获取验证码</text>
+            </view>
+          </view>
+        </view>
+
+        <button
+          class="dy-btn dy-btn-primary"
+          :class="{ 'dy-btn-disabled': submitting }"
+          :disabled="submitting"
+          @click="onSmsLogin"
+        >
+          <text v-if="submitting">登录中...</text>
+          <text v-else>登 录</text>
+        </button>
+      </view>
+
+      <!-- 密码登录 -->
+      <view v-if="loginTab === 'pwd'" class="tab-content">
+        <view class="form-item">
+          <text class="form-label">密码</text>
+          <view class="pwd-wrap">
+            <input
+              v-model="password"
+              :password="!showPwd"
+              placeholder="请输入密码"
+              placeholder-class="input-placeholder"
+              class="dy-input"
+              style="padding-right: 120rpx"
+            />
+            <text class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
+          </view>
+        </view>
+
+        <button
+          class="dy-btn dy-btn-primary"
+          :class="{ 'dy-btn-disabled': submitting }"
+          :disabled="submitting"
+          @click="onPwdLogin"
+        >
+          <text v-if="submitting">登录中...</text>
+          <text v-else>登 录</text>
+        </button>
+      </view>
     </view>
+
+    <!-- 其他方式登录 -->
+    <!-- #ifdef MP-WEIXIN -->
+    <view class="other-login">
+      <view class="divider">
+        <view class="divider-line" />
+        <text class="divider-text">其他方式登录</text>
+        <view class="divider-line" />
+      </view>
+      <view class="wx-btn" @click="onWxLogin">
+        <text class="wx-icon">微</text>
+        <text class="wx-text">微信登录</text>
+      </view>
+    </view>
+    <!-- #endif -->
 
     <!-- 底部版权 -->
     <view class="footer">
@@ -91,19 +167,34 @@ import { useUserStore } from '@/stores/user';
 import type { ChannelOption } from '@/api/auth';
 
 const userStore = useUserStore();
-const mobile = ref('');
-const password = ref('');
-const showPwd = ref(false);
+
+// 共享状态
+const identifier = ref('');
 const channels = ref<ChannelOption[]>([]);
 const selectedChannel = ref('');
 const loadingChannels = ref(false);
 const submitting = ref(false);
 
+// Tab 切换：sms=验证码登录（默认），pwd=密码登录
+const loginTab = ref<'sms' | 'pwd'>('sms');
+
+// 验证码
+const smsCode = ref('');
+const countdown = ref(0);
+const sendingCode = ref(false);
+
+// 密码
+const password = ref('');
+const showPwd = ref(false);
+
 let channelTimer: ReturnType<typeof setTimeout> | null = null;
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let channelSeq = 0;
-watch(mobile, (val) => {
+
+// 手机号自动触发渠道查询
+watch(identifier, (val) => {
   channelSeq++;
-  loadingChannels.value = false; // 改号使旧响应失效，同时复位加载态防按钮卡禁用
+  loadingChannels.value = false;
   channels.value = [];
   selectedChannel.value = '';
   if (channelTimer) clearTimeout(channelTimer);
@@ -114,22 +205,22 @@ watch(mobile, (val) => {
 
 onUnmounted(() => {
   if (channelTimer) clearTimeout(channelTimer);
+  if (countdownTimer) clearInterval(countdownTimer);
 });
 
 onMounted(() => {
-  mobile.value = uni.getStorageSync('agent_remember_mobile') || '';
+  identifier.value = uni.getStorageSync('agent_remember_mobile') || '';
 });
 
 async function loadChannels() {
-  if (!mobile.value) {
+  if (!identifier.value) {
     uni.showToast({ title: '请输入手机号', icon: 'none' });
     return;
   }
-  // 序号守卫：改号/重复触发时，旧响应落地即丢弃
   const seq = ++channelSeq;
   loadingChannels.value = true;
   try {
-    const result = await userStore.getChannels(mobile.value);
+    const result = await userStore.getChannels(identifier.value);
     if (seq !== channelSeq) return;
     channels.value = result;
     if (channels.value.length === 1) {
@@ -138,7 +229,7 @@ async function loadChannels() {
     if (channels.value.length === 0) {
       uni.showToast({ title: '未找到关联渠道', icon: 'none' });
     }
-  } catch (e) {
+  } catch {
     // 错误已由 request 拦截器提示
   } finally {
     if (seq === channelSeq) loadingChannels.value = false;
@@ -150,7 +241,71 @@ function onManualQuery() {
   loadChannels();
 }
 
-async function handleLogin() {
+/** 发送验证码 */
+async function onSendCode() {
+  if (countdown.value > 0 || sendingCode.value) return;
+  if (!selectedChannel.value) {
+    uni.showToast({ title: '请先选择渠道', icon: 'none' });
+    return;
+  }
+  if (!/^1\d{10}$/.test(identifier.value)) {
+    uni.showToast({ title: '请输入正确的手机号', icon: 'none' });
+    return;
+  }
+  sendingCode.value = true;
+  try {
+    const result = await userStore.sendSmsCode(identifier.value, selectedChannel.value);
+    // 启动倒计时
+    countdown.value = 60;
+    countdownTimer = setInterval(() => {
+      countdown.value--;
+      if (countdown.value <= 0 && countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+    }, 1000);
+    // Dev 环境：后端返回 devCode，toast 展示便于测试
+    if (result.devCode) {
+      uni.showToast({ title: `验证码：${result.devCode}`, icon: 'none', duration: 5000 });
+    } else {
+      uni.showToast({ title: '验证码已发送', icon: 'none' });
+    }
+  } catch {
+    // 错误已提示
+  } finally {
+    sendingCode.value = false;
+  }
+}
+
+/** 验证码登录 */
+async function onSmsLogin() {
+  if (!selectedChannel.value) {
+    uni.showToast({ title: '请先选择渠道', icon: 'none' });
+    return;
+  }
+  if (!smsCode.value) {
+    uni.showToast({ title: '请输入验证码', icon: 'none' });
+    return;
+  }
+  submitting.value = true;
+  try {
+    await userStore.smsLogin({
+      mobile: identifier.value,
+      channelCode: selectedChannel.value,
+      code: smsCode.value,
+    });
+    uni.setStorageSync('agent_remember_mobile', identifier.value);
+    uni.showToast({ title: '登录成功', icon: 'success' });
+    setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
+  } catch {
+    // 错误已提示
+  } finally {
+    submitting.value = false;
+  }
+}
+
+/** 密码登录 */
+async function onPwdLogin() {
   if (!selectedChannel.value) {
     uni.showToast({ title: '请先选择渠道', icon: 'none' });
     return;
@@ -163,13 +318,38 @@ async function handleLogin() {
   try {
     await userStore.login({
       channelCode: selectedChannel.value,
-      identifier: mobile.value,
+      identifier: identifier.value,
       password: password.value,
     });
-    uni.setStorageSync('agent_remember_mobile', mobile.value);
+    uni.setStorageSync('agent_remember_mobile', identifier.value);
     uni.showToast({ title: '登录成功', icon: 'success' });
     setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
-  } catch (e) {
+  } catch {
+    // 错误已提示
+  } finally {
+    submitting.value = false;
+  }
+}
+
+/** 微信登录（仅小程序） */
+async function onWxLogin() {
+  if (!selectedChannel.value) {
+    uni.showToast({ title: '请先选择渠道', icon: 'none' });
+    return;
+  }
+  submitting.value = true;
+  try {
+    // #ifdef MP-WEIXIN
+    const res = await uni.login({ provider: 'weixin' });
+    if (!res || !res.code) {
+      uni.showToast({ title: '微信授权失败', icon: 'none' });
+      return;
+    }
+    await userStore.wxLogin({ code: res.code, channelCode: selectedChannel.value });
+    uni.showToast({ title: '登录成功', icon: 'success' });
+    setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
+    // #endif
+  } catch {
     // 错误已提示
   } finally {
     submitting.value = false;
@@ -240,13 +420,20 @@ async function handleLogin() {
   font-size: 28rpx;
 }
 
-/* 登录页按钮间距（共享 .dy-btn 无 margin） */
+/* 登录页按钮间距 */
 .form-card .dy-btn {
   margin-top: $spacing-sm;
 }
 
-.pwd-wrap {
+.pwd-wrap,
+.code-wrap {
   position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.code-input {
+  padding-right: 200rpx !important;
 }
 
 .pwd-toggle {
@@ -257,6 +444,24 @@ async function handleLogin() {
   font-size: 26rpx;
   color: $brand-primary;
   padding: 8rpx;
+}
+
+.code-btn {
+  position: absolute;
+  right: 12rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24rpx;
+  color: $brand-primary;
+  padding: 10rpx 20rpx;
+  border-radius: $radius-sm;
+  background: $brand-primary-light;
+  white-space: nowrap;
+
+  &.disabled {
+    color: $text-placeholder;
+    background: $bg-page;
+  }
 }
 
 /* 渠道列表 */
@@ -329,6 +534,89 @@ async function handleLogin() {
   font-size: 22rpx;
   color: $text-secondary;
   margin-top: 4rpx;
+}
+
+/* Tab 切换 */
+.tab-bar {
+  display: flex;
+  margin-bottom: $spacing-lg;
+  border-bottom: 2rpx solid $border-base;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: $spacing-sm 0 $spacing-md;
+  position: relative;
+}
+
+.tab-text {
+  font-size: 28rpx;
+  color: $text-secondary;
+}
+
+.tab-item.active .tab-text {
+  color: $brand-primary;
+  font-weight: 600;
+}
+
+.tab-underline {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background: $gradient-blue;
+}
+
+/* 其他方式登录 */
+.other-login {
+  margin: $spacing-xl $spacing-lg 0;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-lg;
+}
+
+.divider-line {
+  flex: 1;
+  height: 2rpx;
+  background: $border-base;
+}
+
+.divider-text {
+  font-size: 24rpx;
+  color: $text-placeholder;
+  padding: 0 $spacing-md;
+}
+
+.wx-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-md;
+}
+
+.wx-icon {
+  width: 96rpx;
+  height: 96rpx;
+  line-height: 96rpx;
+  text-align: center;
+  border-radius: 50%;
+  background: #07c160;
+  color: #fff;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+.wx-text {
+  font-size: 24rpx;
+  color: $text-secondary;
+  margin-top: $spacing-sm;
 }
 
 /* 底部 */
