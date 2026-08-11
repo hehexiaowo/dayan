@@ -427,13 +427,18 @@ async function onWxLogin() {
 
 .pwd-wrap,
 .code-wrap {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: $spacing-sm;
 }
 
 .code-input {
-  padding-right: 200rpx !important;
+  flex: 1;
+  min-width: 0;
+}
+
+.pwd-wrap {
+  position: relative;
 }
 
 .pwd-toggle {
@@ -444,16 +449,14 @@ async function onWxLogin() {
   font-size: 26rpx;
   color: $brand-primary;
   padding: 8rpx;
+  z-index: 2;
 }
 
 .code-btn {
-  position: absolute;
-  right: 12rpx;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   font-size: 24rpx;
   color: $brand-primary;
-  padding: 10rpx 20rpx;
+  padding: 14rpx 20rpx;
   border-radius: $radius-sm;
   background: $brand-primary-light;
   white-space: nowrap;
