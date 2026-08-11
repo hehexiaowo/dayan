@@ -157,6 +157,16 @@ public class AgentCardServiceImpl implements AgentCardService {
         return card;
     }
 
+    @Override
+    public AgentCardVO getFirstByAgent(String agentCode) {
+        AgentCard card = cardMapper.selectOne(new LambdaQueryWrapper<AgentCard>()
+                .eq(AgentCard::getAgentCode, agentCode)
+                .eq(AgentCard::getStatus, 1)
+                .orderByAsc(AgentCard::getSortOrder)
+                .last("LIMIT 1"));
+        return card != null ? toVO(card) : null;
+    }
+
     /**
      * 生成名片编码：AC + yyyyMMdd + 4位序号（代理人内自增）。
      */

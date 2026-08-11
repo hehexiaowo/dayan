@@ -35,4 +35,12 @@ public interface AgentCardService {
      * 删除名片（软删除）。
      */
     void delete(Long id);
+
+    /**
+     * 查代理人第一张启用名片（公开分享用，不需登录）。
+     *
+     * @param agentCode 代理人编码
+     * @return 第一张 status=1 的名片，无则 null
+     */
+    AgentCardVO getFirstByAgent(String agentCode);
 }

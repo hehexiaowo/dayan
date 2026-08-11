@@ -115,12 +115,35 @@
       icon="!"
       color="gray"
     />
+
+    <!-- 海报弹窗 -->
+    <view v-if="showPoster" class="poster-mask" @click="showPoster = false">
+      <view class="poster-container" @click.stop>
+        <image
+          v-if="posterImage"
+          :src="posterImage"
+          mode="widthFix"
+          class="poster-image"
+          :show-menu-by-longpress="true"
+        />
+        <view class="poster-actions">
+          <view class="poster-save-btn dy-clickable" @click="savePoster">
+            <text>💾 保存到相册</text>
+          </view>
+          <text class="poster-hint">长按图片可保存或转发</text>
+        </view>
+        <view class="poster-close dy-clickable" @click="showPoster = false">
+          <text>✕</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import QRCode from 'qrcode';
 import { getContentDetail } from '@/api/content';
 import { addFavoriteApi, removeFavoriteApi, getFavoritedCodesApi, TARGET_TYPE } from '@/api/favorite';
 import { formatFileUrl } from '@/utils/file';
@@ -132,6 +155,11 @@ const article = ref<ContentArticle | null>(null);
 const loading = ref(true);
 const contentCode = ref('');
 const isFavorited = ref(false);
+
+// 海报
+const showPoster = ref(false);
+const posterImage = ref('');
+const posterLoading = ref(false);
 
 interface Badge {
   text: string;
@@ -263,8 +291,246 @@ async function toggleFavorite() {
   }
 }
 
+/** 分享 — 弹出选择 */
 function onShare() {
-  uni.showToast({ title: '分享功能开发中', icon: 'none' });
+  uni.showActionSheet({
+    itemList: ['📄 生成海报', '🔗 复制链接'],
+    success: (res) => {
+      if (res.tapIndex === 0) generatePoster();
+      else if (res.tapIndex === 1) copyShareLink();
+    },
+  });
+}
+
+/** 转发：复制分享链接 */
+function copyShareLink() {
+  // #ifdef H5
+  const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
+  const url = `${window.location.origin}/#/pages/share/content?code=${contentCode.value}&agent=${agentCode}`;
+  uni.setClipboardData({
+    data: url,
+    success: () => uni.showToast({ title: '链接已复制，可粘贴发给客户', icon: 'none', duration: 2500 }),
+  });
+  // #endif
+}
+
+/** 获取分享链接 */
+function getShareUrl(): string {
+  // #ifdef H5
+  const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
+  return `${window.location.origin}/#/pages/share/content?code=${contentCode.value}&agent=${agentCode}`;
+  // #endif
+  // #ifndef H5
+  return '';
+  // #endif
+}
+
+/** 生成海报 */
+async function generatePoster() {
+  if (posterLoading.value) return;
+  posterLoading.value = true;
+  uni.showLoading({ title: '生成海报...' });
+  try {
+    const dataUrl = await drawPoster();
+    posterImage.value = dataUrl;
+    showPoster.value = true;
+  } catch (e) {
+    uni.showToast({ title: '海报生成失败', icon: 'none' });
+  } finally {
+    posterLoading.value = false;
+    uni.hideLoading();
+  }
+}
+
+/** Canvas 绘制海报 */
+async function drawPoster(): Promise<string> {
+  const W = 600, H = 900;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  const a = article.value!;
+
+  // 1. 白色背景
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  let y = 40;
+
+  // 2. 封面图（16:9）
+  const coverSrc = formatFileUrl(a.coverImage);
+  if (coverSrc) {
+    try {
+      const img = await loadImage(coverSrc);
+      const imgH = Math.min(300, (img.height / img.width) * (W - 80));
+      ctx.drawImage(img, 40, y, W - 80, imgH);
+      y += imgH + 20;
+    } catch {
+      y = drawPlaceholderHeader(ctx, W, y);
+    }
+  } else {
+    y = drawPlaceholderHeader(ctx, W, y);
+  }
+
+  // 3. 标题（加粗，自动换行）
+  ctx.fillStyle = '#303133';
+  ctx.font = 'bold 28px sans-serif';
+  y = wrapText(ctx, a.title || '', 40, y, W - 80, 40) + 16;
+
+  // 4. 摘要（灰色）
+  if (a.summary) {
+    ctx.fillStyle = '#909399';
+    ctx.font = '22px sans-serif';
+    y = wrapText(ctx, a.summary, 40, y, W - 80, 34) + 20;
+  }
+
+  // 5. 分割线
+  y += 10;
+  ctx.strokeStyle = '#ebeef5';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(40, y);
+  ctx.lineTo(W - 40, y);
+  ctx.stroke();
+  y += 30;
+
+  // 6. 分享人信息（从 localStorage 获取当前代理人）
+  const agentUser = uni.getStorageSync('agent_user') as any;
+  const agentName = agentUser?.realName || a.authorName || '养老顾问';
+
+  // 头像（圆形）
+  const avatarSize = 70;
+  const avatarX = 40;
+  const avatarY = y;
+  const avatarSrc = formatFileUrl(agentUser?.avatar);
+  if (avatarSrc) {
+    try {
+      const avatar = await loadImage(avatarSrc);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+      ctx.restore();
+    } catch {
+      drawAvatarFallback(ctx, avatarX, avatarY, avatarSize, agentName);
+    }
+  } else {
+    drawAvatarFallback(ctx, avatarX, avatarY, avatarSize, agentName);
+  }
+
+  // 姓名 / 电话
+  ctx.fillStyle = '#303133';
+  ctx.font = 'bold 26px sans-serif';
+  ctx.fillText(agentName, avatarX + avatarSize + 20, avatarY + 30);
+
+  ctx.fillStyle = '#909399';
+  ctx.font = '20px sans-serif';
+  ctx.fillText('专业养老顾问 · 为您服务', avatarX + avatarSize + 20, avatarY + 58);
+
+  y += avatarSize + 40;
+
+  // 7. QR 码
+  const qrSize = 120;
+  const qrX = W - qrSize - 40;
+  const qrY = y;
+  try {
+    const qrDataUrl = await QRCode.toDataURL(getShareUrl(), { width: qrSize, margin: 1 });
+    const qrImg = await loadImage(qrDataUrl);
+    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+  } catch {
+    // QR 失败画占位框
+    ctx.strokeStyle = '#409eff';
+    ctx.strokeRect(qrX, qrY, qrSize, qrSize);
+  }
+
+  // QR 提示文字
+  ctx.fillStyle = '#606266';
+  ctx.font = '18px sans-serif';
+  ctx.fillText('长按识别', qrX, qrY + qrSize + 26);
+  ctx.fillText('阅读全文', qrX, qrY + qrSize + 50);
+
+  // 8. 底部品牌
+  ctx.fillStyle = '#c0c4cc';
+  ctx.font = '16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('大雁养老 · 专业养老服务平台', W / 2, H - 24);
+  ctx.textAlign = 'left';
+
+  return canvas.toDataURL('image/png');
+}
+
+/** 加载图片（支持 CORS） */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+/** Canvas 文字换行 */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number): number {
+  const chars = text.split('');
+  let line = '';
+  let yPos = y;
+  for (const char of chars) {
+    const testLine = line + char;
+    if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+      ctx.fillText(line, x, yPos);
+      line = char;
+      yPos += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, x, yPos);
+  return yPos;
+}
+
+/** 无封面时的占位头部 */
+function drawPlaceholderHeader(ctx: CanvasRenderingContext2D, W: number, y: number): number {
+  const grad = ctx.createLinearGradient(40, y, W - 40, y + 160);
+  grad.addColorStop(0, '#337ecc');
+  grad.addColorStop(1, '#409eff');
+  ctx.fillStyle = grad;
+  ctx.fillRect(40, y, W - 80, 160);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '24px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('大雁养老', W / 2, y + 90);
+  ctx.textAlign = 'left';
+  return y + 180;
+}
+
+/** 头像加载失败的文字占位 */
+function drawAvatarFallback(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, name: string) {
+  ctx.fillStyle = '#409eff';
+  ctx.beginPath();
+  ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name.charAt(0) || '?', x + size / 2, y + size / 2);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
+/** 保存海报到相册/H5下载 */
+function savePoster() {
+  // #ifdef H5
+  const a = document.createElement('a');
+  a.href = posterImage.value;
+  a.download = `海报_${article.value?.title?.substring(0, 10) || '文章'}.png`;
+  a.click();
+  uni.showToast({ title: '海报已保存', icon: 'success' });
+  // #endif
 }
 
 /** 图片预览（全屏左右滑动） */
@@ -584,5 +850,66 @@ onLoad((query) => {
 }
 .action-text {
   color: inherit;
+}
+
+/* 海报弹窗 */
+.poster-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30rpx;
+}
+.poster-container {
+  position: relative;
+  width: 100%;
+  max-width: 580rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.poster-image {
+  width: 100%;
+  border-radius: 16rpx;
+  background: #fff;
+}
+.poster-actions {
+  margin-top: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+.poster-save-btn {
+  background: #fff;
+  color: #337ecc;
+  padding: 18rpx 56rpx;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+.poster-hint {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 24rpx;
+}
+.poster-close {
+  position: absolute;
+  top: -60rpx;
+  right: 0;
+  width: 56rpx;
+  height: 56rpx;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 32rpx;
 }
 </style>
