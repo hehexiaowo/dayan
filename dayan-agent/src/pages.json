@@ -60,7 +60,9 @@
     {
       "path": "pages/business/park/sojourn/detail",
       "style": { "navigationBarTitleText": "机构详情" }
-    }
+    },
+    { "path": "pages/business/mall/index", "style": { "navigationBarTitleText": "大雁商城" } },
+    { "path": "pages/business/mall/detail", "style": { "navigationBarTitleText": "商品详情" } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "white",

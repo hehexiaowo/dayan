@@ -21,9 +21,9 @@
       <DyIconBlock text="商" color="green" size="lg" />
       <view class="card-body">
         <view class="card-title">大雁商城</view>
-        <view class="card-desc">权益 / 场景 / 课程 / 旅居商品</view>
+        <view class="card-desc">权益商品采购 · 个人专属</view>
       </view>
-      <view class="card-tag">即将上线</view>
+      <text class="card-arrow">›</text>
     </view>
 
     <!-- 场景活动 -->
@@ -46,11 +46,11 @@ function onSection(type: string) {
     uni.navigateTo({ url: '/pages/business/park/categories' });
     return;
   }
-  const tips: Record<string, string> = {
-    mall: '大雁商城（Inc 2 上线）',
-    activity: '场景活动（Inc 3 上线）',
-  };
-  uni.showToast({ title: tips[type] || '开发中', icon: 'none' });
+  if (type === 'mall') {
+    uni.navigateTo({ url: '/pages/business/mall/index' });
+    return;
+  }
+  uni.showToast({ title: '场景活动（开发中）', icon: 'none' });
 }
 </script>
 

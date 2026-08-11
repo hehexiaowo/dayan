@@ -162,3 +162,23 @@ export interface EquityStats {
   inUse: number;
   completed: number;
 }
+
+// ===== 商城商品 =====
+
+/** 商城权益商品（对齐后端 GoodsInfoVO 展示子集） */
+export interface GoodsProduct {
+  goodsCode: string;
+  goodsName: string;
+  goodsType?: number;
+  coverImage?: string;
+  imageUrls?: string;
+  goodsDescription?: string;
+  summary?: string;
+  originalPrice?: number;
+  salePrice?: number;
+  priceUnit?: string;
+  /** 库存（-1 表示不限） */
+  stock?: number;
+  salesCount?: number;
+  goodsStatus?: number;
+}
