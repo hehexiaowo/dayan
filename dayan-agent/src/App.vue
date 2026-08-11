@@ -71,6 +71,8 @@ input {
 }
 
 .uni-input-placeholder {
+  display: flex;
+  align-items: center;
   color: $text-placeholder;
 }
 
