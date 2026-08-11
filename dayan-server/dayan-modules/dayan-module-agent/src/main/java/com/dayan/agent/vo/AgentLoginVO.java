@@ -16,8 +16,10 @@ public class AgentLoginVO {
     private String tokenName;
     /** 代理人编码 */
     private String agentCode;
-    /** 真实姓名（agent_account 无 real_name 字段，预留扩展） */
+    /** 真实姓名（取自 agent_info.full_name，无资料记录时为 null） */
     private String realName;
+    /** 头像（取自 agent_info.avatar，OSS key，无资料记录时为 null） */
+    private String avatar;
     /** 所属渠道编码 */
     private String channelCode;
 }

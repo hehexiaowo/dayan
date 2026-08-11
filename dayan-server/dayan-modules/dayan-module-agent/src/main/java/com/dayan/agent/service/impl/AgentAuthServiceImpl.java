@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.agent.dto.AgentLoginDTO;
 import com.dayan.agent.dto.SmsLoginDTO;
 import com.dayan.agent.entity.AgentAccount;
+import com.dayan.agent.entity.AgentInfo;
 import com.dayan.agent.mapper.AgentAccountMapper;
+import com.dayan.agent.mapper.AgentInfoMapper;
 import com.dayan.agent.service.AgentAuthService;
 import com.dayan.agent.service.AgentSmsCodeService;
 import com.dayan.agent.service.WeChatLoginService;
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 public class AgentAuthServiceImpl implements AgentAuthService {
 
     private final AgentAccountMapper accountMapper;
+    private final AgentInfoMapper agentInfoMapper;
     private final ChannelInfoMapper channelInfoMapper;
     private final PasswordService passwordService;
     private final AgentSmsCodeService smsCodeService;
@@ -186,12 +189,26 @@ public class AgentAuthServiceImpl implements AgentAuthService {
         log.info("Agent 登录成功: agentCode={}, channelCode={}",
                 account.getAgentCode(), account.getChannelCode());
 
-        return AgentLoginVO.builder()
-                .token(logic.getTokenValue())
-                .tokenName(AccountType.AGENT.getTokenName())
-                .agentCode(account.getAgentCode())
-                .channelCode(account.getChannelCode())
+        return withInfo(AgentLoginVO.builder()
+                        .token(logic.getTokenValue())
+                        .tokenName(AccountType.AGENT.getTokenName())
+                        .agentCode(account.getAgentCode())
+                        .channelCode(account.getChannelCode()),
+                account)
                 .build();
+    }
+
+    /** 联查 agent_info 回填姓名/头像（登录与 /auth/info 共用；无资料记录则留 null） */
+    private AgentLoginVO.AgentLoginVOBuilder withInfo(AgentLoginVO.AgentLoginVOBuilder builder,
+                                                      AgentAccount account) {
+        AgentInfo info = agentInfoMapper.selectOne(new LambdaQueryWrapper<AgentInfo>()
+                .eq(AgentInfo::getChannelCode, account.getChannelCode())
+                .eq(AgentInfo::getAgentCode, account.getAgentCode())
+                .last("LIMIT 1"));
+        if (info != null) {
+            builder.realName(info.getFullName()).avatar(info.getAvatar());
+        }
+        return builder;
     }
 
     private Map<String, ChannelInfo> resolveChannelNames(List<String> channelCodes) {
@@ -223,11 +240,12 @@ public class AgentAuthServiceImpl implements AgentAuthService {
         if (account == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "账号不存在");
         }
-        return AgentLoginVO.builder()
-                .token(logic.getTokenValue())
-                .tokenName(AccountType.AGENT.getTokenName())
-                .agentCode(account.getAgentCode())
-                .channelCode(account.getChannelCode())
+        return withInfo(AgentLoginVO.builder()
+                        .token(logic.getTokenValue())
+                        .tokenName(AccountType.AGENT.getTokenName())
+                        .agentCode(account.getAgentCode())
+                        .channelCode(account.getChannelCode()),
+                account)
                 .build();
     }
 }
