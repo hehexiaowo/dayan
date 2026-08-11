@@ -8,6 +8,8 @@ import com.dayan.agent.mapper.AgentAccountMapper;
 import com.dayan.agent.service.AgentAuthService;
 import com.dayan.agent.vo.AgentLoginVO;
 import com.dayan.agent.vo.ChannelOptionVO;
+import com.dayan.channel.entity.ChannelInfo;
+import com.dayan.channel.mapper.ChannelInfoMapper;
 import com.dayan.common.core.exception.AccountLockedException;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
@@ -21,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +48,7 @@ import java.util.stream.Collectors;
 public class AgentAuthServiceImpl implements AgentAuthService {
 
     private final AgentAccountMapper accountMapper;
+    private final ChannelInfoMapper channelInfoMapper;
     private final PasswordService passwordService;
 
     @Override
@@ -63,12 +68,40 @@ public class AgentAuthServiceImpl implements AgentAuthService {
             }
         });
         List<AgentAccount> accounts = accountMapper.selectList(wrapper);
-        return accounts.stream()
+        List<String> codes = accounts.stream()
                 .map(AgentAccount::getChannelCode)
                 .filter(code -> code != null && !code.isBlank())
                 .distinct()
-                .map(code -> ChannelOptionVO.builder().channelCode(code).build())
                 .collect(Collectors.toList());
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        // 批量联查 channel_info 回填简称/全称，避免 N+1
+        Map<String, ChannelInfo> channelMap = resolveChannelNames(codes);
+        return codes.stream()
+                .map(code -> {
+                    ChannelInfo ch = channelMap.get(code);
+                    return ChannelOptionVO.builder()
+                            .channelCode(code)
+                            .shortName(ch != null ? ch.getShortName() : null)
+                            .fullName(ch != null ? ch.getFullName() : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 按 channelCode 集合一次性查 channel_info，组装 Map 便于回填。
+     */
+    private Map<String, ChannelInfo> resolveChannelNames(List<String> channelCodes) {
+        List<ChannelInfo> channels = channelInfoMapper.selectList(
+                new LambdaQueryWrapper<ChannelInfo>()
+                        .in(ChannelInfo::getChannelCode, channelCodes)
+                        .select(ChannelInfo::getChannelCode,
+                                ChannelInfo::getShortName,
+                                ChannelInfo::getFullName));
+        return channels.stream()
+                .collect(Collectors.toMap(ChannelInfo::getChannelCode, ch -> ch, (a, b) -> a));
     }
 
     @Override

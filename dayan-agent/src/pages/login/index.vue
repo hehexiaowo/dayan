@@ -46,7 +46,7 @@
             <view v-if="selectedChannel === ch.channelCode" class="radio-dot" />
           </view>
           <view class="channel-info">
-            <text class="channel-name">{{ ch.channelName }}</text>
+            <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}</text>
             <text class="channel-code">{{ ch.channelCode }}</text>
           </view>
         </view>
