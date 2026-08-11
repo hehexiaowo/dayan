@@ -12,6 +12,9 @@ public interface AgentSmsCodeService {
     /** Redis 场景标识（agent 端验证码登录） */
     String SCENE = "agent";
 
+    /** Redis 场景标识（换绑手机号，与登录验证码隔离） */
+    String SCENE_PHONE_CHANGE = "agent_phone_change";
+
     /**
      * 发送验证码。
      *
@@ -34,4 +37,14 @@ public interface AgentSmsCodeService {
      * @return true=校验通过
      */
     boolean verifyAndConsume(String mobile, String code);
+
+    /**
+     * 换绑手机号：发送验证码。
+     *
+     * <p>与 {@link #sendCode} 的区别：不校验账号存在（新手机号本应无账号）。
+     */
+    SmsSendVO sendPhoneChangeCode(String mobile);
+
+    /** 换绑手机号：校验并消费验证码（场景隔离） */
+    boolean verifyAndConsumePhoneChange(String mobile, String code);
 }

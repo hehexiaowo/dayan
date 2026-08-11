@@ -7,6 +7,7 @@ import com.dayan.agent.entity.AgentInfo;
 import com.dayan.agent.mapper.AgentAccountMapper;
 import com.dayan.agent.mapper.AgentInfoMapper;
 import com.dayan.agent.service.AgentProfileService;
+import com.dayan.agent.service.AgentSmsCodeService;
 import com.dayan.agent.vo.AgentProfileVO;
 import com.dayan.agent.vo.SmsSendVO;
 import com.dayan.channel.entity.ChannelInfo;
@@ -42,6 +43,7 @@ public class AgentProfileServiceImpl implements AgentProfileService {
     private final AgentInfoMapper infoMapper;
     private final ChannelInfoMapper channelInfoMapper;
     private final SystemDictRegionMapper regionMapper;
+    private final AgentSmsCodeService smsCodeService;
 
     @Override
     public AgentProfileVO getProfile() {
@@ -138,12 +140,43 @@ public class AgentProfileServiceImpl implements AgentProfileService {
 
     @Override
     public SmsSendVO sendPhoneChangeCode(String mobile) {
-        throw new UnsupportedOperationException("任务 3 实现");
+        AgentAccount account = requireCurrentAccount();
+        ensurePhoneAvailable(account, mobile);
+        return smsCodeService.sendPhoneChangeCode(mobile);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void changePhone(String mobile, String code) {
-        throw new UnsupportedOperationException("任务 3 实现");
+        AgentAccount account = requireCurrentAccount();
+        if (!smsCodeService.verifyAndConsumePhoneChange(mobile, code)) {
+            throw new BusinessException(ErrorCode.BUSINESS, "验证码错误或已过期");
+        }
+        ensurePhoneAvailable(account, mobile);
+
+        // 同事务同步两处手机号：agent_account（登录凭证）+ agent_info（资料展示）
+        AgentAccount accountUpdate = new AgentAccount();
+        accountUpdate.setId(account.getId());
+        accountUpdate.setPhone(mobile);
+        accountMapper.updateById(accountUpdate);
+
+        AgentInfo info = findInfo(account);
+        if (info != null) {
+            info.setPhone(mobile);
+            infoMapper.updateById(info);
+        }
+        log.info("[Profile] 换绑手机号: agentCode={}, newMobile={}", account.getAgentCode(), mobile);
+    }
+
+    /** 新手机号在本渠道内未被其他账号占用（agent_account.phone 逻辑唯一） */
+    private void ensurePhoneAvailable(AgentAccount account, String mobile) {
+        Long count = accountMapper.selectCount(new LambdaQueryWrapper<AgentAccount>()
+                .eq(AgentAccount::getChannelCode, account.getChannelCode())
+                .eq(AgentAccount::getPhone, mobile)
+                .ne(AgentAccount::getId, account.getId()));
+        if (count != null && count > 0) {
+            throw new BusinessException(ErrorCode.BUSINESS, "该手机号已被其他代理人使用");
+        }
     }
 
     // ==================== 内部方法 ====================

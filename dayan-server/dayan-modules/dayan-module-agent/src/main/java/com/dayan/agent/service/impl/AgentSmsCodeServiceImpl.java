@@ -92,4 +92,35 @@ public class AgentSmsCodeServiceImpl implements AgentSmsCodeService {
         redisTemplate.delete(codeKey);
         return true;
     }
+
+    @Override
+    public SmsSendVO sendPhoneChangeCode(String mobile) {
+        String cooldownKey = RedisKey.smsCooldown(SCENE_PHONE_CHANGE, mobile);
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
+            long remain = redisTemplate.getExpire(cooldownKey);
+            throw new BusinessException(ErrorCode.BUSINESS,
+                    "发送太频繁，请" + Math.max(remain, 1) + "秒后重试");
+        }
+        String code = RandomUtil.randomNumbers(6);
+        redisTemplate.opsForValue().set(RedisKey.smsCode(SCENE_PHONE_CHANGE, mobile), code, CODE_TTL);
+        redisTemplate.opsForValue().set(cooldownKey, "1", COOLDOWN_TTL);
+        SmsResult result = smsService.send(mobile, SMS_TEMPLATE_LOGIN, Map.of("code", code));
+        if (!result.isSuccess()) {
+            log.warn("换绑验证码发送失败: mobile={}, error={}", mobile, result.getError());
+            throw new BusinessException(ErrorCode.BUSINESS, "短信发送失败，请稍后重试");
+        }
+        log.info("Agent 换绑验证码已发送: mobile={}", mobile);
+        return SmsSendVO.builder().sent(true).devCode(result.getDevCode()).build();
+    }
+
+    @Override
+    public boolean verifyAndConsumePhoneChange(String mobile, String code) {
+        String codeKey = RedisKey.smsCode(SCENE_PHONE_CHANGE, mobile);
+        String stored = redisTemplate.opsForValue().get(codeKey);
+        if (stored == null || !stored.equals(code)) {
+            return false;
+        }
+        redisTemplate.delete(codeKey);
+        return true;
+    }
 }
