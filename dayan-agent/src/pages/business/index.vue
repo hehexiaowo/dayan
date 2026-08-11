@@ -33,7 +33,7 @@
         <view class="card-title">场景活动</view>
         <view class="card-desc">参观体验 / 健康讲座 / 节日活动</view>
       </view>
-      <view class="card-tag">即将上线</view>
+      <text class="card-arrow">›</text>
     </view>
   </view>
 </template>
@@ -50,7 +50,10 @@ function onSection(type: string) {
     uni.navigateTo({ url: '/pages/business/mall/index' });
     return;
   }
-  uni.showToast({ title: '场景活动（开发中）', icon: 'none' });
+  if (type === 'activity') {
+    uni.navigateTo({ url: '/pages/business/scene/index' });
+    return;
+  }
 }
 </script>
 
@@ -107,14 +110,6 @@ function onSection(type: string) {
   margin-top: $spacing-xs;
   font-size: 24rpx;
   color: $text-secondary;
-}
-.card-tag {
-  font-size: 22rpx;
-  color: $brand-warning;
-  background: $brand-warning-light;
-  padding: 6rpx 18rpx;
-  border-radius: 20rpx;
-  flex-shrink: 0;
 }
 .card-arrow {
   font-size: 40rpx;

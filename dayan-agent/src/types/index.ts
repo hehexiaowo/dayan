@@ -227,3 +227,65 @@ export interface BusinessCard {
   createdAt?: string;
   updatedAt?: string;
 }
+
+// ===== 场景营销 =====
+
+/** 场景类型映射 */
+export const SCENE_TYPE_MAP: Record<number, string> = {
+  1: '参观体验',
+  2: '健康讲座',
+  3: '亲子互动',
+  4: '节日活动',
+  5: '文化娱乐',
+  6: '健康检测',
+  7: '美食品鉴',
+  8: '其他',
+};
+
+/** 场景活动（对齐后端 SceneInfoVO） */
+export interface SceneActivity {
+  id?: string;
+  sceneCode: string;
+  sceneName: string;
+  sceneType?: number;
+  parkCode?: string;
+  provinceCode?: string;
+  cityCode?: string;
+  districtCode?: string;
+  address?: string;
+  sceneDescription?: string;
+  coverImage?: string;
+  imageUrls?: string;
+  videoUrl?: string;
+  capacity?: number;
+  durationHours?: number;
+  targetAudience?: string;
+  highlight?: string;
+  notice?: string;
+  minPerson?: number;
+  maxPerson?: number;
+  originalPrice?: number;
+  salePrice?: number;
+  priceUnit?: string;
+  isFree?: number;
+  sortOrder?: number;
+  viewCount?: number;
+  bookCount?: number;
+  sceneStatus?: number;
+  remark?: string;
+}
+
+/** 场景日程（对齐后端 SceneScheduleVO） */
+export interface SceneScheduleItem {
+  id?: string;
+  sceneCode?: string;
+  sceneName?: string;
+  scheduleDate?: string;
+  startTime?: string;
+  endTime?: string;
+  maxPerson?: number;
+  currentPerson?: number;
+  priceOverride?: number;
+  remark?: string;
+  status?: number;
+}
