@@ -41,6 +41,9 @@ public class FileAgentController {
     /** 允许的图片后缀（agent 端仅图片场景：头像） */
     private static final Set<String> ALLOWED_IMAGE_EXT = Set.of("jpg", "jpeg", "png", "gif", "webp");
 
+    /** 允许的上传模块白名单（防止任意字符进入存储 key 前缀） */
+    private static final Set<String> ALLOWED_MODULES = Set.of("avatar", "common");
+
     /** 合法 key 字符集（字母/数字/_-/. /），防止日志注入 */
     private static final Pattern KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9_/\\-.]+$");
 
@@ -81,7 +84,10 @@ public class FileAgentController {
         } catch (Exception ignored) {
             // 无 session 时用默认值
         }
-        String mod = StrUtil.isBlank(module) ? "avatar" : module;
+        String mod = StrUtil.isBlank(module) ? "avatar" : module.trim();
+        if (!ALLOWED_MODULES.contains(mod)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的上传模块: " + mod);
+        }
         try {
             String key = storageService.upload(mod, channelCode,
                     file.getInputStream(), size, file.getContentType(), originalName);
