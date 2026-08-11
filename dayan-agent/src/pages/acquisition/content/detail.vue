@@ -5,15 +5,6 @@
     </template>
 
     <template v-else-if="article">
-      <!-- 封面图 -->
-      <view v-if="formatFileUrl(article.coverImage)" class="hero">
-        <image
-          :src="formatFileUrl(article.coverImage)"
-          mode="widthFix"
-          class="hero-img"
-        />
-      </view>
-
       <!-- 文章信息 -->
       <view class="info-card">
         <view v-if="getBadges(article).length" class="badge-row">
@@ -323,15 +314,6 @@ onLoad((query) => {
   padding-bottom: 140rpx;
   min-height: 100vh;
   background: $bg-page;
-}
-
-/* 封面 */
-.hero {
-  width: 100%;
-  background: $bg-card;
-}
-.hero-img {
-  width: 100%;
 }
 
 /* 文章信息 */
