@@ -19,6 +19,7 @@ import com.dayan.system.mapper.SystemDictRegionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -72,7 +73,7 @@ public class AgentProfileServiceImpl implements AgentProfileService {
                     .serviceIntro(info.getServiceIntro())
                     .agentLevel(info.getAgentLevel())
                     .isCertified(info.getIsCertified());
-            // agent_info.phone 与 account.phone 以 account 为准（换绑同事务同步两处）
+            // 展示以 agent_info.phone 为准（非空时覆盖 account.phone）；换绑手机号时两处同步更新
             if (StringUtils.hasText(info.getPhone())) {
                 builder.phone(info.getPhone());
             }
@@ -90,8 +91,49 @@ public class AgentProfileServiceImpl implements AgentProfileService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateProfile(AgentProfileUpdateDTO dto) {
-        throw new UnsupportedOperationException("任务 2 实现");
+        AgentAccount account = requireCurrentAccount();
+        AgentInfo info = findInfo(account);
+        if (info == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "代理人资料不存在，请联系管理员建档");
+        }
+        // 已认证代理人不可自改姓名（前端同步置灰，此处为后端兜底）
+        if (StringUtils.hasText(dto.getFullName())
+                && !dto.getFullName().equals(info.getFullName())
+                && info.getIsCertified() != null && info.getIsCertified() == 1) {
+            throw new BusinessException(ErrorCode.BUSINESS, "已认证代理人不可自助修改姓名，请联系管理员");
+        }
+        // 白名单逐字段拷贝（勿用 BeanUtils，避免类型不匹配静默丢数据）
+        if (StringUtils.hasText(dto.getFullName())) {
+            info.setFullName(dto.getFullName());
+        }
+        if (dto.getGender() != null) {
+            info.setGender(dto.getGender());
+        }
+        if (dto.getEmail() != null) {
+            info.setEmail(dto.getEmail());
+        }
+        if (dto.getAvatar() != null) {
+            info.setAvatar(dto.getAvatar());
+        }
+        if (dto.getProvinceCode() != null) {
+            info.setProvinceCode(dto.getProvinceCode());
+        }
+        if (dto.getCityCode() != null) {
+            info.setCityCode(dto.getCityCode());
+        }
+        if (dto.getDistrictCode() != null) {
+            info.setDistrictCode(dto.getDistrictCode());
+        }
+        if (dto.getAddress() != null) {
+            info.setAddress(dto.getAddress());
+        }
+        if (dto.getServiceIntro() != null) {
+            info.setServiceIntro(dto.getServiceIntro());
+        }
+        infoMapper.updateById(info);
+        log.info("[Profile] 更新资料: agentCode={}", account.getAgentCode());
     }
 
     @Override
