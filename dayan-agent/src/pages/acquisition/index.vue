@@ -220,10 +220,13 @@ function onTool(type: string) {
     uni.navigateTo({ url: '/pages/acquisition/content/index' });
     return;
   }
+  if (type === 'card') {
+    uni.navigateTo({ url: '/pages/acquisition/card/index' });
+    return;
+  }
   const labels: Record<string, string> = {
     survey: '问卷获客',
     poster: '营销海报',
-    card: '电子名片',
   };
   uni.showToast({ title: `${labels[type] || '工具'}（开发中）`, icon: 'none' });
 }

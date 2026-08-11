@@ -202,3 +202,28 @@ export interface ContentArticle {
   publishTime?: string;
   contentStatus?: number;
 }
+
+// ===== 电子名片 =====
+
+/** 电子名片（对齐后端 AgentCardVO） */
+export interface BusinessCard {
+  id: string;
+  cardCode: string;
+  agentCode?: string;
+  channelCode?: string;
+  cardName: string;
+  displayName: string;
+  title?: string;
+  phone: string;
+  wechat?: string;
+  email?: string;
+  company?: string;
+  address?: string;
+  avatar?: string;
+  intro?: string;
+  tags?: string;
+  sortOrder?: number;
+  status?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
