@@ -1,7 +1,12 @@
 package com.dayan.system.controller.agent;
 
 import cn.hutool.core.util.StrUtil;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
+import com.dayan.common.core.resp.R;
+import com.dayan.common.oss.config.StorageProperties;
 import com.dayan.common.oss.service.StorageService;
+import com.dayan.common.security.StpKit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +36,10 @@ import java.util.regex.Pattern;
 public class FileAgentController {
 
     private final StorageService storageService;
+    private final StorageProperties storageProperties;
+
+    /** 允许的图片后缀（agent 端仅图片场景：头像） */
+    private static final Set<String> ALLOWED_IMAGE_EXT = Set.of("jpg", "jpeg", "png", "gif", "webp");
 
     /** 合法 key 字符集（字母/数字/_-/. /），防止日志注入 */
     private static final Pattern KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9_/\\-.]+$");
@@ -40,6 +49,53 @@ public class FileAgentController {
             "image/jpeg", "image/png", "image/gif", "image/webp",
             "video/mp4", "video/webm",
             "application/pdf");
+
+    @Operation(summary = "上传文件（图片，module 默认 avatar）")
+    @PostMapping("/upload")
+    public R<com.dayan.common.oss.dto.FileUploadDTO> upload(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestParam(value = "module", required = false) String module) {
+        // 显式登录校验（agent 端无注解式全局登录强制）
+        if (StpKit.AGENT.getLoginIdDefaultNull() == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "请先登录");
+        }
+        if (file.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "文件不能为空");
+        }
+        long size = file.getSize();
+        if (size > storageProperties.getMaxSize()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    "文件大小超过限制 " + (storageProperties.getMaxSize() / 1024 / 1024) + "MB");
+        }
+        String originalName = file.getOriginalFilename();
+        String ext = cn.hutool.core.io.FileUtil.extName(originalName);
+        if (StrUtil.isBlank(ext) || !ALLOWED_IMAGE_EXT.contains(ext.toLowerCase())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "仅支持图片文件: " + ext);
+        }
+        String channelCode = "agent";
+        try {
+            String sessionChannel = (String) StpKit.AGENT.getSession().get("channelCode");
+            if (StrUtil.isNotBlank(sessionChannel)) {
+                channelCode = sessionChannel;
+            }
+        } catch (Exception ignored) {
+            // 无 session 时用默认值
+        }
+        String mod = StrUtil.isBlank(module) ? "avatar" : module;
+        try {
+            String key = storageService.upload(mod, channelCode,
+                    file.getInputStream(), size, file.getContentType(), originalName);
+            com.dayan.common.oss.dto.FileUploadDTO dto = new com.dayan.common.oss.dto.FileUploadDTO();
+            dto.setKey(key);
+            dto.setUrl("/agent-api/v1/files/preview/" + key);
+            dto.setOriginalName(originalName);
+            dto.setSize(size);
+            return R.ok(dto);
+        } catch (Exception e) {
+            log.error("Agent 文件上传失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败: " + e.getMessage());
+        }
+    }
 
     @Operation(summary = "预览/下载文件（代理下载）")
     @GetMapping("/preview/**")
