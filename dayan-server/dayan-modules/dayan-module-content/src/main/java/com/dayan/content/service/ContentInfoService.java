@@ -5,7 +5,10 @@ import com.dayan.content.dto.ContentInfoAuditDTO;
 import com.dayan.content.dto.ContentInfoCreateDTO;
 import com.dayan.content.dto.ContentInfoQueryDTO;
 import com.dayan.content.dto.ContentInfoUpdateDTO;
+import com.dayan.content.vo.ContentCategoryOptionVO;
 import com.dayan.content.vo.ContentInfoVO;
+
+import java.util.List;
 
 /**
  * 内容信息服务。
@@ -59,4 +62,15 @@ public interface ContentInfoService {
      * 下线（通过 2 → 下线 4）。
      */
     void offline(String contentCode);
+
+    /**
+     * 浏览量 +1（原子自增，用于 agent 端详情页打开时统计）。
+     */
+    void incrementViewCount(String contentCode);
+
+    /**
+     * 查询给定内容编码集合涉及的分类列表（仅启用且可见的分类，按 sortOrder 排序）。
+     * 用于 agent 端分类导航。
+     */
+    List<ContentCategoryOptionVO> listCategoriesByContentCodes(List<String> contentCodes);
 }

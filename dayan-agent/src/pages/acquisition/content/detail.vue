@@ -16,6 +16,14 @@
 
       <!-- 文章信息 -->
       <view class="info-card">
+        <view v-if="getBadges(article).length" class="badge-row">
+          <text
+            v-for="badge in getBadges(article)"
+            :key="badge.cls"
+            class="badge"
+            :class="badge.cls"
+          >{{ badge.text }}</text>
+        </view>
         <text class="title">{{ article.title }}</text>
         <text v-if="article.subtitle" class="subtitle">{{ article.subtitle }}</text>
         <view class="meta-row">
@@ -23,20 +31,30 @@
             <text class="author-name">{{ article.authorName }}</text>
           </view>
           <text v-if="article.publishTime" class="meta-date">{{ formatDate(article.publishTime) }}</text>
-          <text v-if="article.viewCount != null" class="meta-views">{{ article.viewCount }} 阅读</text>
+          <text v-if="article.viewCount != null" class="meta-views">{{ formatCount(article.viewCount) }} 阅读</text>
+          <text v-if="article.collectCount" class="meta-views">{{ article.collectCount }} 收藏</text>
+        </view>
+        <!-- 标签 -->
+        <view v-if="tagList.length" class="tag-row">
+          <text v-for="tag in tagList" :key="tag" class="tag">#{{ tag }}</text>
         </view>
       </view>
 
       <!-- 正文 -->
       <view class="body-card">
-        <text class="body-text">{{ article.contentBody || article.summary || '暂无内容' }}</text>
+        <rich-text v-if="isHtmlBody" :nodes="article.contentBody || ''" />
+        <text v-else class="body-text">{{ article.contentBody || article.summary || '暂无内容' }}</text>
       </view>
 
-      <!-- 底部分享栏 -->
+      <!-- 底部操作栏 -->
       <view class="bottom-bar">
-        <view class="share-btn dy-clickable" @click="onShare">
-          <text class="share-icon">↗</text>
-          <text class="share-text">分享给客户</text>
+        <view class="action-btn fav-btn dy-clickable" @click="toggleFavorite">
+          <text class="action-icon" :class="{ favorited: isFavorited }">{{ isFavorited ? '♥' : '♡' }}</text>
+          <text class="action-text">{{ isFavorited ? '已收藏' : '收藏' }}</text>
+        </view>
+        <view class="action-btn share-btn dy-clickable" @click="onShare">
+          <text class="action-icon">↗</text>
+          <text class="action-text">分享给客户</text>
         </view>
       </view>
     </template>
@@ -51,9 +69,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getContentDetail } from '@/api/content';
+import { addFavoriteApi, removeFavoriteApi, getFavoritedCodesApi, TARGET_TYPE } from '@/api/favorite';
 import { formatFileUrl } from '@/utils/file';
 import type { ContentArticle } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
@@ -62,20 +81,81 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 const article = ref<ContentArticle | null>(null);
 const loading = ref(true);
 const contentCode = ref('');
+const isFavorited = ref(false);
+
+interface Badge {
+  text: string;
+  cls: string;
+}
+
+const isHtmlBody = computed(() => {
+  const body = article.value?.contentBody;
+  return !!body && body.trim().startsWith('<');
+});
+
+const tagList = computed<string[]>(() => {
+  const tags = article.value?.tags;
+  if (!tags) return [];
+  try {
+    const parsed = JSON.parse(tags);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    // 非 JSON，按逗号分隔
+    return tags.split(/[,，]/).map((t) => t.trim()).filter(Boolean);
+  }
+});
 
 function formatDate(dt?: string): string {
   if (!dt) return '';
   return dt.length >= 10 ? dt.substring(0, 10) : dt;
 }
 
+function formatCount(n?: number): string {
+  if (n == null) return '0';
+  if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return String(n);
+}
+
+function getBadges(a: ContentArticle): Badge[] {
+  const badges: Badge[] = [];
+  if (a.isTop === 1) badges.push({ text: '置顶', cls: 'badge-top' });
+  if (a.isRecommend === 1) badges.push({ text: '热', cls: 'badge-hot' });
+  if (isNew(a.publishTime)) badges.push({ text: '新', cls: 'badge-new' });
+  return badges;
+}
+
+function isNew(publishTime?: string): boolean {
+  if (!publishTime) return false;
+  const diff = Date.now() - new Date(publishTime.replace(/-/g, '/')).getTime();
+  return diff < 7 * 24 * 60 * 60 * 1000;
+}
+
 async function loadDetail() {
   loading.value = true;
   try {
     article.value = await getContentDetail(contentCode.value);
-  } catch (e) {
+    // 查收藏状态
+    const codes = await getFavoritedCodesApi(TARGET_TYPE.CONTENT);
+    isFavorited.value = codes.includes(contentCode.value);
+  } catch {
     article.value = null;
   } finally {
     loading.value = false;
+  }
+}
+
+async function toggleFavorite() {
+  const was = isFavorited.value;
+  isFavorited.value = !was; // 乐观
+  try {
+    if (was) {
+      await removeFavoriteApi(TARGET_TYPE.CONTENT, contentCode.value);
+    } else {
+      await addFavoriteApi(TARGET_TYPE.CONTENT, contentCode.value);
+    }
+  } catch {
+    isFavorited.value = was; // 回滚
   }
 }
 
@@ -116,6 +196,35 @@ onLoad((query) => {
   background: $bg-card;
   padding: $spacing-lg $spacing-md;
 }
+
+/* badge */
+.badge-row {
+  display: flex;
+  gap: 8rpx;
+  margin-bottom: $spacing-sm;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 20rpx;
+  line-height: 1;
+  padding: 4rpx 10rpx;
+  border-radius: 6rpx;
+  font-weight: 500;
+}
+.badge-top {
+  background: $brand-error-light;
+  color: $brand-error;
+}
+.badge-hot {
+  background: $brand-warning-light;
+  color: $brand-warning;
+}
+.badge-new {
+  background: $brand-primary-light;
+  color: $brand-primary;
+}
+
 .title {
   display: block;
   font-size: 36rpx;
@@ -152,6 +261,21 @@ onLoad((query) => {
   color: $text-placeholder;
 }
 
+/* 标签 */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
+.tag {
+  font-size: 22rpx;
+  color: $brand-primary;
+  background: $brand-primary-light;
+  padding: 4rpx 14rpx;
+  border-radius: $radius-sm;
+}
+
 /* 正文 */
 .body-card {
   background: $bg-card;
@@ -165,34 +289,54 @@ onLoad((query) => {
   white-space: pre-wrap;
 }
 
-/* 底部分享栏 */
+/* 底部操作栏 */
 .bottom-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  display: flex;
+  gap: $spacing-md;
   padding: $spacing-md $spacing-lg;
   padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
   background: $bg-card;
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
   z-index: 100;
 }
-.share-btn {
+.action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: $spacing-sm;
   height: 80rpx;
-  background: $gradient-blue;
   border-radius: $radius-md;
-}
-.share-icon {
-  font-size: 32rpx;
-  color: #fff;
-}
-.share-text {
   font-size: 28rpx;
   font-weight: 500;
+}
+.fav-btn {
+  flex: 1;
+  background: $brand-info-light;
+  color: $text-regular;
+}
+.share-btn {
+  flex: 2;
+  background: $gradient-blue;
+  color: #fff;
+}
+.action-icon {
+  font-size: 32rpx;
+  color: $text-secondary;
+}
+.action-icon.favorited {
+  color: $brand-error;
+}
+.share-btn .action-icon {
+  color: #fff;
+}
+.action-text {
+  font-size: 28rpx;
+}
+.share-btn .action-text {
   color: #fff;
 }
 </style>

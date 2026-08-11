@@ -22,4 +22,13 @@ public interface AgentFavoriteService {
 
     /** 查代理人的收藏列表 */
     List<AgentFavoriteVO> listByAgent(String agentCode);
+
+    /** Agent 端新增收藏（幂等，已存在则返回既有 id），agentCode 由上下文传入 */
+    Long addForAgent(String agentCode, Integer targetType, String targetCode);
+
+    /** Agent 端取消收藏（按 agentCode+targetType+targetCode 三元组，幂等） */
+    void removeByTarget(String agentCode, Integer targetType, String targetCode);
+
+    /** 查代理人在指定类型下已收藏的 targetCode 列表 */
+    List<String> listTargetCodes(String agentCode, Integer targetType);
 }

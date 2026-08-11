@@ -246,16 +246,30 @@ export interface ContentArticle {
   title: string;
   subtitle?: string;
   contentType?: number;
+  categoryCode?: string;
+  categoryName?: string;
   authorName?: string;
   authorAvatar?: string;
   coverImage?: string;
   summary?: string;
   contentBody?: string;
+  tags?: string;
+  isTop?: number;
+  isRecommend?: number;
   viewCount?: number;
   likeCount?: number;
   shareCount?: number;
+  collectCount?: number;
   publishTime?: string;
   contentStatus?: number;
+  /** 前端计算：当前代理是否已收藏（非后端字段） */
+  isFavorited?: boolean;
+}
+
+/** 内容分类选项（分类导航用） */
+export interface ContentCategoryOption {
+  categoryCode: string;
+  categoryName: string;
 }
 
 // ===== 电子名片 =====

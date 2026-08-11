@@ -52,6 +52,9 @@ sa-token:
 dayan:
   security:
     login-type: agent
+  tenant:
+    # agent_favorite 无 channel_code 列（按 agent_code 隔离），须跳过租户拦截器
+    ignore-tables: agent_favorite
 
 springdoc:
   swagger-ui:

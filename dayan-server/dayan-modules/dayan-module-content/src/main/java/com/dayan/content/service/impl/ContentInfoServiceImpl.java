@@ -1,12 +1,14 @@
 package com.dayan.content.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dayan.common.core.code.SequenceProvider;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.statemachine.StateMachineEngine;
+import com.dayan.content.dto.ContentCategoryQueryDTO;
 import com.dayan.content.dto.ContentInfoAuditDTO;
 import com.dayan.content.dto.ContentInfoCreateDTO;
 import com.dayan.content.dto.ContentInfoQueryDTO;
@@ -14,7 +16,10 @@ import com.dayan.content.dto.ContentInfoUpdateDTO;
 import com.dayan.content.entity.ContentInfo;
 import com.dayan.content.enums.ContentEvent;
 import com.dayan.content.mapper.ContentInfoMapper;
+import com.dayan.content.service.ContentCategoryService;
 import com.dayan.content.service.ContentInfoService;
+import com.dayan.content.vo.ContentCategoryOptionVO;
+import com.dayan.content.vo.ContentCategoryVO;
 import com.dayan.content.vo.ContentInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 内容信息服务实现。
@@ -53,6 +61,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     private final ContentInfoMapper contentInfoMapper;
     private final SequenceProvider sequenceProvider;
     private final StateMachineEngine stateMachineEngine;
+    private final ContentCategoryService contentCategoryService;
 
     @Override
     public PageResult<ContentInfoVO> page(ContentInfoQueryDTO query) {
@@ -73,6 +82,8 @@ public class ContentInfoServiceImpl implements ContentInfoService {
                         ContentInfo::getAuditStatus, query.getAuditStatus())
                 .eq(query.getIsTop() != null, ContentInfo::getIsTop, query.getIsTop())
                 .eq(query.getIsRecommend() != null, ContentInfo::getIsRecommend, query.getIsRecommend())
+                .orderByDesc(ContentInfo::getIsTop)
+                .orderByDesc(ContentInfo::getPublishTime)
                 .orderByDesc(ContentInfo::getCreatedAt);
         if (query.getContentCodes() != null && !query.getContentCodes().isEmpty()) {
             wrapper.in(ContentInfo::getContentCode, query.getContentCodes());
@@ -234,6 +245,42 @@ public class ContentInfoServiceImpl implements ContentInfoService {
         update.setContentStatus(to);
         contentInfoMapper.updateById(update);
         log.info("内容下线成功: contentCode={}", contentCode);
+    }
+
+    @Override
+    public void incrementViewCount(String contentCode) {
+        contentInfoMapper.update(null, new LambdaUpdateWrapper<ContentInfo>()
+                .eq(ContentInfo::getContentCode, contentCode)
+                .setSql("view_count = view_count + 1"));
+    }
+
+    @Override
+    public List<ContentCategoryOptionVO> listCategoriesByContentCodes(List<String> contentCodes) {
+        if (contentCodes == null || contentCodes.isEmpty()) {
+            return List.of();
+        }
+        // 1. 从渠道已发布内容中提取 distinct categoryCode
+        //    注意：不能用 .select() 只取单列——MyBatis 在该列全为 NULL 时会返回 null 对象导致 NPE
+        List<ContentInfo> contents = contentInfoMapper.selectList(
+                new LambdaQueryWrapper<ContentInfo>()
+                        .in(ContentInfo::getContentCode, contentCodes)
+                        .eq(ContentInfo::getContentStatus, 2)
+                        .eq(ContentInfo::getAuditStatus, 2));
+        Set<String> usedCodes = contents.stream()
+                .map(ContentInfo::getCategoryCode)
+                .filter(c -> c != null && !c.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (usedCodes.isEmpty()) {
+            return List.of();
+        }
+        // 2. 查启用+可见的分类（list 已按 sortOrder/name 排序），过滤出有用到的
+        ContentCategoryQueryDTO catQuery = new ContentCategoryQueryDTO();
+        catQuery.setStatus(1);
+        catQuery.setIsVisible(1);
+        return contentCategoryService.list(catQuery).stream()
+                .filter(c -> usedCodes.contains(c.getCategoryCode()))
+                .map(c -> new ContentCategoryOptionVO(c.getCategoryCode(), c.getCategoryName()))
+                .toList();
     }
 
     // ====== 内部方法 ======

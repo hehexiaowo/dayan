@@ -9,6 +9,7 @@ import com.dayan.common.core.resp.R;
 import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.content.dto.ContentInfoQueryDTO;
 import com.dayan.content.service.ContentInfoService;
+import com.dayan.content.vo.ContentCategoryOptionVO;
 import com.dayan.content.vo.ContentInfoVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -66,7 +67,17 @@ public class AgentContentController {
         if (vo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "内容不存在");
         }
+        // 浏览量 +1（原子自增，不影响本次返回的展示值）
+        contentInfoService.incrementViewCount(contentCode);
         return R.ok(vo);
+    }
+
+    @Operation(summary = "内容分类列表（当前渠道已配置内容涉及的分类）")
+    @GetMapping("/categories")
+    public R<List<ContentCategoryOptionVO>> categories() {
+        String channelCode = ContextHolder.getChannelCode();
+        List<String> contentCodes = collectContentCodes(channelCode);
+        return R.ok(contentInfoService.listCategoriesByContentCodes(contentCodes));
     }
 
     /**

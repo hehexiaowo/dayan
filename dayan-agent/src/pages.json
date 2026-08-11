@@ -4,7 +4,7 @@
     { "path": "pages/acquisition/index", "style": { "navigationBarTitleText": "获客", "enablePullDownRefresh": true } },
     { "path": "pages/acquisition/lead/detail", "style": { "navigationBarTitleText": "线索详情" } },
     { "path": "pages/acquisition/lead/form", "style": { "navigationBarTitleText": "线索" } },
-    { "path": "pages/acquisition/content/index", "style": { "navigationBarTitleText": "内容获客" } },
+    { "path": "pages/acquisition/content/index", "style": { "navigationBarTitleText": "内容获客", "enablePullDownRefresh": true } },
     { "path": "pages/acquisition/content/detail", "style": { "navigationBarTitleText": "文章详情" } },
     { "path": "pages/acquisition/card/index", "style": { "navigationBarTitleText": "电子名片" } },
     { "path": "pages/acquisition/card/edit", "style": { "navigationBarTitleText": "名片" } },

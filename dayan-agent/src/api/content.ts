@@ -1,5 +1,5 @@
 import request from '@/utils/request';
-import type { ContentArticle, PageQuery, PageResult } from '@/types';
+import type { ContentArticle, ContentCategoryOption, PageQuery, PageResult } from '@/types';
 
 /**
  * 内容列表（GET /agent-api/contents）。
@@ -23,7 +23,16 @@ export function getContentDetail(contentCode: string): Promise<ContentArticle> {
   });
 }
 
+/**
+ * 内容分类列表（GET /agent-api/contents/categories）。
+ * 仅返回当前渠道已配置内容涉及的分类。
+ */
+export function getContentCategories(): Promise<ContentCategoryOption[]> {
+  return request<ContentCategoryOption[]>({ url: '/contents/categories', method: 'GET' });
+}
+
 export interface ContentQuery extends PageQuery {
   title?: string;
   contentType?: number;
+  categoryCode?: string;
 }

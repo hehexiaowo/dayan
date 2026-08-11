@@ -87,6 +87,46 @@ public class AgentFavoriteServiceImpl implements AgentFavoriteService {
         return list.stream().map(this::toVO).toList();
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long addForAgent(String agentCode, Integer targetType, String targetCode) {
+        // 幂等：已存在则返回既有 id
+        AgentFavorite existing = favoriteMapper.selectOne(new LambdaQueryWrapper<AgentFavorite>()
+                .eq(AgentFavorite::getAgentCode, agentCode)
+                .eq(AgentFavorite::getTargetType, targetType)
+                .eq(AgentFavorite::getTargetCode, targetCode)
+                .last("LIMIT 1"));
+        if (existing != null) {
+            return existing.getId();
+        }
+        AgentFavorite entity = new AgentFavorite();
+        entity.setAgentCode(agentCode);
+        entity.setTargetType(targetType);
+        entity.setTargetCode(targetCode);
+        favoriteMapper.insert(entity);
+        return entity.getId();
+    }
+
+    @Override
+    public void removeByTarget(String agentCode, Integer targetType, String targetCode) {
+        // 带 agentCode 条件做归属校验，幂等（不存在不报错）
+        favoriteMapper.delete(new LambdaQueryWrapper<AgentFavorite>()
+                .eq(AgentFavorite::getAgentCode, agentCode)
+                .eq(AgentFavorite::getTargetType, targetType)
+                .eq(AgentFavorite::getTargetCode, targetCode));
+    }
+
+    @Override
+    public List<String> listTargetCodes(String agentCode, Integer targetType) {
+        return favoriteMapper.selectList(new LambdaQueryWrapper<AgentFavorite>()
+                        .select(AgentFavorite::getTargetCode)
+                        .eq(AgentFavorite::getAgentCode, agentCode)
+                        .eq(AgentFavorite::getTargetType, targetType))
+                .stream()
+                .map(AgentFavorite::getTargetCode)
+                .toList();
+    }
+
     private AgentFavoriteVO toVO(AgentFavorite entity) {
         AgentFavoriteVO vo = new AgentFavoriteVO();
         vo.setId(entity.getId());
