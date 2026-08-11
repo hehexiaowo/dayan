@@ -80,14 +80,45 @@
       {{ saving ? '保存中…' : '保存' }}
     </button>
 
-    <!-- 手机号换绑弹层（任务 9 填充） -->
+    <!-- 手机号换绑弹层 -->
+    <view v-if="phonePopupVisible" class="popup-mask" @click="closePhonePopup">
+      <view class="popup" @click.stop>
+        <view class="popup-title">换绑手机号</view>
+        <view class="popup-tip">验证码将发送至新手机号，换绑后请使用新手机号登录</view>
+        <input
+          class="popup-input"
+          v-model="phoneForm.mobile"
+          type="number"
+          maxlength="11"
+          placeholder="请输入新手机号"
+        />
+        <view class="code-row">
+          <input
+            class="popup-input code-input"
+            v-model="phoneForm.code"
+            type="number"
+            maxlength="6"
+            placeholder="验证码"
+          />
+          <button class="code-btn" :disabled="codeCountdown > 0" @click="onSendCode">
+            {{ codeCountdown > 0 ? `${codeCountdown}s` : '获取验证码' }}
+          </button>
+        </view>
+        <view class="popup-actions">
+          <button class="popup-btn cancel" @click="closePhonePopup">取消</button>
+          <button class="popup-btn confirm" :disabled="phoneSubmitting" @click="onChangePhone">
+            {{ phoneSubmitting ? '提交中…' : '确认换绑' }}
+          </button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import { getProfile, updateProfile } from '@/api/agent';
+import { getProfile, updateProfile, sendPhoneChangeCode, changePhone } from '@/api/agent';
 import { uploadFile } from '@/api/file';
 import { listProvinces, listRegionChildren } from '@/api/region';
 import type { Region } from '@/api/region';
@@ -107,8 +138,15 @@ const form = reactive({
 });
 const isCertified = ref(0);
 const saving = ref(false);
-/** 手机号换绑弹层可见性（任务 9 填充弹层） */
+/** 手机号换绑弹层可见性 */
 const phonePopupVisible = ref(false);
+/** 换绑提交中（防重复点击） */
+const phoneSubmitting = ref(false);
+/** 发码倒计时秒数，>0 时按钮禁用并显示秒数 */
+const codeCountdown = ref(0);
+/** 换绑弹层表单（失败时保留已输入内容） */
+const phoneForm = reactive({ mobile: '', code: '' });
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
 /** 已认证锁定姓名（不可自助修改） */
 const certifiedLocked = computed(() => isCertified.value === 1);
 
@@ -277,6 +315,65 @@ async function onSave() {
   } finally {
     saving.value = false;
   }
+}
+
+/* ===== 手机号换绑弹层 ===== */
+async function onSendCode() {
+  if (!/^1[3-9]\d{9}$/.test(phoneForm.mobile)) {
+    uni.showToast({ title: '请输入正确的新手机号', icon: 'none' });
+    return;
+  }
+  try {
+    const res = await sendPhoneChangeCode(phoneForm.mobile);
+    codeCountdown.value = 60;
+    countdownTimer = setInterval(() => {
+      codeCountdown.value -= 1;
+      if (codeCountdown.value <= 0 && countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+    }, 1000);
+    if (res.devCode) {
+      uni.showToast({ title: `开发态验证码：${res.devCode}`, icon: 'none', duration: 3000 });
+    } else {
+      uni.showToast({ title: '验证码已发送', icon: 'none' });
+    }
+  } catch {
+    // 拦截器已 toast（冷却/占用等）
+  }
+}
+
+async function onChangePhone() {
+  if (!/^1[3-9]\d{9}$/.test(phoneForm.mobile)) {
+    uni.showToast({ title: '请输入正确的新手机号', icon: 'none' });
+    return;
+  }
+  if (!/^\d{6}$/.test(phoneForm.code)) {
+    uni.showToast({ title: '请输入 6 位验证码', icon: 'none' });
+    return;
+  }
+  phoneSubmitting.value = true;
+  try {
+    await changePhone(phoneForm.mobile, phoneForm.code);
+    form.phone = phoneForm.mobile;
+    closePhonePopup();
+    uni.showToast({ title: '换绑成功，下次登录请用新手机号', icon: 'none', duration: 2500 });
+  } catch {
+    // 失败保留已输入内容（不清空），拦截器已 toast
+  } finally {
+    phoneSubmitting.value = false;
+  }
+}
+
+function closePhonePopup() {
+  phonePopupVisible.value = false;
+  phoneForm.mobile = '';
+  phoneForm.code = '';
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  codeCountdown.value = 0;
 }
 </script>
 
@@ -453,6 +550,120 @@ async function onSave() {
 
   &[disabled] {
     opacity: 0.6;
+  }
+}
+
+/* ===== 手机号换绑弹层 ===== */
+.popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg-mask;
+}
+.popup {
+  display: flex;
+  flex-direction: column;
+  width: 600rpx;
+  padding: $spacing-lg $spacing-md;
+  background: $bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-hover;
+  box-sizing: border-box;
+}
+.popup-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $text-primary;
+  text-align: center;
+}
+.popup-tip {
+  margin-top: $spacing-sm;
+  font-size: 24rpx;
+  color: $text-secondary;
+  text-align: center;
+  line-height: 1.5;
+}
+/* uni-app H5 编译 input 为 uni-input，需 display:block + height 才可见可交互 */
+.popup-input {
+  display: block;
+  width: 100%;
+  height: $control-height;
+  margin-top: $spacing-md;
+  padding: 0 $spacing-sm;
+  font-size: 28rpx;
+  color: $text-primary;
+  background: $bg-page;
+  border-radius: $radius-sm;
+  box-sizing: border-box;
+}
+/* 验证码行：flex 并排（勿用 absolute 叠 input，会拦截点击） */
+.code-row {
+  display: flex;
+  align-items: center;
+
+  .code-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+.code-btn {
+  flex-shrink: 0;
+  margin-left: $spacing-sm;
+  margin-top: $spacing-md;
+  height: $control-height;
+  line-height: $control-height;
+  padding: 0 $spacing-sm;
+  font-size: 26rpx;
+  color: $brand-primary;
+  background: $brand-primary-light;
+  border-radius: $radius-sm;
+
+  &[disabled] {
+    color: $text-placeholder;
+    background: $brand-info-light;
+  }
+
+  &::after {
+    border: none;
+  }
+}
+.popup-actions {
+  display: flex;
+  margin-top: $spacing-lg;
+}
+.popup-btn {
+  flex: 1;
+  height: $control-height;
+  line-height: $control-height;
+  font-size: 30rpx;
+  border-radius: $radius-md;
+
+  & + .popup-btn {
+    margin-left: $spacing-md;
+  }
+
+  &::after {
+    border: none;
+  }
+
+  &.cancel {
+    color: $text-regular;
+    background: $brand-info-light;
+  }
+
+  &.confirm {
+    color: #fff;
+    background: $gradient-blue;
+
+    &[disabled] {
+      opacity: 0.6;
+    }
   }
 }
 </style>
