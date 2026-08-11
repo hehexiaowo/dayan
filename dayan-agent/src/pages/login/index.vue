@@ -10,40 +10,6 @@
 
     <!-- 表单卡片 -->
     <view class="form-card">
-      <!-- 共享：手机号/用户名 -->
-      <view class="form-item">
-        <text class="form-label">{{ loginTab === 'sms' ? '手机号' : '手机号 / 用户名' }}</text>
-        <input
-          v-model="identifier"
-          :placeholder="loginTab === 'sms' ? '请输入手机号' : '请输入手机号或用户名'"
-          placeholder-class="input-placeholder"
-          :inputmode="loginTab === 'sms' ? 'numeric' : 'text'"
-          :maxlength="loginTab === 'sms' ? 11 : 64"
-          class="dy-input"
-        />
-      </view>
-
-      <!-- 渠道列表（输入后自动查询） -->
-      <view v-if="channels.length || loadingChannels" class="channel-list">
-        <text class="channel-hint">
-          {{ loadingChannels ? '正在查询关联渠道...' : '请选择所属渠道' }}
-        </text>
-        <view
-          v-for="ch in channels"
-          :key="ch.channelCode"
-          class="channel-item"
-          :class="{ active: selectedChannel === ch.channelCode }"
-          @click="selectedChannel = ch.channelCode"
-        >
-          <view class="channel-radio">
-            <view v-if="selectedChannel === ch.channelCode" class="radio-dot" />
-          </view>
-          <view class="channel-info">
-            <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}（{{ ch.channelCode }}）</text>
-          </view>
-        </view>
-      </view>
-
       <!-- Tab 切换 -->
       <view class="tab-bar">
         <view
@@ -66,6 +32,41 @@
 
       <!-- 验证码登录 -->
       <view v-if="loginTab === 'sms'" class="tab-content">
+        <!-- 手机号 -->
+        <view class="form-item">
+          <text class="form-label">手机号</text>
+          <input
+            v-model="smsMobile"
+            placeholder="请输入手机号"
+            placeholder-class="input-placeholder"
+            inputmode="numeric"
+            maxlength="11"
+            class="dy-input"
+          />
+        </view>
+
+        <!-- 渠道列表 -->
+        <view v-if="smsChannels.length || smsLoading" class="channel-list">
+          <text class="channel-hint">
+            {{ smsLoading ? '正在查询关联渠道...' : '请选择所属渠道' }}
+          </text>
+          <view
+            v-for="ch in smsChannels"
+            :key="ch.channelCode"
+            class="channel-item"
+            :class="{ active: smsChannel === ch.channelCode }"
+            @click="smsChannel = ch.channelCode"
+          >
+            <view class="channel-radio">
+              <view v-if="smsChannel === ch.channelCode" class="radio-dot" />
+            </view>
+            <view class="channel-info">
+              <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}（{{ ch.channelCode }}）</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 验证码 -->
         <view class="form-item">
           <text class="form-label">验证码</text>
           <view class="code-wrap">
@@ -102,6 +103,41 @@
 
       <!-- 密码登录 -->
       <view v-if="loginTab === 'pwd'" class="tab-content">
+        <!-- 手机号 / 用户名 -->
+        <view class="form-item">
+          <text class="form-label">手机号 / 用户名</text>
+          <input
+            v-model="pwdInput"
+            placeholder="请输入手机号或用户名"
+            placeholder-class="input-placeholder"
+            inputmode="text"
+            maxlength="64"
+            class="dy-input"
+          />
+        </view>
+
+        <!-- 渠道列表 -->
+        <view v-if="pwdChannels.length || pwdLoading" class="channel-list">
+          <text class="channel-hint">
+            {{ pwdLoading ? '正在查询关联渠道...' : '请选择所属渠道' }}
+          </text>
+          <view
+            v-for="ch in pwdChannels"
+            :key="ch.channelCode"
+            class="channel-item"
+            :class="{ active: pwdChannel === ch.channelCode }"
+            @click="pwdChannel = ch.channelCode"
+          >
+            <view class="channel-radio">
+              <view v-if="pwdChannel === ch.channelCode" class="radio-dot" />
+            </view>
+            <view class="channel-info">
+              <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}（{{ ch.channelCode }}）</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 密码 -->
         <view class="form-item">
           <text class="form-label">密码</text>
           <view class="pwd-wrap">
@@ -129,17 +165,49 @@
       </view>
     </view>
 
-    <!-- 其他方式登录 -->
+    <!-- 微信授权登录（仅小程序） -->
     <!-- #ifdef MP-WEIXIN -->
     <view class="other-login">
       <view class="divider">
         <view class="divider-line" />
-        <text class="divider-text">其他方式登录</text>
+        <text class="divider-text">微信授权登录</text>
         <view class="divider-line" />
       </view>
-      <view class="wx-btn" @click="onWxLogin">
-        <text class="wx-icon">微</text>
-        <text class="wx-text">微信登录</text>
+      <view class="wx-card">
+        <view class="form-item">
+          <text class="form-label">手机号</text>
+          <input
+            v-model="wxMobile"
+            placeholder="请输入手机号"
+            placeholder-class="input-placeholder"
+            inputmode="numeric"
+            maxlength="11"
+            class="dy-input"
+          />
+        </view>
+        <view v-if="wxChannels.length || wxLoading" class="channel-list">
+          <text class="channel-hint">
+            {{ wxLoading ? '正在查询关联渠道...' : '请选择所属渠道' }}
+          </text>
+          <view
+            v-for="ch in wxChannels"
+            :key="ch.channelCode"
+            class="channel-item"
+            :class="{ active: wxChannel === ch.channelCode }"
+            @click="wxChannel = ch.channelCode"
+          >
+            <view class="channel-radio">
+              <view v-if="wxChannel === ch.channelCode" class="radio-dot" />
+            </view>
+            <view class="channel-info">
+              <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}（{{ ch.channelCode }}）</text>
+            </view>
+          </view>
+        </view>
+        <view class="wx-btn" @click="onWxLogin">
+          <text class="wx-icon">微</text>
+          <text class="wx-text">微信授权登录</text>
+        </view>
       </view>
     </view>
     <!-- #endif -->
@@ -152,100 +220,127 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
 import { useUserStore } from '@/stores/user';
 import type { ChannelOption } from '@/api/auth';
 
 const userStore = useUserStore();
 
-// 共享状态
-const identifier = ref('');
-const channels = ref<ChannelOption[]>([]);
-const selectedChannel = ref('');
-const loadingChannels = ref(false);
-const submitting = ref(false);
-
 // Tab 切换：sms=验证码登录（默认），pwd=密码登录
 const loginTab = ref<'sms' | 'pwd'>('sms');
 
-// 验证码
-const smsCode = ref('');
+// 通用状态
+const submitting = ref(false);
 const countdown = ref(0);
 const sendingCode = ref(false);
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
-// 密码
+// 验证码 Tab 独立状态
+const smsMobile = ref('');
+const smsChannels = ref<ChannelOption[]>([]);
+const smsChannel = ref('');
+const smsLoading = ref(false);
+const smsCode = ref('');
+
+// 密码 Tab 独立状态
+const pwdInput = ref('');
+const pwdChannels = ref<ChannelOption[]>([]);
+const pwdChannel = ref('');
+const pwdLoading = ref(false);
 const password = ref('');
 const showPwd = ref(false);
 
-let channelTimer: ReturnType<typeof setTimeout> | null = null;
-let countdownTimer: ReturnType<typeof setInterval> | null = null;
-let channelSeq = 0;
+// 微信独立状态（#ifdef MP-WEIXIN）
+const wxMobile = ref('');
+const wxChannels = ref<ChannelOption[]>([]);
+const wxChannel = ref('');
+const wxLoading = ref(false);
 
-// 输入后自动查询关联渠道
-// 验证码 Tab：只接受完整手机号；密码 Tab：手机号或用户名(≥4字)均可
-watch(identifier, (val) => {
-  channelSeq++;
-  loadingChannels.value = false;
-  channels.value = [];
-  selectedChannel.value = '';
-  if (channelTimer) clearTimeout(channelTimer);
-  const trimmed = val.trim();
-  if (!trimmed) return;
-  const isPhone = /^1\d{10}$/.test(trimmed);
-  if (loginTab.value === 'sms') {
-    // 验证码登录只能发手机号，非完整手机号不查询
-    if (isPhone) {
-      channelTimer = setTimeout(() => loadChannels(), 500);
-    }
-  } else {
-    // 密码登录：手机号立即查(500ms)；用户名≥4字延迟查(800ms)
-    if (isPhone || trimmed.length >= 4) {
-      channelTimer = setTimeout(() => loadChannels(), isPhone ? 500 : 800);
+/**
+ * 渠道自动查询接线函数。
+ * 为每组 (input, channels, selected, loading) 绑定独立的 watch + 防抖 + seq 防竞态。
+ * phoneOnly=true: 只接受完整手机号触发查询（验证码/微信）
+ * phoneOnly=false: 手机号或用户名(≥4字)均可（密码）
+ */
+function wireChannelQuery(
+  input: Ref<string>,
+  channels: Ref<ChannelOption[]>,
+  selected: Ref<string>,
+  loading: Ref<boolean>,
+  phoneOnly: boolean,
+) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let seq = 0;
+
+  async function doQuery() {
+    const trimmed = input.value.trim();
+    if (!trimmed) return;
+    const current = ++seq;
+    loading.value = true;
+    try {
+      const result = await userStore.getChannels(trimmed);
+      if (current !== seq) return;
+      channels.value = result;
+      if (result.length === 1) {
+        selected.value = result[0].channelCode;
+      }
+    } catch {
+      // 错误已由 request 拦截器提示
+    } finally {
+      if (current === seq) loading.value = false;
     }
   }
-});
+
+  watch(input, (val) => {
+    seq++;
+    loading.value = false;
+    channels.value = [];
+    selected.value = '';
+    if (timer) clearTimeout(timer);
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    const isPhone = /^1\d{10}$/.test(trimmed);
+    if (phoneOnly) {
+      if (isPhone) timer = setTimeout(doQuery, 500);
+    } else {
+      if (isPhone || trimmed.length >= 4) {
+        timer = setTimeout(doQuery, isPhone ? 500 : 800);
+      }
+    }
+  });
+
+  onUnmounted(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+// 各登录方式独立绑定
+wireChannelQuery(smsMobile, smsChannels, smsChannel, smsLoading, true);
+wireChannelQuery(pwdInput, pwdChannels, pwdChannel, pwdLoading, false);
+wireChannelQuery(wxMobile, wxChannels, wxChannel, wxLoading, true);
 
 onUnmounted(() => {
-  if (channelTimer) clearTimeout(channelTimer);
   if (countdownTimer) clearInterval(countdownTimer);
 });
 
 onMounted(() => {
-  identifier.value = uni.getStorageSync('agent_remember_mobile') || '';
+  smsMobile.value = uni.getStorageSync('agent_remember_mobile') || '';
 });
-
-async function loadChannels() {
-  if (!identifier.value) return;
-  const seq = ++channelSeq;
-  loadingChannels.value = true;
-  try {
-    const result = await userStore.getChannels(identifier.value);
-    if (seq !== channelSeq) return;
-    channels.value = result;
-    if (channels.value.length === 1) {
-      selectedChannel.value = channels.value[0].channelCode;
-    }
-  } catch {
-    // 错误已由 request 拦截器提示
-  } finally {
-    if (seq === channelSeq) loadingChannels.value = false;
-  }
-}
 
 /** 发送验证码 */
 async function onSendCode() {
   if (countdown.value > 0 || sendingCode.value) return;
-  if (!selectedChannel.value) {
+  if (!smsChannel.value) {
     uni.showToast({ title: '请先选择渠道', icon: 'none' });
     return;
   }
-  if (!/^1\d{10}$/.test(identifier.value)) {
+  if (!/^1\d{10}$/.test(smsMobile.value)) {
     uni.showToast({ title: '请输入正确的手机号', icon: 'none' });
     return;
   }
   sendingCode.value = true;
   try {
-    const result = await userStore.sendSmsCode(identifier.value, selectedChannel.value);
+    const result = await userStore.sendSmsCode(smsMobile.value, smsChannel.value);
     // 启动倒计时
     countdown.value = 60;
     countdownTimer = setInterval(() => {
@@ -270,7 +365,7 @@ async function onSendCode() {
 
 /** 验证码登录 */
 async function onSmsLogin() {
-  if (!selectedChannel.value) {
+  if (!smsChannel.value) {
     uni.showToast({ title: '请先选择渠道', icon: 'none' });
     return;
   }
@@ -281,11 +376,11 @@ async function onSmsLogin() {
   submitting.value = true;
   try {
     await userStore.smsLogin({
-      mobile: identifier.value,
-      channelCode: selectedChannel.value,
+      mobile: smsMobile.value,
+      channelCode: smsChannel.value,
       code: smsCode.value,
     });
-    uni.setStorageSync('agent_remember_mobile', identifier.value);
+    uni.setStorageSync('agent_remember_mobile', smsMobile.value);
     uni.showToast({ title: '登录成功', icon: 'success' });
     setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
   } catch {
@@ -297,7 +392,7 @@ async function onSmsLogin() {
 
 /** 密码登录 */
 async function onPwdLogin() {
-  if (!selectedChannel.value) {
+  if (!pwdChannel.value) {
     uni.showToast({ title: '请先选择渠道', icon: 'none' });
     return;
   }
@@ -308,11 +403,11 @@ async function onPwdLogin() {
   submitting.value = true;
   try {
     await userStore.login({
-      channelCode: selectedChannel.value,
-      identifier: identifier.value,
+      channelCode: pwdChannel.value,
+      identifier: pwdInput.value,
       password: password.value,
     });
-    uni.setStorageSync('agent_remember_mobile', identifier.value);
+    uni.setStorageSync('agent_remember_mobile', pwdInput.value);
     uni.showToast({ title: '登录成功', icon: 'success' });
     setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
   } catch {
@@ -324,7 +419,7 @@ async function onPwdLogin() {
 
 /** 微信登录（仅小程序） */
 async function onWxLogin() {
-  if (!selectedChannel.value) {
+  if (!wxChannel.value) {
     uni.showToast({ title: '请先选择渠道', icon: 'none' });
     return;
   }
@@ -336,7 +431,7 @@ async function onWxLogin() {
       uni.showToast({ title: '微信授权失败', icon: 'none' });
       return;
     }
-    await userStore.wxLogin({ code: res.code, channelCode: selectedChannel.value });
+    await userStore.wxLogin({ code: res.code, channelCode: wxChannel.value });
     uni.showToast({ title: '登录成功', icon: 'success' });
     setTimeout(() => uni.switchTab({ url: '/pages/acquisition/index' }), 500);
     // #endif
@@ -554,7 +649,7 @@ async function onWxLogin() {
   background: $gradient-blue;
 }
 
-/* 其他方式登录 */
+/* 微信授权登录 */
 .other-login {
   margin: $spacing-xl $spacing-lg 0;
 }
@@ -577,29 +672,44 @@ async function onWxLogin() {
   padding: 0 $spacing-md;
 }
 
+.wx-card {
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-xl $spacing-lg;
+  box-shadow: $shadow-hover;
+}
+
 .wx-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: $spacing-md;
+  justify-content: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+  padding: 24rpx;
+  border-radius: $radius-md;
+  background: #07c160;
+
+  &:active {
+    opacity: 0.85;
+  }
 }
 
 .wx-icon {
-  width: 96rpx;
-  height: 96rpx;
-  line-height: 96rpx;
+  width: 40rpx;
+  height: 40rpx;
+  line-height: 40rpx;
   text-align: center;
   border-radius: 50%;
-  background: #07c160;
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
-  font-size: 40rpx;
+  font-size: 28rpx;
   font-weight: bold;
 }
 
 .wx-text {
-  font-size: 24rpx;
-  color: $text-secondary;
-  margin-top: $spacing-sm;
+  font-size: 32rpx;
+  color: #fff;
+  font-weight: 500;
 }
 
 /* 底部 */
