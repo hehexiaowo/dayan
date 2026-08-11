@@ -242,10 +242,11 @@ function onTool(type: string) {
     uni.navigateTo({ url: '/pages/acquisition/tools/index' });
     return;
   }
-  const labels: Record<string, string> = {
-    poster: '营销海报',
-  };
-  uni.showToast({ title: `${labels[type] || '工具'}（开发中）`, icon: 'none' });
+  if (type === 'poster') {
+    uni.navigateTo({ url: '/pages/acquisition/poster/index' });
+    return;
+  }
+  uni.showToast({ title: '功能开发中', icon: 'none' });
 }
 
 function onLeadClick(lead: Lead) {

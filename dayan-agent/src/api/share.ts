@@ -33,3 +33,49 @@ export function getShareContent(code: string, agent: string): Promise<ShareResul
     });
   });
 }
+
+export interface PosterShareResult {
+  poster: any | null;
+  card: any | null;
+}
+
+/** 获取分享海报 + 分享人名片（公开接口，无需登录）。 */
+export function getSharePoster(code: string, agent: string): Promise<PosterShareResult> {
+  return new Promise((resolve) => {
+    uni.request({
+      url: BASE_URL + '/open/share/poster/' + code + '?agent=' + encodeURIComponent(agent),
+      method: 'GET',
+      success: (res: any) => {
+        const body = res.data;
+        if (body && body.code === 0) {
+          resolve({
+            poster: body.data?.poster || null,
+            card: body.data?.card || null,
+          });
+        } else {
+          resolve({ poster: null, card: null });
+        }
+      },
+      fail: () => resolve({ poster: null, card: null }),
+    });
+  });
+}
+
+/** 获取代理人名片（公开接口，工具分享用）。 */
+export function getShareAgentCard(agent: string): Promise<any> {
+  return new Promise((resolve) => {
+    uni.request({
+      url: BASE_URL + '/open/share/agent-card?agent=' + encodeURIComponent(agent),
+      method: 'GET',
+      success: (res: any) => {
+        const body = res.data;
+        if (body && body.code === 0) {
+          resolve(body.data || null);
+        } else {
+          resolve(null);
+        }
+      },
+      fail: () => resolve(null),
+    });
+  });
+}

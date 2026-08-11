@@ -169,11 +169,53 @@
         ※ 以上为简化估算，实际支出受通胀、医疗费用、政策变化等影响，仅供参考。
       </text>
     </view>
+
+    <!-- 分享模式：代理人名片 -->
+    <view v-if="isShareMode && agentCard" class="agent-card">
+      <view class="agent-card-header">
+        <view v-if="agentCard.avatar" class="agent-avatar">
+          <image :src="formatFileUrl(agentCard.avatar)" mode="aspectFill" class="avatar-img" />
+        </view>
+        <view v-else class="agent-avatar">
+          <text class="agent-avatar-text">{{ (agentCard.displayName || '顾问').charAt(0) }}</text>
+        </view>
+        <view class="agent-info">
+          <text class="agent-name">{{ agentCard.displayName || '养老顾问' }}</text>
+          <text v-if="agentCard.title" class="agent-job">{{ agentCard.title }}</text>
+        </view>
+      </view>
+      <view class="agent-contact">
+        <view v-if="agentCard.phone" class="contact-btn contact-phone dy-clickable" @click="onCall(agentCard.phone)">
+          <text>📞 联系顾问</text>
+        </view>
+        <view v-if="agentCard.wechat" class="contact-btn contact-wechat dy-clickable" @click="onCopyWechat(agentCard.wechat)">
+          <text>💬 复制微信</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 正常模式：分享按钮 -->
+    <view v-if="!isShareMode" class="share-btn-bar">
+      <view class="share-action-btn dy-clickable" @click="onShareTool">
+        <text>↗ 分享给客户</text>
+      </view>
+    </view>
+
+    <view v-if="isShareMode" class="brand-footer">
+      <text>大雁养老 · 专业养老服务平台</text>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue';
+import { reactive, ref, computed } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
+import { getShareAgentCard } from '@/api/share';
+import { formatFileUrl } from '@/utils/file';
+
+// ===== 分享模式 =====
+const isShareMode = ref(false);
+const agentCard = ref<any>(null);
 
 // ===== 表单 =====
 const form = reactive({
@@ -285,6 +327,34 @@ function formatNum(n: number): string {
   if (!n || isNaN(n)) return '0';
   return Math.abs(n).toLocaleString('zh-CN');
 }
+
+// ===== 分享相关 =====
+function onShareTool() {
+  // #ifdef H5
+  const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
+  const url = `${window.location.origin}/#/pages/acquisition/tools/gap-calculator?agent=${agentCode}`;
+  uni.setClipboardData({
+    data: url,
+    success: () => uni.showToast({ title: '链接已复制，可粘贴发给客户', icon: 'none', duration: 2500 }),
+  });
+  // #endif
+}
+
+function onCall(phone: string) {
+  uni.makePhoneCall({ phoneNumber: phone });
+}
+
+function onCopyWechat(wechat: string) {
+  uni.setClipboardData({ data: wechat, success: () => uni.showToast({ title: '微信号已复制', icon: 'none' }) });
+}
+
+onLoad((opts) => {
+  const agent = opts?.agent;
+  if (agent) {
+    isShareMode.value = true;
+    getShareAgentCard(agent).then((card) => { agentCard.value = card; });
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -550,5 +620,92 @@ slider {
   font-size: 22rpx;
   color: $text-placeholder;
   line-height: 1.6;
+}
+
+/* 分享按钮 */
+.share-btn-bar {
+  padding: 0 $spacing-sm $spacing-md;
+}
+.share-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: $control-height;
+  background: $gradient-blue;
+  color: #fff;
+  border-radius: $radius-md;
+  font-size: 30rpx;
+  font-weight: 500;
+  box-shadow: $shadow-fab;
+}
+
+/* 代理人名片 */
+.agent-card {
+  background: $bg-card;
+  margin: $spacing-sm $spacing-sm 0;
+  border-radius: $radius-lg;
+  padding: $spacing-lg $spacing-md;
+  box-shadow: $shadow-card;
+  border-top: 4rpx solid $brand-primary;
+}
+.agent-card-header {
+  display: flex;
+  align-items: center;
+}
+.agent-avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: $gradient-blue;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.avatar-img { width: 100%; height: 100%; }
+.agent-avatar-text {
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+.agent-info {
+  margin-left: $spacing-md;
+  display: flex;
+  flex-direction: column;
+}
+.agent-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: $text-primary;
+}
+.agent-job {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: $text-secondary;
+}
+.agent-contact {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+.contact-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: $control-height;
+  border-radius: $radius-md;
+  font-size: 26rpx;
+}
+.contact-phone { background: $brand-primary; color: #fff; }
+.contact-wechat { background: $brand-success-light; color: $brand-success; }
+
+/* 品牌页脚 */
+.brand-footer {
+  text-align: center;
+  padding: $spacing-md;
+  font-size: 24rpx;
+  color: $text-placeholder;
 }
 </style>

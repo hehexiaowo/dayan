@@ -54,7 +54,8 @@ dayan:
     login-type: agent
   tenant:
     # agent_favorite 无 channel_code 列（按 agent_code 隔离），须跳过租户拦截器
-    ignore-tables: agent_favorite
+    # poster_template 是全局模板表（后台统一定义），无 channel_code 列
+    ignore-tables: agent_favorite,poster_template
 
 springdoc:
   swagger-ui:
