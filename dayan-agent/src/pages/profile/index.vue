@@ -1,14 +1,14 @@
 <template>
   <view class="page">
-    <!-- 个人信息卡（渐变） -->
-    <view class="profile-card">
+    <!-- 个人信息卡（渐变，可点击进资料编辑） -->
+    <view class="profile-card dy-clickable" @click="goEdit">
+      <text class="edit-hint">编辑资料 ›</text>
       <view class="profile-row">
-        <!-- 本地头像占位（无 CDN 依赖） -->
         <view class="avatar-wrap">
           <image
-            v-if="agentInfo.avatar"
+            v-if="avatarUrl"
             class="avatar"
-            :src="agentInfo.avatar"
+            :src="avatarUrl"
             mode="aspectFill"
           />
           <view v-else class="avatar-fallback">
@@ -16,17 +16,38 @@
           </view>
         </view>
         <view class="profile-text">
-          <view class="name">{{ displayName }}</view>
-          <view class="channel">
-            渠道：{{ agentInfo.channelName || agentInfo.channelCode || channelCode || '-' }}
+          <view class="name-row">
+            <text class="name">{{ displayName }}</text>
+            <text v-if="levelText" class="level-badge">{{ levelText }}</text>
+            <text v-if="profile.isCertified === 1" class="cert-badge">已认证</text>
           </view>
+          <view class="channel">渠道：{{ channelText }}</view>
         </view>
       </view>
-      <view class="profile-meta">
-        <text class="meta-item">工号：{{ agentInfo.agentCode || agentCode || '-' }}</text>
-        <text v-if="agentInfo.agentLevel" class="meta-item">
-          等级：{{ agentInfo.agentLevel }}
-        </text>
+    </view>
+
+    <!-- 账号信息分组 -->
+    <view class="info-card">
+      <view class="info-title">账号信息</view>
+      <view class="info-row">
+        <text class="info-label">手机号</text>
+        <text class="info-value">{{ maskPhone(profile.phone) }}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">工号</text>
+        <text class="info-value">{{ profile.employeeNo || profile.agentCode || storeAgentCode || '-' }}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">执业证号</text>
+        <text class="info-value">{{ profile.licenseNo || '-' }}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">职位</text>
+        <text class="info-value">{{ profile.position || '-' }}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">地区</text>
+        <text class="info-value">{{ regionText }}</text>
       </view>
     </view>
 
@@ -55,21 +76,24 @@
 import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
-import { getAgentInfo } from '@/api/agent';
-import type { Agent } from '@/types';
+import { getProfile } from '@/api/agent';
+import type { AgentProfile } from '@/types';
+import { AGENT_LEVEL_MAP } from '@/types';
+import { formatFileUrl } from '@/utils/file';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 
 type IconColor = 'blue' | 'green' | 'orange' | 'red' | 'gray';
 
 const userStore = useUserStore();
 
-const agentInfo = ref<Partial<Agent>>({});
+const profile = ref<Partial<AgentProfile>>({});
 
+/** 姓名：接口 fullName → store realName → agentCode → store accountCode → 兜底 */
 const displayName = computed(() => {
   return (
-    agentInfo.value.realName ||
+    profile.value.fullName ||
     (userStore.userInfo && userStore.userInfo.realName) ||
-    agentInfo.value.agentCode ||
+    profile.value.agentCode ||
     (userStore.userInfo && userStore.userInfo.accountCode) ||
     '代理人'
   );
@@ -81,10 +105,46 @@ const avatarChar = computed(() => {
   return name ? name.charAt(0) : '代';
 });
 
-const channelCode = computed(() => userStore.channelCode || '');
-const agentCode = computed(
+/** 头像 URL（OSS key 转可访问地址） */
+const avatarUrl = computed(() => formatFileUrl(profile.value.avatar));
+
+/** 渠道行：公司名 → 渠道名 → 渠道编码 */
+const channelText = computed(() => {
+  return (
+    profile.value.companyName ||
+    profile.value.channelName ||
+    profile.value.channelCode ||
+    userStore.channelCode ||
+    '-'
+  );
+});
+
+const storeAgentCode = computed(
   () => (userStore.userInfo && userStore.userInfo.accountCode) || '',
 );
+
+/** 等级文案（1 普通 / 2 银牌 / 3 金牌 / 4 钻石） */
+const levelText = computed(() => {
+  const level = profile.value.agentLevel;
+  return level ? AGENT_LEVEL_MAP[level] || '' : '';
+});
+
+/** 地区：省市区空格拼接，有详细地址追加，全空显示 '-' */
+const regionText = computed(() => {
+  const p = profile.value;
+  const parts = [p.provinceName, p.cityName, p.districtName].filter(Boolean);
+  let text = parts.join(' ');
+  if (p.address) {
+    text = text ? `${text} ${p.address}` : p.address;
+  }
+  return text || '-';
+});
+
+/** 手机号脱敏：11 位手机号中间四位打码，其余原样 */
+function maskPhone(p?: string): string {
+  if (!p) return '-';
+  return p.length === 11 ? `${p.slice(0, 3)}****${p.slice(7)}` : p;
+}
 
 interface MenuItem {
   key: string;
@@ -114,17 +174,22 @@ function onMenu(item: MenuItem) {
   uni.showToast({ title: tips[item.key] || '开发中', icon: 'none' });
 }
 
-async function loadAgentInfo() {
+function goEdit() {
+  uni.navigateTo({ url: '/pages/profile/edit' });
+}
+
+async function loadProfile() {
   try {
-    const data = await getAgentInfo();
-    agentInfo.value = data || {};
+    const data = await getProfile();
+    profile.value = data || {};
   } catch (e) {
-    agentInfo.value = {};
+    // 加载失败降级：保留 store 的 realName/accountCode 兜底显示
+    profile.value = {};
   }
 }
 
 onShow(() => {
-  loadAgentInfo();
+  loadProfile();
 });
 </script>
 
@@ -140,11 +205,19 @@ onShow(() => {
 
 /* 渐变 profile 卡片 */
 .profile-card {
+  position: relative;
   background: $gradient-blue;
   border-radius: $radius-lg;
   padding: 40rpx $spacing-lg;
   color: #fff;
   box-shadow: 0 8rpx 24rpx rgba(64, 158, 255, 0.25);
+}
+.edit-hint {
+  position: absolute;
+  top: $spacing-md;
+  right: $spacing-lg;
+  font-size: 24rpx;
+  opacity: 0.85;
 }
 .profile-row {
   display: flex;
@@ -183,23 +256,77 @@ onShow(() => {
 .profile-text {
   margin-left: $spacing-md;
   flex: 1;
+  min-width: 0;
+}
+.name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
 }
 .name {
   font-size: 38rpx;
   font-weight: bold;
+}
+.level-badge {
+  margin-left: $spacing-sm;
+  padding: 2rpx 16rpx;
+  font-size: 20rpx;
+  line-height: 1.6;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999rpx;
+}
+.cert-badge {
+  margin-left: $spacing-sm;
+  padding: 2rpx 16rpx;
+  font-size: 20rpx;
+  line-height: 1.6;
+  color: $brand-success;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 999rpx;
 }
 .channel {
   font-size: 26rpx;
   margin-top: $spacing-xs;
   opacity: 0.9;
 }
-.profile-meta {
+
+/* 账号信息分组 */
+.info-card {
   margin-top: $spacing-md;
-  font-size: 24rpx;
-  opacity: 0.92;
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md 28rpx;
+  box-shadow: $shadow-card;
 }
-.meta-item {
-  margin-right: $spacing-lg;
+.info-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: $text-primary;
+  padding-bottom: $spacing-sm;
+}
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid $border-light;
+}
+.info-row:last-child {
+  border-bottom: none;
+}
+.info-label {
+  font-size: 28rpx;
+  color: $text-secondary;
+  flex-shrink: 0;
+}
+.info-value {
+  font-size: 28rpx;
+  color: $text-primary;
+  margin-left: $spacing-md;
+  text-align: right;
+  flex: 1;
+  word-break: break-all;
 }
 
 /* 菜单 */
