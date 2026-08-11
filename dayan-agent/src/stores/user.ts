@@ -63,6 +63,7 @@ export const useUserStore = defineStore('user', {
       this.userInfo = {
         accountCode: data.agentCode,
         realName: data.realName,
+        avatar: data.avatar,
         channelCode: data.channelCode,
       };
       uni.setStorageSync('agent_token', data.token);

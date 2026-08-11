@@ -1,5 +1,6 @@
 import request from '@/utils/request';
-import type { Agent, AgentNotification, PageResult } from '@/types';
+import type { Agent, AgentNotification, AgentProfile, AgentProfileUpdatePayload, PageResult } from '@/types';
+import type { SmsSendResult } from '@/api/auth';
 
 /**
  * 代理人信息（GET /agent-api/auth/info）。
@@ -15,4 +16,24 @@ export function getAgentInfo(): Promise<Agent> {
  */
 export function getNotifications(): Promise<PageResult<AgentNotification>> {
   return request<PageResult<AgentNotification>>({ url: '/notifications', method: 'GET' });
+}
+
+/** 我的资料（GET /agent-api/profile） */
+export function getProfile(): Promise<AgentProfile> {
+  return request<AgentProfile>({ url: '/profile', method: 'GET' });
+}
+
+/** 更新基础资料（PUT /agent-api/profile） */
+export function updateProfile(data: AgentProfileUpdatePayload): Promise<void> {
+  return request<void>({ url: '/profile', method: 'PUT', data });
+}
+
+/** 换绑手机号-发验证码（POST /agent-api/profile/phone/send） */
+export function sendPhoneChangeCode(mobile: string): Promise<SmsSendResult> {
+  return request<SmsSendResult>({ url: '/profile/phone/send', method: 'POST', data: { mobile } });
+}
+
+/** 换绑手机号（POST /agent-api/profile/phone/change） */
+export function changePhone(mobile: string, code: string): Promise<void> {
+  return request<void>({ url: '/profile/phone/change', method: 'POST', data: { mobile, code } });
 }

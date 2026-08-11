@@ -37,9 +37,63 @@ export interface Agent {
   avatar?: string;
 }
 
+/** 个人资料（GET /agent-api/profile，对齐后端 AgentProfileVO） */
+export interface AgentProfile {
+  agentCode: string;
+  fullName?: string;
+  /** 0 保密 / 1 男 / 2 女 */
+  gender?: number;
+  /** 头像 OSS key（展示需 formatFileUrl） */
+  avatar?: string;
+  phone?: string;
+  email?: string;
+  username?: string;
+  channelCode?: string;
+  channelName?: string;
+  companyName?: string;
+  branchName?: string;
+  department?: string;
+  position?: string;
+  employeeNo?: string;
+  licenseNo?: string;
+  provinceCode?: string;
+  cityCode?: string;
+  districtCode?: string;
+  provinceName?: string;
+  cityName?: string;
+  districtName?: string;
+  address?: string;
+  serviceIntro?: string;
+  /** 1 普通 / 2 银牌 / 3 金牌 / 4 钻石 */
+  agentLevel?: number;
+  /** 0 否 / 1 是 */
+  isCertified?: number;
+  lastLoginTime?: string;
+}
+
+/** 资料更新请求（PUT /agent-api/profile 白名单字段） */
+export interface AgentProfileUpdatePayload {
+  fullName?: string;
+  gender?: number;
+  email?: string;
+  avatar?: string;
+  provinceCode?: string;
+  cityCode?: string;
+  districtCode?: string;
+  address?: string;
+  serviceIntro?: string;
+}
+
+/** 代理人等级文案映射 */
+export const AGENT_LEVEL_MAP: Record<number, string> = {
+  1: '普通',
+  2: '银牌',
+  3: '金牌',
+  4: '钻石',
+};
+
 /** 通知/待办（GET /agent-api/notifications） */
 export interface AgentNotification {
-  id: string;
   title: string;
   content?: string;
   type?: number;

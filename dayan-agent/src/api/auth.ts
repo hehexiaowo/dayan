@@ -12,6 +12,8 @@ export interface LoginResult {
   agentCode: string;
   channelCode: string;
   realName?: string;
+  /** 头像 OSS key（任务 5 后端修复后返回） */
+  avatar?: string;
 }
 
 export interface SmsSendResult {
