@@ -34,9 +34,9 @@
             <DyIconBlock text="文" color="green" size="md" shape="circle" />
             <text class="tool-label">内容获客</text>
           </view>
-          <view class="tool-item dy-clickable" @click="onTool('survey')">
-            <DyIconBlock text="问" color="blue" size="md" shape="circle" />
-            <text class="tool-label">问卷获客</text>
+          <view class="tool-item dy-clickable" @click="onTool('tools')">
+            <DyIconBlock text="具" color="blue" size="md" shape="circle" />
+            <text class="tool-label">工具获客</text>
           </view>
           <view class="tool-item dy-clickable" @click="onTool('poster')">
             <DyIconBlock text="海" color="orange" size="md" shape="circle" />
@@ -239,7 +239,7 @@ function onTool(type: string) {
     return;
   }
   const labels: Record<string, string> = {
-    survey: '问卷获客',
+    tools: '工具获客',
     poster: '营销海报',
   };
   uni.showToast({ title: `${labels[type] || '工具'}（开发中）`, icon: 'none' });
