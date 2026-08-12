@@ -205,14 +205,20 @@ public class ClientEquityController {
         activateDTO.setCarrierType(1); // 1=权益卡（按 activateCode）
         activateDTO.setActivateCode(dto.getActivateCode());
         activateDTO.setClientCode(clientCode); // 强制登录态，覆盖任何前端值
+        // 客户全名从登录态取（login 时存 username 快照），填充 equity_activate.client_full_name（NOT NULL）
+        Object fullName = StpKit.CLIENT.getSession().get("clientFullName");
+        activateDTO.setClientFullName(fullName != null ? fullName.toString() : clientCode);
         activateDTO.setActivateChannel(3);     // 3=H5（小程序环境由前端传 deviceInfo 时再细化）
-        // clientFullName / clientPhone 可从 client 信息补，激活 service 对 null 容错
-        String equityCode = equityDepotService.activate(activateDTO);
-        if (equityCode == null) {
+        // service.activate 返回 activateRecordCode（非 equityCode），用 activateCode 反查 equityCode 取详情
+        equityDepotService.activate(activateDTO);
+        EquityDepot activated = equityDepotMapper.selectOne(new LambdaQueryWrapper<EquityDepot>()
+                .eq(EquityDepot::getActivateCode, dto.getActivateCode())
+                .last("LIMIT 1"));
+        if (activated == null) {
             throw new com.dayan.common.core.exception.BusinessException(
                     com.dayan.common.core.exception.ErrorCode.NOT_FOUND, "激活失败，权益未找到");
         }
-        return R.ok(equityDepotService.getDetail(equityCode));
+        return R.ok(equityDepotService.getDetail(activated.getEquityCode()));
     }
 
     /** 校验权益归属当前 client（越权防护），返回权益实体 */

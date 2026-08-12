@@ -105,6 +105,10 @@ public class ClientAuthServiceImpl implements ClientAuthService {
         logic.getSession().set("channelCode", account.getChannelCode());
         logic.getSession().set("clientCode", account.getClientCode());
         logic.getSession().set("accountType", AccountType.CLIENT.getLoginType());
+        // 客户全名快照：优先 username，为空则用 clientCode 兜底
+        // （SaSession 基于 ConcurrentHashMap 不允许 null value；且 equity_activate.client_full_name 为 NOT NULL）。
+        String clientFullName = account.getUsername() != null ? account.getUsername() : account.getClientCode();
+        logic.getSession().set("clientFullName", clientFullName);
 
         // 5. 更新登录时间/次数
         ClientAccount update = new ClientAccount();
