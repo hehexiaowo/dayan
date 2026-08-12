@@ -61,7 +61,7 @@
               <view v-if="smsChannel === ch.channelCode" class="radio-dot" />
             </view>
             <view class="channel-info">
-              <text class="channel-name">{{ ch.channelName || ch.channelCode }}（{{ ch.channelCode }}）</text>
+              <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}（{{ ch.channelCode }}）</text>
             </view>
           </view>
         </view>
@@ -132,7 +132,7 @@
               <view v-if="pwdChannel === ch.channelCode" class="radio-dot" />
             </view>
             <view class="channel-info">
-              <text class="channel-name">{{ ch.channelName || ch.channelCode }}（{{ ch.channelCode }}）</text>
+              <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}（{{ ch.channelCode }}）</text>
             </view>
           </view>
         </view>
@@ -200,7 +200,7 @@
               <view v-if="wxChannel === ch.channelCode" class="radio-dot" />
             </view>
             <view class="channel-info">
-              <text class="channel-name">{{ ch.channelName || ch.channelCode }}（{{ ch.channelCode }}）</text>
+              <text class="channel-name">{{ ch.shortName || ch.fullName || ch.channelCode }}（{{ ch.channelCode }}）</text>
             </view>
           </view>
         </view>

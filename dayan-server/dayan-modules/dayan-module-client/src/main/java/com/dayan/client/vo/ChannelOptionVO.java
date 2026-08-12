@@ -14,6 +14,8 @@ public class ChannelOptionVO {
 
     /** 渠道编码 */
     private String channelCode;
-    /** 渠道名称（client_account 仅存 channel_code，渠道名称由前端按需补全或留空） */
-    private String channelName;
+    /** 渠道简称（前端展示「简称（编码）」，对齐 agent 端） */
+    private String shortName;
+    /** 渠道全称 */
+    private String fullName;
 }

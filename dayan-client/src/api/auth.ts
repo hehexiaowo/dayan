@@ -2,7 +2,8 @@ import request from '@/utils/request';
 
 export interface ChannelOption {
   channelCode: string;
-  channelName: string;
+  shortName?: string;
+  fullName?: string;
 }
 
 export interface LoginResult {

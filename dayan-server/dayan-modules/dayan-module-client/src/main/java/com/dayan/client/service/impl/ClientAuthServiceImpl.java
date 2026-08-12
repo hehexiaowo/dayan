@@ -6,6 +6,8 @@ import com.dayan.client.dto.ClientLoginDTO;
 import com.dayan.client.dto.SmsLoginDTO;
 import com.dayan.client.entity.ClientAccount;
 import com.dayan.client.mapper.ClientAccountMapper;
+import com.dayan.channel.entity.ChannelInfo;
+import com.dayan.channel.mapper.ChannelInfoMapper;
 import com.dayan.client.service.ClientAuthService;
 import com.dayan.client.service.ClientSmsCodeService;
 import com.dayan.client.service.ClientWeChatLoginService;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -47,6 +50,7 @@ import java.util.stream.Collectors;
 public class ClientAuthServiceImpl implements ClientAuthService {
 
     private final ClientAccountMapper accountMapper;
+    private final ChannelInfoMapper channelInfoMapper;
     private final PasswordService passwordService;
     private final ClientSmsCodeService smsCodeService;
     private final ClientWeChatLoginService weChatLoginService;
@@ -68,12 +72,37 @@ public class ClientAuthServiceImpl implements ClientAuthService {
             }
         });
         List<ClientAccount> accounts = accountMapper.selectList(wrapper);
-        return accounts.stream()
+        List<String> codes = accounts.stream()
                 .map(ClientAccount::getChannelCode)
                 .filter(code -> code != null && !code.isBlank())
                 .distinct()
-                .map(code -> ChannelOptionVO.builder().channelCode(code).build())
                 .collect(Collectors.toList());
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        Map<String, ChannelInfo> channelMap = resolveChannelNames(codes);
+        return codes.stream()
+                .map(code -> {
+                    ChannelInfo ch = channelMap.get(code);
+                    return ChannelOptionVO.builder()
+                            .channelCode(code)
+                            .shortName(ch != null ? ch.getShortName() : null)
+                            .fullName(ch != null ? ch.getFullName() : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /** 批量查 channel_info 的 shortName/fullName（登录选渠道展示「简称（编码）」） */
+    private Map<String, ChannelInfo> resolveChannelNames(List<String> channelCodes) {
+        List<ChannelInfo> channels = channelInfoMapper.selectList(
+                new LambdaQueryWrapper<ChannelInfo>()
+                        .in(ChannelInfo::getChannelCode, channelCodes)
+                        .select(ChannelInfo::getChannelCode,
+                                ChannelInfo::getShortName,
+                                ChannelInfo::getFullName));
+        return channels.stream()
+                .collect(Collectors.toMap(ChannelInfo::getChannelCode, ch -> ch, (a, b) -> a));
     }
 
     @Override
