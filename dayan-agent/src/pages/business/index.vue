@@ -6,12 +6,12 @@
       <text class="header-sub">查询机构、采购权益、报名活动</text>
     </view>
 
-    <!-- 找机构 -->
+    <!-- 服务网络 -->
     <view class="card dy-clickable" @click="onSection('park')">
       <DyIconBlock text="机" color="blue" size="lg" />
       <view class="card-body">
-        <view class="card-title">找机构</view>
-        <view class="card-desc">旅居养老 / 活力长居 / 照护长居</view>
+        <view class="card-title">服务网络</view>
+        <view class="card-desc">30省、200+城市、160+CCRC</view>
       </view>
       <text class="card-arrow">›</text>
     </view>

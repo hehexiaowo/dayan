@@ -24,7 +24,7 @@
     { "path": "pages/profile/edit", "style": { "navigationBarTitleText": "个人资料" } },
     {
       "path": "pages/business/park/categories",
-      "style": { "navigationBarTitleText": "找机构" }
+      "style": { "navigationBarTitleText": "服务网络" }
     },
     {
       "path": "pages/business/park/vital/list",
