@@ -207,13 +207,12 @@ public class ClientEquityController {
         activateDTO.setClientCode(clientCode); // 强制登录态，覆盖任何前端值
         activateDTO.setActivateChannel(3);     // 3=H5（小程序环境由前端传 deviceInfo 时再细化）
         // clientFullName / clientPhone 可从 client 信息补，激活 service 对 null 容错
-        equityDepotService.activate(activateDTO);
-        // 激活成功后按激活码回查返回权益详情（activateCode 全局唯一）
-        EquityDepot activated = equityDepotMapper.selectOne(
-                new LambdaQueryWrapper<EquityDepot>()
-                        .eq(EquityDepot::getActivateCode, dto.getActivateCode())
-                        .last("LIMIT 1"));
-        return R.ok(equityDepotService.getDetail(activated.getEquityCode()));
+        String equityCode = equityDepotService.activate(activateDTO);
+        if (equityCode == null) {
+            throw new com.dayan.common.core.exception.BusinessException(
+                    com.dayan.common.core.exception.ErrorCode.NOT_FOUND, "激活失败，权益未找到");
+        }
+        return R.ok(equityDepotService.getDetail(equityCode));
     }
 
     /** 校验权益归属当前 client（越权防护），返回权益实体 */
