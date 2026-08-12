@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -57,6 +58,18 @@ public class AgentEquityController {
         stats.setInUse(counts.getOrDefault(3, 0L));
         stats.setCompleted(counts.getOrDefault(4, 0L));
         return R.ok(stats);
+    }
+
+    @Operation(summary = "权益详情")
+    @GetMapping("/{equityCode}")
+    public R<EquityDepotVO> detail(@PathVariable String equityCode) {
+        String agentCode = requireCurrentAgentCode();
+        EquityDepotVO vo = equityDepotService.getDetail(equityCode);
+        // 越权防护：代理人只能查看自己名下的权益
+        if (vo == null || !agentCode.equals(vo.getAgentCode())) {
+            return R.ok(null);
+        }
+        return R.ok(vo);
     }
 
     private String requireCurrentAgentCode() {

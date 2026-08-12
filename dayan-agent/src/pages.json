@@ -19,6 +19,7 @@
     { "path": "pages/business/index", "style": { "navigationBarTitleText": "展业中心" } },
     { "path": "pages/learning/index", "style": { "navigationBarTitleText": "学习中心" } },
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务中心", "enablePullDownRefresh": true } },
+    { "path": "pages/service/detail", "style": { "navigationBarTitleText": "权益详情" } },
     { "path": "pages/profile/index", "style": { "navigationBarTitleText": "个人中心" } },
     { "path": "pages/profile/view", "style": { "navigationBarTitleText": "个人资料" } },
     { "path": "pages/profile/edit", "style": { "navigationBarTitleText": "编辑资料" } },

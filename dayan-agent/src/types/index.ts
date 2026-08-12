@@ -266,6 +266,32 @@ export interface EquityQuery extends PageQuery {
   equityStatus?: number | null;
 }
 
+/** 权益详情（GET /agent-api/equities/{equityCode}，字段比 EquityCard 更丰富） */
+export interface EquityDetail extends EquityCard {
+  /** 批次编码 */
+  batchCode?: string;
+  /** 成本价 */
+  costPrice?: number;
+  /** 渠道编码 */
+  channelCode?: string;
+  /** 分配时间 */
+  allocateTime?: string;
+  /** 出库时间 */
+  outboundTime?: string;
+  /** 出库渠道 */
+  outboundChannelCode?: string;
+  /** 出库代理人 */
+  outboundAgentCode?: string;
+  /** 物流单号 */
+  logisticsNo?: string;
+  /** 订单编码（关联 order_equity 快照） */
+  orderCode?: string;
+  /** 商品规格 */
+  skuName?: string;
+  /** 作废原因 */
+  voidReason?: string;
+}
+
 /** 权益卡状态统计（GET /agent-api/equities/stats） */
 export interface EquityStats {
   total: number;

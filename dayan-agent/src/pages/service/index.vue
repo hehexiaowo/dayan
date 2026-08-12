@@ -194,9 +194,8 @@ function onTabChange(status: number | null) {
 }
 
 function onCardClick(card: EquityCard) {
-  uni.showToast({
-    title: `权益详情：${card.equityNo || card.equityCode}`,
-    icon: 'none',
+  uni.navigateTo({
+    url: `/pages/service/detail?equityCode=${encodeURIComponent(card.equityCode)}`,
   });
 }
 
