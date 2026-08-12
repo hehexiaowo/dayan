@@ -30,25 +30,21 @@
       </view>
     </view>
 
-    <!-- 快捷入口（白色卡，浮于 hero） -->
-    <view class="quick-card">
-      <view class="quick-item tint-blue dy-clickable" @click="goNewLead">
-        <view class="quick-icon-wrap">
-          <DyIconBlock text="线" color="blue" size="md" shape="circle" />
-        </view>
-        <text class="quick-label">新增线索</text>
+    <!-- 数据统计（hero 下方，对齐 client stats-card：数字+标签） -->
+    <view class="stats-card">
+      <view class="stat-item dy-clickable" @click="goNewLead">
+        <text class="stat-num">{{ leadCount }}</text>
+        <text class="stat-label">新增线索</text>
       </view>
-      <view class="quick-item tint-green dy-clickable" @click="goEquityDepot">
-        <view class="quick-icon-wrap">
-          <DyIconBlock text="仓" color="green" size="md" shape="circle" />
-        </view>
-        <text class="quick-label">权益仓库</text>
+      <view class="stat-divider"></view>
+      <view class="stat-item dy-clickable" @click="goEquityDepot">
+        <text class="stat-num">{{ equityStock }}</text>
+        <text class="stat-label">权益仓库</text>
       </view>
-      <view class="quick-item tint-orange dy-clickable" @click="goLearning">
-        <view class="quick-icon-wrap">
-          <DyIconBlock text="课" color="orange" size="md" shape="circle" />
-        </view>
-        <text class="quick-label">新增课程</text>
+      <view class="stat-divider"></view>
+      <view class="stat-item dy-clickable" @click="goLearning">
+        <text class="stat-num">{{ courseCount }}</text>
+        <text class="stat-label">新增课程</text>
       </view>
     </view>
 
@@ -89,6 +85,9 @@ import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
 import { getProfile } from '@/api/agent';
 import { logoutApi } from '@/api/auth';
+import { getLeads } from '@/api/lead';
+import { getEquityStats } from '@/api/equity';
+import { getLearningContents } from '@/api/learning';
 import type { AgentProfile } from '@/types';
 import { AGENT_LEVEL_MAP } from '@/types';
 import { formatFileUrl } from '@/utils/file';
@@ -97,6 +96,11 @@ import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 const userStore = useUserStore();
 
 const profile = ref<Partial<AgentProfile>>({});
+
+/** 数据统计：线索总数 / 权益库存 / 课程总数 */
+const leadCount = ref(0);
+const equityStock = ref(0);
+const courseCount = ref(0);
 
 /** 姓名：接口 fullName → store realName → agentCode → store accountCode → 兜底 */
 const displayName = computed(() => {
@@ -192,9 +196,32 @@ async function loadProfile() {
   }
 }
 
+/** 数据统计：新增线索总数 / 权益库存 / 课程总数（best-effort，失败置 0） */
+async function loadStats() {
+  try {
+    const r = await getLeads({ current: 1, size: 1 });
+    leadCount.value = r.total ?? 0;
+  } catch {
+    leadCount.value = 0;
+  }
+  try {
+    const s = await getEquityStats();
+    equityStock.value = s.stock ?? 0;
+  } catch {
+    equityStock.value = 0;
+  }
+  try {
+    const c = await getLearningContents();
+    courseCount.value = (c && c.length) || 0;
+  } catch {
+    courseCount.value = 0;
+  }
+}
+
 // 仅用 onShow（避免 onMounted+onShow 双请求陷阱）
 onShow(() => {
   loadProfile();
+  loadStats();
 });
 </script>
 
@@ -325,8 +352,8 @@ onShow(() => {
   opacity: 0.9;
 }
 
-/* 快捷入口卡（正常间距，不再上浮盖住 hero） */
-.quick-card {
+/* 数据统计卡（hero 下方，对齐 client stats-card：数字+标签） */
+.stats-card {
   display: flex;
   align-items: center;
   background: $bg-card;
@@ -336,41 +363,31 @@ onShow(() => {
   position: relative;
   box-shadow: $shadow-card;
 }
-.quick-item {
+.stat-item {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   touch-action: manipulation;
-  transition: transform $transition-fast, opacity $transition-fast;
+  transition: opacity $transition-fast;
 }
-.quick-item:active {
-  transform: scale(0.96);
-  opacity: 0.85;
+.stat-item:active {
+  opacity: 0.6;
 }
-/* 图标底座：浅色 tint 圆，app-icon 质感 */
-.quick-icon-wrap {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform $transition-fast;
+.stat-num {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: $brand-primary;
 }
-.tint-blue .quick-icon-wrap {
-  background: rgba(64, 158, 255, 0.12);
-}
-.tint-green .quick-icon-wrap {
-  background: rgba(25, 190, 107, 0.12);
-}
-.tint-orange .quick-icon-wrap {
-  background: rgba(255, 153, 0, 0.12);
-}
-.quick-label {
+.stat-label {
   font-size: 24rpx;
-  color: $text-regular;
-  margin-top: 16rpx;
+  color: $text-secondary;
+  margin-top: 8rpx;
+}
+.stat-divider {
+  width: 2rpx;
+  height: 64rpx;
+  background: $border-base;
 }
 
 /* 菜单卡片 */
