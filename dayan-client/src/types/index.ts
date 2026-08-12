@@ -122,17 +122,25 @@ export interface ServiceRequestDTO {
   demandDesc?: string;
 }
 
-/** 订单状态：0 待支付 1 已支付 2 服务中 3 已完成 4 已取消 5 退款中 6 已退款 7 异常 */
+/** 订单状态（对齐后端 OrderEvent）：0待支付/1已支付/2部分发放/3已发放/4已完成/5已取消/6退款中/7已退款 */
 export type OrderStatus = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
-/** 订单 */
+/** 订单（旅居订单，对齐后端 ClientOrderVO） */
 export interface Order {
   orderCode: string;
   orderStatus: OrderStatus;
+  /** 状态文案（后端预计算） */
+  statusText?: string;
   title?: string;
-  payAmount?: number;
-  createdAt?: number | string;
   parkName?: string;
+  /** 规格名（房型快照） */
+  skuName?: string;
+  checkinDate?: string;
+  checkoutDate?: string;
+  stayDays?: number;
+  payAmount?: number;
+  totalAmount?: number;
+  createdAt?: number | string;
 }
 
 /** 客户个人资料（对齐后端 ClientProfileVO，phone/idCard 已服务端脱敏） */

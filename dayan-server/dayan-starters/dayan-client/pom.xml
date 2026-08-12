@@ -60,6 +60,11 @@
             <groupId>com.dayan</groupId>
             <artifactId>dayan-module-course</artifactId>
         </dependency>
+        <!-- 我的订单（旅居订单查询） -->
+        <dependency>
+            <groupId>com.dayan</groupId>
+            <artifactId>dayan-module-order</artifactId>
+        </dependency>
         <!-- 公共基础设施 -->
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-core</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-redis</artifactId></dependency>

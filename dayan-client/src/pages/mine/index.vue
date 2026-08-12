@@ -38,7 +38,7 @@
 
     <!-- 菜单 -->
     <view class="menu-card">
-      <view class="menu-item" @click="onTodo('我的订单')">
+      <view class="menu-item" @click="goOrders">
         <view class="menu-icon icon-cyan"><text class="icon-char">单</text></view>
         <text class="menu-text">我的订单</text>
         <text class="menu-arrow">›</text>
@@ -108,6 +108,9 @@ async function loadStats() {
 
 function goProfile() {
   uni.navigateTo({ url: '/pages/mine/view' });
+}
+function goOrders() {
+  uni.navigateTo({ url: '/pages/mine/orders' });
 }
 function goEquity() {
   uni.navigateTo({ url: '/pages/equity/list' });
