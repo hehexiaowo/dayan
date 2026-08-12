@@ -7,84 +7,75 @@
         <text class="name">{{ displayName }}</text>
       </view>
       <view class="banner">
-        <swiper v-if="banners.length" class="banner-swiper" circular autoplay :interval="4000" :duration="500">
-          <swiper-item v-for="b in banners" :key="b.bannerId" @click="onBanner(b)">
-            <image class="banner-img" :src="b.imageUrl" mode="aspectFill" />
-          </swiper-item>
-        </swiper>
-        <view v-else class="banner banner-placeholder">
+        <view class="banner-placeholder">
           <view class="banner-logo">大雁</view>
           <text class="banner-text">大雁养老 · 安心托付</text>
+          <text class="banner-sub">您的养老权益管家</text>
         </view>
       </view>
     </view>
 
-    <!-- 功能宫格 -->
-    <view class="grid">
-      <view class="grid-item" @click="goGrid('park')">
-        <view class="grid-icon icon-park">构</view>
-        <text class="grid-label">找机构</text>
+    <!-- 权益概览卡（已登录） -->
+    <view v-if="loggedIn" class="overview card" @click="goEquityList">
+      <view class="ov-item">
+        <text class="ov-num">{{ equityCount }}</text>
+        <text class="ov-label">我的权益（张）</text>
       </view>
-      <view class="grid-item" @click="goGrid('service')">
-        <view class="grid-icon icon-service">务</view>
-        <text class="grid-label">服务</text>
+      <view class="ov-divider"></view>
+      <view class="ov-item" @click.stop="goServiceList">
+        <text class="ov-num">{{ activeServiceCount }}</text>
+        <text class="ov-label">进行中服务</text>
       </view>
-      <view class="grid-item" @click="goGrid('equity')">
+    </view>
+
+    <!-- 未登录提示 -->
+    <view v-else class="overview card login-prompt" @click="goLogin">
+      <text class="login-tip">请登录后查看您的权益与服务</text>
+      <text class="login-btn">去登录 ></text>
+    </view>
+
+    <!-- 主功能宫格 -->
+    <view class="grid card">
+      <view class="grid-item primary" @click="goActivate">
+        <view class="grid-icon icon-activate">★</view>
+        <text class="grid-label">激活权益</text>
+        <text class="grid-sub">输入激活码</text>
+      </view>
+      <view class="grid-item" @click="goEquityList">
         <view class="grid-icon icon-equity">益</view>
         <text class="grid-label">我的权益</text>
       </view>
-      <view class="grid-item" @click="goGrid('order')">
-        <view class="grid-icon icon-order">单</view>
-        <text class="grid-label">我的订单</text>
+      <view class="grid-item" @click="goServiceList">
+        <view class="grid-icon icon-service">务</view>
+        <text class="grid-label">我的服务</text>
+      </view>
+      <view class="grid-item" @click="goPark">
+        <view class="grid-icon icon-park">构</view>
+        <text class="grid-label">找机构</text>
       </view>
     </view>
 
-    <!-- 推荐机构 -->
-    <view class="section">
-      <view class="section-head">
-        <text class="section-title">为你推荐</text>
-        <text class="section-more" @click="goGrid('park')">更多 ></text>
-      </view>
-
-      <view v-if="recommend.length" class="rec-list">
-        <view class="rec-card" v-for="p in recommend" :key="p.parkCode" @click="goParkDetail(p.parkCode)">
-          <image v-if="p.coverImage" class="rec-cover" :src="p.coverImage" mode="aspectFill" />
-          <view v-else class="rec-cover rec-cover-ph">
-            <text class="rec-cover-text">{{ p.parkName ? p.parkName.charAt(0) : '机构' }}</text>
-          </view>
-          <view class="rec-info">
-            <text class="rec-name">{{ p.parkName }}</text>
-            <view class="rec-meta">
-              <text v-if="p.ratingScore" class="rec-score">★ {{ p.ratingScore.toFixed(1) }}</text>
-              <text v-if="p.startPrice" class="rec-price">¥{{ p.startPrice }}/月起</text>
-            </view>
-            <text v-if="p.address" class="rec-addr">{{ p.address }}</text>
-            <view v-if="p.tags && p.tags.length" class="rec-tags">
-              <text class="tag" v-for="t in p.tags" :key="t">{{ t }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <view v-else class="empty">
-        <text class="empty-text">{{ loading ? '加载中...' : '暂无推荐，接口待后端提供' }}</text>
-      </view>
+    <!-- 权益引导（已登录且无权益时） -->
+    <view v-if="loggedIn && equityCount === 0 && !loading" class="guide card" @click="goActivate">
+      <text class="guide-title">您还没有激活权益</text>
+      <text class="guide-desc">手持权益卡？点此输入激活码，开启养老服务</text>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
-import { getBanners, getRecommend } from '@/api/home';
-import type { Banner, Park } from '@/types';
+import { getEquities } from '@/api/equity';
+import { getServices } from '@/api/service';
 
 const userStore = useUserStore();
-const banners = ref<Banner[]>([]);
-const recommend = ref<Park[]>([]);
+const equityCount = ref(0);
+const activeServiceCount = ref(0);
 const loading = ref(false);
 
+const loggedIn = computed(() => userStore.isLoggedIn);
 const displayName = computed(() => userStore.userInfo.realName || '尊贵客户');
 const greeting = computed(() => {
   const h = new Date().getHours();
@@ -95,56 +86,50 @@ const greeting = computed(() => {
   return '晚上好，';
 });
 
-async function loadData() {
+async function loadOverview() {
+  if (!loggedIn.value) return;
   loading.value = true;
-  // 后端业务接口未实现，降级为空状态
   try {
-    banners.value = await getBanners();
+    // 权益总数：size=1 只为拿 total
+    const eq = await getEquities({ current: 1, size: 1 });
+    equityCount.value = eq.total ?? 0;
   } catch (e) {
-    banners.value = [];
+    equityCount.value = 0;
   }
   try {
-    const list = await getRecommend();
-    recommend.value = Array.isArray(list) ? list : [];
+    // 进行中服务：取近期会话按状态过滤（1待分配~5服务中算进行中）
+    const sv = await getServices({ current: 1, size: 50 });
+    activeServiceCount.value = (sv.records ?? []).filter(
+      (s) => [1, 2, 3, 4, 5].includes(s.sessionStatus),
+    ).length;
   } catch (e) {
-    recommend.value = [];
+    activeServiceCount.value = 0;
   } finally {
     loading.value = false;
   }
 }
 
-function onBanner(b: Banner) {
-  if (b.linkUrl) {
-    uni.navigateTo({ url: b.linkUrl }).catch(() => {});
-  }
+function goLogin() {
+  uni.reLaunch({ url: '/pages/login/index' });
+}
+function goActivate() {
+  if (!loggedIn.value) return goLogin();
+  uni.navigateTo({ url: '/pages/equity/activate' });
+}
+function goEquityList() {
+  if (!loggedIn.value) return goLogin();
+  uni.navigateTo({ url: '/pages/equity/list' });
+}
+function goServiceList() {
+  if (!loggedIn.value) return goLogin();
+  uni.switchTab({ url: '/pages/service/index' });
+}
+function goPark() {
+  uni.switchTab({ url: '/pages/park/index' });
 }
 
-function goGrid(type: string) {
-  if (type === 'park') {
-    uni.switchTab({ url: '/pages/park/index' });
-  } else if (type === 'service') {
-    uni.switchTab({ url: '/pages/service/index' });
-  } else if (type === 'equity') {
-    uni.showToast({ title: '我的权益（待开发）', icon: 'none' });
-  } else if (type === 'order') {
-    uni.showToast({ title: '我的订单（待开发）', icon: 'none' });
-  }
-}
-
-function goParkDetail(code: string) {
-  uni.navigateTo({
-    url: `/pages/park/detail?id=${code}`,
-    fail: () => uni.showToast({ title: '机构详情页待开放', icon: 'none' }),
-  });
-}
-
-onMounted(loadData);
-onShow(() => {
-  // Tab 页每次展示时如未加载则加载
-  if (banners.value.length === 0 && recommend.value.length === 0) {
-    loadData();
-  }
-});
+// 仅用 onShow（避免 onMounted+onShow 双请求陷阱）
+onShow(loadOverview);
 </script>
 
 <style lang="scss" scoped>
@@ -157,7 +142,7 @@ onShow(() => {
 /* 顶部 */
 .header {
   background: linear-gradient(135deg, #67C23A 0%, #4eaf2a 100%);
-  padding: 40rpx 30rpx 50rpx;
+  padding: 40rpx 30rpx 70rpx;
 }
 .welcome {
   margin-bottom: 30rpx;
@@ -172,37 +157,89 @@ onShow(() => {
   }
 }
 .banner {
-  height: 260rpx;
+  height: 200rpx;
   border-radius: 16rpx;
   overflow: hidden;
   background: #fff;
 }
-.banner-swiper,
-.banner-img {
-  width: 100%;
-  height: 260rpx;
-}
 .banner-placeholder {
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   .banner-logo {
-    width: 100rpx;
-    height: 100rpx;
+    width: 80rpx;
+    height: 80rpx;
     border-radius: 50%;
     background: rgba(103, 194, 58, 0.15);
     color: #67C23A;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30rpx;
+    font-size: 28rpx;
     font-weight: bold;
   }
   .banner-text {
-    margin-top: 16rpx;
+    margin-top: 12rpx;
     color: #67C23A;
     font-size: 26rpx;
+    font-weight: bold;
+  }
+  .banner-sub {
+    margin-top: 4rpx;
+    color: #909399;
+    font-size: 22rpx;
+  }
+}
+
+/* 通用卡片 */
+.card {
+  background: #fff;
+  margin: -40rpx 24rpx 0;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+
+/* 概览卡 */
+.overview {
+  display: flex;
+  align-items: center;
+  padding: 36rpx 0;
+}
+.ov-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ov-num {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #67C23A;
+}
+.ov-label {
+  font-size: 24rpx;
+  color: #909399;
+  margin-top: 8rpx;
+}
+.ov-divider {
+  width: 1px;
+  height: 60rpx;
+  background: #ebeef5;
+}
+.login-prompt {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 36rpx 30rpx;
+  .login-tip {
+    font-size: 28rpx;
+    color: #606266;
+  }
+  .login-btn {
+    font-size: 28rpx;
+    color: #67C23A;
     font-weight: bold;
   }
 }
@@ -211,156 +248,67 @@ onShow(() => {
 .grid {
   display: flex;
   flex-wrap: wrap;
-  background: #fff;
-  margin: -30rpx 24rpx 0;
-  border-radius: 16rpx;
   padding: 30rpx 0;
-  position: relative;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 .grid-item {
-  width: 25%;
+  width: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 20rpx 0;
 }
 .grid-icon {
-  width: 88rpx;
-  height: 88rpx;
+  width: 96rpx;
+  height: 96rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: bold;
   margin-bottom: 14rpx;
 }
-.icon-park {
-  background: #67C23A;
-}
-.icon-service {
-  background: #e6a23c;
+.icon-activate {
+  background: linear-gradient(135deg, #67C23A, #4eaf2a);
+  box-shadow: 0 6rpx 16rpx rgba(103, 194, 58, 0.4);
+  font-size: 40rpx;
 }
 .icon-equity {
   background: #409eff;
 }
-.icon-order {
-  background: #f56c6c;
+.icon-service {
+  background: #e6a23c;
+}
+.icon-park {
+  background: #909399;
 }
 .grid-label {
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #303133;
+  font-weight: 500;
 }
-
-/* 推荐区 */
-.section {
-  margin: 30rpx 24rpx 0;
-}
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20rpx;
-}
-.section-title {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #303133;
-}
-.section-more {
-  font-size: 26rpx;
-  color: #67C23A;
-}
-.rec-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-}
-.rec-card {
-  background: #fff;
-  border-radius: 16rpx;
-  overflow: hidden;
-  display: flex;
-  padding: 20rpx;
-}
-.rec-cover {
-  width: 200rpx;
-  height: 160rpx;
-  border-radius: 12rpx;
-  flex-shrink: 0;
-  background: #f0f0f0;
-}
-.rec-cover-ph {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #95d475, #67C23A);
-}
-.rec-cover-text {
-  color: #fff;
-  font-size: 56rpx;
-  font-weight: bold;
-}
-.rec-info {
-  flex: 1;
-  margin-left: 20rpx;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow: hidden;
-}
-.rec-name {
-  font-size: 30rpx;
-  font-weight: bold;
-  color: #303133;
-}
-.rec-meta {
-  display: flex;
-  align-items: center;
-  margin-top: 8rpx;
-}
-.rec-score {
-  color: #ff9900;
-  font-size: 26rpx;
-  margin-right: 20rpx;
-}
-.rec-price {
-  color: #f56c6c;
-  font-size: 26rpx;
-  font-weight: bold;
-}
-.rec-addr {
-  font-size: 24rpx;
-  color: #909399;
-  margin-top: 8rpx;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.rec-tags {
-  margin-top: 8rpx;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-}
-.tag {
+.grid-sub {
   font-size: 20rpx;
-  color: #67C23A;
-  border: 1px solid #67C23A;
-  padding: 2rpx 12rpx;
-  border-radius: 6rpx;
+  color: #c0c4cc;
+  margin-top: 4rpx;
 }
 
-/* 空状态 */
-.empty {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 80rpx 0;
-  text-align: center;
-}
-.empty-text {
-  color: #909399;
-  font-size: 26rpx;
+/* 引导卡 */
+.guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 30rpx;
+  .guide-title {
+    font-size: 30rpx;
+    font-weight: bold;
+    color: #303133;
+  }
+  .guide-desc {
+    font-size: 24rpx;
+    color: #909399;
+    margin-top: 12rpx;
+  }
 }
 </style>

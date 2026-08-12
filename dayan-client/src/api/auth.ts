@@ -8,7 +8,9 @@ export interface ChannelOption {
 export interface LoginResult {
   token: string;
   tokenName: string;
-  agentCode: string;
+  clientCode: string;
+  /** 客户姓名（对齐后端 ClientLoginVO.clientName） */
+  clientName?: string;
   channelCode: string;
 }
 

@@ -124,6 +124,7 @@ public class ClientAuthServiceImpl implements ClientAuthService {
                 .token(logic.getTokenValue())
                 .tokenName(AccountType.CLIENT.getTokenName())
                 .clientCode(account.getClientCode())
+                .clientName(account.getUsername())
                 .channelCode(account.getChannelCode())
                 .build();
     }
@@ -150,6 +151,7 @@ public class ClientAuthServiceImpl implements ClientAuthService {
                 .token(logic.getTokenValue())
                 .tokenName(AccountType.CLIENT.getTokenName())
                 .clientCode(account.getClientCode())
+                .clientName(account.getUsername())
                 .channelCode(account.getChannelCode())
                 .build();
     }

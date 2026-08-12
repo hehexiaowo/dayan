@@ -27,7 +27,12 @@ export const useUserStore = defineStore('user', {
       const data = await loginApi(params);
       this.token = data.token;
       this.channelCode = data.channelCode;
-      this.userInfo = { accountCode: data.clientCode, channelCode: data.channelCode };
+      // clientName 来自后端 ClientLoginVO.clientName（client_account.username），用于首页/我的页问候展示
+      this.userInfo = {
+        accountCode: data.clientCode,
+        realName: data.clientName,
+        channelCode: data.channelCode,
+      };
       uni.setStorageSync('client_token', data.token);
       uni.setStorageSync('client_channel_code', data.channelCode);
       uni.setStorageSync('client_user', this.userInfo);

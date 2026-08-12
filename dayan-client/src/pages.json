@@ -4,7 +4,14 @@
     { "path": "pages/home/index", "style": { "navigationBarTitleText": "首页" } },
     { "path": "pages/park/index", "style": { "navigationBarTitleText": "找机构" } },
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务" } },
-    { "path": "pages/mine/index", "style": { "navigationBarTitleText": "我的" } }
+    { "path": "pages/mine/index", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/equity/activate", "style": { "navigationBarTitleText": "激活权益" } },
+    { "path": "pages/equity/list", "style": { "navigationBarTitleText": "我的权益" } },
+    { "path": "pages/equity/detail", "style": { "navigationBarTitleText": "权益详情" } },
+    { "path": "pages/equity/use-persons/index", "style": { "navigationBarTitleText": "权益人管理" } },
+    { "path": "pages/equity/use-persons/edit", "style": { "navigationBarTitleText": "权益人信息" } },
+    { "path": "pages/service/create", "style": { "navigationBarTitleText": "发起服务" } },
+    { "path": "pages/service/detail", "style": { "navigationBarTitleText": "服务详情" } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "white",

@@ -9,6 +9,6 @@ import lombok.Data;
 public class ClientActivateDTO {
 
     @NotBlank(message = "激活码不能为空")
-    @Pattern(regexp = "DY-[A-Za-z0-9]{8}", message = "激活码格式错误（DY-加8位）")
+    @Pattern(regexp = "DY[A-Z0-9]{8}", message = "激活码格式错误（DY加8位大写字母或数字）")
     private String activateCode;
 }

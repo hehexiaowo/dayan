@@ -16,6 +16,8 @@ public class ClientLoginVO {
     private String tokenName;
     /** 客户编码 */
     private String clientCode;
+    /** 客户姓名（client_account.username，前端展示用） */
+    private String clientName;
     /** 所属渠道编码 */
     private String channelCode;
 }

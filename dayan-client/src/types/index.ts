@@ -142,3 +142,48 @@ export interface Banner {
   imageUrl: string;
   linkUrl?: string;
 }
+
+// ============ 权益使用人（管理/复用） ============
+
+/** 新增使用人入参（对齐后端 EquityUsePersonCreateDTO） */
+export interface EquityUsePersonCreate {
+  equityCode: string;
+  usePersonName: string;
+  usePersonGender?: number;
+  usePersonPhone?: string;
+  usePersonIdCard?: string;
+  relationWithHolder?: string;
+  isDefaultHolder?: number;
+}
+
+/** 修改使用人入参（对齐后端 EquityUsePersonUpdateDTO） */
+export type EquityUsePersonUpdate = Partial<Omit<EquityUsePersonCreate, 'equityCode'>>;
+
+// ============ 服务跟进（时间线/评价） ============
+
+/** 时间线节点（对齐后端 ServiceTimelineVO.Node） */
+export interface TimelineNode {
+  /** 节点类型：demand/solution/arrange/visit */
+  type: string;
+  title: string;
+  content?: string;
+  time?: number | string;
+  status?: number;
+}
+
+/** 服务进度时间线（对齐后端 ServiceTimelineVO） */
+export interface Timeline {
+  demands: TimelineNode[];
+  solutions: TimelineNode[];
+  arranges: TimelineNode[];
+  visits: TimelineNode[];
+}
+
+/** 客户端评价入参（对齐后端 ClientEvaluationDTO） */
+export interface EvaluationCreate {
+  attitudeRating: number;
+  professionalRating: number;
+  responsivenessRating: number;
+  satisfactionRating: number;
+  content?: string;
+}

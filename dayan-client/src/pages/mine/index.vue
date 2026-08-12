@@ -13,55 +13,35 @@
       <view v-if="userStore.channelCode" class="channel-tag">{{ userStore.channelCode }}</view>
     </view>
 
-    <!-- 统计概览（权益/订单入口快捷） -->
+    <!-- 统计概览（真实数据） -->
     <view class="stats">
-      <view class="stat-item" @click="onMenu('equity')">
-        <text class="stat-num">{{ stats.equity }}</text>
+      <view class="stat-item" @click="goEquity">
+        <text class="stat-num">{{ equityCount }}</text>
         <text class="stat-label">我的权益</text>
       </view>
       <view class="stat-divider"></view>
-      <view class="stat-item" @click="onMenu('order')">
-        <text class="stat-num">{{ stats.order }}</text>
-        <text class="stat-label">我的订单</text>
-      </view>
-      <view class="stat-divider"></view>
-      <view class="stat-item" @click="onMenu('service')">
-        <text class="stat-num">{{ stats.service }}</text>
+      <view class="stat-item" @click="goService">
+        <text class="stat-num">{{ serviceCount }}</text>
         <text class="stat-label">服务会话</text>
       </view>
     </view>
 
     <!-- 功能列表 -->
     <view class="menu-group">
-      <view class="menu-item" @click="onMenu('equity')">
+      <view class="menu-item" @click="goEquity">
         <text class="menu-icon" style="color: #67C23A">益</text>
         <text class="menu-text">我的权益</text>
         <text class="menu-arrow">></text>
       </view>
-      <view class="menu-item" @click="onMenu('order')">
-        <text class="menu-icon" style="color: #f56c6c">单</text>
-        <text class="menu-text">我的订单</text>
-        <text class="menu-arrow">></text>
-      </view>
-      <view class="menu-item" @click="onMenu('address')">
-        <text class="menu-icon" style="color: #e6a23c">址</text>
-        <text class="menu-text">收货地址</text>
-        <text class="menu-arrow">></text>
-      </view>
-      <view class="menu-item" @click="onMenu('health')">
-        <text class="menu-icon" style="color: #409eff">档</text>
-        <text class="menu-text">健康档案</text>
+      <view class="menu-item" @click="goService">
+        <text class="menu-icon" style="color: #e6a23c">务</text>
+        <text class="menu-text">我的服务</text>
         <text class="menu-arrow">></text>
       </view>
     </view>
 
     <view class="menu-group">
-      <view class="menu-item" @click="onMenu('setting')">
-        <text class="menu-icon" style="color: #909399">置</text>
-        <text class="menu-text">设置</text>
-        <text class="menu-arrow">></text>
-      </view>
-      <view class="menu-item" @click="onMenu('about')">
+      <view class="menu-item" @click="onAbout">
         <text class="menu-icon" style="color: #909399">关</text>
         <text class="menu-text">关于我们</text>
         <text class="menu-arrow">></text>
@@ -76,44 +56,64 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
+import { logoutApi } from '@/api/auth';
+import { getEquities } from '@/api/equity';
+import { getServices } from '@/api/service';
 
 const userStore = useUserStore();
-
-const stats = reactive({ equity: 0, order: 0, service: 0 });
+const equityCount = ref(0);
+const serviceCount = ref(0);
 
 const displayName = computed(() => userStore.userInfo.realName || '尊贵客户');
 const avatarText = computed(() => (displayName.value || '客').charAt(0));
 const maskedMobile = computed(() => {
+  // accountCode 存的是 clientCode，手机号未单独存；优先用 channelCode 标签展示渠道
   const code = userStore.userInfo.accountCode || '';
   if (!code) return '未绑定手机';
   const s = String(code);
-  if (s.length >= 11) return s.slice(0, 3) + '****' + s.slice(-4);
+  // clientCode 形如 CL0000000001，不脱敏直接展示编码
   return s;
 });
 
-function onMenu(type: string) {
-  const msgs: Record<string, string> = {
-    equity: '我的权益（待开发）',
-    order: '我的订单（待开发）',
-    address: '收货地址（待开发）',
-    health: '健康档案（待开发）',
-    setting: '设置（待开发）',
-    about: '大雁养老 Client 端 v1.0.0',
-  };
-  if (msgs[type]) {
-    uni.showToast({ title: msgs[type], icon: 'none' });
+async function loadStats() {
+  if (!userStore.isLoggedIn) return;
+  try {
+    const eq = await getEquities({ current: 1, size: 1 });
+    equityCount.value = eq.total ?? 0;
+  } catch (e) {
+    equityCount.value = 0;
+  }
+  try {
+    const sv = await getServices({ current: 1, size: 1 });
+    serviceCount.value = sv.total ?? 0;
+  } catch (e) {
+    serviceCount.value = 0;
   }
 }
 
+function goEquity() {
+  uni.navigateTo({ url: '/pages/equity/list' });
+}
+function goService() {
+  uni.switchTab({ url: '/pages/service/index' });
+}
+function onAbout() {
+  uni.showToast({ title: '大雁养老 客户端 v1.0.0', icon: 'none' });
+}
 function onLogout() {
   uni.showModal({
     title: '提示',
     content: '确定退出登录吗？',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
+        try {
+          await logoutApi();
+        } catch (e) {
+          // 忽略登出接口失败，本地清登录态即可
+        }
         userStore.logout();
         uni.reLaunch({ url: '/pages/login/index' });
       }
@@ -121,9 +121,7 @@ function onLogout() {
   });
 }
 
-onShow(() => {
-  // 数据来自本地 user store，无需请求
-});
+onShow(loadStats);
 </script>
 
 <style lang="scss" scoped>
