@@ -1,0 +1,76 @@
+/**
+ * 大雁养老 客户端设计令牌
+ *
+ * 统一全项目颜色/间距/圆角/阴影/渐变，消除硬编码 hex。
+ * 各页面 @import '@/styles/variables.scss' 后使用。
+ *
+ * 说明：客户端品牌色为绿色 #67C23A（区别于 agent 端蓝色 #409eff）。
+ * 养老网络的三网络语义色（vital 蓝 / care 橙 / sojourn 绿）为数据语义，
+ * 经 $network-blue / $brand-warning / $brand-success 表达，不随品牌色变化。
+ */
+
+// ===== 品牌色系（绿）=====
+$brand-primary: #67c23a;
+$brand-primary-dark: #539b2e;
+$brand-primary-light: #f0f9eb;
+$brand-success: #19be6b;
+$brand-success-light: #edfff3;
+$brand-warning: #ff9900;
+$brand-warning-light: #fff7e6;
+$brand-error: #fa3534;
+$brand-error-light: #fef0f0;
+$brand-info: #909399;
+$brand-info-light: #f4f4f5;
+
+// ===== 养老网络语义色（不随品牌变化）=====
+// vital 活力长居 = 蓝；care 照护长居 = 橙（复用 $brand-warning）；sojourn 旅居养老 = 绿（复用 $brand-success）
+$network-blue: #409eff;
+$network-blue-light: #ecf5ff;
+
+// ===== 文本灰阶（4 级）=====
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-placeholder: #c0c4cc;
+
+// ===== 背景 =====
+$bg-page: #f5f6f8;
+$bg-card: #ffffff;
+$bg-mask: rgba(0, 0, 0, 0.45);
+
+// ===== 边框 =====
+$border-base: #ebeef5;
+$border-light: #f0f0f0;
+
+// ===== 圆角（3 级）=====
+$radius-sm: 8rpx;
+$radius-md: 16rpx;
+$radius-lg: 24rpx;
+
+// ===== 阴影 =====
+$shadow-card: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+$shadow-hover: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+$shadow-fab: 0 8rpx 24rpx rgba(103, 194, 58, 0.35);
+
+// ===== 间距 =====
+$spacing-xs: 8rpx;
+$spacing-sm: 16rpx;
+$spacing-md: 24rpx;
+$spacing-lg: 32rpx;
+$spacing-xl: 48rpx;
+
+// ===== 表单控件高度（44px 触控基准）=====
+$control-height: 88rpx;       // 表单输入框、主按钮统一高度
+$control-height-sm: 72rpx;    // 搜索栏等内联控件
+
+// ===== 渐变 =====
+$gradient-brand: linear-gradient(135deg, #67c23a, #85ce61);   // 品牌渐变（绿）
+$gradient-blue: linear-gradient(135deg, #409eff, #5f8afe);    // vital 网络 / 通用蓝
+$gradient-green: linear-gradient(135deg, #19be6b, #2bcc7a);   // sojourn 网络
+$gradient-orange: linear-gradient(135deg, #ff9900, #ffb84d);  // care 网络
+$gradient-red: linear-gradient(135deg, #fa3534, #ff6b6b);
+$gradient-gray: linear-gradient(135deg, #909399, #b1b3b8);
+
+// ===== 动画 =====
+$transition-fast: 150ms ease;
+$transition-base: 200ms ease;

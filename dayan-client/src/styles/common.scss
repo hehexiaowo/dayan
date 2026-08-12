@@ -1,0 +1,202 @@
+/**
+ * 大雁养老 客户端公共样式类
+ *
+ * 需配合 variables.scss 使用，App.vue 全局引入后所有页面可用 dy-* 类。
+ */
+
+// ===== 卡片 =====
+.dy-card {
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+// ===== 区块标题 =====
+.dy-section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: $text-primary;
+  padding: $spacing-md $spacing-md $spacing-sm;
+}
+
+// ===== tabBar 安全间距 =====
+.dy-safe-bottom {
+  padding-bottom: 140rpx;
+}
+
+// ===== 细分割线 =====
+.dy-divider {
+  height: 1rpx;
+  background: $border-light;
+  margin: $spacing-sm 0;
+}
+
+// ===== 点击反馈 =====
+.dy-clickable {
+  cursor: pointer;
+  transition: transform $transition-fast, box-shadow $transition-fast;
+
+  &:active {
+    transform: scale(0.98);
+    box-shadow: $shadow-card;
+  }
+}
+
+// ===== 文本截断 =====
+.dy-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dy-ellipsis-2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+// ===== 渐变文字 =====
+.dy-gradient-text {
+  background: $gradient-brand;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+// ===== 状态标签基础 =====
+.dy-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  line-height: 1.4;
+}
+
+// 品牌绿标签
+.dy-tag-primary {
+  background: $brand-primary-light;
+  color: $brand-primary;
+}
+
+// 养老网络语义标签（颜色不随品牌变化）
+.dy-tag-blue {
+  background: $network-blue-light;
+  color: $network-blue;
+}
+
+.dy-tag-green {
+  background: $brand-success-light;
+  color: $brand-success;
+}
+
+.dy-tag-orange {
+  background: $brand-warning-light;
+  color: $brand-warning;
+}
+
+.dy-tag-red {
+  background: $brand-error-light;
+  color: $brand-error;
+}
+
+.dy-tag-gray {
+  background: $brand-info-light;
+  color: $brand-info;
+}
+
+// ===== 统一表单输入框（全宽，用于登录/表单页）=====
+// 注意：uni-app H5 编译 <input> 为 <uni-input> 自定义元素，默认 display:inline 会忽略 height。
+//       必须 display:block 才能让 height 生效，内部 .uni-input-wrapper(100%) 才能撑满。
+.dy-input {
+  display: block;
+  width: 100%;
+  height: $control-height;
+  padding: 0 $spacing-md;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  font-size: 30rpx;
+  color: $text-primary;
+  background: $bg-card;
+  box-sizing: border-box;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    border-color: $brand-primary;
+  }
+}
+
+// ===== 统一文本域 =====
+.dy-textarea {
+  display: block;
+  width: 100%;
+  min-height: 120rpx;
+  padding: $spacing-sm $spacing-md;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  font-size: 30rpx;
+  color: $text-primary;
+  background: $bg-card;
+  box-sizing: border-box;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    border-color: $brand-primary;
+  }
+}
+
+// ===== 统一搜索输入框（内联，比表单输入框矮）=====
+.dy-search {
+  display: block;
+  flex: 1;
+  height: $control-height-sm;
+  padding: 0 $spacing-md;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  font-size: 28rpx;
+  color: $text-primary;
+  background: $bg-card;
+  box-sizing: border-box;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    border-color: $brand-primary;
+  }
+}
+
+// ===== 统一按钮（全宽主按钮）=====
+.dy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: $control-height;
+  border-radius: $radius-md;
+  font-size: 30rpx;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform $transition-fast, opacity $transition-fast;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.dy-btn-primary {
+  background: $gradient-brand;
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(103, 194, 58, 0.3);
+}
+
+.dy-btn-outline {
+  background: $bg-card;
+  color: $brand-primary;
+  border: 2rpx solid $brand-primary;
+}
+
+.dy-btn-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}

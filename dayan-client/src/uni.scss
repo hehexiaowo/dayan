@@ -1,10 +1,17 @@
-/* uView 主题变量 */
-$u-primary: #409eff;
+/**
+ * uni.scss —— uni-app 自动注入到每个组件的变量文件（仅 SCSS 变量，不含样式类）。
+ *
+ * 设计令牌的权威定义在 @/styles/variables.scss，本文件保留 uni-app 约定的主题变量
+ * 并与之对齐（客户端品牌色为绿色 #67C23A）。
+ */
+
+/* uView 约定主题变量（对齐客户端品牌色） */
+$u-primary: #67c23a;
 $u-warning: #ff9900;
 $u-success: #19be6b;
 $u-error: #fa3534;
 $u-info: #909399;
 
 /* 项目自定义变量（主色与 tabBar 一致：绿 #67C23A） */
-$dayan-primary: #67C23A;
+$dayan-primary: #67c23a;
 $dayan-bg: #f5f6f8;
