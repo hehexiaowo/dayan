@@ -23,6 +23,7 @@
     { "path": "pages/profile/view", "style": { "navigationBarTitleText": "个人资料" } },
     { "path": "pages/profile/settings", "style": { "navigationBarTitleText": "设置" } },
     { "path": "pages/profile/edit", "style": { "navigationBarTitleText": "编辑资料" } },
+    { "path": "pages/profile/about", "style": { "navigationBarTitleText": "关于大雁" } },
     {
       "path": "pages/business/park/index",
       "style": { "navigationBarTitleText": "服务网络" }

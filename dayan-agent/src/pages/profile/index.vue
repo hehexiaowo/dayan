@@ -1,6 +1,6 @@
 <template>
   <view class="page">
-    <!-- 个人信息卡（渐变，点击进资料查看） -->
+    <!-- 个人信息卡（蓝色渐变，点击进资料查看） -->
     <view class="profile-card dy-clickable" @click="goView">
       <text class="edit-hint">查看资料 ›</text>
       <view class="profile-row">
@@ -27,21 +27,47 @@
       </view>
     </view>
 
-    <!-- 菜单列表 -->
-    <view class="menu">
-      <view
-        v-for="item in menuItems"
-        :key="item.key"
-        class="menu-item dy-clickable"
-        @click="onMenu(item)"
-      >
-        <DyIconBlock
-          :text="item.label.charAt(0)"
-          :color="item.color"
-          size="sm"
-          shape="circle"
-        />
-        <text class="menu-label">{{ item.label }}</text>
+    <!-- 快捷入口（白色卡，浮于 hero） -->
+    <view class="quick-card">
+      <view class="quick-item dy-clickable" @click="goNewLead">
+        <DyIconBlock text="线" color="blue" size="md" shape="circle" />
+        <text class="quick-label">新增线索</text>
+      </view>
+      <view class="quick-item dy-clickable" @click="goEquityDepot">
+        <DyIconBlock text="仓" color="green" size="md" shape="circle" />
+        <text class="quick-label">权益仓库</text>
+      </view>
+      <view class="quick-item dy-clickable" @click="goLearning">
+        <DyIconBlock text="课" color="orange" size="md" shape="circle" />
+        <text class="quick-label">新增课程</text>
+      </view>
+    </view>
+
+    <!-- 菜单卡片 -->
+    <view class="menu-card">
+      <view class="menu-item dy-clickable" @click="onTodo('订单记录')">
+        <DyIconBlock text="单" color="blue" size="sm" shape="circle" />
+        <text class="menu-label">订单记录</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item dy-clickable" @click="onTodo('分享记录')">
+        <DyIconBlock text="享" color="red" size="sm" shape="circle" />
+        <text class="menu-label">分享记录</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item dy-clickable" @click="goSettings">
+        <DyIconBlock text="设" color="gray" size="sm" shape="circle" />
+        <text class="menu-label">系统设置</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item dy-clickable" @click="goAbout">
+        <DyIconBlock text="关" color="gray" size="sm" shape="circle" />
+        <text class="menu-label">关于大雁</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item menu-danger dy-clickable" @click="onLogout">
+        <DyIconBlock text="退" color="red" size="sm" shape="circle" />
+        <text class="menu-label danger">退出登录</text>
         <text class="menu-arrow">›</text>
       </view>
     </view>
@@ -53,12 +79,11 @@ import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
 import { getProfile } from '@/api/agent';
+import { logoutApi } from '@/api/auth';
 import type { AgentProfile } from '@/types';
 import { AGENT_LEVEL_MAP } from '@/types';
 import { formatFileUrl } from '@/utils/file';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
-
-type IconColor = 'blue' | 'green' | 'orange' | 'red' | 'gray';
 
 const userStore = useUserStore();
 
@@ -84,10 +109,12 @@ const avatarChar = computed(() => {
 /** 头像 URL（OSS key 转可访问地址） */
 const avatarUrl = computed(() => formatFileUrl(profile.value.avatar));
 
-/** 渠道行：公司名 → 渠道名 → 渠道编码 */
+/**
+ * 渠道简称：channelName（后端=channel_info.short_name）→ channelCode → store
+ * 注意：不再优先 companyName（那是代理人所属公司全称，偏长）。
+ */
 const channelText = computed(() => {
   return (
-    profile.value.companyName ||
     profile.value.channelName ||
     profile.value.channelCode ||
     userStore.channelCode ||
@@ -107,36 +134,43 @@ function maskPhone(p?: string): string {
   return p.length === 11 ? `${p.slice(0, 3)}****${p.slice(7)}` : p;
 }
 
-interface MenuItem {
-  key: string;
-  label: string;
-  color: IconColor;
-}
-
-const menuItems: MenuItem[] = [
-  { key: 'stats', label: '经营数据', color: 'blue' },
-  { key: 'equity', label: '我的权益', color: 'green' },
-  { key: 'orders', label: '我的订单', color: 'orange' },
-  { key: 'shares', label: '分享记录', color: 'red' },
-  { key: 'settings', label: '设置', color: 'gray' },
-];
-
-function onMenu(item: MenuItem) {
-  if (item.key === 'settings') {
-    uni.navigateTo({ url: '/pages/profile/settings' });
-    return;
-  }
-  const tips: Record<string, string> = {
-    stats: '经营数据（Inc 6 上线）',
-    equity: '我的权益（Inc 6 上线）',
-    orders: '我的订单（Inc 6 上线）',
-    shares: '分享记录（Inc 4 上线）',
-  };
-  uni.showToast({ title: tips[item.key] || '开发中', icon: 'none' });
-}
-
 function goView() {
   uni.navigateTo({ url: '/pages/profile/view' });
+}
+function goNewLead() {
+  uni.navigateTo({ url: '/pages/acquisition/lead/form' });
+}
+function goEquityDepot() {
+  uni.showToast({ title: '权益仓库开发中', icon: 'none' });
+}
+function goLearning() {
+  uni.switchTab({ url: '/pages/learning/index' });
+}
+function goSettings() {
+  uni.navigateTo({ url: '/pages/profile/settings' });
+}
+function goAbout() {
+  uni.navigateTo({ url: '/pages/profile/about' });
+}
+function onTodo(name: string) {
+  uni.showToast({ title: `${name}（开发中）`, icon: 'none' });
+}
+function onLogout() {
+  uni.showModal({
+    title: '提示',
+    content: '确定退出登录吗？',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await logoutApi();
+        } catch {
+          // 忽略登出接口失败，本地清登录态即可
+        }
+        userStore.logout();
+        uni.reLaunch({ url: '/pages/login/index' });
+      }
+    },
+  });
 }
 
 async function loadProfile() {
@@ -149,6 +183,7 @@ async function loadProfile() {
   }
 }
 
+// 仅用 onShow（避免 onMounted+onShow 双请求陷阱）
 onShow(() => {
   loadProfile();
 });
@@ -252,11 +287,34 @@ onShow(() => {
   opacity: 0.9;
 }
 
-/* 菜单 */
-.menu {
+/* 快捷入口卡（浮于 hero） */
+.quick-card {
+  display: flex;
+  align-items: center;
+  background: $bg-card;
+  margin: -40rpx 0 0;
+  border-radius: $radius-lg;
+  padding: 36rpx 0;
+  position: relative;
+  box-shadow: $shadow-card;
+}
+.quick-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.quick-label {
+  font-size: 24rpx;
+  color: $text-regular;
+  margin-top: 14rpx;
+}
+
+/* 菜单卡片 */
+.menu-card {
   margin-top: $spacing-md;
   background: $bg-card;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   overflow: hidden;
   box-shadow: $shadow-card;
 }
@@ -265,18 +323,32 @@ onShow(() => {
   align-items: center;
   padding: 28rpx;
   border-bottom: 1rpx solid $border-light;
-}
-.menu-item:last-child {
-  border-bottom: none;
+  transition: background $transition-fast;
+
+  &:active {
+    background: $bg-page;
+  }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 .menu-label {
   margin-left: $spacing-md;
   font-size: 30rpx;
   color: $text-primary;
   flex: 1;
+
+  &.danger {
+    color: $brand-error;
+  }
 }
 .menu-arrow {
   font-size: 36rpx;
   color: $text-placeholder;
+}
+.menu-danger {
+  &:active {
+    background: $brand-error-light;
+  }
 }
 </style>
