@@ -20,6 +20,8 @@
     { "path": "pages/mine/view", "style": { "navigationBarTitleText": "查看资料" } },
     { "path": "pages/mine/edit", "style": { "navigationBarTitleText": "编辑资料" } },
     { "path": "pages/mine/orders", "style": { "navigationBarTitleText": "我的订单" } },
+    { "path": "pages/mine/help", "style": { "navigationBarTitleText": "帮助中心" } },
+    { "path": "pages/mine/about", "style": { "navigationBarTitleText": "关于我们" } },
     { "path": "pages/equity/activate", "style": { "navigationBarTitleText": "激活权益" } },
     { "path": "pages/equity/list", "style": { "navigationBarTitleText": "我的权益" } },
     { "path": "pages/equity/detail", "style": { "navigationBarTitleText": "权益详情" } },

@@ -43,12 +43,12 @@
         <text class="menu-text">我的订单</text>
         <text class="menu-arrow">›</text>
       </view>
-      <view class="menu-item" @click="onTodo('帮助中心')">
+      <view class="menu-item" @click="goHelp">
         <view class="menu-icon icon-teal"><text class="icon-char">帮</text></view>
         <text class="menu-text">帮助中心</text>
         <text class="menu-arrow">›</text>
       </view>
-      <view class="menu-item" @click="onAbout">
+      <view class="menu-item" @click="goAbout">
         <view class="menu-icon icon-gray"><text class="icon-char">关</text></view>
         <text class="menu-text">关于我们</text>
         <text class="menu-arrow">›</text>
@@ -112,6 +112,12 @@ function goProfile() {
 function goOrders() {
   uni.navigateTo({ url: '/pages/mine/orders' });
 }
+function goHelp() {
+  uni.navigateTo({ url: '/pages/mine/help' });
+}
+function goAbout() {
+  uni.navigateTo({ url: '/pages/mine/about' });
+}
 function goEquity() {
   uni.navigateTo({ url: '/pages/equity/list' });
 }
@@ -120,12 +126,6 @@ function goService() {
 }
 function goUsePersons() {
   uni.navigateTo({ url: '/pages/equity/use-persons/index' });
-}
-function onTodo(name: string) {
-  uni.showToast({ title: `${name}功能即将开放`, icon: 'none' });
-}
-function onAbout() {
-  uni.showToast({ title: '大雁养老 客户端 v1.0.0', icon: 'none' });
 }
 function onLogout() {
   uni.showModal({
