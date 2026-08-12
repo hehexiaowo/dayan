@@ -2,7 +2,6 @@
   <view class="page">
     <!-- 个人信息卡（蓝色渐变，点击进资料查看） -->
     <view class="profile-card dy-clickable" @click="goView">
-      <text class="edit-hint">查看资料 ›</text>
       <view class="profile-row">
         <view class="avatar-wrap">
           <image
@@ -23,6 +22,10 @@
           </view>
           <view class="channel">渠道：{{ channelText }}</view>
           <view class="channel">手机：{{ maskPhone(profile.phone) }}</view>
+        </view>
+        <view class="profile-arrow">
+          <text class="arrow-text">查看资料</text>
+          <text class="arrow-icon">›</text>
         </view>
       </view>
     </view>
@@ -228,20 +231,27 @@ onShow(() => {
   background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 70%);
   pointer-events: none;
 }
-.edit-hint {
-  position: absolute;
-  top: $spacing-md;
-  right: $spacing-lg;
-  z-index: 1;
-  font-size: 22rpx;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 999rpx;
-  padding: 6rpx 20rpx;
+.profile-arrow {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 24rpx;
+  padding: 10rpx 20rpx;
+  flex-shrink: 0;
+  align-self: center;
   transition: background $transition-fast;
 }
-.profile-card:active .edit-hint {
-  background: rgba(255, 255, 255, 0.35);
+.profile-card:active .profile-arrow {
+  background: rgba(255, 255, 255, 0.32);
+}
+.arrow-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.95);
+}
+.arrow-icon {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.95);
 }
 .profile-row {
   display: flex;
@@ -315,12 +325,12 @@ onShow(() => {
   opacity: 0.9;
 }
 
-/* 快捷入口卡（浮于 hero） */
+/* 快捷入口卡（正常间距，不再上浮盖住 hero） */
 .quick-card {
   display: flex;
   align-items: center;
   background: $bg-card;
-  margin: -40rpx 0 0;
+  margin: $spacing-md 0 0;
   border-radius: $radius-lg;
   padding: 36rpx 0;
   position: relative;
