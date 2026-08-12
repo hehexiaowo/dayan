@@ -3,9 +3,12 @@ package com.dayan.client.service.impl;
 import cn.dev33.satoken.stp.StpLogic;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.client.dto.ClientLoginDTO;
+import com.dayan.client.dto.SmsLoginDTO;
 import com.dayan.client.entity.ClientAccount;
 import com.dayan.client.mapper.ClientAccountMapper;
 import com.dayan.client.service.ClientAuthService;
+import com.dayan.client.service.ClientSmsCodeService;
+import com.dayan.client.service.ClientWeChatLoginService;
 import com.dayan.client.vo.ChannelOptionVO;
 import com.dayan.client.vo.ClientLoginVO;
 import com.dayan.common.core.exception.AccountLockedException;
@@ -28,11 +31,11 @@ import java.util.stream.Collectors;
  *
  * <p>登录流程：
  * <ol>
- *   <li>按 channelCode + (phone 或 open_id) 查询 client_account</li>
+ *   <li>按 channelCode + (phone/open_id) 查询 client_account</li>
  *   <li>校验账号状态（锁定/禁用）</li>
- *   <li>BCrypt 校验密码</li>
+ *   <li>密码登录：BCrypt 校验密码；验证码登录：校验 Redis 验证码</li>
  *   <li>Sa-Token login（loginType=client，独立命名空间）</li>
- *   <li>Session 存入 channelCode</li>
+ *   <li>Session 存入 channelCode/clientCode/clientFullName</li>
  *   <li>更新登录时间/次数</li>
  * </ol>
  *
@@ -45,6 +48,8 @@ public class ClientAuthServiceImpl implements ClientAuthService {
 
     private final ClientAccountMapper accountMapper;
     private final PasswordService passwordService;
+    private final ClientSmsCodeService smsCodeService;
+    private final ClientWeChatLoginService weChatLoginService;
 
     @Override
     public List<ChannelOptionVO> listChannels(String mobile, String openId) {
@@ -74,32 +79,80 @@ public class ClientAuthServiceImpl implements ClientAuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClientLoginVO login(ClientLoginDTO dto) {
-        // 1. 按 channelCode + (phone 或 open_id) 查询账号
-        LambdaQueryWrapper<ClientAccount> wrapper = new LambdaQueryWrapper<ClientAccount>()
-                .eq(ClientAccount::getChannelCode, dto.getChannelCode());
-        wrapper.and(w -> w.eq(ClientAccount::getPhone, dto.getIdentifier())
-                .or()
-                .eq(ClientAccount::getOpenId, dto.getIdentifier()))
-                .last("LIMIT 1");
-        ClientAccount account = accountMapper.selectOne(wrapper);
+        ClientAccount account = findByIdentifier(dto.getChannelCode(), dto.getIdentifier());
         if (account == null) {
             throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
         }
+        checkAccountStatus(account);
+        if (!passwordService.matches(dto.getPassword(), account.getPassword())) {
+            throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
+        }
+        return doLogin(account);
+    }
 
-        // 2. 校验账号状态
+    @Override
+    public ClientLoginVO smsLogin(SmsLoginDTO dto) {
+        // 1. 校验验证码
+        if (!smsCodeService.verifyAndConsume(dto.getMobile(), dto.getCode())) {
+            throw new BusinessException(ErrorCode.BUSINESS, "验证码错误或已过期");
+        }
+        // 2. 查账号
+        ClientAccount account = accountMapper.selectOne(new LambdaQueryWrapper<ClientAccount>()
+                .eq(ClientAccount::getChannelCode, dto.getChannelCode())
+                .eq(ClientAccount::getPhone, dto.getMobile())
+                .last("LIMIT 1"));
+        if (account == null) {
+            throw new BusinessException(ErrorCode.BUSINESS, "账号不存在");
+        }
+        checkAccountStatus(account);
+        return doLogin(account);
+    }
+
+    @Override
+    public ClientLoginVO wxLogin(String code, String channelCode) {
+        // 1. code → openId（骨架实现会抛异常）
+        String openId = weChatLoginService.code2Session(code, channelCode);
+        // 2. 按 openId + channelCode 查账号
+        ClientAccount account = accountMapper.selectOne(new LambdaQueryWrapper<ClientAccount>()
+                .eq(ClientAccount::getChannelCode, channelCode)
+                .eq(ClientAccount::getOpenId, openId)
+                .last("LIMIT 1"));
+        if (account == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "该微信未绑定客户账号");
+        }
+        checkAccountStatus(account);
+        return doLogin(account);
+    }
+
+    // ==================== 内部方法 ====================
+
+    /**
+     * 按 channelCode + identifier（phone / open_id）查账号。
+     */
+    private ClientAccount findByIdentifier(String channelCode, String identifier) {
+        LambdaQueryWrapper<ClientAccount> wrapper = new LambdaQueryWrapper<ClientAccount>()
+                .eq(ClientAccount::getChannelCode, channelCode);
+        wrapper.and(w -> w.eq(ClientAccount::getPhone, identifier)
+                .or()
+                .eq(ClientAccount::getOpenId, identifier))
+                .last("LIMIT 1");
+        return accountMapper.selectOne(wrapper);
+    }
+
+    private void checkAccountStatus(ClientAccount account) {
         if (account.getAccountStatus() != null && account.getAccountStatus() == 0) {
             throw new AccountLockedException("账号已被锁定，请联系管理员");
         }
         if (account.getAccountStatus() != null && account.getAccountStatus() == 2) {
             throw new BusinessException(ErrorCode.BUSINESS, "账号已被禁用");
         }
+    }
 
-        // 3. BCrypt 校验密码
-        if (!passwordService.matches(dto.getPassword(), account.getPassword())) {
-            throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
-        }
-
-        // 4. Sa-Token 登录（client 命名空间）
+    /**
+     * 公共登录收尾：Sa-Token 登录 + Session 快照 + 更新登录时间/次数 + 构造返回 VO。
+     * 密码 / 验证码 / 微信三种登录方式共用。
+     */
+    private ClientLoginVO doLogin(ClientAccount account) {
         StpLogic logic = StpKit.CLIENT;
         logic.login(account.getClientCode());
         logic.getSession().set("channelCode", account.getChannelCode());
@@ -110,7 +163,7 @@ public class ClientAuthServiceImpl implements ClientAuthService {
         String clientFullName = account.getUsername() != null ? account.getUsername() : account.getClientCode();
         logic.getSession().set("clientFullName", clientFullName);
 
-        // 5. 更新登录时间/次数
+        // 更新登录时间/次数
         ClientAccount update = new ClientAccount();
         update.setId(account.getId());
         update.setLoginCount((account.getLoginCount() == null ? 0 : account.getLoginCount()) + 1);

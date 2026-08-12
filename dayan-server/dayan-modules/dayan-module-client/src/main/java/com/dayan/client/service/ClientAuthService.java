@@ -1,6 +1,7 @@
 package com.dayan.client.service;
 
 import com.dayan.client.dto.ClientLoginDTO;
+import com.dayan.client.dto.SmsLoginDTO;
 import com.dayan.client.vo.ChannelOptionVO;
 import com.dayan.client.vo.ClientLoginVO;
 
@@ -10,6 +11,7 @@ import java.util.List;
  * Client 客户端认证服务。
  *
  * <p>支持"选渠道"特性：先按手机号/OpenID 检索关联渠道，再选定渠道登录。
+ * <p>支持三种登录方式：密码登录、短信验证码登录、微信授权登录。
  */
 public interface ClientAuthService {
 
@@ -28,6 +30,23 @@ public interface ClientAuthService {
      * @return 登录成功信息（含 Token）
      */
     ClientLoginVO login(ClientLoginDTO dto);
+
+    /**
+     * 验证码登录：channelCode + 手机号 + 短信验证码。
+     *
+     * @param dto 验证码登录请求
+     * @return 登录成功信息（含 Token）
+     */
+    ClientLoginVO smsLogin(SmsLoginDTO dto);
+
+    /**
+     * 微信授权登录：channelCode + 微信 code → openId 匹配 client_account。
+     *
+     * @param code        微信登录凭证
+     * @param channelCode 渠道编码
+     * @return 登录成功信息（含 Token）
+     */
+    ClientLoginVO wxLogin(String code, String channelCode);
 
     /**
      * 登出。

@@ -1,9 +1,14 @@
 package com.dayan.client.controller.client;
 
 import com.dayan.client.dto.ClientLoginDTO;
+import com.dayan.client.dto.SmsLoginDTO;
+import com.dayan.client.dto.SmsSendDTO;
+import com.dayan.client.dto.WxLoginDTO;
 import com.dayan.client.service.ClientAuthService;
+import com.dayan.client.service.ClientSmsCodeService;
 import com.dayan.client.vo.ChannelOptionVO;
 import com.dayan.client.vo.ClientLoginVO;
+import com.dayan.client.vo.SmsSendVO;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +24,12 @@ import java.util.List;
  *
  * <p>路径：{@code /client-api/auth/*}（由 dayan-client 启动模块的 context-path 拼接）。
  *
- * <p>支持"选渠道"流程：先 {@code GET /auth/channels} 检索关联渠道，再 {@code POST /auth/login} 选定渠道登录。
+ * <p>支持三种登录方式：
+ * <ul>
+ *   <li>密码登录：{@code POST /auth/login}</li>
+ *   <li>验证码登录：{@code POST /auth/sms/send} + {@code POST /auth/sms/login}</li>
+ *   <li>微信登录：{@code POST /auth/wx/login}</li>
+ * </ul>
  */
 @Tag(name = "Client 认证")
 @RestController
@@ -28,6 +38,7 @@ import java.util.List;
 public class ClientAuthController {
 
     private final ClientAuthService clientAuthService;
+    private final ClientSmsCodeService smsCodeService;
 
     @Operation(summary = "选渠道列表（按手机号/OpenID 检索关联渠道）")
     @GetMapping("/channels")
@@ -36,12 +47,40 @@ public class ClientAuthController {
         return R.ok(clientAuthService.listChannels(mobile, openId));
     }
 
-    @Operation(summary = "登录")
+    // ==================== 密码登录 ====================
+
+    @Operation(summary = "密码登录")
     @OperationLog(module = "认证", action = "登录", logArgs = false)
     @PostMapping("/login")
     public R<ClientLoginVO> login(@RequestBody @Valid ClientLoginDTO dto) {
         return R.ok(clientAuthService.login(dto));
     }
+
+    // ==================== 验证码登录 ====================
+
+    @Operation(summary = "发送短信验证码")
+    @PostMapping("/sms/send")
+    public R<SmsSendVO> sendSmsCode(@RequestBody @Valid SmsSendDTO dto) {
+        return R.ok(smsCodeService.sendCode(dto.getMobile(), dto.getChannelCode()));
+    }
+
+    @Operation(summary = "验证码登录")
+    @OperationLog(module = "认证", action = "验证码登录")
+    @PostMapping("/sms/login")
+    public R<ClientLoginVO> smsLogin(@RequestBody @Valid SmsLoginDTO dto) {
+        return R.ok(clientAuthService.smsLogin(dto));
+    }
+
+    // ==================== 微信登录 ====================
+
+    @Operation(summary = "微信授权登录")
+    @OperationLog(module = "认证", action = "微信登录")
+    @PostMapping("/wx/login")
+    public R<ClientLoginVO> wxLogin(@RequestBody @Valid WxLoginDTO dto) {
+        return R.ok(clientAuthService.wxLogin(dto.getCode(), dto.getChannelCode()));
+    }
+
+    // ==================== 通用 ====================
 
     @Operation(summary = "登出")
     @PostMapping("/logout")

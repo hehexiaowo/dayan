@@ -36,9 +36,10 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(new SaInterceptor())
                 .addPathPatterns("/**")
                 .excludePathPatterns(
-                        // 认证相关（登录、登出、验证码、微信）
+                        // 认证相关（登录、登出、验证码、微信、渠道查询）
                         "/auth/login",
                         "/auth/logout",
+                        "/auth/channels",
                         "/auth/sms/send",
                         "/auth/sms/login",
                         "/auth/wx/login",
