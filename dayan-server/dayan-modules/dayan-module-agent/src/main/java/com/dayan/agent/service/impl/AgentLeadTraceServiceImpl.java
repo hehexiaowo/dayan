@@ -65,6 +65,7 @@ public class AgentLeadTraceServiceImpl implements AgentLeadTraceService {
 
         // 5. 更新线索互动统计
         lead.setLastTraceTime(LocalDateTime.now());
+        lead.setLastTraceType(shareType);
         lead.setTraceCount((lead.getTraceCount() != null ? lead.getTraceCount() : 0) + 1);
         leadMapper.updateById(lead);
 

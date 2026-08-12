@@ -68,6 +68,9 @@ public class AgentLead extends BaseEntity {
     /** 最后互动时间 */
     private LocalDateTime lastTraceTime;
 
+    /** 最后互动类型（1=内容 2=工具 3=海报） */
+    private Integer lastTraceType;
+
     /** 互动总次数 */
     private Integer traceCount;
 

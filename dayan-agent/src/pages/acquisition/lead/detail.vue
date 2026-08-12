@@ -256,10 +256,10 @@ function onChangeStatus() {
       if (needConfirm) {
         uni.showModal({
           title: chosen.value === LeadStatus.CONVERTED ? '确认转化' : '确认流失',
-          content:
-            chosen.value === LeadStatus.CONVERTED
-              ? '确认将此线索标记为已转化？'
-              : '确认放弃此线索？标记后不可撤销。',
+            content:
+              chosen.value === LeadStatus.CONVERTED
+                ? '确认将此线索标记为已转化？'
+                : '确认将此线索标记为流失？标记后可在状态中变更。',
           confirmColor: chosen.value === LeadStatus.LOST ? '#fa3534' : '#409eff',
           success: (r) => {
             if (r.confirm) doUpdate();

@@ -68,3 +68,28 @@ export function formatTime(t?: string, short = false): string {
   const norm = t.replace('T', ' ');
   return short ? norm.slice(5, 16) : norm.slice(0, 16);
 }
+
+/**
+ * 互动类型文案（与 TraceType 枚举对齐）。
+ * 1=浏览内容 2=使用工具 3=查看海报
+ */
+export function traceTypeText(type?: number): string {
+  switch (type) {
+    case 1: return '浏览内容';
+    case 2: return '使用工具';
+    case 3: return '查看海报';
+    default: return '访问';
+  }
+}
+
+/**
+ * 互动类型单字图标（列表卡片紧凑展示用）。
+ */
+export function traceTypeIcon(type?: number): string {
+  switch (type) {
+    case 1: return '文';
+    case 2: return '具';
+    case 3: return '海';
+    default: return '访';
+  }
+}

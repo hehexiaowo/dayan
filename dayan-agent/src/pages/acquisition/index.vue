@@ -123,16 +123,32 @@
               />
             </view>
             <view class="card-main">
+              <!-- 第 1 行：姓名 + 客户状态 -->
               <view class="card-row-top">
                 <text class="card-name">{{ leadName(lead) }}</text>
                 <view class="card-status" :class="statusClass(lead.leadStatus)">
                   {{ statusText(lead.leadStatus) }}
                 </view>
               </view>
+              <!-- 第 2 行：手机号 -->
+              <view class="card-row-mid">
+                <text v-if="lead.phone" class="card-phone">{{ lead.phone }}</text>
+                <text v-else class="card-phone muted">未留手机号</text>
+              </view>
+              <!-- 第 3 行：最后互动类型 · 互动次数 · 最后互动时间 -->
               <view class="card-row-bottom">
-                <text class="card-phone">{{ lead.phone ? '手机：' + lead.phone : (lead.traceCount ? lead.traceCount + '次互动' : '暂无互动') }}</text>
-                <text v-if="lead.lastTraceTime" class="card-time">{{ formatTime(lead.lastTraceTime, true) }}</text>
-                <text v-else-if="lead.createdAt" class="card-time">{{ formatTime(lead.createdAt, true) }}</text>
+                <template v-if="lead.lastTraceType">
+                  <view
+                    class="trace-pill"
+                    :class="tracePillClass(lead.lastTraceType)"
+                  >
+                    <text class="trace-pill-text">{{ traceTypeText(lead.lastTraceType) }}</text>
+                  </view>
+                  <text class="card-meta-sep">·</text>
+                </template>
+                <text class="card-meta">{{ lead.traceCount || 0 }}次互动</text>
+                <text v-if="lead.lastTraceTime || lead.createdAt" class="card-meta-sep">·</text>
+                <text v-if="lead.lastTraceTime || lead.createdAt" class="card-meta">{{ formatTime(lead.lastTraceTime || lead.createdAt, true) }}</text>
               </view>
             </view>
           </view>
@@ -153,7 +169,7 @@ import { onPullDownRefresh, onShow } from '@dcloudio/uni-app';
 import { getLeads } from '@/api/lead';
 import { LeadStatus } from '@/types';
 import type { Lead } from '@/types';
-import { statusText, statusClass, avatarColor, formatTime } from '@/utils/lead';
+import { statusText, statusClass, avatarColor, traceTypeText, formatTime } from '@/utils/lead';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -181,7 +197,7 @@ const statusTabs = computed(() => [
   { key: 'lead', label: '线索', count: countByStatuses(LeadStatus.NEW, LeadStatus.FOLLOWING) },
   { key: 'intent', label: '意向', count: countByStatus(LeadStatus.INTENDED) },
   { key: 'convert', label: '转化', count: countByStatus(LeadStatus.CONVERTED) },
-  { key: 'abandon', label: '放弃', count: countByStatus(LeadStatus.LOST) },
+  { key: 'abandon', label: '流失', count: countByStatus(LeadStatus.LOST) },
 ]);
 
 /** 按当前 Tab + 关键字过滤的线索列表 */
@@ -212,6 +228,16 @@ function countByStatuses(...statuses: LeadStatus[]): number {
 /** 线索显示名称：name > wxNickname > "匿名访客" */
 function leadName(lead: Lead): string {
   return lead.name || lead.wxNickname || '匿名访客';
+}
+
+/** 互动类型标签配色（与详情页圆点配色一致：内容蓝/工具绿/海报橙） */
+function tracePillClass(type?: number): string {
+  switch (type) {
+    case 1: return 'pill-content';
+    case 2: return 'pill-tool';
+    case 3: return 'pill-poster';
+    default: return 'pill-default';
+  }
 }
 
 async function loadList() {
@@ -503,10 +529,21 @@ onPullDownRefresh(async () => {
   align-items: center;
   justify-content: space-between;
 }
+.card-row-mid {
+  margin-top: 8rpx;
+}
+.card-phone {
+  font-size: 26rpx;
+  color: $text-regular;
+}
+.card-phone.muted {
+  color: $text-placeholder;
+}
 .card-row-bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6rpx;
   margin-top: 8rpx;
 }
 .card-name {
@@ -514,10 +551,39 @@ onPullDownRefresh(async () => {
   font-weight: bold;
   color: $text-primary;
 }
-.card-phone,
-.card-time {
-  font-size: 24rpx;
+/* 互动类型小标签 */
+.trace-pill {
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+  flex-shrink: 0;
+}
+.trace-pill-text {
+  font-size: 20rpx;
+}
+.pill-content {
+  background: $brand-primary-light;
+  .trace-pill-text { color: $brand-primary; }
+}
+.pill-tool {
+  background: $brand-success-light;
+  .trace-pill-text { color: $brand-success; }
+}
+.pill-poster {
+  background: $brand-warning-light;
+  .trace-pill-text { color: $brand-warning; }
+}
+.pill-default {
+  background: $brand-info-light;
+  .trace-pill-text { color: $brand-info; }
+}
+/* 底部元信息（次数/时间） */
+.card-meta {
+  font-size: 22rpx;
   color: $text-secondary;
+}
+.card-meta-sep {
+  font-size: 22rpx;
+  color: $text-placeholder;
 }
 .card-status {
   font-size: 22rpx;

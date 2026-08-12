@@ -136,6 +136,8 @@ export interface Lead {
   wxAvatar?: string;
   /** 最后互动时间 */
   lastTraceTime?: string;
+  /** 最后互动类型（1=内容 2=工具 3=海报） */
+  lastTraceType?: TraceType | number;
   /** 互动总次数 */
   traceCount?: number;
   intentionLevel?: number;

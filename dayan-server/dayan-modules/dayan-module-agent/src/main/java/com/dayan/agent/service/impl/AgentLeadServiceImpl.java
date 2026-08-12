@@ -205,6 +205,7 @@ public class AgentLeadServiceImpl implements AgentLeadService {
         vo.setWxNickname(lead.getWxNickname());
         vo.setWxAvatar(lead.getWxAvatar());
         vo.setLastTraceTime(lead.getLastTraceTime());
+        vo.setLastTraceType(lead.getLastTraceType());
         vo.setTraceCount(lead.getTraceCount());
         vo.setIntentionLevel(lead.getIntentionLevel());
         vo.setInterestType(lead.getInterestType());
