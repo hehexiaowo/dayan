@@ -20,8 +20,9 @@
     { "path": "pages/learning/index", "style": { "navigationBarTitleText": "学习中心" } },
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务中心", "enablePullDownRefresh": true } },
     { "path": "pages/profile/index", "style": { "navigationBarTitleText": "个人中心" } },
+    { "path": "pages/profile/view", "style": { "navigationBarTitleText": "个人资料" } },
     { "path": "pages/profile/settings", "style": { "navigationBarTitleText": "设置" } },
-    { "path": "pages/profile/edit", "style": { "navigationBarTitleText": "个人资料" } },
+    { "path": "pages/profile/edit", "style": { "navigationBarTitleText": "编辑资料" } },
     {
       "path": "pages/business/park/categories",
       "style": { "navigationBarTitleText": "服务网络" }

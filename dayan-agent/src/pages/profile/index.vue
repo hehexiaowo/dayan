@@ -1,8 +1,8 @@
 <template>
   <view class="page">
-    <!-- 个人信息卡（渐变，可点击进资料编辑） -->
-    <view class="profile-card dy-clickable" @click="goEdit">
-      <text class="edit-hint">编辑资料 ›</text>
+    <!-- 个人信息卡（渐变，点击进资料查看） -->
+    <view class="profile-card dy-clickable" @click="goView">
+      <text class="edit-hint">查看资料 ›</text>
       <view class="profile-row">
         <view class="avatar-wrap">
           <image
@@ -22,32 +22,8 @@
             <text v-if="profile.isCertified === 1" class="cert-badge">已认证</text>
           </view>
           <view class="channel">渠道：{{ channelText }}</view>
+          <view class="channel">手机：{{ maskPhone(profile.phone) }}</view>
         </view>
-      </view>
-    </view>
-
-    <!-- 账号信息分组 -->
-    <view class="info-card">
-      <view class="info-title">账号信息</view>
-      <view class="info-row">
-        <text class="info-label">手机号</text>
-        <text class="info-value">{{ maskPhone(profile.phone) }}</text>
-      </view>
-      <view class="info-row">
-        <text class="info-label">工号</text>
-        <text class="info-value">{{ profile.employeeNo || profile.agentCode || storeAgentCode || '-' }}</text>
-      </view>
-      <view class="info-row">
-        <text class="info-label">执业证号</text>
-        <text class="info-value">{{ profile.licenseNo || '-' }}</text>
-      </view>
-      <view class="info-row">
-        <text class="info-label">职位</text>
-        <text class="info-value">{{ profile.position || '-' }}</text>
-      </view>
-      <view class="info-row">
-        <text class="info-label">地区</text>
-        <text class="info-value">{{ regionText }}</text>
       </view>
     </view>
 
@@ -119,25 +95,10 @@ const channelText = computed(() => {
   );
 });
 
-const storeAgentCode = computed(
-  () => (userStore.userInfo && userStore.userInfo.accountCode) || '',
-);
-
 /** 等级文案（1 普通 / 2 银牌 / 3 金牌 / 4 钻石） */
 const levelText = computed(() => {
   const level = profile.value.agentLevel;
   return level ? AGENT_LEVEL_MAP[level] || '' : '';
-});
-
-/** 地区：省市区空格拼接，有详细地址追加，全空显示 '-' */
-const regionText = computed(() => {
-  const p = profile.value;
-  const parts = [p.provinceName, p.cityName, p.districtName].filter(Boolean);
-  let text = parts.join(' ');
-  if (p.address) {
-    text = text ? `${text} ${p.address}` : p.address;
-  }
-  return text || '-';
 });
 
 /** 手机号脱敏：11 位手机号中间四位打码，其余原样 */
@@ -174,8 +135,8 @@ function onMenu(item: MenuItem) {
   uni.showToast({ title: tips[item.key] || '开发中', icon: 'none' });
 }
 
-function goEdit() {
-  uni.navigateTo({ url: '/pages/profile/edit' });
+function goView() {
+  uni.navigateTo({ url: '/pages/profile/view' });
 }
 
 async function loadProfile() {
@@ -289,44 +250,6 @@ onShow(() => {
   font-size: 26rpx;
   margin-top: $spacing-xs;
   opacity: 0.9;
-}
-
-/* 账号信息分组 */
-.info-card {
-  margin-top: $spacing-md;
-  background: $bg-card;
-  border-radius: $radius-md;
-  padding: $spacing-md 28rpx;
-  box-shadow: $shadow-card;
-}
-.info-title {
-  font-size: 30rpx;
-  font-weight: bold;
-  color: $text-primary;
-  padding-bottom: $spacing-sm;
-}
-.info-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20rpx 0;
-  border-bottom: 1rpx solid $border-light;
-}
-.info-row:last-child {
-  border-bottom: none;
-}
-.info-label {
-  font-size: 28rpx;
-  color: $text-secondary;
-  flex-shrink: 0;
-}
-.info-value {
-  font-size: 28rpx;
-  color: $text-primary;
-  margin-left: $spacing-md;
-  text-align: right;
-  flex: 1;
-  word-break: break-all;
 }
 
 /* 菜单 */
