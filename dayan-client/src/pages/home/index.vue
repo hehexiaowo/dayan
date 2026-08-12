@@ -125,7 +125,7 @@ function goServiceList() {
   uni.switchTab({ url: '/pages/service/index' });
 }
 function goPark() {
-  uni.switchTab({ url: '/pages/park/categories' });
+  uni.switchTab({ url: '/pages/park/index' });
 }
 
 // 仅用 onShow（避免 onMounted+onShow 双请求陷阱）

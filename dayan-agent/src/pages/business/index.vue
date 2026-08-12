@@ -43,7 +43,7 @@ import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 
 function onSection(type: string) {
   if (type === 'park') {
-    uni.navigateTo({ url: '/pages/business/park/categories' });
+    uni.navigateTo({ url: '/pages/business/park/index' });
     return;
   }
   if (type === 'mall') {

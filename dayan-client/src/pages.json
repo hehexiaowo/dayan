@@ -2,7 +2,7 @@
   "pages": [
     { "path": "pages/login/index", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
     { "path": "pages/home/index", "style": { "navigationBarTitleText": "首页" } },
-    { "path": "pages/park/categories", "style": { "navigationBarTitleText": "养老网络" } },
+    { "path": "pages/park/index", "style": { "navigationBarTitleText": "养老网络" } },
     { "path": "pages/park/vital/list", "style": { "navigationBarTitleText": "活力长居" } },
     { "path": "pages/park/vital/province", "style": { "navigationBarTitleText": "省份" } },
     { "path": "pages/park/vital/city", "style": { "navigationBarTitleText": "城市" } },
@@ -43,7 +43,7 @@
     "backgroundColor": "#FFFFFF",
     "list": [
       { "pagePath": "pages/home/index", "text": "首页", "iconPath": "static/tabbar/home.png", "selectedIconPath": "static/tabbar/home-active.png" },
-      { "pagePath": "pages/park/categories", "text": "养老网络", "iconPath": "static/tabbar/park.png", "selectedIconPath": "static/tabbar/park-active.png" },
+      { "pagePath": "pages/park/index", "text": "养老网络", "iconPath": "static/tabbar/park.png", "selectedIconPath": "static/tabbar/park-active.png" },
       { "pagePath": "pages/service/index", "text": "服务", "iconPath": "static/tabbar/service.png", "selectedIconPath": "static/tabbar/service-active.png" },
       { "pagePath": "pages/mine/index", "text": "我的", "iconPath": "static/tabbar/mine.png", "selectedIconPath": "static/tabbar/mine-active.png" }
     ]
