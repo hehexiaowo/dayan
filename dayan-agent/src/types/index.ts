@@ -167,6 +167,34 @@ export interface LeadTrace {
   traceTime?: string;
 }
 
+// ===== 学习中心 =====
+
+/** 学习内容分类：1=视频课程 2=图文课程 3=雁鸣中国 */
+export enum LearningCategory {
+  VIDEO = 1,
+  ARTICLE = 2,
+  YANMING = 3,
+}
+
+/** 学习内容（GET /agent-api/learning/contents） */
+export interface LearningContent {
+  id: string;
+  contentCode: string;
+  title: string;
+  summary?: string;
+  /** 1=视频 2=图文 3=雁鸣 */
+  category: LearningCategory | number;
+  author?: string;
+  /** 时长（视频 28:30 / 图文 约15分钟） */
+  duration?: string;
+  viewCount?: number;
+  /** 角标（热/新/要闻/人物/动态/洞察） */
+  badge?: string;
+  publishTime?: string;
+  sortOrder?: number;
+  createdAt?: string;
+}
+
 /** 客户类型：1 本人 / 2 家属 / 3 老人 */
 export enum ClientType {
   SELF = 1,

@@ -18,7 +18,7 @@
         :key="tab.key"
         class="tab-item dy-clickable"
         :class="{ active: activeTab === tab.key }"
-        @click="activeTab = tab.key"
+        @click="onTabChange(tab.key)"
       >
         <text class="tab-text">{{ tab.label }}</text>
       </view>
@@ -26,207 +26,98 @@
 
     <!-- ===== 内容区 ===== -->
     <view class="list">
-      <view
-        v-for="item in currentItems"
-        :key="item.id"
-        class="course-card dy-clickable"
-        @click="onCourseClick(item)"
-      >
-        <!-- 左侧封面块 -->
-        <view class="course-cover" :class="'cover-' + activeTab">
-          <text class="cover-icon">{{ coverIcon }}</text>
-          <view v-if="activeTab === 'video'" class="cover-play">
-            <text class="play-triangle">▶</text>
-          </view>
-          <text v-if="item.badge" class="cover-badge" :class="'cb-' + item.badgeType">{{ item.badge }}</text>
-        </view>
-        <!-- 右侧内容 -->
-        <view class="course-body">
-          <text class="course-title">{{ item.title }}</text>
-          <text v-if="item.summary" class="course-summary">{{ item.summary }}</text>
-          <view class="course-meta">
-            <text class="meta-author">{{ item.author }}</text>
-            <text class="meta-sep">·</text>
-            <text class="meta-info">{{ item.meta }}</text>
-            <text class="meta-sep">·</text>
-            <text class="meta-views">{{ formatViews(item.views) }} {{ item.viewsLabel }}</text>
-          </view>
-        </view>
-      </view>
+      <!-- 骨架屏 -->
+      <template v-if="loading && !items.length">
+        <DySkeleton v-for="i in 3" :key="i" :rows="2" avatar card />
+      </template>
 
-      <!-- 列表底部提示 -->
-      <view class="list-end">
-        <text class="list-end-text">更多内容持续上线中</text>
-      </view>
+      <!-- 加载失败 -->
+      <DyEmpty
+        v-else-if="loadError && !items.length"
+        text="加载失败，请检查网络后重试"
+        icon="!"
+        color="gray"
+        action-text="重新加载"
+        @action="loadList"
+      />
+
+      <!-- 空状态 -->
+      <DyEmpty
+        v-else-if="!items.length"
+        :text="'暂无' + currentTabLabel + '内容'"
+        :icon="coverIcon"
+        color="blue"
+      />
+
+      <!-- 课程卡片 -->
+      <template v-else>
+        <view
+          v-for="item in items"
+          :key="item.id"
+          class="course-card dy-clickable"
+          @click="onCourseClick(item)"
+        >
+          <!-- 左侧封面块 -->
+          <view class="course-cover" :class="'cover-' + activeTab">
+            <text class="cover-icon">{{ coverIcon }}</text>
+            <view v-if="activeTab === 'video'" class="cover-play">
+              <text class="play-triangle">▶</text>
+            </view>
+            <text v-if="item.badge" class="cover-badge" :class="badgeClass(item.badge)">{{ item.badge }}</text>
+          </view>
+          <!-- 右侧内容 -->
+          <view class="course-body">
+            <text class="course-title">{{ item.title }}</text>
+            <text v-if="item.summary" class="course-summary">{{ item.summary }}</text>
+            <view class="course-meta">
+              <text v-if="item.author" class="meta-author">{{ item.author }}</text>
+              <template v-if="item.author && courseMeta(item)">
+                <text class="meta-sep">·</text>
+              </template>
+              <text v-if="courseMeta(item)" class="meta-info">{{ courseMeta(item) }}</text>
+              <text v-if="item.viewCount != null" class="meta-sep">·</text>
+              <text v-if="item.viewCount != null" class="meta-views">{{ formatViews(item.viewCount) }} {{ viewsLabel }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 列表底部提示 -->
+        <view class="list-end">
+          <text class="list-end-text">更多内容持续上线中</text>
+        </view>
+      </template>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
+import { getLearningContents } from '@/api/learning';
+import { LearningCategory } from '@/types';
+import type { LearningContent } from '@/types';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
-interface CourseItem {
-  id: number;
-  title: string;
-  summary?: string;
-  author: string;
-  meta: string;
-  views: number;
-  viewsLabel: string;
-  badge?: string;
-  badgeType?: string;
+interface TabDef {
+  key: 'video' | 'article' | 'yanming';
+  label: string;
+  category: LearningCategory;
 }
 
-const tabs = [
-  { key: 'video', label: '视频课程' },
-  { key: 'article', label: '图文课程' },
-  { key: 'yanming', label: '雁鸣中国' },
-] as const;
-
-const activeTab = ref<(typeof tabs)[number]['key']>('video');
-
-/** 视频课程（Mock） */
-const videoCourses: CourseItem[] = [
-  {
-    id: 1,
-    title: '泰康幸福年金产品全解析',
-    summary: '从保障责任到收益演示，30分钟讲透一款主力年金险',
-    author: '王芳 · 资深讲师',
-    meta: '28:30',
-    views: 12450,
-    viewsLabel: '播放',
-    badge: '热',
-    badgeType: 'hot',
-  },
-  {
-    id: 2,
-    title: '客户异议处理实战技巧',
-    summary: '5步化解「再考虑考虑」「回去和家人商量」',
-    author: '李军 · 销售总监',
-    meta: '15:20',
-    views: 8730,
-    viewsLabel: '播放',
-  },
-  {
-    id: 3,
-    title: '养老社区参观体验式营销',
-    summary: '如何把一次参观变成一场成交',
-    author: '张敏 · 金牌代理',
-    meta: '22:10',
-    views: 6210,
-    viewsLabel: '播放',
-    badge: '新',
-    badgeType: 'new',
-  },
-  {
-    id: 4,
-    title: '高净值客户资产配置与年金逻辑',
-    summary: '用底层资产思维打开大单入口',
-    author: '陈伟 · 财富顾问',
-    meta: '35:40',
-    views: 4380,
-    viewsLabel: '播放',
-  },
+const tabs: TabDef[] = [
+  { key: 'video', label: '视频课程', category: LearningCategory.VIDEO },
+  { key: 'article', label: '图文课程', category: LearningCategory.ARTICLE },
+  { key: 'yanming', label: '雁鸣中国', category: LearningCategory.YANMING },
 ];
 
-/** 图文课程（Mock） */
-const articleCourses: CourseItem[] = [
-  {
-    id: 11,
-    title: '2026 养老保险税优政策全解读',
-    summary: '个人养老金账户抵扣、递延纳税实操指南',
-    author: '政策研究组',
-    meta: '约 15 分钟',
-    views: 21300,
-    viewsLabel: '阅读',
-    badge: '热',
-    badgeType: 'hot',
-  },
-  {
-    id: 12,
-    title: '获客话术：从寒暄到需求挖掘的 20 个模板',
-    summary: '场景化话术卡片，开口不再难',
-    author: '销售训练营',
-    meta: '约 10 分钟',
-    views: 18500,
-    viewsLabel: '阅读',
-  },
-  {
-    id: 13,
-    title: 'CCRC 持续照料社区模式科普',
-    summary: '独立生活—协助生活—专业护理一站式的底层逻辑',
-    author: '行业研究院',
-    meta: '约 8 分钟',
-    views: 9820,
-    viewsLabel: '阅读',
-    badge: '新',
-    badgeType: 'new',
-  },
-  {
-    id: 14,
-    title: '转介绍技巧：让老客户主动为你背书',
-    summary: '3 个关键时机 + 1 套信任递进模型',
-    author: '资深导师团',
-    meta: '约 12 分钟',
-    views: 15400,
-    viewsLabel: '阅读',
-  },
-];
+const activeTab = ref<TabDef['key']>('video');
+const items = ref<LearningContent[]>([]);
+const loading = ref(false);
+const loadError = ref(false);
 
-/** 雁鸣中国（Mock） */
-const yanmingNews: CourseItem[] = [
-  {
-    id: 21,
-    title: '大雁养老与平安养老达成战略合作',
-    summary: '共建康养生态，覆盖 30 省 200+ 城市',
-    author: '大雁要闻',
-    meta: '08-10',
-    views: 5670,
-    viewsLabel: '阅读',
-    badge: '要闻',
-    badgeType: 'top',
-  },
-  {
-    id: 22,
-    title: '第七届中国养老产业峰会精华回顾',
-    summary: '10 位行业领袖观点：银发经济的下一个十年',
-    author: '行业动态',
-    meta: '08-06',
-    views: 3920,
-    viewsLabel: '阅读',
-    badge: '动态',
-    badgeType: 'info',
-  },
-  {
-    id: 23,
-    title: '月度之星：代理人单月签单 30 万的秘诀',
-    summary: '从 0 到金牌，她只用了这三个动作',
-    author: '大雁人物',
-    meta: '08-01',
-    views: 8100,
-    viewsLabel: '阅读',
-    badge: '人物',
-    badgeType: 'hot',
-  },
-  {
-    id: 24,
-    title: '银发经济蓝皮书：2026 养老消费趋势',
-    summary: '中高收入长者愿为什么付费？四组数据说清楚',
-    author: '趋势洞察',
-    meta: '07-28',
-    views: 6730,
-    viewsLabel: '阅读',
-    badge: '洞察',
-    badgeType: 'new',
-  },
-];
-
-/** 当前 Tab 对应的数据 */
-const currentItems = computed<CourseItem[]>(() => {
-  if (activeTab.value === 'video') return videoCourses;
-  if (activeTab.value === 'article') return articleCourses;
-  return yanmingNews;
-});
+const currentTab = computed(() => tabs.find((t) => t.key === activeTab.value) || tabs[0]);
+const currentTabLabel = computed(() => currentTab.value.label);
 
 /** 封面块图标字 */
 const coverIcon = computed(() => {
@@ -235,15 +126,73 @@ const coverIcon = computed(() => {
   return '鸣';
 });
 
+/** 播放/阅读量单位 */
+const viewsLabel = computed(() => (activeTab.value === 'video' ? '播放' : '阅读'));
+
+/** 课程卡片副信息：视频/图文显示时长，雁鸣显示日期 */
+function courseMeta(item: LearningContent): string {
+  if (activeTab.value === 'yanming') {
+    return item.publishTime ? formatDate(item.publishTime) : '';
+  }
+  return item.duration || '';
+}
+
 /** 阅读量 / 播放量格式化：>=10000 显示 x.x 万 */
 function formatViews(n: number): string {
   if (n >= 10000) return (n / 10000).toFixed(1) + '万';
   return String(n);
 }
 
-function onCourseClick(item: CourseItem) {
-  uni.showToast({ title: '《' + item.title.slice(0, 8) + '…》即将上线', icon: 'none' });
+/** 日期 MM-DD */
+function formatDate(dt?: string): string {
+  if (!dt) return '';
+  const norm = dt.replace('T', ' ');
+  return norm.length >= 10 ? norm.slice(5, 10) : norm;
 }
+
+/** 角标配色 */
+function badgeClass(badge?: string): string {
+  if (!badge) return 'cb-default';
+  if (['热', '要闻', '人物'].includes(badge)) return 'cb-hot';
+  if (['新', '洞察'].includes(badge)) return 'cb-new';
+  return 'cb-info';
+}
+
+async function loadList() {
+  loading.value = true;
+  loadError.value = false;
+  try {
+    items.value = await getLearningContents(currentTab.value.category);
+  } catch {
+    loadError.value = true;
+    items.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+function onTabChange(key: TabDef['key']) {
+  if (activeTab.value === key) return;
+  activeTab.value = key;
+  loadList();
+}
+
+function onCourseClick(item: LearningContent) {
+  uni.showToast({ title: '《' + item.title.slice(0, 8) + '…》详情即将上线', icon: 'none' });
+}
+
+// 每次进入页面刷新当前分类
+onShow(() => {
+  loadList();
+});
+
+onPullDownRefresh(async () => {
+  try {
+    await loadList();
+  } finally {
+    uni.stopPullDownRefresh();
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -424,12 +373,13 @@ function onCourseClick(item: CourseItem) {
   padding: 4rpx 8rpx;
   border-radius: 0 $radius-sm 0 $radius-sm;
   font-weight: 500;
+  background: rgba(255, 255, 255, 0.95);
 }
 
-.cb-hot { background: rgba(255, 255, 255, 0.95); color: $brand-error; }
-.cb-new { background: rgba(255, 255, 255, 0.95); color: $brand-primary; }
-.cb-top { background: rgba(255, 255, 255, 0.95); color: $brand-error; }
-.cb-info { background: rgba(255, 255, 255, 0.95); color: $brand-info; }
+.cb-hot { color: $brand-error; }
+.cb-new { color: $brand-primary; }
+.cb-info { color: $brand-info; }
+.cb-default { color: $text-secondary; }
 
 /* 右侧内容 */
 .course-body {
