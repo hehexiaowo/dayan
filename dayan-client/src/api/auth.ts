@@ -1,4 +1,5 @@
 import request from '@/utils/request';
+import type { ClientProfile, ClientProfileUpdatePayload } from '@/types';
 
 export interface ChannelOption {
   channelCode: string;
@@ -65,4 +66,14 @@ export function wxLoginApi(params: {
 /** 登出 */
 export function logoutApi(): Promise<void> {
   return request<void>({ url: '/auth/logout', method: 'POST' });
+}
+
+/** 我的资料（GET /profile，phone/idCard 已服务端脱敏） */
+export function getProfileApi(): Promise<ClientProfile> {
+  return request<ClientProfile>({ url: '/profile', method: 'GET' });
+}
+
+/** 更新基础资料（PUT /profile） */
+export function updateProfileApi(data: ClientProfileUpdatePayload): Promise<void> {
+  return request<void>({ url: '/profile', method: 'PUT', data });
 }

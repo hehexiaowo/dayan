@@ -21,6 +21,8 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-sms</artifactId></dependency>
         <!-- listChannels 需查 channel_info 补 shortName/fullName（登录选渠道展示「简称（编码）」） -->
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-channel</artifactId></dependency>
+        <!-- ClientProfileServiceImpl 需查 system_dict_region 回填省/市/区名 -->
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-system</artifactId></dependency>
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
         <dependency><groupId>org.mapstruct</groupId><artifactId>mapstruct</artifactId></dependency>
     </dependencies>

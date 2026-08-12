@@ -1,16 +1,21 @@
 package com.dayan.system.controller.client;
 
 import cn.hutool.core.util.StrUtil;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
+import com.dayan.common.core.resp.R;
+import com.dayan.common.oss.config.StorageProperties;
+import com.dayan.common.oss.dto.FileUploadDTO;
 import com.dayan.common.oss.service.StorageService;
+import com.dayan.common.security.StpKit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,17 +23,18 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Client 端文件预览 Controller（只读代理下载，不含上传）。
+ * Client 端文件接口（头像上传 + 只读代理下载）。
  *
- * <p>客户端详情页需要展示机构图片（房型图/封面/banner 等），这些图片以 OSS key
- * 形式存 DB，前端通过此端点代理下载（同源零 CORS）。
+ * <p>客户端详情页展示机构图片（房型图/封面/banner 等），这些图片以 OSS key 形式存 DB，
+ * 前端通过 preview 端点代理下载（同源零 CORS）；编辑资料时的头像上传走 upload 端点。
  *
- * <p>逻辑与 {@link com.dayan.system.controller.agent.FileAgentController#preview} 一致，
- * 仅保留预览（client 端无上传场景）。
+ * <p>逻辑镜像 {@link com.dayan.system.controller.agent.FileAgentController}，
+ * 仅登录校验改为 StpKit.CLIENT、url 前缀改为 /client-api/。
  *
- * <p>GET /client-api/v1/files/preview/{key}
+ * <p>GET  /client-api/v1/files/preview/{key}
+ * POST /client-api/v1/files/upload
  */
-@Tag(name = "Client 端-文件预览")
+@Tag(name = "Client 端-文件")
 @RestController
 @RequestMapping("/v1/files")
 @RequiredArgsConstructor
@@ -36,6 +42,13 @@ import java.util.regex.Pattern;
 public class FileClientController {
 
     private final StorageService storageService;
+    private final StorageProperties storageProperties;
+
+    /** 允许的图片后缀（client 端仅头像场景） */
+    private static final Set<String> ALLOWED_IMAGE_EXT = Set.of("jpg", "jpeg", "png", "gif", "webp");
+
+    /** 允许的上传模块白名单（防止任意字符进入存储 key 前缀） */
+    private static final Set<String> ALLOWED_MODULES = Set.of("avatar", "common");
 
     /** 合法 key 字符集（字母/数字/_-/. /），防止日志注入 */
     private static final Pattern KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9_/\\-.]+$");
@@ -45,6 +58,56 @@ public class FileClientController {
             "image/jpeg", "image/png", "image/gif", "image/webp",
             "video/mp4", "video/webm",
             "application/pdf");
+
+    @Operation(summary = "上传文件（图片，module 默认 avatar）")
+    @PostMapping("/upload")
+    public R<FileUploadDTO> upload(@RequestParam("file") MultipartFile file,
+                                   @RequestParam(value = "module", required = false) String module) {
+        // 显式登录校验（client 端无注解式全局登录强制）
+        if (StpKit.CLIENT.getLoginIdDefaultNull() == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "请先登录");
+        }
+        if (file.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "文件不能为空");
+        }
+        long size = file.getSize();
+        if (size > storageProperties.getMaxSize()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    "文件大小超过限制 " + (storageProperties.getMaxSize() / 1024 / 1024) + "MB");
+        }
+        String originalName = file.getOriginalFilename();
+        String ext = cn.hutool.core.io.FileUtil.extName(originalName);
+        if (StrUtil.isBlank(ext) || !ALLOWED_IMAGE_EXT.contains(ext.toLowerCase())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "仅支持图片文件: " + ext);
+        }
+        // channelCode 取自登录 session（头像 key 分目录隔离）；无 session 时用默认值
+        String channelCode = "client";
+        try {
+            String sessionChannel = (String) StpKit.CLIENT.getSession().get("channelCode");
+            if (StrUtil.isNotBlank(sessionChannel)) {
+                channelCode = sessionChannel;
+            }
+        } catch (Exception ignored) {
+            // 无 session 时用默认值
+        }
+        String mod = StrUtil.isBlank(module) ? "avatar" : module.trim();
+        if (!ALLOWED_MODULES.contains(mod)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的上传模块: " + mod);
+        }
+        try {
+            String key = storageService.upload(mod, channelCode,
+                    file.getInputStream(), size, file.getContentType(), originalName);
+            FileUploadDTO dto = new FileUploadDTO();
+            dto.setKey(key);
+            dto.setUrl("/client-api/v1/files/preview/" + key);
+            dto.setOriginalName(originalName);
+            dto.setSize(size);
+            return R.ok(dto);
+        } catch (Exception e) {
+            log.error("Client 文件上传失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败: " + e.getMessage());
+        }
+    }
 
     @Operation(summary = "预览/下载文件（代理下载）")
     @GetMapping("/preview/**")

@@ -135,6 +135,50 @@ export interface Order {
   parkName?: string;
 }
 
+/** 客户个人资料（对齐后端 ClientProfileVO，phone/idCard 已服务端脱敏） */
+export interface ClientProfile {
+  clientCode: string;
+  channelCode?: string;
+  channelName?: string;
+  fullName?: string;
+  gender?: number;
+  avatar?: string;
+  phone?: string;
+  email?: string;
+  birthday?: string;
+  age?: number;
+  idCard?: string;
+  provinceCode?: string;
+  cityCode?: string;
+  districtCode?: string;
+  provinceName?: string;
+  cityName?: string;
+  districtName?: string;
+  address?: string;
+  clientLevel?: number;
+  isVip?: number;
+  registerTime?: number | string;
+  lastLoginTime?: number | string;
+  equityCount?: number;
+  usedEquityCount?: number;
+  serviceCount?: number;
+  totalOrderAmount?: number;
+  lastServiceTime?: number | string;
+}
+
+/** 资料更新入参（对齐后端 ClientProfileUpdateDTO） */
+export interface ClientProfileUpdatePayload {
+  fullName?: string;
+  gender?: number;
+  email?: string;
+  avatar?: string;
+  birthday?: string;
+  provinceCode?: string;
+  cityCode?: string;
+  districtCode?: string;
+  address?: string;
+}
+
 /** 轮播 Banner */
 export interface Banner {
   bannerId: number;

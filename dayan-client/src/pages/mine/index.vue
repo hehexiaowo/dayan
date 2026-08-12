@@ -107,7 +107,7 @@ async function loadStats() {
 }
 
 function goProfile() {
-  uni.showToast({ title: '个人资料功能开发中', icon: 'none' });
+  uni.navigateTo({ url: '/pages/mine/view' });
 }
 function goEquity() {
   uni.navigateTo({ url: '/pages/equity/list' });
