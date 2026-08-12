@@ -32,7 +32,7 @@
 
     <!-- 数据统计（hero 下方，对齐 client stats-card：数字+标签） -->
     <view class="stats-card">
-      <view class="stat-item dy-clickable" @click="goNewLead">
+      <view class="stat-item dy-clickable" @click="goLeads">
         <text class="stat-num">{{ leadCount }}</text>
         <text class="stat-label">新增线索</text>
       </view>
@@ -150,8 +150,8 @@ function maskPhone(p?: string): string {
 function goView() {
   uni.navigateTo({ url: '/pages/profile/view' });
 }
-function goNewLead() {
-  uni.navigateTo({ url: '/pages/acquisition/lead/form' });
+function goLeads() {
+  uni.switchTab({ url: '/pages/acquisition/index' });
 }
 function goEquityDepot() {
   uni.showToast({ title: '权益仓库开发中', icon: 'none' });
