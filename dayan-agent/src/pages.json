@@ -1,7 +1,7 @@
 {
   "pages": [
     { "path": "pages/login/index", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
-    { "path": "pages/acquisition/index", "style": { "navigationBarTitleText": "获客", "enablePullDownRefresh": true } },
+    { "path": "pages/acquisition/index", "style": { "navigationBarTitleText": "获客中心", "enablePullDownRefresh": true } },
     { "path": "pages/acquisition/lead/detail", "style": { "navigationBarTitleText": "线索详情" } },
     { "path": "pages/acquisition/lead/form", "style": { "navigationBarTitleText": "线索" } },
     { "path": "pages/acquisition/content/index", "style": { "navigationBarTitleText": "内容获客", "enablePullDownRefresh": true } },
@@ -16,10 +16,10 @@
     { "path": "pages/acquisition/poster/detail", "style": { "navigationBarTitleText": "海报详情" } },
     { "path": "pages/share/content", "style": { "navigationBarTitleText": "文章分享" } },
     { "path": "pages/share/poster", "style": { "navigationBarTitleText": "营销海报分享" } },
-    { "path": "pages/business/index", "style": { "navigationBarTitleText": "展业" } },
-    { "path": "pages/learning/index", "style": { "navigationBarTitleText": "学习" } },
-    { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务", "enablePullDownRefresh": true } },
-    { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/business/index", "style": { "navigationBarTitleText": "展业中心" } },
+    { "path": "pages/learning/index", "style": { "navigationBarTitleText": "学习中心" } },
+    { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务中心", "enablePullDownRefresh": true } },
+    { "path": "pages/profile/index", "style": { "navigationBarTitleText": "个人中心" } },
     { "path": "pages/profile/settings", "style": { "navigationBarTitleText": "设置" } },
     { "path": "pages/profile/edit", "style": { "navigationBarTitleText": "个人资料" } },
     {
