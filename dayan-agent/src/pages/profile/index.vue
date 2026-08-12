@@ -60,11 +60,6 @@
         <text class="menu-label">分享记录</text>
         <text class="menu-arrow">›</text>
       </view>
-      <view class="menu-item dy-clickable" @click="goSettings">
-        <DyIconBlock text="设" color="gray" size="sm" shape="circle" />
-        <text class="menu-label">系统设置</text>
-        <text class="menu-arrow">›</text>
-      </view>
       <view class="menu-item dy-clickable" @click="goAbout">
         <DyIconBlock text="关" color="gray" size="sm" shape="circle" />
         <text class="menu-label">关于大雁</text>
@@ -158,9 +153,6 @@ function goEquityDepot() {
 }
 function goLearning() {
   uni.switchTab({ url: '/pages/learning/index' });
-}
-function goSettings() {
-  uni.navigateTo({ url: '/pages/profile/settings' });
 }
 function goAbout() {
   uni.navigateTo({ url: '/pages/profile/about' });
