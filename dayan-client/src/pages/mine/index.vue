@@ -36,26 +36,7 @@
       </view>
     </view>
 
-    <!-- 菜单组1：权益与服务 -->
-    <view class="menu-card">
-      <view class="menu-item" @click="goEquity">
-        <view class="menu-icon icon-green"><text class="icon-char">益</text></view>
-        <text class="menu-text">我的权益</text>
-        <text class="menu-arrow">›</text>
-      </view>
-      <view class="menu-item" @click="goService">
-        <view class="menu-icon icon-orange"><text class="icon-char">务</text></view>
-        <text class="menu-text">我的服务</text>
-        <text class="menu-arrow">›</text>
-      </view>
-      <view class="menu-item" @click="goUsePersons">
-        <view class="menu-icon icon-blue"><text class="icon-char">人</text></view>
-        <text class="menu-text">权益人管理</text>
-        <text class="menu-arrow">›</text>
-      </view>
-    </view>
-
-    <!-- 菜单组2：更多 -->
+    <!-- 菜单 -->
     <view class="menu-card">
       <view class="menu-item" @click="onTodo('我的订单')">
         <view class="menu-icon icon-cyan"><text class="icon-char">单</text></view>
