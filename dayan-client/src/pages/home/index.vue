@@ -51,7 +51,7 @@
       </view>
       <view class="grid-item" @click="goPark">
         <view class="grid-icon icon-park">构</view>
-        <text class="grid-label">找机构</text>
+        <text class="grid-label">养老网络</text>
       </view>
     </view>
 
@@ -125,7 +125,7 @@ function goServiceList() {
   uni.switchTab({ url: '/pages/service/index' });
 }
 function goPark() {
-  uni.switchTab({ url: '/pages/park/index' });
+  uni.switchTab({ url: '/pages/park/categories' });
 }
 
 // 仅用 onShow（避免 onMounted+onShow 双请求陷阱）
