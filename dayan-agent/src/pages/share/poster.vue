@@ -21,6 +21,9 @@
         <text class="body-text">{{ poster.bodyText }}</text>
       </view>
 
+      <!-- 留资卡片 -->
+      <DyContactForm />
+
       <!-- 分享人名片 -->
       <view v-if="card" class="agent-card">
         <view class="agent-card-header">
@@ -60,10 +63,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import { getSharePoster } from '@/api/share';
+import { getSharePoster, trackShare } from '@/api/share';
 import { formatFileUrl } from '@/utils/file';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
+import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
 const poster = ref<any>(null);
 const card = ref<any>(null);
@@ -95,7 +99,18 @@ function onCopyWechat(wechat: string) {
 onLoad((opts) => {
   const code = opts?.code || '';
   const agent = opts?.agent || '';
-  if (code) loadData(code, agent);
+  if (code) {
+    loadData(code, agent);
+    // 追踪访客打开（异步，不阻塞渲染）
+    if (agent) {
+      trackShare({
+        agentCode: agent,
+        shareType: 3,
+        bizCode: code,
+        bizTitle: '海报分享',
+      });
+    }
+  }
 });
 </script>
 

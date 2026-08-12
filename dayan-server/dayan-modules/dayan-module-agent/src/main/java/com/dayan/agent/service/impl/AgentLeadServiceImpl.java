@@ -44,6 +44,7 @@ public class AgentLeadServiceImpl implements AgentLeadService {
 
         LambdaQueryWrapper<AgentLead> wrapper = new LambdaQueryWrapper<AgentLead>()
                 .eq(AgentLead::getAgentCode, agentCode)
+                .orderByDesc(AgentLead::getLastTraceTime)
                 .orderByDesc(AgentLead::getCreatedAt);
 
         // keyword: 模糊搜索姓名/手机号
@@ -199,6 +200,12 @@ public class AgentLeadServiceImpl implements AgentLeadService {
         vo.setLeadStatus(lead.getLeadStatus());
         vo.setSourceType(lead.getSourceType());
         vo.setSourceRef(lead.getSourceRef());
+        vo.setVisitorToken(lead.getVisitorToken());
+        vo.setVisitorSource(lead.getVisitorSource());
+        vo.setWxNickname(lead.getWxNickname());
+        vo.setWxAvatar(lead.getWxAvatar());
+        vo.setLastTraceTime(lead.getLastTraceTime());
+        vo.setTraceCount(lead.getTraceCount());
         vo.setIntentionLevel(lead.getIntentionLevel());
         vo.setInterestType(lead.getInterestType());
         vo.setRegion(lead.getRegion());

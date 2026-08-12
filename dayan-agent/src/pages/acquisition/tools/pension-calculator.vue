@@ -209,6 +209,9 @@
       </view>
     </view>
 
+    <!-- 分享模式：留资卡片 -->
+    <DyContactForm v-if="isShareMode" />
+
     <!-- 品牌页脚 -->
     <view v-if="isShareMode" class="brand-footer">
       <text>大雁养老 · 专业养老服务平台</text>
@@ -219,8 +222,9 @@
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import { getShareAgentCard } from '@/api/share';
+import { getShareAgentCard, trackShare } from '@/api/share';
 import { formatFileUrl } from '@/utils/file';
+import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
 // ===== 分享模式 =====
 const isShareMode = ref(false);
@@ -323,6 +327,13 @@ onLoad((opts) => {
   if (agent) {
     isShareMode.value = true;
     getShareAgentCard(agent).then((card) => { agentCard.value = card; });
+    // 追踪访客打开
+    trackShare({
+      agentCode: agent,
+      shareType: 2,
+      bizCode: 'pension-calculator',
+      bizTitle: '退休养老金计算器',
+    });
   }
 });
 </script>

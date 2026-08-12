@@ -95,6 +95,26 @@
         <text class="remark-text">{{ lead.remark }}</text>
       </view>
 
+      <!-- 互动记录 -->
+      <view class="section-title">互动记录<text v-if="traces.length" class="section-count">{{ traces.length }}</text></view>
+      <view class="info-card">
+        <view v-if="tracesLoading && !traces.length" class="trace-empty">加载中...</view>
+        <view v-else-if="!traces.length" class="trace-empty">暂无互动记录</view>
+        <view v-else class="trace-list">
+          <view v-for="(trace, idx) in traces" :key="trace.id" class="trace-item">
+            <view v-if="idx < traces.length - 1" class="trace-line" />
+            <view class="trace-dot" :class="traceDotClass(trace.traceType)">
+              <text class="trace-dot-text">{{ traceIcon(trace.traceType) }}</text>
+            </view>
+            <view class="trace-content">
+              <text class="trace-action">{{ traceAction(trace.traceType) }}</text>
+              <text v-if="trace.bizTitle" class="trace-title">「{{ trace.bizTitle }}」</text>
+              <text class="trace-time">{{ formatTime(trace.traceTime) }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
       <!-- 底部操作栏 -->
       <view class="action-bar">
         <view class="action-btn dy-clickable" @click="onEdit">
@@ -122,9 +142,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
-import { getLeadDetail, updateLead, deleteLead } from '@/api/lead';
+import { getLeadDetail, updateLead, deleteLead, getLeadTraces } from '@/api/lead';
 import { LeadStatus } from '@/types';
-import type { Lead } from '@/types';
+import type { Lead, LeadTrace } from '@/types';
 import { statusText, statusClass, avatarColor, genderText, intentionText, intentionClass, sourceText, formatTime } from '@/utils/lead';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
@@ -132,6 +152,8 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const lead = ref<Lead | null>(null);
 const loading = ref(true);
+const traces = ref<LeadTrace[]>([]);
+const tracesLoading = ref(false);
 let leadId: string | null = null;
 
 const STATUS_OPTIONS: { label: string; value: number }[] = [
@@ -150,11 +172,49 @@ async function loadDetail() {
   loading.value = true;
   try {
     lead.value = await getLeadDetail(leadId);
+    // 加载互动记录
+    loadTraces();
   } catch {
     lead.value = null;
   } finally {
     loading.value = false;
   }
+}
+
+async function loadTraces() {
+  if (!leadId) return;
+  tracesLoading.value = true;
+  try {
+    traces.value = await getLeadTraces(leadId);
+  } catch {
+    traces.value = [];
+  } finally {
+    tracesLoading.value = false;
+  }
+}
+
+/** 互动类型图标 */
+function traceIcon(type?: number): string {
+  if (type === 1) return '📄';
+  if (type === 2) return '🔧';
+  if (type === 3) return '🖼️';
+  return '•';
+}
+
+/** 互动类型动作文案 */
+function traceAction(type?: number): string {
+  if (type === 1) return '浏览内容';
+  if (type === 2) return '使用工具';
+  if (type === 3) return '查看海报';
+  return '访问';
+}
+
+/** 互动圆点样式 */
+function traceDotClass(type?: number): string {
+  if (type === 1) return 'dot-content';
+  if (type === 2) return 'dot-tool';
+  if (type === 3) return 'dot-poster';
+  return 'dot-default';
 }
 
 function onCall() {
@@ -419,5 +479,72 @@ onShow(() => {
   .action-btn-text {
     color: $brand-error;
   }
+}
+
+/* 互动记录时间线 */
+.section-count {
+  margin-left: $spacing-xs;
+  font-size: 24rpx;
+  color: $text-secondary;
+  font-weight: normal;
+}
+.trace-empty {
+  padding: $spacing-lg 0;
+  text-align: center;
+  font-size: 26rpx;
+  color: $text-secondary;
+}
+.trace-list {
+  padding: $spacing-sm 0;
+}
+.trace-item {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: $spacing-md;
+}
+.trace-line {
+  position: absolute;
+  left: 26rpx;
+  top: 48rpx;
+  bottom: 0;
+  width: 2rpx;
+  background: $border-base;
+}
+.trace-dot {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: $spacing-md;
+}
+.dot-content { background: $brand-primary-light; }
+.dot-tool { background: $brand-success-light; }
+.dot-poster { background: $brand-warning-light; }
+.dot-default { background: $brand-info-light; }
+.trace-dot-text {
+  font-size: 28rpx;
+}
+.trace-content {
+  flex: 1;
+  padding-top: 4rpx;
+}
+.trace-action {
+  font-size: 28rpx;
+  color: $text-primary;
+  font-weight: 500;
+}
+.trace-title {
+  font-size: 28rpx;
+  color: $text-regular;
+}
+.trace-time {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: $text-placeholder;
 }
 </style>

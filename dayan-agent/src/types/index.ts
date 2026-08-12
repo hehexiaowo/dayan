@@ -126,6 +126,18 @@ export interface Lead {
   leadStatus?: LeadStatus | number;
   sourceType?: number;
   sourceRef?: string;
+  /** 访客令牌（匿名唯一标识） */
+  visitorToken?: string;
+  /** 访客来源（wechat/browser/unknown） */
+  visitorSource?: string;
+  /** 微信昵称 */
+  wxNickname?: string;
+  /** 微信头像URL */
+  wxAvatar?: string;
+  /** 最后互动时间 */
+  lastTraceTime?: string;
+  /** 互动总次数 */
+  traceCount?: number;
   intentionLevel?: number;
   interestType?: string;
   region?: string;
@@ -135,6 +147,22 @@ export interface Lead {
   remark?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** 互动类型：1 浏览内容 / 2 使用工具 / 3 查看海报 */
+export enum TraceType {
+  CONTENT = 1,
+  TOOL = 2,
+  POSTER = 3,
+}
+
+/** 线索互动记录（GET /agent-api/leads/{leadId}/traces） */
+export interface LeadTrace {
+  id: string;
+  traceType: TraceType | number;
+  bizCode?: string;
+  bizTitle?: string;
+  traceTime?: string;
 }
 
 /** 客户类型：1 本人 / 2 家属 / 3 老人 */

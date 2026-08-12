@@ -79,3 +79,93 @@ export function getShareAgentCard(agent: string): Promise<any> {
     });
   });
 }
+
+// ===== 访客追踪 =====
+
+const VISITOR_TOKEN_KEY = 'share_visitor_token';
+
+/** 获取本地存储的访客令牌（首次为空，由后端生成后存回） */
+export function getVisitorToken(): string {
+  return uni.getStorageSync(VISITOR_TOKEN_KEY) || '';
+}
+
+/** 存储访客令牌 */
+export function saveVisitorToken(token: string): void {
+  uni.setStorageSync(VISITOR_TOKEN_KEY, token);
+}
+
+/** 检测微信环境 */
+export function isWechatBrowser(): boolean {
+  // #ifdef H5
+  return navigator.userAgent.includes('MicroMessenger');
+  // #endif
+  // #ifndef H5
+  return false;
+  // #endif
+}
+
+/**
+ * 追踪分享链接打开（公开接口，自动创建/更新访客线索）。
+ * 分享页 onLoad 时调用，记录访客浏览行为。
+ */
+export function trackShare(data: {
+  agentCode: string;
+  shareType: number; // 1=内容 2=工具 3=海报
+  bizCode: string;
+  bizTitle: string;
+  visitorToken?: string;
+  visitorSource?: string;
+}): Promise<string> {
+  return new Promise((resolve) => {
+    uni.request({
+      url: BASE_URL + '/open/share/track',
+      method: 'POST',
+      header: { 'Content-Type': 'application/json' },
+      data: {
+        agentCode: data.agentCode,
+        shareType: data.shareType,
+        bizCode: data.bizCode,
+        bizTitle: data.bizTitle,
+        visitorToken: data.visitorToken || getVisitorToken(),
+        visitorSource: data.visitorSource || (isWechatBrowser() ? 'wechat' : 'browser'),
+      },
+      success: (res: any) => {
+        const body = res.data;
+        if (body && body.code === 0 && body.data?.visitorToken) {
+          saveVisitorToken(body.data.visitorToken);
+          resolve(body.data.visitorToken);
+        } else {
+          resolve('');
+        }
+      },
+      fail: () => resolve(''),
+    });
+  });
+}
+
+/**
+ * 客户留资（公开接口，更新访客线索的手机号/姓名）。
+ */
+export function leaveContact(data: {
+  visitorToken: string;
+  phone: string;
+  name?: string;
+}): Promise<boolean> {
+  return new Promise((resolve) => {
+    uni.request({
+      url: BASE_URL + '/open/share/contact',
+      method: 'POST',
+      header: { 'Content-Type': 'application/json' },
+      data: {
+        visitorToken: data.visitorToken || getVisitorToken(),
+        phone: data.phone,
+        name: data.name,
+      },
+      success: (res: any) => {
+        const body = res.data;
+        resolve(body && body.code === 0);
+      },
+      fail: () => resolve(false),
+    });
+  });
+}

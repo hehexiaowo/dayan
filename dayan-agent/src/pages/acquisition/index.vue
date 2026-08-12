@@ -108,8 +108,15 @@
             @click="onLeadClick(lead)"
           >
             <view class="card-left">
+              <image
+                v-if="lead.wxAvatar"
+                :src="lead.wxAvatar"
+                mode="aspectFill"
+                class="card-avatar-img"
+              />
               <DyIconBlock
-                :text="lead.name?.charAt(0) || '?'"
+                v-else
+                :text="leadName(lead).charAt(0) || '?'"
                 :color="avatarColor(lead.leadStatus)"
                 size="sm"
                 shape="circle"
@@ -117,14 +124,15 @@
             </view>
             <view class="card-main">
               <view class="card-row-top">
-                <text class="card-name">{{ lead.name || '未命名' }}</text>
+                <text class="card-name">{{ leadName(lead) }}</text>
                 <view class="card-status" :class="statusClass(lead.leadStatus)">
                   {{ statusText(lead.leadStatus) }}
                 </view>
               </view>
               <view class="card-row-bottom">
-                <text class="card-phone">手机：{{ lead.phone || '-' }}</text>
-                <text v-if="lead.createdAt" class="card-time">{{ formatTime(lead.createdAt, true) }}</text>
+                <text class="card-phone">{{ lead.phone ? '手机：' + lead.phone : (lead.traceCount ? lead.traceCount + '次互动' : '暂无互动') }}</text>
+                <text v-if="lead.lastTraceTime" class="card-time">{{ formatTime(lead.lastTraceTime, true) }}</text>
+                <text v-else-if="lead.createdAt" class="card-time">{{ formatTime(lead.createdAt, true) }}</text>
               </view>
             </view>
           </view>
@@ -199,6 +207,11 @@ function countByStatus(status: LeadStatus): number {
 
 function countByStatuses(...statuses: LeadStatus[]): number {
   return leads.value.filter((l) => statuses.some((s) => s === l.leadStatus)).length;
+}
+
+/** 线索显示名称：name > wxNickname > "匿名访客" */
+function leadName(lead: Lead): string {
+  return lead.name || lead.wxNickname || '匿名访客';
 }
 
 async function loadList() {
@@ -475,6 +488,11 @@ onPullDownRefresh(async () => {
 .card-left {
   flex-shrink: 0;
   margin-right: $spacing-md;
+}
+.card-avatar-img {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
 }
 .card-main {
   flex: 1;

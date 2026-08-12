@@ -4,15 +4,20 @@ import com.dayan.agent.dto.AgentLeadCreateDTO;
 import com.dayan.agent.dto.AgentLeadQueryDTO;
 import com.dayan.agent.dto.AgentLeadUpdateDTO;
 import com.dayan.agent.service.AgentLeadService;
+import com.dayan.agent.service.AgentLeadTraceService;
+import com.dayan.agent.vo.AgentLeadTraceVO;
 import com.dayan.agent.vo.AgentLeadVO;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
+import com.dayan.common.mybatis.context.ContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Agent 代理人端线索接口。
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 public class AgentLeadController {
 
     private final AgentLeadService agentLeadService;
+    private final AgentLeadTraceService agentLeadTraceService;
 
     @Operation(summary = "分页查询我的线索")
     @GetMapping
@@ -62,5 +68,12 @@ public class AgentLeadController {
     public R<Void> delete(@PathVariable Long leadId) {
         agentLeadService.delete(leadId);
         return R.ok();
+    }
+
+    @Operation(summary = "线索互动记录（互动时间线）")
+    @GetMapping("/{leadId}/traces")
+    public R<List<AgentLeadTraceVO>> traces(@PathVariable Long leadId) {
+        String agentCode = ContextHolder.getAccountCode();
+        return R.ok(agentLeadTraceService.listByLeadId(leadId, agentCode));
     }
 }

@@ -56,6 +56,9 @@
         </template>
       </view>
 
+      <!-- 留资卡片 -->
+      <DyContactForm />
+
       <!-- 分享人名片 -->
       <view v-if="card" class="agent-card">
         <view class="card-top">
@@ -101,10 +104,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import { getShareContent } from '@/api/share';
+import { getShareContent, trackShare } from '@/api/share';
 import { formatFileUrl } from '@/utils/file';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
+import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
 const loading = ref(true);
 const article = ref<any>(null);
@@ -217,6 +221,15 @@ onLoad(async (query) => {
   article.value = result.content;
   card.value = result.card;
   loading.value = false;
+  // 追踪访客打开（异步，不阻塞渲染）
+  if (agent) {
+    trackShare({
+      agentCode: agent,
+      shareType: 1,
+      bizCode: code,
+      bizTitle: article.value?.title || '内容分享',
+    });
+  }
 });
 </script>
 

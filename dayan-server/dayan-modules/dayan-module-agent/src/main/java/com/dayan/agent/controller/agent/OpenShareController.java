@@ -1,18 +1,22 @@
 package com.dayan.agent.controller.agent;
 
 import com.dayan.agent.service.AgentCardService;
+import com.dayan.agent.service.AgentLeadTraceService;
 import com.dayan.agent.service.PosterTemplateService;
 import com.dayan.agent.vo.AgentCardVO;
+import com.dayan.agent.vo.AgentLeadTraceVO;
 import com.dayan.agent.vo.PosterTemplateVO;
 import com.dayan.common.core.resp.R;
 import com.dayan.content.service.ContentInfoService;
 import com.dayan.content.vo.ContentInfoVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,6 +37,7 @@ public class OpenShareController {
     private final ContentInfoService contentInfoService;
     private final AgentCardService agentCardService;
     private final PosterTemplateService posterTemplateService;
+    private final AgentLeadTraceService leadTraceService;
 
     @Operation(summary = "分享内容详情（公开，含分享人名片）")
     @GetMapping("/content/{contentCode}")
@@ -74,5 +79,41 @@ public class OpenShareController {
     @GetMapping("/agent-card")
     public R<AgentCardVO> getAgentCard(@RequestParam String agent) {
         return R.ok(agentCardService.getFirstByAgent(agent));
+    }
+
+    @Operation(summary = "追踪分享链接打开（公开，自动创建/更新访客线索）")
+    @PostMapping("/track")
+    public R<Map<String, Object>> trackShare(
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest request) {
+
+        String agentCode = (String) body.get("agentCode");
+        int shareType = body.get("shareType") != null ? ((Number) body.get("shareType")).intValue() : 1;
+        String bizCode = (String) body.get("bizCode");
+        String bizTitle = (String) body.get("bizTitle");
+        String visitorToken = (String) body.get("visitorToken");
+        String visitorSource = (String) body.get("visitorSource");
+
+        // 检测微信环境（User-Agent 含 MicroMessenger）
+        if (visitorSource == null) {
+            String ua = request.getHeader("User-Agent");
+            visitorSource = (ua != null && ua.contains("MicroMessenger")) ? "wechat" : "browser";
+        }
+
+        String token = leadTraceService.trackVisit(agentCode, shareType, bizCode, bizTitle, visitorToken, visitorSource);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("visitorToken", token);
+        return R.ok(result);
+    }
+
+    @Operation(summary = "客户留资（公开，更新访客线索的手机号/姓名）")
+    @PostMapping("/contact")
+    public R<Void> leaveContact(@RequestBody Map<String, Object> body) {
+        String visitorToken = (String) body.get("visitorToken");
+        String phone = (String) body.get("phone");
+        String name = (String) body.get("name");
+        leadTraceService.leaveContact(visitorToken, phone, name);
+        return R.ok();
     }
 }

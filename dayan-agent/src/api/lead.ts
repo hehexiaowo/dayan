@@ -1,5 +1,5 @@
 import request from '@/utils/request';
-import type { Lead, PageQuery, PageResult } from '@/types';
+import type { Lead, LeadTrace, PageQuery, PageResult } from '@/types';
 
 /**
  * 线索查询参数。
@@ -89,5 +89,16 @@ export function deleteLead(leadId: string): Promise<void> {
   return request<void>({
     url: `/leads/${leadId}`,
     method: 'DELETE',
+  });
+}
+
+/**
+ * 线索互动记录（GET /agent-api/leads/{leadId}/traces）。
+ * 返回访客浏览内容、使用工具、查看海报的时间线。
+ */
+export function getLeadTraces(leadId: string): Promise<LeadTrace[]> {
+  return request<LeadTrace[]>({
+    url: `/leads/${leadId}/traces`,
+    method: 'GET',
   });
 }

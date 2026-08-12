@@ -33,6 +33,19 @@ public class AgentLeadVO {
     private Integer sourceType;
     private String sourceRef;
 
+    /** 访客令牌 */
+    private String visitorToken;
+    /** 访客来源（wechat/browser/unknown） */
+    private String visitorSource;
+    /** 微信昵称 */
+    private String wxNickname;
+    /** 微信头像URL */
+    private String wxAvatar;
+    /** 最后互动时间 */
+    private LocalDateTime lastTraceTime;
+    /** 互动总次数 */
+    private Integer traceCount;
+
     /** 意向等级（1=低, 2=中, 3=高） */
     private Integer intentionLevel;
     private String interestType;
