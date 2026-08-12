@@ -29,16 +29,22 @@
 
     <!-- 快捷入口（白色卡，浮于 hero） -->
     <view class="quick-card">
-      <view class="quick-item dy-clickable" @click="goNewLead">
-        <DyIconBlock text="线" color="blue" size="md" shape="circle" />
+      <view class="quick-item tint-blue dy-clickable" @click="goNewLead">
+        <view class="quick-icon-wrap">
+          <DyIconBlock text="线" color="blue" size="md" shape="circle" />
+        </view>
         <text class="quick-label">新增线索</text>
       </view>
-      <view class="quick-item dy-clickable" @click="goEquityDepot">
-        <DyIconBlock text="仓" color="green" size="md" shape="circle" />
+      <view class="quick-item tint-green dy-clickable" @click="goEquityDepot">
+        <view class="quick-icon-wrap">
+          <DyIconBlock text="仓" color="green" size="md" shape="circle" />
+        </view>
         <text class="quick-label">权益仓库</text>
       </view>
-      <view class="quick-item dy-clickable" @click="goLearning">
-        <DyIconBlock text="课" color="orange" size="md" shape="circle" />
+      <view class="quick-item tint-orange dy-clickable" @click="goLearning">
+        <view class="quick-icon-wrap">
+          <DyIconBlock text="课" color="orange" size="md" shape="circle" />
+        </view>
         <text class="quick-label">新增课程</text>
       </view>
     </view>
@@ -202,18 +208,40 @@ onShow(() => {
 /* 渐变 profile 卡片 */
 .profile-card {
   position: relative;
+  overflow: hidden;
   background: $gradient-blue;
   border-radius: $radius-lg;
   padding: 40rpx $spacing-lg;
   color: #fff;
   box-shadow: 0 8rpx 24rpx rgba(64, 158, 255, 0.25);
+  touch-action: manipulation;
+}
+/* hero 右上角径向高光，增加质感 */
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: -60rpx;
+  right: -40rpx;
+  width: 240rpx;
+  height: 240rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 70%);
+  pointer-events: none;
 }
 .edit-hint {
   position: absolute;
   top: $spacing-md;
   right: $spacing-lg;
-  font-size: 24rpx;
-  opacity: 0.85;
+  z-index: 1;
+  font-size: 22rpx;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+  transition: background $transition-fast;
+}
+.profile-card:active .edit-hint {
+  background: rgba(255, 255, 255, 0.35);
 }
 .profile-row {
   display: flex;
@@ -222,20 +250,20 @@ onShow(() => {
 
 /* 头像 */
 .avatar-wrap {
-  width: 96rpx;
-  height: 96rpx;
+  width: 120rpx;
+  height: 120rpx;
   flex-shrink: 0;
 }
 .avatar {
-  width: 96rpx;
-  height: 96rpx;
+  width: 120rpx;
+  height: 120rpx;
   border-radius: 50%;
   border: 4rpx solid rgba(255, 255, 255, 0.6);
   background: #fff;
 }
 .avatar-fallback {
-  width: 96rpx;
-  height: 96rpx;
+  width: 120rpx;
+  height: 120rpx;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.25);
   border: 4rpx solid rgba(255, 255, 255, 0.6);
@@ -244,7 +272,7 @@ onShow(() => {
   justify-content: center;
 }
 .avatar-text {
-  font-size: 40rpx;
+  font-size: 48rpx;
   font-weight: bold;
   color: #fff;
 }
@@ -303,16 +331,41 @@ onShow(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  touch-action: manipulation;
+  transition: transform $transition-fast, opacity $transition-fast;
+}
+.quick-item:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+/* 图标底座：浅色 tint 圆，app-icon 质感 */
+.quick-icon-wrap {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform $transition-fast;
+}
+.tint-blue .quick-icon-wrap {
+  background: rgba(64, 158, 255, 0.12);
+}
+.tint-green .quick-icon-wrap {
+  background: rgba(25, 190, 107, 0.12);
+}
+.tint-orange .quick-icon-wrap {
+  background: rgba(255, 153, 0, 0.12);
 }
 .quick-label {
   font-size: 24rpx;
   color: $text-regular;
-  margin-top: 14rpx;
+  margin-top: 16rpx;
 }
 
 /* 菜单卡片 */
 .menu-card {
-  margin-top: $spacing-md;
+  margin-top: $spacing-lg;
   background: $bg-card;
   border-radius: $radius-lg;
   overflow: hidden;
@@ -323,6 +376,7 @@ onShow(() => {
   align-items: center;
   padding: 28rpx;
   border-bottom: 1rpx solid $border-light;
+  touch-action: manipulation;
   transition: background $transition-fast;
 
   &:active {
