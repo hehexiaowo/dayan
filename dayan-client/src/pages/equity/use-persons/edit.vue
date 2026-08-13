@@ -1,10 +1,10 @@
 <template>
-  <view class="edit-page">
+  <view class="edit-page dy-safe-bottom">
     <!-- 复用预填入口（仅新增模式） -->
-    <view v-if="!isEdit" class="suggest-bar" @click="openSuggest">
-      <text class="suggest-icon">⚡</text>
+    <view v-if="!isEdit" class="suggest-bar dy-clickable" @click="openSuggest">
+      <DyIconBlock text="荐" color="orange" size="sm" shape="circle" />
       <text class="suggest-text">选择常用权益人（一键填充）</text>
-      <text class="suggest-arrow">></text>
+      <text class="suggest-arrow">›</text>
     </view>
 
     <!-- 表单 -->
@@ -19,7 +19,7 @@
         <picker :range="genderLabels" :value="genderIndex" @change="onGenderChange">
           <view class="picker-display">
             <text :class="{ 'ph-text': genderIndex < 0 }">{{ genderIndex >= 0 ? genderLabels[genderIndex] : '请选择' }}</text>
-            <text class="picker-arrow">></text>
+            <text class="picker-arrow">›</text>
           </view>
         </picker>
       </view>
@@ -50,7 +50,7 @@
     </view>
 
     <view class="bottom-bar">
-      <button class="btn-submit" :disabled="submitting" @click="handleSubmit">
+      <button class="dy-btn dy-btn-primary" :disabled="submitting" @click="handleSubmit">
         {{ submitting ? '保存中...' : isEdit ? '保存修改' : '添加权益人' }}
       </button>
     </view>
@@ -67,6 +67,7 @@ import {
   suggestUsePersons,
 } from '@/api/equity';
 import type { EquityUsePerson, EquityUsePersonCreate } from '@/types';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 
 const equityCode = ref('');
 const personId = ref('');
@@ -185,46 +186,47 @@ onLoad((q) => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .edit-page {
   min-height: 100vh;
-  background: #f5f6f8;
-  padding-bottom: 140rpx;
+  background: $bg-page;
 }
 
 /* 复用入口 */
 .suggest-bar {
   display: flex;
   align-items: center;
-  background: #fff;
-  margin: 20rpx 24rpx 0;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  .suggest-icon {
-    font-size: 32rpx;
-    margin-right: 12rpx;
-  }
+  background: $bg-card;
+  margin: $spacing-sm $spacing-md 0;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
   .suggest-text {
     flex: 1;
     font-size: 28rpx;
-    color: #67C23A;
+    color: $brand-primary;
     font-weight: 500;
+    margin-left: $spacing-md;
   }
   .suggest-arrow {
-    color: #67C23A;
-    font-size: 28rpx;
+    color: $brand-primary;
+    font-size: 32rpx;
   }
 }
 
 /* 表单卡 */
 .form-card {
-  background: #fff;
-  margin: 20rpx 24rpx 0;
-  border-radius: 16rpx;
-  padding: 10rpx 24rpx;
+  background: $bg-card;
+  margin: $spacing-sm $spacing-md 0;
+  border-radius: $radius-lg;
+  padding: 10rpx $spacing-md;
+  box-shadow: $shadow-card;
 }
 .form-item {
-  padding: 24rpx 0;
-  border-bottom: 1px solid #f5f5f5;
+  padding: $spacing-md 0;
+  border-bottom: 1px solid $border-light;
   &:last-child {
     border-bottom: none;
   }
@@ -232,20 +234,20 @@ onLoad((q) => {
 .label {
   display: block;
   font-size: 26rpx;
-  color: #909399;
+  color: $text-secondary;
   margin-bottom: 12rpx;
   .req {
-    color: #f56c6c;
+    color: $brand-error;
     margin-right: 4rpx;
   }
 }
 .input {
   height: 60rpx;
   font-size: 30rpx;
-  color: #303133;
+  color: $text-primary;
 }
 .ph {
-  color: #c0c4cc;
+  color: $text-placeholder;
 }
 .picker-display {
   display: flex;
@@ -253,12 +255,12 @@ onLoad((q) => {
   justify-content: space-between;
   height: 60rpx;
   font-size: 30rpx;
-  color: #303133;
+  color: $text-primary;
   .ph-text {
-    color: #c0c4cc;
+    color: $text-placeholder;
   }
   .picker-arrow {
-    color: #c0c4cc;
+    color: $text-placeholder;
   }
 }
 .switch-item {
@@ -267,16 +269,16 @@ onLoad((q) => {
   justify-content: space-between;
   .label {
     margin-bottom: 0;
-    color: #303133;
+    color: $text-primary;
     font-size: 30rpx;
   }
 }
 
 .tips {
-  margin: 20rpx 24rpx 0;
+  margin: $spacing-sm $spacing-md 0;
   .tip-text {
     font-size: 22rpx;
-    color: #c0c4cc;
+    color: $text-placeholder;
     line-height: 1.6;
   }
 }
@@ -286,19 +288,16 @@ onLoad((q) => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 20rpx 24rpx;
-  background: #fff;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-card;
   box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
-}
-.btn-submit {
-  background: #67C23A;
-  color: #fff;
-  font-size: 32rpx;
-  border-radius: 12rpx;
-  height: 84rpx;
-  line-height: 84rpx;
-  &[disabled] {
-    background: #a4da89;
+  .dy-btn {
+    font-size: 32rpx;
+    height: 84rpx;
+    &[disabled] {
+      background: lighten($brand-primary, 15%);
+      box-shadow: none;
+    }
   }
 }
 </style>

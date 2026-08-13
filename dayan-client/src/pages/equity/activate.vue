@@ -2,7 +2,7 @@
   <view class="activate-page">
     <!-- 顶部引导 -->
     <view class="hero">
-      <view class="hero-icon">★</view>
+      <DyIconBlock text="活" color="green" size="lg" shape="circle" class="hero-icon-block" />
       <text class="hero-title">激活养老权益</text>
       <text class="hero-desc">输入权益卡面的激活码，开启您的专属养老服务</text>
     </view>
@@ -24,7 +24,7 @@
       </view>
       <text class="field-hint">激活码位于权益卡背面，格式如 DY12345678</text>
 
-      <button class="btn-submit" :disabled="submitting" @click="handleSubmit">
+      <button class="dy-btn dy-btn-primary btn-submit" :disabled="submitting" @click="handleSubmit">
         {{ submitting ? '激活中...' : '立即激活' }}
       </button>
     </view>
@@ -42,6 +42,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { activateEquity } from '@/api/equity';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 
 const codeTail = ref(''); // DY 之后的 8 位
 const submitting = ref(false);
@@ -79,31 +80,26 @@ async function handleSubmit() {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .activate-page {
   min-height: 100vh;
-  background: #f5f6f8;
+  background: $bg-page;
   padding-bottom: 60rpx;
 }
 
 /* 顶部引导 */
 .hero {
-  background: linear-gradient(135deg, #67C23A 0%, #4eaf2a 100%);
-  padding: 60rpx 40rpx 80rpx;
+  background: $gradient-brand;
+  padding: 60rpx $spacing-lg 80rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.hero-icon {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 52rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24rpx;
+.hero-icon-block {
+  margin-bottom: $spacing-md;
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
 }
 .hero-title {
   color: #fff;
@@ -119,92 +115,89 @@ async function handleSubmit() {
 
 /* 表单卡 */
 .form-card {
-  background: #fff;
-  margin: -40rpx 24rpx 0;
-  border-radius: 16rpx;
-  padding: 40rpx 30rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  background: $bg-card;
+  margin: -40rpx $spacing-md 0;
+  border-radius: $radius-lg;
+  padding: 40rpx $spacing-md;
+  box-shadow: $shadow-card;
   position: relative;
 }
 .field-label {
   font-size: 28rpx;
-  color: #303133;
+  color: $text-primary;
   font-weight: 500;
   display: block;
-  margin-bottom: 16rpx;
+  margin-bottom: $spacing-sm;
 }
 .input-wrap {
   display: flex;
   align-items: center;
-  border: 2rpx solid #dcdfe6;
-  border-radius: 12rpx;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
   overflow: hidden;
 }
 .input-prefix {
-  background: #f5f7fa;
-  color: #67C23A;
+  background: $bg-page;
+  color: $brand-primary;
   font-size: 36rpx;
   font-weight: bold;
-  padding: 0 24rpx;
-  height: 88rpx;
-  line-height: 88rpx;
-  border-right: 2rpx solid #dcdfe6;
+  padding: 0 $spacing-md;
+  height: $control-height;
+  line-height: $control-height;
+  border-right: 2rpx solid $border-base;
 }
 .code-input {
   flex: 1;
-  height: 88rpx;
+  height: $control-height;
   font-size: 36rpx;
   letter-spacing: 8rpx;
-  padding: 0 24rpx;
-  color: #303133;
+  padding: 0 $spacing-md;
+  color: $text-primary;
 }
 .ph {
-  color: #c0c4cc;
+  color: $text-placeholder;
   font-size: 28rpx;
   letter-spacing: 0;
 }
 .field-hint {
   font-size: 24rpx;
-  color: #909399;
+  color: $text-secondary;
   margin-top: 12rpx;
   display: block;
 }
 .btn-submit {
   margin-top: 40rpx;
-  background: #67C23A;
-  color: #fff;
   font-size: 32rpx;
-  border-radius: 12rpx;
-  height: 88rpx;
-  line-height: 88rpx;
   &[disabled] {
-    background: #a4da89;
+    background: lighten($brand-primary, 15%);
     color: rgba(255, 255, 255, 0.7);
+    box-shadow: none;
   }
 }
 
 /* 说明 */
 .tips {
-  margin: 30rpx 24rpx 0;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 30rpx;
+  margin: $spacing-md $spacing-md 0;
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
 }
 .tips-title {
   font-size: 28rpx;
-  color: #303133;
+  color: $text-primary;
   font-weight: 500;
   display: block;
-  margin-bottom: 16rpx;
+  margin-bottom: $spacing-sm;
 }
 .tip-item {
   display: flex;
   align-items: flex-start;
   font-size: 24rpx;
-  color: #909399;
+  color: $text-secondary;
   line-height: 1.8;
   .dot {
-    margin-right: 8rpx;
+    margin-right: $spacing-xs;
   }
 }
 </style>

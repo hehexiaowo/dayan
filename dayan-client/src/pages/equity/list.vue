@@ -1,14 +1,21 @@
 <template>
-  <view class="list-page">
-    <view v-if="loading && list.length === 0" class="loading">
-      <text>加载中...</text>
-    </view>
+  <view class="list-page dy-safe-bottom">
+    <!-- 加载骨架 -->
+    <template v-if="loading && list.length === 0">
+      <DySkeleton :rows="2" card />
+      <DySkeleton :rows="2" card />
+      <DySkeleton :rows="2" card />
+    </template>
 
-    <view v-else-if="list.length === 0" class="empty">
-      <text class="empty-icon">📋</text>
-      <text class="empty-text">还没有权益</text>
-      <button class="btn-go-activate" @click="goActivate">去激活权益</button>
-    </view>
+    <!-- 空状态 -->
+    <DyEmpty
+      v-else-if="list.length === 0"
+      text="还没有权益"
+      icon="卡"
+      color="green"
+      action-text="去激活权益"
+      @action="goActivate"
+    />
 
     <scroll-view
       v-else
@@ -22,7 +29,7 @@
         <view
           v-for="eq in list"
           :key="eq.equityCode"
-          class="equity-card"
+          class="equity-card dy-clickable"
           @click="goDetail(eq.equityCode)"
         >
           <view class="card-top">
@@ -49,7 +56,7 @@
     </scroll-view>
 
     <view class="bottom-bar">
-      <button class="btn-activate" @click="goActivate">+ 激活新权益</button>
+      <button class="dy-btn dy-btn-primary" @click="goActivate">+ 激活新权益</button>
     </view>
   </view>
 </template>
@@ -59,6 +66,8 @@ import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { getEquities } from '@/api/equity';
 import type { Equity, EquityStatus } from '@/types';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const list = ref<Equity[]>([]);
 const loading = ref(false);
@@ -113,57 +122,27 @@ onShow(loadData);
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .list-page {
   min-height: 100vh;
-  background: #f5f6f8;
-  padding-bottom: 140rpx;
-}
-
-.loading {
-  display: flex;
-  justify-content: center;
-  padding: 120rpx 0;
-  color: #909399;
-  font-size: 28rpx;
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 120rpx 0;
-  .empty-icon {
-    font-size: 80rpx;
-    margin-bottom: 20rpx;
-  }
-  .empty-text {
-    font-size: 30rpx;
-    color: #606266;
-    margin-bottom: 40rpx;
-  }
-}
-.btn-go-activate {
-  background: #67C23A;
-  color: #fff;
-  font-size: 28rpx;
-  border-radius: 12rpx;
-  padding: 0 60rpx;
-  height: 76rpx;
-  line-height: 76rpx;
+  background: $bg-page;
+  padding: $spacing-sm $spacing-sm;
 }
 
 .equity-scroll {
-  height: calc(100vh - 140rpx);
+  height: calc(100vh - 200rpx);
 }
 .equity-list {
-  padding: 20rpx 24rpx;
+  padding-bottom: $spacing-sm;
 }
 .equity-card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 28rpx 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: 28rpx $spacing-md;
+  margin-bottom: $spacing-sm;
+  box-shadow: $shadow-card;
 }
 .card-top {
   display: flex;
@@ -173,7 +152,7 @@ onShow(loadData);
 .eq-name {
   font-size: 32rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
   flex: 1;
   overflow: hidden;
   white-space: nowrap;
@@ -182,44 +161,44 @@ onShow(loadData);
 .eq-status {
   font-size: 24rpx;
   padding: 4rpx 16rpx;
-  border-radius: 8rpx;
-  margin-left: 16rpx;
+  border-radius: $radius-sm;
+  margin-left: $spacing-sm;
   flex-shrink: 0;
 }
 .st-active {
-  color: #67C23A;
-  background: #f0f9eb;
+  color: $brand-primary;
+  background: $brand-primary-light;
 }
 .st-using {
-  color: #409eff;
-  background: #ecf5ff;
+  color: $network-blue;
+  background: $network-blue-light;
 }
 .st-done {
-  color: #909399;
-  background: #f4f4f5;
+  color: $brand-info;
+  background: $brand-info-light;
 }
 .st-expired,
 .st-void {
-  color: #f56c6c;
-  background: #fef0f0;
+  color: $brand-error;
+  background: $brand-error-light;
 }
 .st-default {
-  color: #909399;
-  background: #f4f4f5;
+  color: $brand-info;
+  background: $brand-info-light;
 }
 .card-body {
-  margin-top: 16rpx;
+  margin-top: $spacing-sm;
 }
 .info-row {
   display: flex;
   font-size: 26rpx;
-  margin-top: 8rpx;
+  margin-top: $spacing-xs;
   .info-label {
-    color: #909399;
+    color: $text-secondary;
     width: 140rpx;
   }
   .info-val {
-    color: #606266;
+    color: $text-regular;
     flex: 1;
   }
 }
@@ -227,16 +206,16 @@ onShow(loadData);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 16rpx;
-  padding-top: 16rpx;
-  border-top: 1px solid #f5f5f5;
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-light;
   .expire {
     font-size: 24rpx;
-    color: #909399;
+    color: $text-secondary;
   }
   .arrow {
     font-size: 24rpx;
-    color: #67C23A;
+    color: $brand-primary;
   }
 }
 
@@ -245,16 +224,8 @@ onShow(loadData);
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 20rpx 24rpx;
-  background: #fff;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-card;
   box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
-}
-.btn-activate {
-  background: #67C23A;
-  color: #fff;
-  font-size: 30rpx;
-  border-radius: 12rpx;
-  height: 80rpx;
-  line-height: 80rpx;
 }
 </style>

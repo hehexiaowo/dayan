@@ -1,6 +1,10 @@
 <template>
   <view class="detail-page">
-    <view v-if="loading" class="loading"><text>加载中...</text></view>
+    <!-- 加载骨架 -->
+    <template v-if="loading">
+      <DySkeleton :rows="3" card />
+      <DySkeleton :rows="2" card />
+    </template>
 
     <template v-else>
       <!-- 权益信息卡 -->
@@ -26,15 +30,15 @@
       </view>
 
       <!-- 权益人入口 -->
-      <view class="section-card" @click="goUsePersons">
+      <view class="section-card dy-clickable" @click="goUsePersons">
         <view class="section-left">
-          <text class="section-icon" style="color: #67C23A">人</text>
+          <DyIconBlock text="人" color="green" size="sm" shape="circle" />
           <view>
             <text class="section-title">权益人管理</text>
             <text class="section-desc">{{ persons.length }} 位权益人 {{ placeholderCount > 0 ? `（${placeholderCount} 位待补全）` : '' }}</text>
           </view>
         </view>
-        <text class="section-arrow">></text>
+        <text class="section-arrow">›</text>
       </view>
 
       <!-- 可用服务项目 -->
@@ -43,15 +47,18 @@
         <text class="sh-count">{{ serviceItems.length }} 项</text>
       </view>
 
-      <view v-if="serviceItems.length === 0" class="empty-section">
-        <text class="empty-text">暂无可用服务项目</text>
-      </view>
+      <DyEmpty
+        v-if="serviceItems.length === 0"
+        text="暂无可用服务项目"
+        icon="项"
+        color="gray"
+      />
 
       <view v-else class="item-list">
         <view
           v-for="item in serviceItems"
           :key="item.itemCode"
-          class="item-card"
+          class="item-card dy-clickable"
           :class="{ disabled: item.remaining <= 0 }"
         >
           <view class="item-info">
@@ -80,6 +87,9 @@ import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getEquityDetail, getServiceItems, getUsePersons } from '@/api/equity';
 import type { Equity, ClientServiceItem, EquityUsePerson } from '@/types';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 
 const equityCode = ref('');
 const equity = ref<Equity | null>(null);
@@ -148,29 +158,25 @@ onLoad((q) => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .detail-page {
   min-height: 100vh;
-  background: #f5f6f8;
+  background: $bg-page;
   padding-bottom: 40rpx;
-}
-
-.loading {
-  display: flex;
-  justify-content: center;
-  padding: 120rpx 0;
-  color: #909399;
 }
 
 /* 权益信息 */
 .equity-hero {
-  background: linear-gradient(135deg, #67C23A 0%, #4eaf2a 100%);
-  padding: 40rpx 30rpx;
+  background: $gradient-brand;
+  padding: 40rpx $spacing-md;
 }
 .hero-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24rpx;
+  margin-bottom: $spacing-md;
 }
 .eq-name {
   font-size: 36rpx;
@@ -183,17 +189,24 @@ onLoad((q) => {
   color: #fff;
   background: rgba(255, 255, 255, 0.25);
   padding: 6rpx 20rpx;
-  border-radius: 8rpx;
-  margin-left: 16rpx;
+  border-radius: $radius-sm;
+  margin-left: $spacing-sm;
 }
+/* BUG 修复：状态标签样式（原代码引用但从未定义，导致裸奔） */
+.st-active { background: rgba(255, 255, 255, 0.3); }
+.st-using { background: rgba(255, 255, 255, 0.25); }
+.st-done { background: rgba(255, 255, 255, 0.2); }
+.st-expired { background: rgba(250, 53, 52, 0.5); }
+.st-void { background: rgba(250, 53, 52, 0.5); }
+.st-default { background: rgba(255, 255, 255, 0.2); }
 .hero-meta {
   background: rgba(255, 255, 255, 0.15);
-  border-radius: 12rpx;
-  padding: 20rpx 24rpx;
+  border-radius: $radius-md;
+  padding: 20rpx $spacing-md;
 }
 .meta-item {
   display: flex;
-  margin: 8rpx 0;
+  margin: $spacing-xs 0;
   .meta-label {
     color: rgba(255, 255, 255, 0.75);
     font-size: 26rpx;
@@ -211,43 +224,33 @@ onLoad((q) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
-  margin: 20rpx 24rpx 0;
-  border-radius: 16rpx;
-  padding: 28rpx 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
+  background: $bg-card;
+  margin: $spacing-sm $spacing-md 0;
+  border-radius: $radius-lg;
+  padding: 28rpx $spacing-md;
+  box-shadow: $shadow-card;
 }
 .section-left {
   display: flex;
   align-items: center;
 }
-.section-icon {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
-  background: #f0f9eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28rpx;
-  font-weight: bold;
-  margin-right: 16rpx;
-}
 .section-title {
   font-size: 30rpx;
-  color: #303133;
+  color: $text-primary;
   font-weight: 500;
   display: block;
+  margin-left: $spacing-md;
 }
 .section-desc {
   font-size: 24rpx;
-  color: #909399;
+  color: $text-secondary;
   margin-top: 4rpx;
   display: block;
+  margin-left: $spacing-md;
 }
 .section-arrow {
-  color: #c0c4cc;
-  font-size: 32rpx;
+  color: $text-placeholder;
+  font-size: 36rpx;
 }
 
 /* 服务项目 */
@@ -255,42 +258,30 @@ onLoad((q) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 30rpx 24rpx 16rpx;
+  padding: $spacing-md $spacing-md $spacing-sm;
 }
 .sh-title {
   font-size: 30rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
 }
 .sh-count {
   font-size: 24rpx;
-  color: #909399;
-}
-
-.empty-section {
-  margin: 0 24rpx;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 60rpx 0;
-  text-align: center;
-  .empty-text {
-    font-size: 26rpx;
-    color: #c0c4cc;
-  }
+  color: $text-secondary;
 }
 
 .item-list {
-  padding: 0 24rpx;
+  padding: 0 $spacing-md;
 }
 .item-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 28rpx 24rpx;
-  margin-bottom: 16rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: 28rpx $spacing-md;
+  margin-bottom: $spacing-sm;
+  box-shadow: $shadow-card;
   &.disabled {
     opacity: 0.6;
   }
@@ -301,36 +292,36 @@ onLoad((q) => {
 }
 .item-name {
   font-size: 30rpx;
-  color: #303133;
+  color: $text-primary;
   font-weight: 500;
   display: block;
 }
 .item-quota {
-  margin-top: 8rpx;
+  margin-top: $spacing-xs;
 }
 .quota-text {
   font-size: 24rpx;
-  color: #909399;
+  color: $text-secondary;
 }
 .quota-num {
-  color: #67C23A;
+  color: $brand-primary;
   font-weight: bold;
   font-size: 28rpx;
   &.zero {
-    color: #c0c4cc;
+    color: $text-placeholder;
   }
 }
 .btn-start {
-  background: #67C23A;
+  background: $brand-primary;
   color: #fff;
   font-size: 26rpx;
-  border-radius: 8rpx;
-  padding: 0 32rpx;
+  border-radius: $radius-sm;
+  padding: 0 $spacing-md;
   height: 64rpx;
   line-height: 64rpx;
   flex-shrink: 0;
   &[disabled] {
-    background: #dcdfe6;
+    background: $border-base;
     color: #fff;
   }
 }
