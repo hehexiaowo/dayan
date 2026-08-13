@@ -11,6 +11,16 @@ import 'leaflet/dist/leaflet.css';
 const TIANDITU_KEY = '1ea38bada071978da6b6cfd68c464450';
 const SUBDOMAINS = ['0', '1', '2', '3', '4', '5', '6', '7'];
 
+/** 网络类型（用于地图标记图标区分） */
+export type NetworkType = 'vital' | 'care' | 'sojourn';
+
+/** 网络类型 → 主题色 + 符号文字 */
+const NETWORK_MARKER_CONFIG: Record<NetworkType, { color: string; symbol: string }> = {
+  vital: { color: '#409eff', symbol: '活' },
+  care: { color: '#ff9900', symbol: '照' },
+  sojourn: { color: '#19be6b', symbol: '旅' },
+};
+
 /** Marker 数据项（与后端 parkList 字段对齐） */
 export interface MapMarkerItem {
   latitude: number;
@@ -18,6 +28,7 @@ export interface MapMarkerItem {
   name?: string;
   code?: string;
   color?: string;
+  networkType?: NetworkType;
 }
 
 /** 天地图矢量底图（vec_w） */
@@ -99,6 +110,65 @@ export function addMarkers(
   // 自动适配视野（有 markers 时缩放到全部可见）
   if (group.getLayers().length > 0) {
     map.fitBounds(group.getBounds().pad(0.1));
+  }
+
+  return group;
+}
+
+/**
+ * 批量添加图标 markers（水滴 pin + 网络符号），auto-fit 到所有标记的范围。
+ * 用 divIcon 自定义 HTML 替代 circleMarker，按网络类型显示不同颜色+符号。
+ * fitBounds 带 maxZoom 防止过度放大，pad(0.25) 保持更宽的全局视野。
+ *
+ * @returns L.LayerGroup（可用于后续清除）
+ */
+export function addIconMarkers(
+  map: L.Map,
+  items: MapMarkerItem[],
+  onClick?: (item: MapMarkerItem) => void,
+): L.LayerGroup {
+  const group = L.featureGroup();
+
+  items.forEach((item) => {
+    if (!item.latitude || !item.longitude) return;
+
+    const networkType = item.networkType || 'vital';
+    const config = NETWORK_MARKER_CONFIG[networkType];
+    const color = item.color || config.color;
+
+    const icon = L.divIcon({
+      className: 'dy-map-pin-wrapper',
+      html: `<div style="
+        width:28px;height:28px;border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        background:${color};border:2px solid #fff;
+        box-shadow:0 2px 6px rgba(0,0,0,0.35);
+        display:flex;align-items:center;justify-content:center;
+      "><span style="transform:rotate(45deg);color:#fff;font-size:12px;font-weight:bold;line-height:1;">${config.symbol}</span></div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 28],
+      tooltipAnchor: [0, -28],
+    });
+
+    const marker = L.marker([item.latitude, item.longitude], { icon }).addTo(group);
+
+    if (item.name) {
+      marker.bindTooltip(item.name, {
+        permanent: false,
+        direction: 'top',
+        offset: [0, -4],
+      });
+    }
+    if (onClick && item.code) {
+      marker.on('click', () => onClick(item));
+    }
+  });
+
+  group.addTo(map);
+
+  // 自动适配视野，maxZoom 防止过度放大，pad 保持全局视野
+  if (group.getLayers().length > 0) {
+    map.fitBounds(group.getBounds().pad(0.25), { maxZoom: 12 });
   }
 
   return group;

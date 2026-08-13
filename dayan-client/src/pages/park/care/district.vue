@@ -30,7 +30,7 @@
         <DyIconBlock
           v-else
           :text="park.shortName?.charAt(0) || '机'"
-          :color="iconColor"
+          color="orange"
           size="md"
         />
         <view class="park-info">

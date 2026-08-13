@@ -59,7 +59,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 // #ifdef H5
-import { initMap, addMarkers, searchByName, destroyMap, type MapMarkerItem } from '@/utils/map';
+import { initMap, addIconMarkers, searchByName, destroyMap, type MapMarkerItem } from '@/utils/map';
 import type L from 'leaflet';
 // #endif
 import { getRegions } from '@/api/park';
@@ -81,8 +81,8 @@ let map: L.Map | null = null;
 let markerGroup: L.LayerGroup | null = null;
 // #endif
 
-/** vital 主题色（蓝色） */
-const THEME_COLOR = '#409eff';
+/** vital 网络类型（地图标记图标用） */
+const NETWORK_TYPE = 'vital' as const;
 
 async function fetchData() {
   loading.value = true;
@@ -121,11 +121,11 @@ function initMapView() {
       longitude: p.longitude!,
       name: p.shortName || p.fullName,
       code: p.parkCode,
-      color: THEME_COLOR,
+      networkType: NETWORK_TYPE,
     }));
 
   if (itemsWithCoords.length > 0) {
-    markerGroup = addMarkers(map, itemsWithCoords, (item) => {
+    markerGroup = addIconMarkers(map, itemsWithCoords, (item) => {
       uni.navigateTo({
         url: `/pages/business/park/vital/detail?parkCode=${item.code}`,
       });
@@ -185,11 +185,11 @@ onUnmounted(() => {
 }
 .map-container {
   width: 100%;
-  height: 280px;
+  height: 200px;
 }
 .map-placeholder {
   width: 100%;
-  height: 280px;
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
