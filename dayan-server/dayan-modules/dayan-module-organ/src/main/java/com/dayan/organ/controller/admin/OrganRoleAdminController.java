@@ -5,6 +5,7 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
 import com.dayan.organ.dto.OrganRoleCreateDTO;
+import com.dayan.organ.dto.OrganRoleGrantsDTO;
 import com.dayan.organ.dto.OrganRoleQueryDTO;
 import com.dayan.organ.dto.OrganRoleUpdateDTO;
 import com.dayan.organ.service.OrganRoleService;
@@ -72,20 +73,20 @@ public class OrganRoleAdminController {
         return R.ok();
     }
 
-    @Operation(summary = "给角色授权（全量覆盖）")
+    @Operation(summary = "给角色授权（菜单+权限，全量覆盖）")
     @OperationLog(module = "角色管理", action = "授权")
     @SaCheckPermission("organ:role:assign")
     @PutMapping("/{roleCode}/permissions")
     public R<Void> assignPermissions(@PathVariable String roleCode,
-                                     @RequestBody List<String> permissionCodes) {
-        organRoleService.assignPermissions(roleCode, permissionCodes);
+                                     @RequestBody OrganRoleGrantsDTO grants) {
+        organRoleService.assignGrants(roleCode, grants);
         return R.ok();
     }
 
-    @Operation(summary = "查询角色权限码列表")
+    @Operation(summary = "查询角色授权（菜单码+权限码）")
     @SaCheckPermission("organ:role:query")
     @GetMapping("/{roleCode}/permissions")
-    public R<List<String>> listPermissions(@PathVariable String roleCode) {
-        return R.ok(organRoleService.listPermissions(roleCode));
+    public R<OrganRoleGrantsDTO> listPermissions(@PathVariable String roleCode) {
+        return R.ok(organRoleService.listGrants(roleCode));
     }
 }

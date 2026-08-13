@@ -8,13 +8,18 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.organ.dto.OrganRoleCreateDTO;
+import com.dayan.organ.dto.OrganRoleGrantsDTO;
 import com.dayan.organ.dto.OrganRoleQueryDTO;
 import com.dayan.organ.dto.OrganRoleUpdateDTO;
 import com.dayan.organ.entity.OrganAccountRoleRel;
+import com.dayan.organ.entity.OrganPermission;
 import com.dayan.organ.entity.OrganRole;
+import com.dayan.organ.entity.OrganRoleMenuRel;
 import com.dayan.organ.entity.OrganRolePermissionShip;
 import com.dayan.organ.mapper.OrganAccountRoleRelMapper;
+import com.dayan.organ.mapper.OrganPermissionMapper;
 import com.dayan.organ.mapper.OrganRoleMapper;
+import com.dayan.organ.mapper.OrganRoleMenuRelMapper;
 import com.dayan.organ.mapper.OrganRolePermissionShipMapper;
 import com.dayan.organ.service.OrganRoleService;
 import com.dayan.organ.vo.OrganRoleSimpleVO;
@@ -48,6 +53,8 @@ public class OrganRoleServiceImpl implements OrganRoleService {
     private final OrganRoleMapper roleMapper;
     private final OrganRolePermissionShipMapper rolePermissionShipMapper;
     private final OrganAccountRoleRelMapper accountRoleRelMapper;
+    private final OrganRoleMenuRelMapper roleMenuRelMapper;
+    private final OrganPermissionMapper permissionMapper;
     private final CodeGenerator codeGenerator;
 
     @Override
@@ -144,6 +151,9 @@ public class OrganRoleServiceImpl implements OrganRoleService {
             throw new BusinessException(ErrorCode.BUSINESS, "角色已被账号关联，无法删除（roleCode=" + roleCode + "）");
         }
 
+        // 删除角色-菜单关联
+        roleMenuRelMapper.delete(new LambdaQueryWrapper<OrganRoleMenuRel>()
+                .eq(OrganRoleMenuRel::getRoleCode, roleCode));
         // 删除角色-权限关联（物理删，关联表无 deleted 审计需求）
         rolePermissionShipMapper.delete(new LambdaQueryWrapper<OrganRolePermissionShip>()
                 .eq(OrganRolePermissionShip::getRoleCode, roleCode));
@@ -155,17 +165,52 @@ public class OrganRoleServiceImpl implements OrganRoleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void assignPermissions(String roleCode, List<String> permissionCodes) {
+    public void assignGrants(String roleCode, OrganRoleGrantsDTO grants) {
         requireRole(roleCode);
-        // 先删后增（全量覆盖）
+        List<String> permCodes = grants.getPermissionCodes() == null
+                ? Collections.emptyList()
+                : grants.getPermissionCodes().stream().distinct().collect(Collectors.toList());
+        List<String> menuCodes = grants.getMenuCodes() == null
+                ? Collections.emptyList()
+                : grants.getMenuCodes().stream().distinct().collect(Collectors.toList());
+
+        // 校验权限码全部存在（菜单码属 system 模块表，organ 模块无法校验；
+        // 无效菜单码在 /menus/mine 按 system_menu 过滤时自然落空，视为惰性无效）
+        if (!permCodes.isEmpty()) {
+            Long exist = permissionMapper.selectCount(new LambdaQueryWrapper<OrganPermission>()
+                    .in(OrganPermission::getPermissionCode, permCodes));
+            if (exist == null || exist != permCodes.size()) {
+                throw new BusinessException(ErrorCode.BUSINESS, "存在无效权限码，授权已回滚");
+            }
+        }
+
+        // 先删后插（全量覆盖）：菜单可见性 + 接口权限
+        roleMenuRelMapper.delete(new LambdaQueryWrapper<OrganRoleMenuRel>()
+                .eq(OrganRoleMenuRel::getRoleCode, roleCode));
         rolePermissionShipMapper.delete(new LambdaQueryWrapper<OrganRolePermissionShip>()
                 .eq(OrganRolePermissionShip::getRoleCode, roleCode));
-        if (permissionCodes == null || permissionCodes.isEmpty()) {
-            log.info("角色授权已清空: roleCode={}", roleCode);
-            return;
+        for (String menuCode : menuCodes) {
+            OrganRoleMenuRel rel = new OrganRoleMenuRel();
+            rel.setRoleCode(roleCode);
+            rel.setMenuCode(menuCode);
+            roleMenuRelMapper.insert(rel);
         }
-        savePermissions(roleCode, permissionCodes);
-        log.info("角色授权完成: roleCode={}, 权限数={}", roleCode, permissionCodes.size());
+        savePermissions(roleCode, permCodes);
+        log.info("角色授权完成: roleCode={}, 菜单数={}, 权限数={}", roleCode, menuCodes.size(), permCodes.size());
+    }
+
+    @Override
+    public OrganRoleGrantsDTO listGrants(String roleCode) {
+        OrganRoleGrantsDTO grants = new OrganRoleGrantsDTO();
+        grants.setPermissionCodes(listPermissions(roleCode));
+        List<OrganRoleMenuRel> rels = roleMenuRelMapper.selectList(
+                new LambdaQueryWrapper<OrganRoleMenuRel>()
+                        .eq(OrganRoleMenuRel::getRoleCode, roleCode));
+        grants.setMenuCodes(rels.stream()
+                .map(OrganRoleMenuRel::getMenuCode)
+                .distinct()
+                .collect(Collectors.toList()));
+        return grants;
     }
 
     @Override

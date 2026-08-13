@@ -2,6 +2,7 @@ package com.dayan.organ.service;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.organ.dto.OrganRoleCreateDTO;
+import com.dayan.organ.dto.OrganRoleGrantsDTO;
 import com.dayan.organ.dto.OrganRoleQueryDTO;
 import com.dayan.organ.dto.OrganRoleUpdateDTO;
 import com.dayan.organ.vo.OrganRoleSimpleVO;
@@ -59,12 +60,9 @@ public interface OrganRoleService {
     void delete(String roleCode);
 
     /**
-     * 给角色批量授权（先删后增 role_permission_ship）。
-     *
-     * @param roleCode        角色编码
-     * @param permissionCodes 权限码列表（全量覆盖）
+     * 给角色授权（菜单+权限，全量覆盖，单事务先删后插）。
      */
-    void assignPermissions(String roleCode, List<String> permissionCodes);
+    void assignGrants(String roleCode, OrganRoleGrantsDTO grants);
 
     /**
      * 查询角色的权限码列表。
@@ -73,4 +71,9 @@ public interface OrganRoleService {
      * @return 权限码列表
      */
     List<String> listPermissions(String roleCode);
+
+    /**
+     * 查询角色授权（菜单码+权限码），供分配权限弹窗回显。
+     */
+    OrganRoleGrantsDTO listGrants(String roleCode);
 }

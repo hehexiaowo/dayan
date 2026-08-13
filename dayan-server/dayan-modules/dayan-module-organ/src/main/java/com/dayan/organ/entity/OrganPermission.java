@@ -28,6 +28,9 @@ public class OrganPermission extends BaseEntity {
     /** 父权限编码 */
     private String parentCode;
 
+    /** 归属菜单编码（system_menu.menu_code），NULL=未分组 */
+    private String menuCode;
+
     /** 权限类型 */
     private Integer permissionType;
 
