@@ -34,7 +34,7 @@
     "navigationBarTextStyle": "white",
     "navigationBarTitleText": "大雁养老",
     "navigationBarBackgroundColor": "#67C23A",
-    "backgroundColor": "#F8F8F8"
+    "backgroundColor": "#f5f6f8"
   },
   "tabBar": {
     "color": "#7A7E83",
@@ -43,7 +43,7 @@
     "backgroundColor": "#FFFFFF",
     "list": [
       { "pagePath": "pages/home/index", "text": "首页", "iconPath": "static/tabbar/home.png", "selectedIconPath": "static/tabbar/home-active.png" },
-      { "pagePath": "pages/park/index", "text": "养老网络", "iconPath": "static/tabbar/park.png", "selectedIconPath": "static/tabbar/park-active.png" },
+      { "pagePath": "pages/park/index", "text": "网络", "iconPath": "static/tabbar/park.png", "selectedIconPath": "static/tabbar/park-active.png" },
       { "pagePath": "pages/service/index", "text": "服务", "iconPath": "static/tabbar/service.png", "selectedIconPath": "static/tabbar/service-active.png" },
       { "pagePath": "pages/mine/index", "text": "我的", "iconPath": "static/tabbar/mine.png", "selectedIconPath": "static/tabbar/mine-active.png" }
     ]

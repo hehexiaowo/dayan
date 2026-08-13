@@ -16,47 +16,53 @@
     </view>
 
     <!-- 权益概览卡（已登录） -->
-    <view v-if="loggedIn" class="overview card" @click="goEquityList">
-      <view class="ov-item">
-        <text class="ov-num">{{ equityCount }}</text>
-        <text class="ov-label">我的权益（张）</text>
-      </view>
-      <view class="ov-divider"></view>
-      <view class="ov-item" @click.stop="goServiceList">
-        <text class="ov-num">{{ activeServiceCount }}</text>
-        <text class="ov-label">进行中服务</text>
-      </view>
+    <view v-if="loggedIn" class="overview card dy-clickable" @click="goEquityList">
+      <!-- 加载骨架 -->
+      <template v-if="loading">
+        <DySkeleton :rows="1" card class="ov-skeleton" />
+      </template>
+      <template v-else>
+        <view class="ov-item">
+          <text class="ov-num">{{ equityCount }}</text>
+          <text class="ov-label">我的权益（张）</text>
+        </view>
+        <view class="ov-divider"></view>
+        <view class="ov-item" @click.stop="goServiceList">
+          <text class="ov-num">{{ activeServiceCount }}</text>
+          <text class="ov-label">进行中服务</text>
+        </view>
+      </template>
     </view>
 
     <!-- 未登录提示 -->
-    <view v-else class="overview card login-prompt" @click="goLogin">
+    <view v-else class="overview card login-prompt dy-clickable" @click="goLogin">
       <text class="login-tip">请登录后查看您的权益与服务</text>
       <text class="login-btn">去登录 ></text>
     </view>
 
     <!-- 主功能宫格 -->
     <view class="grid card">
-      <view class="grid-item primary" @click="goActivate">
-        <view class="grid-icon icon-activate">★</view>
+      <view class="grid-item dy-clickable" @click="goActivate">
+        <DyIconBlock text="活" color="green" size="md" shape="circle" />
         <text class="grid-label">激活权益</text>
         <text class="grid-sub">输入激活码</text>
       </view>
-      <view class="grid-item" @click="goEquityList">
-        <view class="grid-icon icon-equity">益</view>
+      <view class="grid-item dy-clickable" @click="goEquityList">
+        <DyIconBlock text="益" color="blue" size="md" shape="circle" />
         <text class="grid-label">我的权益</text>
       </view>
-      <view class="grid-item" @click="goServiceList">
-        <view class="grid-icon icon-service">务</view>
+      <view class="grid-item dy-clickable" @click="goServiceList">
+        <DyIconBlock text="务" color="orange" size="md" shape="circle" />
         <text class="grid-label">我的服务</text>
       </view>
-      <view class="grid-item" @click="goPark">
-        <view class="grid-icon icon-park">构</view>
+      <view class="grid-item dy-clickable" @click="goPark">
+        <DyIconBlock text="网" color="gray" size="md" shape="circle" />
         <text class="grid-label">养老网络</text>
       </view>
     </view>
 
     <!-- 权益引导（已登录且无权益时） -->
-    <view v-if="loggedIn && equityCount === 0 && !loading" class="guide card" @click="goActivate">
+    <view v-if="loggedIn && equityCount === 0 && !loading" class="guide card dy-clickable" @click="goActivate">
       <text class="guide-title">您还没有激活权益</text>
       <text class="guide-desc">手持权益卡？点此输入激活码，开启养老服务</text>
     </view>
@@ -69,6 +75,8 @@ import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
 import { getEquities } from '@/api/equity';
 import { getServices } from '@/api/service';
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 
 const userStore = useUserStore();
 const equityCount = ref(0);
@@ -133,19 +141,22 @@ onShow(loadOverview);
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .home {
   min-height: 100vh;
-  background: #f5f6f8;
-  padding-bottom: 30rpx;
+  background: $bg-page;
+  padding-bottom: 140rpx;
 }
 
 /* 顶部 */
 .header {
-  background: linear-gradient(135deg, #67C23A 0%, #4eaf2a 100%);
-  padding: 40rpx 30rpx 70rpx;
+  background: $gradient-brand;
+  padding: 40rpx $spacing-lg 70rpx;
 }
 .welcome {
-  margin-bottom: 30rpx;
+  margin-bottom: $spacing-md;
   .greeting,
   .name {
     color: #fff;
@@ -153,14 +164,14 @@ onShow(loadOverview);
   }
   .name {
     font-weight: bold;
-    margin-left: 8rpx;
+    margin-left: $spacing-xs;
   }
 }
 .banner {
   height: 200rpx;
-  border-radius: 16rpx;
+  border-radius: $radius-md;
   overflow: hidden;
-  background: #fff;
+  background: $bg-card;
 }
 .banner-placeholder {
   height: 100%;
@@ -172,8 +183,8 @@ onShow(loadOverview);
     width: 80rpx;
     height: 80rpx;
     border-radius: 50%;
-    background: rgba(103, 194, 58, 0.15);
-    color: #67C23A;
+    background: $brand-primary-light;
+    color: $brand-primary;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -182,23 +193,23 @@ onShow(loadOverview);
   }
   .banner-text {
     margin-top: 12rpx;
-    color: #67C23A;
+    color: $brand-primary;
     font-size: 26rpx;
     font-weight: bold;
   }
   .banner-sub {
     margin-top: 4rpx;
-    color: #909399;
+    color: $text-secondary;
     font-size: 22rpx;
   }
 }
 
 /* 通用卡片 */
 .card {
-  background: #fff;
-  margin: -40rpx 24rpx 0;
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  background: $bg-card;
+  margin: -40rpx $spacing-lg 0;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
   position: relative;
 }
 
@@ -207,6 +218,11 @@ onShow(loadOverview);
   display: flex;
   align-items: center;
   padding: 36rpx 0;
+}
+.ov-skeleton {
+  flex: 1;
+  margin: 0 $spacing-md;
+  box-shadow: none;
 }
 .ov-item {
   flex: 1;
@@ -217,29 +233,29 @@ onShow(loadOverview);
 .ov-num {
   font-size: 44rpx;
   font-weight: bold;
-  color: #67C23A;
+  color: $brand-primary;
 }
 .ov-label {
   font-size: 24rpx;
-  color: #909399;
-  margin-top: 8rpx;
+  color: $text-secondary;
+  margin-top: $spacing-xs;
 }
 .ov-divider {
-  width: 1px;
+  width: 2rpx;
   height: 60rpx;
-  background: #ebeef5;
+  background: $border-base;
 }
 .login-prompt {
   flex-direction: row;
   justify-content: space-between;
-  padding: 36rpx 30rpx;
+  padding: 36rpx $spacing-md;
   .login-tip {
     font-size: 28rpx;
-    color: #606266;
+    color: $text-regular;
   }
   .login-btn {
     font-size: 28rpx;
-    color: #67C23A;
+    color: $brand-primary;
     font-weight: bold;
   }
 }
@@ -248,7 +264,7 @@ onShow(loadOverview);
 .grid {
   display: flex;
   flex-wrap: wrap;
-  padding: 30rpx 0;
+  padding: $spacing-md 0;
 }
 .grid-item {
   width: 50%;
@@ -257,40 +273,15 @@ onShow(loadOverview);
   align-items: center;
   padding: 20rpx 0;
 }
-.grid-icon {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 34rpx;
-  font-weight: bold;
-  margin-bottom: 14rpx;
-}
-.icon-activate {
-  background: linear-gradient(135deg, #67C23A, #4eaf2a);
-  box-shadow: 0 6rpx 16rpx rgba(103, 194, 58, 0.4);
-  font-size: 40rpx;
-}
-.icon-equity {
-  background: #409eff;
-}
-.icon-service {
-  background: #e6a23c;
-}
-.icon-park {
-  background: #909399;
-}
 .grid-label {
   font-size: 28rpx;
-  color: #303133;
+  color: $text-primary;
   font-weight: 500;
+  margin-top: 14rpx;
 }
 .grid-sub {
   font-size: 20rpx;
-  color: #c0c4cc;
+  color: $text-placeholder;
   margin-top: 4rpx;
 }
 
@@ -299,15 +290,15 @@ onShow(loadOverview);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40rpx 30rpx;
+  padding: 40rpx $spacing-md;
   .guide-title {
     font-size: 30rpx;
     font-weight: bold;
-    color: #303133;
+    color: $text-primary;
   }
   .guide-desc {
     font-size: 24rpx;
-    color: #909399;
+    color: $text-secondary;
     margin-top: 12rpx;
   }
 }
