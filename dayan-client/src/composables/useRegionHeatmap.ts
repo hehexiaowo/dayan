@@ -38,6 +38,13 @@ export interface HeatmapConfig {
   showLabels?: boolean;
   /** 区域点击回调（下钻） */
   onRegionClick?: (item: { code: string; name: string }) => void;
+  /**
+   * 地图布局中心（容器百分比，如 ['50%','58%']）。传入后改用 layoutCenter/layoutSize 布局，
+   * 用于把全国地图往下挪（南海撑大 bbox 导致大陆偏上）。不传则用默认 top+zoom 布局。
+   */
+  layoutCenter?: [string, string];
+  /** 配合 layoutCenter 的地图尺寸（容器百分比，如 '115%'） */
+  layoutSize?: string;
 }
 
 export function useRegionHeatmap(cfg: HeatmapConfig) {
@@ -85,9 +92,11 @@ export function useRegionHeatmap(cfg: HeatmapConfig) {
         map: mapName,
         roam: true,
         scaleLimit: { min: 1, max: 12 },
-        zoom: 1.2,
-        top: 16,
         aspectScale: 0.85,
+        // layoutCenter 模式（全国地图下移）vs 默认 top+zoom 模式
+        ...(cfg.layoutCenter
+          ? { layoutCenter: cfg.layoutCenter, layoutSize: cfg.layoutSize || '110%' }
+          : { zoom: 1.2, top: 16 }),
         label: {
           show: !!cfg.showLabels,
           fontSize: 9,

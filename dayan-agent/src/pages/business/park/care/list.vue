@@ -61,6 +61,7 @@ const loading = ref(true);
 const totalParks = computed(() => regions.value.reduce((s, i) => s + i.count, 0));
 
 // 热力图：全国省级边界（不显示省名），区域按机构数暖色填色
+// layoutCenter 下移：南海撑大 bbox 致大陆偏上，中心点下移到 60% 让大陆居中
 const heatmap = useRegionHeatmap({
   containerId: 'care-list-map',
   geoCode: '100000',
@@ -68,6 +69,8 @@ const heatmap = useRegionHeatmap({
     return regions.value;
   },
   showLabels: false,
+  layoutCenter: ['50%', '60%'],
+  layoutSize: '118%',
   onRegionClick: (r) => navigateToProvince(r.code),
 });
 
