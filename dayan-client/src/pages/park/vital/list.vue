@@ -50,32 +50,26 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
-import * as echarts from 'echarts';
 import { getRegions } from '@/api/park';
 import type { RegionItem } from '@/types/park';
+import { useRegionHeatmap } from '@/composables/useRegionHeatmap';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const regions = ref<RegionItem[]>([]);
 const loading = ref(true);
-let myChart: echarts.ECharts | null = null;
 
 const totalParks = computed(() => regions.value.reduce((s, i) => s + i.count, 0));
 
-// GeoJSON 名称规范化（API 返回 "河北省" → GeoJSON "河北"）
-function normalizeName(name: string, code: string): string {
-  let n = name.replace(/省$/, '');
-  const autonomousMap: Record<string, string> = {
-    '640000': '宁夏',
-    '650000': '新疆',
-    '450000': '广西',
-    '150000': '内蒙古',
-    '540000': '西藏',
-  };
-  if (autonomousMap[code]) n = autonomousMap[code];
-  n = n.replace(/市$/, '');
-  return n;
-}
+// 热力图：全国省级边界（不显示省名），区域按机构数暖色填色
+const heatmap = useRegionHeatmap({
+  containerId: 'vital-list-map',
+  geoCode: '100000',
+  get items() {
+    return regions.value;
+  },
+  showLabels: false,
+  onRegionClick: (r) => navigateToProvince(r.code),
+});
 
 async function fetchData() {
   loading.value = true;
@@ -86,110 +80,12 @@ async function fetchData() {
     });
     regions.value = result.items || [];
     await nextTick();
-    setTimeout(initChart, 300);
+    heatmap.init();
   } catch {
     regions.value = [];
   } finally {
     loading.value = false;
   }
-}
-
-async function initChart() {
-  // #ifdef H5
-  const container = document.getElementById('vital-list-map');
-  if (!container) return;
-
-  let chinaGeo: any = null;
-  try {
-    const resp = await fetch('/static/geo/china.json');
-    chinaGeo = await resp.json();
-  } catch {
-    console.warn('[vital/list] china.json 加载失败');
-    return;
-  }
-
-  const centroidMap: Record<string, [number, number]> = {};
-  chinaGeo.features.forEach((f: any) => {
-    const cp = f.properties?.centroid || f.properties?.center || f.properties?.cp;
-    if (cp) centroidMap[f.properties.name] = [cp[0], cp[1]];
-  });
-
-  echarts.registerMap('china', chinaGeo);
-  myChart = echarts.init(container);
-
-  const scatterData = regions.value
-    .filter((r) => r.count > 0)
-    .map((r) => {
-      const normalName = normalizeName(r.name, r.code);
-      const coord = centroidMap[normalName];
-      return {
-        name: r.name,
-        value: coord ? [...coord, r.count] : [],
-        code: r.code,
-      };
-    })
-    .filter((d) => d.value.length > 0);
-
-  myChart.setOption({
-    geo: {
-      map: 'china',
-      roam: true,
-      scaleLimit: { min: 1, max: 10 },
-      zoom: 1.2,
-      top: 20,
-      aspectScale: 0.85,
-      label: {
-        show: true,
-        fontSize: 8,
-        color: 'rgba(0,0,0,0.5)',
-      },
-      itemStyle: {
-        areaColor: '#eef4ff',
-        borderColor: '#dcdfe6',
-        borderWidth: 0.5,
-      },
-      emphasis: {
-        itemStyle: { areaColor: '#d6e4ff', borderColor: '#409eff' },
-        label: { show: true },
-      },
-    },
-    tooltip: {
-      trigger: 'item',
-      formatter: (p: any) =>
-        p.data ? `${p.data.name}<br/>机构：${p.data.value?.[2] || 0} 家` : p.name,
-    },
-    series: [
-      {
-        type: 'effectScatter',
-        coordinateSystem: 'geo',
-        rippleEffect: { period: 4, scale: 3, brushType: 'stroke' },
-        symbolSize: 10,
-        itemStyle: {
-          color: '#409eff',
-          shadowBlur: 6,
-          shadowColor: 'rgba(64,158,255,0.4)',
-        },
-        data: scatterData,
-      },
-    ],
-  });
-
-  myChart.on('click', (params: any) => {
-    if (params.data?.code) {
-      navigateToProvince(params.data.code);
-    }
-  });
-
-  myChart.on('mouseover', () => {
-    myChart?.dispatchAction({ type: 'downplay' });
-  });
-
-  window.addEventListener('resize', handleResize);
-  // #endif
-}
-
-function handleResize() {
-  myChart?.resize();
 }
 
 function onProvinceClick(item: RegionItem) {
@@ -205,11 +101,7 @@ function navigateToProvince(provinceCode: string) {
 onMounted(fetchData);
 
 onUnmounted(() => {
-  // #ifdef H5
-  window.removeEventListener('resize', handleResize);
-  myChart?.dispose();
-  myChart = null;
-  // #endif
+  heatmap.dispose();
 });
 </script>
 
