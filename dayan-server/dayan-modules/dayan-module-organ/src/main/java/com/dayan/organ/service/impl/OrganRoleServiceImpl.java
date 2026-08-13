@@ -151,12 +151,10 @@ public class OrganRoleServiceImpl implements OrganRoleService {
             throw new BusinessException(ErrorCode.BUSINESS, "角色已被账号关联，无法删除（roleCode=" + roleCode + "）");
         }
 
-        // 删除角色-菜单关联
-        roleMenuRelMapper.delete(new LambdaQueryWrapper<OrganRoleMenuRel>()
-                .eq(OrganRoleMenuRel::getRoleCode, roleCode));
+        // 删除角色-菜单关联（物理删，避免 @TableLogic 逻辑删撞唯一键）
+        roleMenuRelMapper.physicalDeleteByRoleCode(roleCode);
         // 删除角色-权限关联（物理删，关联表无 deleted 审计需求）
-        rolePermissionShipMapper.delete(new LambdaQueryWrapper<OrganRolePermissionShip>()
-                .eq(OrganRolePermissionShip::getRoleCode, roleCode));
+        rolePermissionShipMapper.physicalDeleteByRoleCode(roleCode);
         // 逻辑删除角色
         roleMapper.delete(new LambdaQueryWrapper<OrganRole>()
                 .eq(OrganRole::getRoleCode, roleCode));
@@ -184,11 +182,9 @@ public class OrganRoleServiceImpl implements OrganRoleService {
             }
         }
 
-        // 先删后插（全量覆盖）：菜单可见性 + 接口权限
-        roleMenuRelMapper.delete(new LambdaQueryWrapper<OrganRoleMenuRel>()
-                .eq(OrganRoleMenuRel::getRoleCode, roleCode));
-        rolePermissionShipMapper.delete(new LambdaQueryWrapper<OrganRolePermissionShip>()
-                .eq(OrganRolePermissionShip::getRoleCode, roleCode));
+        // 先删后插（全量覆盖）：菜单可见性 + 接口权限（物理删，避免 @TableLogic 逻辑删撞唯一键）
+        roleMenuRelMapper.physicalDeleteByRoleCode(roleCode);
+        rolePermissionShipMapper.physicalDeleteByRoleCode(roleCode);
         for (String menuCode : menuCodes) {
             OrganRoleMenuRel rel = new OrganRoleMenuRel();
             rel.setRoleCode(roleCode);
