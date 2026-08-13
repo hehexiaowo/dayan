@@ -1,6 +1,8 @@
 <template>
   <view class="detail-page">
-    <view v-if="loading" class="loading"><text>加载中...</text></view>
+    <view v-if="loading" class="loading-skeleton">
+      <DySkeleton v-for="n in 3" :key="n" />
+    </view>
 
     <template v-else-if="session">
       <!-- 状态条 -->
@@ -38,7 +40,7 @@
         <text class="sh-title">服务进度</text>
       </view>
       <view v-if="timelineNodes.length === 0" class="empty-timeline">
-        <text>暂无进度记录</text>
+        <DyEmpty text="暂无进度记录" />
       </view>
       <view v-else class="timeline">
         <view v-for="(node, i) in timelineNodes" :key="i" class="tl-node">
@@ -299,29 +301,29 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .detail-page {
   min-height: 100vh;
-  background: #f5f6f8;
+  background: $bg-page;
   padding-bottom: 140rpx;
 }
 
-.loading {
-  display: flex;
-  justify-content: center;
-  padding: 120rpx 0;
-  color: #909399;
+.loading-skeleton {
+  padding: $spacing-md;
 }
 
 /* 状态条 */
 .status-hero {
-  padding: 40rpx 30rpx;
+  padding: 40rpx $spacing-lg;
 }
-.hero-pending { background: linear-gradient(135deg, #e6a23c, #cf8a2c); }
-.hero-solution { background: linear-gradient(135deg, #409eff, #337ecc); }
-.hero-arrange { background: linear-gradient(135deg, #67C23A, #4eaf2a); }
-.hero-active { background: linear-gradient(135deg, #67C23A, #4eaf2a); }
-.hero-done { background: linear-gradient(135deg, #909399, #76797e); }
-.hero-cancel { background: linear-gradient(135deg, #909399, #76797e); }
+.hero-pending { background: $gradient-orange; }
+.hero-solution { background: $gradient-blue; }
+.hero-arrange { background: $gradient-brand; }
+.hero-active { background: $gradient-brand; }
+.hero-done { background: $gradient-gray; }
+.hero-cancel { background: $gradient-gray; }
 .status-row {
   display: flex;
   align-items: center;
@@ -333,7 +335,7 @@ onShow(() => {
   font-weight: bold;
   background: rgba(255, 255, 255, 0.25);
   padding: 6rpx 24rpx;
-  border-radius: 8rpx;
+  border-radius: $radius-sm;
 }
 .butler {
   color: rgba(255, 255, 255, 0.9);
@@ -342,66 +344,67 @@ onShow(() => {
 .status-hint {
   color: rgba(255, 255, 255, 0.9);
   font-size: 26rpx;
-  margin-top: 16rpx;
+  margin-top: $spacing-sm;
   display: block;
 }
 .session-title {
   color: #fff;
   font-size: 30rpx;
   font-weight: 500;
-  margin-top: 8rpx;
+  margin-top: $spacing-xs;
   display: block;
 }
 
 /* 信息卡 */
 .info-card {
-  background: #fff;
-  margin: 20rpx 24rpx 0;
-  border-radius: 16rpx;
-  padding: 24rpx;
+  background: $bg-card;
+  margin: $spacing-sm $spacing-md 0;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
 }
 .info-row {
   display: flex;
   padding: 12rpx 0;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid $border-light;
   &:last-child { border-bottom: none; }
 }
 .info-label {
   font-size: 26rpx;
-  color: #909399;
+  color: $text-secondary;
   width: 140rpx;
   flex-shrink: 0;
 }
 .info-val {
   font-size: 26rpx;
-  color: #303133;
+  color: $text-primary;
   flex: 1;
   &.desc { line-height: 1.6; }
 }
 
 /* 时间线 */
 .section-header {
-  padding: 30rpx 24rpx 16rpx;
+  padding: $spacing-lg $spacing-md $spacing-sm;
 }
 .sh-title {
   font-size: 30rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
 }
 .empty-timeline {
-  margin: 0 24rpx;
-  background: #fff;
-  border-radius: 16rpx;
+  margin: 0 $spacing-md;
+  background: $bg-card;
+  border-radius: $radius-lg;
   padding: 60rpx 0;
   text-align: center;
-  color: #c0c4cc;
-  font-size: 26rpx;
+  box-shadow: $shadow-card;
 }
 .timeline {
-  background: #fff;
-  margin: 0 24rpx;
-  border-radius: 16rpx;
-  padding: 24rpx;
+  background: $bg-card;
+  margin: 0 $spacing-md;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
 }
 .tl-node {
   display: flex;
@@ -423,37 +426,37 @@ onShow(() => {
   color: #fff;
   flex-shrink: 0;
 }
-.tl-dot.demand { background: #e6a23c; }
-.tl-dot.solution { background: #409eff; }
-.tl-dot.arrange { background: #67C23A; }
-.tl-dot.visit { background: #909399; }
+.tl-dot.demand { background: $brand-warning; }
+.tl-dot.solution { background: $network-blue; }
+.tl-dot.arrange { background: $brand-primary; }
+.tl-dot.visit { background: $brand-info; }
 .tl-line {
   width: 2rpx;
   flex: 1;
   min-height: 40rpx;
-  background: #ebeef5;
+  background: $border-base;
   margin: 4rpx 0;
 }
 .tl-content {
   flex: 1;
-  padding-bottom: 30rpx;
+  padding-bottom: $spacing-lg;
 }
 .tl-title {
   font-size: 28rpx;
-  color: #303133;
+  color: $text-primary;
   font-weight: 500;
   display: block;
 }
 .tl-desc {
   font-size: 24rpx;
-  color: #606266;
+  color: $text-regular;
   margin-top: 6rpx;
   display: block;
   line-height: 1.5;
 }
 .tl-time {
   font-size: 22rpx;
-  color: #c0c4cc;
+  color: $text-placeholder;
   margin-top: 6rpx;
   display: block;
 }
@@ -466,46 +469,46 @@ onShow(() => {
   right: 0;
   display: flex;
   gap: 20rpx;
-  padding: 20rpx 24rpx;
-  background: #fff;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-card;
   box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
 }
 .closed-tip {
   flex: 1;
   text-align: center;
   font-size: 26rpx;
-  color: #909399;
+  color: $text-secondary;
   line-height: 80rpx;
 }
 .btn-primary {
   flex: 1;
-  background: #67C23A;
+  background: $gradient-brand;
   color: #fff;
   font-size: 30rpx;
-  border-radius: 12rpx;
+  border-radius: $radius-md;
   height: 84rpx;
   line-height: 84rpx;
   margin: 0;
-  &[disabled] { background: #a4da89; }
+  &[disabled] { background: lighten($brand-primary, 15%); }
 }
 .btn-outline {
   flex: 1;
-  background: #fff;
-  color: #67C23A;
-  border: 2rpx solid #67C23A;
+  background: $bg-card;
+  color: $brand-primary;
+  border: 2rpx solid $brand-primary;
   font-size: 30rpx;
-  border-radius: 12rpx;
+  border-radius: $radius-md;
   height: 84rpx;
   line-height: 80rpx;
   margin: 0;
 }
 .btn-danger-outline {
   flex: 1;
-  background: #fff;
-  color: #f56c6c;
-  border: 2rpx solid #f56c6c;
+  background: $bg-card;
+  color: $brand-error;
+  border: 2rpx solid $brand-error;
   font-size: 30rpx;
-  border-radius: 12rpx;
+  border-radius: $radius-md;
   height: 84rpx;
   line-height: 80rpx;
   margin: 0;
@@ -515,71 +518,71 @@ onShow(() => {
 .modal-mask {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: $bg-mask;
   z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .eval-modal {
-  background: #fff;
-  border-radius: 20rpx;
+  background: $bg-card;
+  border-radius: $radius-lg;
   width: 90%;
-  padding: 40rpx 30rpx;
+  padding: $spacing-xl $spacing-lg;
 }
 .eval-title {
   font-size: 34rpx;
   font-weight: bold;
-  color: #303133;
+  color: $text-primary;
   text-align: center;
   display: block;
-  margin-bottom: 30rpx;
+  margin-bottom: $spacing-lg;
 }
 .eval-dim {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx 0;
-  border-bottom: 1px solid #f5f5f5;
+  padding: $spacing-sm 0;
+  border-bottom: 1px solid $border-light;
 }
 .dim-label {
   font-size: 28rpx;
-  color: #303133;
+  color: $text-primary;
 }
 .stars {
   display: flex;
-  gap: 8rpx;
+  gap: $spacing-xs;
 }
 .star {
   font-size: 40rpx;
-  color: #dcdfe6;
+  color: $text-placeholder;
   &.active {
-    color: #ff9900;
+    color: $brand-warning;
   }
 }
 .eval-textarea {
   width: 100%;
   min-height: 140rpx;
-  background: #f5f6f8;
-  border-radius: 12rpx;
-  padding: 20rpx;
+  background: $bg-page;
+  border-radius: $radius-md;
+  padding: $spacing-sm;
   font-size: 26rpx;
-  color: #303133;
-  margin-top: 20rpx;
+  color: $text-primary;
+  margin-top: $spacing-sm;
   box-sizing: border-box;
 }
-.ph { color: #c0c4cc; }
+.ph { color: $text-placeholder; }
 .eval-actions {
   display: flex;
-  gap: 20rpx;
-  margin-top: 30rpx;
+  gap: $spacing-sm;
+  margin-top: $spacing-lg;
 }
 .btn-cancel {
   flex: 1;
-  background: #f5f6f8;
-  color: #606266;
+  background: $bg-page;
+  color: $text-regular;
   font-size: 30rpx;
-  border-radius: 12rpx;
+  border-radius: $radius-md;
   height: 84rpx;
   line-height: 84rpx;
   margin: 0;

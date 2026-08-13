@@ -1,5 +1,5 @@
 <template>
-  <view class="create-page">
+  <view class="create-page dy-safe-bottom">
     <!-- 步骤条 -->
     <view class="step-bar">
       <view v-for="(s, i) in steps" :key="i" class="step" :class="{ active: step === i, done: step > i }">
@@ -16,7 +16,7 @@
         <view
           v-for="item in items"
           :key="item.itemCode"
-          class="item-card"
+          class="item-card dy-clickable"
           :class="{ selected: selected.itemCode === item.itemCode, disabled: item.remaining <= 0 }"
           @click="item.remaining > 0 && selectItem(item.itemCode)"
         >
@@ -44,7 +44,7 @@
         <view
           v-for="p in persons"
           :key="p.id"
-          class="person-card"
+          class="person-card dy-clickable"
           :class="{ selected: selected.usePersonId === p.id, placeholder: isPlaceholder(p) }"
           @click="!isPlaceholder(p) && selectPerson(p.id)"
         >
@@ -193,18 +193,21 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .create-page {
   min-height: 100vh;
-  background: #f5f6f8;
-  padding-bottom: 140rpx;
+  background: $bg-page;
 }
 
 /* 步骤条 */
 .step-bar {
   display: flex;
   align-items: flex-start;
-  background: #fff;
-  padding: 40rpx 30rpx 30rpx;
+  background: $bg-card;
+  padding: 40rpx $spacing-md $spacing-md;
+  box-shadow: $shadow-card;
 }
 .step {
   display: flex;
@@ -217,29 +220,26 @@ onShow(() => {
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: #e4e7ed;
-  color: #909399;
+  background: $border-base;
+  color: $text-secondary;
   font-size: 28rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1;
 }
-.step.active .step-dot {
-  background: #67C23A;
-  color: #fff;
-}
+.step.active .step-dot,
 .step.done .step-dot {
-  background: #67C23A;
+  background: $gradient-brand;
   color: #fff;
 }
 .step-label {
   font-size: 24rpx;
-  color: #909399;
-  margin-top: 8rpx;
+  color: $text-secondary;
+  margin-top: $spacing-xs;
 }
 .step.active .step-label {
-  color: #67C23A;
+  color: $brand-primary;
   font-weight: 500;
 }
 .step-line {
@@ -248,21 +248,21 @@ onShow(() => {
   left: 50%;
   width: 100%;
   height: 4rpx;
-  background: #e4e7ed;
+  background: $border-base;
   z-index: 0;
   &.filled {
-    background: #67C23A;
+    background: $brand-primary;
   }
 }
 
 /* 步骤内容 */
 .step-content {
-  padding: 20rpx 24rpx;
+  padding: $spacing-sm $spacing-md;
 }
 .step-hint {
   font-size: 28rpx;
-  color: #606266;
-  margin-bottom: 20rpx;
+  color: $text-regular;
+  margin-bottom: $spacing-sm;
   display: block;
 }
 
@@ -271,52 +271,48 @@ onShow(() => {
 .person-card {
   display: flex;
   align-items: center;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 28rpx 24rpx;
-  margin-bottom: 16rpx;
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: 28rpx $spacing-md;
+  margin-bottom: $spacing-sm;
   border: 2rpx solid transparent;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
+  box-shadow: $shadow-card;
   &.selected {
-    border-color: #67C23A;
-    background: #f0f9eb;
+    border-color: $brand-primary;
+    background: $brand-primary-light;
   }
   &.disabled {
     opacity: 0.55;
   }
 }
-.item-info {
-  flex: 1;
-}
+.item-info { flex: 1; }
 .item-name {
   font-size: 30rpx;
-  color: #303133;
+  color: $text-primary;
   display: block;
 }
 .item-quota {
   font-size: 24rpx;
-  color: #909399;
-  margin-top: 8rpx;
+  color: $text-secondary;
+  margin-top: $spacing-xs;
   display: block;
 }
-.item-check {
-  margin-left: 16rpx;
-}
+.item-check { margin-left: $spacing-sm; }
 .checked {
-  color: #67C23A;
+  color: $brand-primary;
   font-size: 36rpx;
   font-weight: bold;
 }
 .used-up {
   font-size: 24rpx;
-  color: #c0c4cc;
+  color: $text-placeholder;
 }
 
 .avatar {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: #67C23A;
+  background: $gradient-brand;
   color: #fff;
   display: flex;
   align-items: center;
@@ -325,49 +321,50 @@ onShow(() => {
   font-weight: bold;
   flex-shrink: 0;
   .placeholder & {
-    background: #f56c6c;
+    background: $gradient-red;
   }
 }
 .person-info {
   flex: 1;
-  margin-left: 20rpx;
+  margin-left: $spacing-sm;
 }
 .name {
   font-size: 30rpx;
-  color: #303133;
+  color: $text-primary;
   display: block;
 }
 .rel {
   font-size: 24rpx;
-  color: #909399;
+  color: $text-secondary;
   margin-top: 4rpx;
   display: block;
 }
 .person-card.placeholder {
-  border-color: #f56c6c;
+  border-color: $brand-error;
 }
 .warn {
   font-size: 24rpx;
-  color: #f56c6c;
+  color: $brand-error;
 }
 
 .no-person {
-  background: #fff;
-  border-radius: 16rpx;
+  background: $bg-card;
+  border-radius: $radius-lg;
   padding: 60rpx 0;
   text-align: center;
+  box-shadow: $shadow-card;
   .no-person-text {
     font-size: 28rpx;
-    color: #909399;
+    color: $text-secondary;
     display: block;
-    margin-bottom: 24rpx;
+    margin-bottom: $spacing-md;
   }
 }
 .btn-link {
-  background: #67C23A;
+  background: $brand-primary;
   color: #fff;
   font-size: 26rpx;
-  border-radius: 8rpx;
+  border-radius: $radius-sm;
   padding: 0 40rpx;
   height: 68rpx;
   line-height: 68rpx;
@@ -376,46 +373,47 @@ onShow(() => {
 
 /* 需求表单 */
 .form-card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 30rpx 24rpx;
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md $spacing-md;
+  box-shadow: $shadow-card;
 }
 .summary-label {
   font-size: 28rpx;
-  color: #303133;
+  color: $text-primary;
   display: block;
-  margin-bottom: 16rpx;
+  margin-bottom: $spacing-sm;
 }
 .demand-section {
-  margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1px solid #f5f5f5;
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-light;
 }
 .demand-label {
   font-size: 26rpx;
-  color: #909399;
+  color: $text-secondary;
   display: block;
   margin-bottom: 12rpx;
 }
 .demand-input {
   width: 100%;
   min-height: 200rpx;
-  border: 2rpx solid #ebeef5;
-  border-radius: 12rpx;
-  padding: 20rpx;
+  border: 2rpx solid $border-base;
+  border-radius: $radius-md;
+  padding: $spacing-sm;
   font-size: 28rpx;
-  color: #303133;
+  color: $text-primary;
   box-sizing: border-box;
 }
 .ph {
-  color: #c0c4cc;
+  color: $text-placeholder;
 }
 .char-count {
   font-size: 22rpx;
-  color: #c0c4cc;
+  color: $text-placeholder;
   text-align: right;
   display: block;
-  margin-top: 8rpx;
+  margin-top: $spacing-xs;
 }
 
 /* 底部 */
@@ -425,39 +423,39 @@ onShow(() => {
   left: 0;
   right: 0;
   display: flex;
-  gap: 20rpx;
-  padding: 20rpx 24rpx;
-  background: #fff;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-card;
   box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
 }
 .btn-prev {
   flex: 1;
-  background: #fff;
-  color: #67C23A;
-  border: 2rpx solid #67C23A;
+  background: $bg-card;
+  color: $brand-primary;
+  border: 2rpx solid $brand-primary;
   font-size: 30rpx;
-  border-radius: 12rpx;
+  border-radius: $radius-md;
   height: 84rpx;
   line-height: 80rpx;
 }
 .btn-next,
 .btn-submit {
   flex: 2;
-  background: #67C23A;
+  background: $gradient-brand;
   color: #fff;
   font-size: 30rpx;
-  border-radius: 12rpx;
+  border-radius: $radius-md;
   height: 84rpx;
   line-height: 84rpx;
   &[disabled] {
-    background: #a4da89;
+    background: lighten($brand-primary, 15%);
   }
 }
 
 .empty {
   text-align: center;
   padding: 80rpx 0;
-  color: #c0c4cc;
+  color: $text-placeholder;
   font-size: 28rpx;
 }
 </style>

@@ -1,12 +1,12 @@
 <template>
-  <view class="service">
+  <view class="service dy-safe-bottom">
     <!-- 顶部发起服务入口 -->
     <view class="action-bar">
       <view class="action-info">
         <text class="action-title">需要帮助？</text>
         <text class="action-desc">从我的权益发起专属服务</text>
       </view>
-      <button class="start-btn" @click="onStartService">发起服务</button>
+      <button class="start-btn dy-clickable" @click="onStartService">发起服务</button>
     </view>
 
     <!-- 状态筛选 -->
@@ -14,7 +14,7 @@
       <view
         v-for="f in filters"
         :key="String(f.value)"
-        class="filter-item"
+        class="filter-item dy-clickable"
         :class="{ active: query.sessionStatus === f.value }"
         @click="selectFilter(f.value)"
       >{{ f.label }}</view>
@@ -22,27 +22,37 @@
 
     <!-- 服务会话列表 -->
     <view class="list">
-      <view v-if="list.length" class="cards">
-        <view class="card" v-for="s in list" :key="s.sessionCode" @click="goDetail(s.sessionCode)">
-          <view class="card-head">
-            <text class="title">{{ s.serviceTitle || s.title || '服务会话' }}</text>
-            <text class="status" :class="statusClass(s.sessionStatus)">{{ statusText(s.sessionStatus) }}</text>
-          </view>
-          <view class="card-row">
-            <text class="label">管家</text>
-            <text class="value">{{ s.butlerFullName || s.butlerName || '待分配' }}</text>
-          </view>
-          <view class="card-foot">
-            <text class="time">{{ formatTime(s.createdAt) }}</text>
-            <text class="code">单号 {{ s.sessionCode }}</text>
+      <!-- 加载骨架 -->
+      <template v-if="loading && list.length === 0">
+        <DySkeleton :rows="2" card />
+        <DySkeleton :rows="2" card />
+      </template>
+
+      <template v-else-if="list.length">
+        <view class="cards">
+          <view class="card dy-clickable" v-for="s in list" :key="s.sessionCode" @click="goDetail(s.sessionCode)">
+            <view class="card-head">
+              <text class="title">{{ s.serviceTitle || s.title || '服务会话' }}</text>
+              <text class="status" :class="statusClass(s.sessionStatus)">{{ statusText(s.sessionStatus) }}</text>
+            </view>
+            <view class="card-row">
+              <text class="row-label">管家</text>
+              <text class="row-value">{{ s.butlerFullName || s.butlerName || '待分配' }}</text>
+            </view>
+            <view class="card-foot">
+              <text class="time">{{ formatTime(s.createdAt) }}</text>
+              <text class="code">单号 {{ s.sessionCode }}</text>
+            </view>
           </view>
         </view>
-      </view>
+      </template>
 
-      <view v-else class="empty">
-        <text class="empty-text">{{ loading ? '加载中...' : '暂无服务会话' }}</text>
-        <text v-if="!loading" class="empty-sub">从「我的权益」发起服务后会显示在这里</text>
-      </view>
+      <DyEmpty
+        v-else
+        text="暂无服务会话"
+        icon="务"
+        color="green"
+      />
     </view>
   </view>
 </template>
@@ -52,6 +62,8 @@ import { ref } from 'vue';
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import { getServices, type ServiceQuery } from '@/api/service';
 import type { ServiceSession, ServiceSessionStatus } from '@/types';
+import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
+import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const query = ref<ServiceQuery>({ current: 1, size: 20 });
 const list = ref<ServiceSession[]>([]);
@@ -125,9 +137,12 @@ onShow(loadData);
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
+@import '@/styles/common.scss';
+
 .service {
   min-height: 100vh;
-  background: #f5f6f8;
+  background: $bg-page;
 }
 
 /* 发起服务入口 */
@@ -135,43 +150,64 @@ onShow(loadData);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #67C23A 0%, #4eaf2a 100%);
-  padding: 30rpx;
+  background: $gradient-brand;
+  padding: $spacing-md;
 }
 .action-info { display: flex; flex-direction: column; }
 .action-title { color: #fff; font-size: 32rpx; font-weight: bold; }
-.action-desc { color: rgba(255,255,255,0.85); font-size: 24rpx; margin-top: 6rpx; }
+.action-desc { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 6rpx; }
 .start-btn {
-  background: #fff; color: #67C23A; font-size: 26rpx; font-weight: bold;
+  background: $bg-card; color: $brand-primary; font-size: 26rpx; font-weight: bold;
   border-radius: 32rpx; padding: 0 36rpx; height: 64rpx; line-height: 64rpx; margin: 0;
 }
 
 /* 筛选条 */
-.filter-bar { white-space: nowrap; background: #fff; padding: 20rpx 24rpx; border-bottom: 1px solid #f0f0f0; }
+.filter-bar {
+  white-space: nowrap;
+  background: $bg-card;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $border-light;
+}
 .filter-item {
-  display: inline-block; padding: 10rpx 28rpx; margin-right: 16rpx;
-  border-radius: 28rpx; background: #f5f6f8; font-size: 24rpx; color: #606266;
-  &.active { background: #67C23A; color: #fff; }
+  display: inline-block;
+  padding: 10rpx 28rpx;
+  margin-right: $spacing-sm;
+  border-radius: 28rpx;
+  background: $bg-page;
+  font-size: 24rpx;
+  color: $text-regular;
+  &.active { background: $gradient-brand; color: #fff; }
 }
 
 /* 列表 */
-.list { padding: 20rpx 24rpx; }
-.cards { display: flex; flex-direction: column; gap: 20rpx; }
-.card { background: #fff; border-radius: 16rpx; padding: 24rpx; }
+.list { padding: $spacing-sm $spacing-md; }
+.cards { display: flex; flex-direction: column; gap: $spacing-sm; }
+.card {
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+}
 .card-head { display: flex; align-items: center; justify-content: space-between; }
-.title { font-size: 30rpx; font-weight: bold; color: #303133; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.status { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx; margin-left: 16rpx; flex-shrink: 0; }
-.st-normal { color: #e6a23c; background: #fdf6ec; }
-.st-active { color: #67C23A; background: #f0f9eb; }
-.st-done { color: #909399; background: #f4f4f5; }
-.st-cancel { color: #f56c6c; background: #fef0f0; }
+.title {
+  font-size: 30rpx; font-weight: bold; color: $text-primary;
+  flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.status {
+  font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx;
+  margin-left: $spacing-sm; flex-shrink: 0;
+}
+.st-normal { color: $brand-warning; background: $brand-warning-light; }
+.st-active { color: $brand-primary; background: $brand-primary-light; }
+.st-done { color: $brand-info; background: $brand-info-light; }
+.st-cancel { color: $brand-error; background: $brand-error-light; }
 .card-row { display: flex; margin-top: 14rpx; }
-.label { font-size: 26rpx; color: #909399; width: 100rpx; }
-.value { font-size: 26rpx; color: #303133; flex: 1; }
-.card-foot { display: flex; justify-content: space-between; margin-top: 16rpx; padding-top: 16rpx; border-top: 1px solid #f5f5f5; }
-.time, .code { font-size: 22rpx; color: #c0c4cc; }
-
-.empty { background: #fff; border-radius: 16rpx; padding: 100rpx 0; text-align: center; }
-.empty-text { color: #909399; font-size: 26rpx; display: block; }
-.empty-sub { color: #c0c4cc; font-size: 24rpx; margin-top: 12rpx; display: block; }
+.row-label { font-size: 26rpx; color: $text-secondary; width: 100rpx; }
+.row-value { font-size: 26rpx; color: $text-primary; flex: 1; }
+.card-foot {
+  display: flex; justify-content: space-between;
+  margin-top: $spacing-sm; padding-top: $spacing-sm;
+  border-top: 1px solid $border-light;
+}
+.time, .code { font-size: 22rpx; color: $text-placeholder; }
 </style>
