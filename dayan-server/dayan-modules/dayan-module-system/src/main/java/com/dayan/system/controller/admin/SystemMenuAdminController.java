@@ -6,6 +6,7 @@ import com.dayan.common.security.StpKit;
 import com.dayan.organ.security.DayanStpInterface;
 import com.dayan.system.entity.SystemMenu;
 import com.dayan.system.service.SystemMenuService;
+import com.dayan.system.vo.MenuGrantTreeVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,13 @@ public class SystemMenuAdminController {
     @GetMapping("/tree")
     public R<List<SystemMenu>> tree(@RequestParam(required = false) String domainType) {
         return R.ok(menuService.tree(domainType));
+    }
+
+    @Operation(summary = "角色授权树（目录→菜单→操作权限）")
+    @SaCheckPermission("organ:role:assign")
+    @GetMapping("/grant-tree")
+    public R<List<MenuGrantTreeVO>> grantTree() {
+        return R.ok(menuService.grantTree());
     }
 
     @Operation(summary = "新增菜单")

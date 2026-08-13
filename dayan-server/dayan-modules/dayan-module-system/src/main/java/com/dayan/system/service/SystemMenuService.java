@@ -2,11 +2,14 @@ package com.dayan.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.organ.entity.OrganAccountRoleRel;
+import com.dayan.organ.entity.OrganPermission;
 import com.dayan.organ.entity.OrganRoleMenuRel;
 import com.dayan.organ.mapper.OrganAccountRoleRelMapper;
+import com.dayan.organ.mapper.OrganPermissionMapper;
 import com.dayan.organ.mapper.OrganRoleMenuRelMapper;
 import com.dayan.system.entity.SystemMenu;
 import com.dayan.system.mapper.SystemMenuMapper;
+import com.dayan.system.vo.MenuGrantTreeVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +19,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +38,7 @@ public class SystemMenuService {
     private final SystemMenuMapper menuMapper;
     private final OrganAccountRoleRelMapper accountRoleRelMapper;
     private final OrganRoleMenuRelMapper roleMenuRelMapper;
+    private final OrganPermissionMapper permissionMapper;
 
     /**
      * 查询全部菜单（按 sortOrder 排序），供前端构建树。
@@ -189,6 +194,76 @@ public class SystemMenuService {
                 .peek(m -> m.setChildren(buildTree(all, m.getMenuCode())))
                 .sorted(Comparator.comparingInt(m -> m.getSortOrder() == null ? 0 : m.getSortOrder()))
                 .collect(Collectors.toList());
+    }
+
+    /** 操作权限类型：2按钮 3接口 */
+    private static final List<Integer> GRANT_PERM_TYPES = java.util.Arrays.asList(2, 3);
+
+    /**
+     * 角色授权树（目录 → 菜单 → 操作权限）。
+     *
+     * <p>骨架为 admin 端启用菜单树；每个菜单节点 children 追加其归属操作权限
+     * （organ_permission.menu_code 匹配、type∈(2,3)、status≠0）；末尾追加
+     * 「其他权限」虚拟组挂 menu_code 为空的权限，保证任何权限都可被分配。
+     */
+    public List<MenuGrantTreeVO> grantTree() {
+        List<SystemMenu> menus = listAll("admin");
+        List<OrganPermission> perms = permissionMapper.selectList(
+                new LambdaQueryWrapper<OrganPermission>()
+                        .in(OrganPermission::getPermissionType, GRANT_PERM_TYPES)
+                        .ne(OrganPermission::getStatus, 0)
+                        .orderByAsc(OrganPermission::getSortOrder)
+                        .orderByAsc(OrganPermission::getId));
+
+        Map<String, List<OrganPermission>> permsByMenu = perms.stream()
+                .filter(p -> p.getMenuCode() != null && !p.getMenuCode().isEmpty())
+                .collect(Collectors.groupingBy(OrganPermission::getMenuCode));
+
+        List<MenuGrantTreeVO> roots = buildGrantTree(menus, null, permsByMenu);
+
+        List<MenuGrantTreeVO> orphans = perms.stream()
+                .filter(p -> p.getMenuCode() == null || p.getMenuCode().isEmpty())
+                .map(this::toPermNode)
+                .collect(Collectors.toList());
+        if (!orphans.isEmpty()) {
+            MenuGrantTreeVO group = new MenuGrantTreeVO();
+            group.setNodeKey("group:other");
+            group.setName("其他权限");
+            group.setNodeType("GROUP");
+            group.setChildren(orphans);
+            roots.add(group);
+        }
+        return roots;
+    }
+
+    private List<MenuGrantTreeVO> buildGrantTree(List<SystemMenu> menus, String parentCode,
+                                                 Map<String, List<OrganPermission>> permsByMenu) {
+        return menus.stream()
+                .filter(m -> (parentCode == null && m.getParentCode() == null)
+                        || (parentCode != null && parentCode.equals(m.getParentCode())))
+                .sorted(Comparator.comparingInt(m -> m.getSortOrder() == null ? 0 : m.getSortOrder()))
+                .map(m -> {
+                    MenuGrantTreeVO node = new MenuGrantTreeVO();
+                    node.setNodeKey("menu:" + m.getMenuCode());
+                    node.setName(m.getMenuName());
+                    node.setNodeType(m.getMenuType() != null && m.getMenuType() == 1 ? "DIR" : "MENU");
+                    List<MenuGrantTreeVO> children = new ArrayList<>(
+                            buildGrantTree(menus, m.getMenuCode(), permsByMenu));
+                    for (OrganPermission p : permsByMenu.getOrDefault(m.getMenuCode(), Collections.emptyList())) {
+                        children.add(toPermNode(p));
+                    }
+                    node.setChildren(children);
+                    return node;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private MenuGrantTreeVO toPermNode(OrganPermission p) {
+        MenuGrantTreeVO node = new MenuGrantTreeVO();
+        node.setNodeKey("perm:" + p.getPermissionCode());
+        node.setName(p.getPermissionName());
+        node.setNodeType("PERM");
+        return node;
     }
 
     @Transactional(rollbackFor = Exception.class)
