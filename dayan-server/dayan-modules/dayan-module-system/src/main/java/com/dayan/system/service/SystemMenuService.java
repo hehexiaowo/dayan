@@ -221,8 +221,13 @@ public class SystemMenuService {
 
         List<MenuGrantTreeVO> roots = buildGrantTree(menus, null, permsByMenu);
 
+        // 孤儿判定：menu_code 为空，或指向不在骨架中的菜单（已停用/错配）——
+        // 否则该权限在树上彻底消失、无法分配，违背「任何权限都可被分配」
+        java.util.Set<String> renderedMenuCodes = menus.stream()
+                .map(SystemMenu::getMenuCode).collect(Collectors.toSet());
         List<MenuGrantTreeVO> orphans = perms.stream()
-                .filter(p -> p.getMenuCode() == null || p.getMenuCode().isEmpty())
+                .filter(p -> p.getMenuCode() == null || p.getMenuCode().isEmpty()
+                        || !renderedMenuCodes.contains(p.getMenuCode()))
                 .map(this::toPermNode)
                 .collect(Collectors.toList());
         if (!orphans.isEmpty()) {

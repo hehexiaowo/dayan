@@ -1,6 +1,7 @@
 -- organ_permission_menu_code.sql
 -- 角色授权弹窗重构：organ_permission 加 menu_code 归属列 + 数据迁移
 -- 规格：.superpowers/specs/2026-08-13-role-grant-menu-tree-design.md
+-- 注意：本脚本仅可执行一次（ADD COLUMN / INSERT 无幂等保护，重复执行会报错）
 
 -- 1. 加列 + 索引
 ALTER TABLE organ_permission

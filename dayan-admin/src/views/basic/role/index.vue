@@ -179,6 +179,27 @@ function buildCheckedLeafKeys(tree: GrantTreeNode[], grants: RoleGrants): string
   return keys
 }
 
+/**
+ * 找出无法在树中回显的已授权菜单：树上有 PERM 子节点的菜单只能靠
+ * 「其下已授权权限叶子」联动回显；若角色拥有该菜单但该菜单下零权限，
+ * 弹窗中它将显示未勾选，直接保存会被静默移除——须显式告知管理员。
+ */
+function collectUnrenderableMenuNames(tree: GrantTreeNode[], grants: RoleGrants): string[] {
+  const names: string[] = []
+  const walk = (nodes: GrantTreeNode[]) => {
+    for (const n of nodes) {
+      if (n.nodeType === 'MENU' && grants.menuCodes.includes(n.nodeKey.slice(5))) {
+        const perms = (n.children ?? []).filter((c) => c.nodeType === 'PERM')
+        const grantedCount = perms.filter((c) => grants.permissionCodes.includes(c.nodeKey.slice(5))).length
+        if (perms.length > 0 && grantedCount === 0) names.push(n.name)
+      }
+      walk(n.children ?? [])
+    }
+  }
+  walk(tree)
+  return names
+}
+
 async function openAssignPermission(row: Role) {
   if (!row.roleCode) return
   currentRoleCode.value = row.roleCode
@@ -190,6 +211,14 @@ async function openAssignPermission(row: Role) {
     permTreeData.value = tree
     await nextTick()
     permTreeRef.value?.setCheckedKeys(buildCheckedLeafKeys(tree, grants), false)
+    const lost = collectUnrenderableMenuNames(tree, grants)
+    if (lost.length > 0) {
+      ElMessage.warning(`菜单「${lost.join('、')}」下无任何已授权操作权限，无法在树中勾选；直接保存将移除这些菜单的授权`)
+    }
+  } catch (e) {
+    // 树加载失败时关闭弹窗，防止空树状态下误保存清空全部授权
+    permDialogVisible.value = false
+    throw e
   } finally {
     permLoading.value = false
   }
