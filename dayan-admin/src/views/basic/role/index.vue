@@ -10,10 +10,11 @@ import {
   getRolePermissions,
   updateRolePermissions
 } from '@/api/role'
-import { getPermissionTree } from '@/api/permission'
 import type { Role, RoleQuery } from '@/types/role'
 import { RoleStatus, ROLE_STATUS_OPTIONS, ROLE_TYPE_OPTIONS, DATA_SCOPE_OPTIONS } from '@/types/role'
-import type { Permission } from '@/types/permission'
+import { getGrantTree } from '@/api/menu'
+import type { GrantTreeNode } from '@/types/permission'
+import type { RoleGrants } from '@/types/role'
 
 /**
  * 角色管理页。
@@ -149,37 +150,33 @@ const permDialogVisible = ref(false)
 const permLoading = ref(false)
 const permSubmitLoading = ref(false)
 const permTreeRef = ref()
-const permTreeData = ref<Permission[]>([])
+const permTreeData = ref<GrantTreeNode[]>([])
 const currentRoleCode = ref('')
 
 /**
- * 归一化后端权限树字段。
+ * 计算回显叶子 keys。
  *
- * 后端 /permissions/tree 返回 { name, code, children } 结构（且分组节点
- * permissionCode 为 null），而前端 Permission 类型与 el-tree 默认期望
- * permissionName / permissionCode。这里递归补齐，保证树节点有可读名称、
- * 每个节点都有稳定 key，避免分组节点因 key 为 null 而无法勾选/回显。
+ * el-tree 父子联动模式下 setCheckedKeys 父节点会连带全选子节点，
+ * 故只回显叶子：PERM 权限叶子 + 没有任何 PERM 子节点的 MENU 叶子；
+ * 父级勾选/半选由联动自动计算。
  */
-type PermissionLike = Partial<Permission> & {
-  name?: string
-  code?: string
-  children?: PermissionLike[]
-}
-
-function normalizePermissionTree(nodes: PermissionLike[] | undefined): Permission[] {
-  if (!Array.isArray(nodes)) return []
-  return nodes.map((n) => {
-    const permissionName = n.permissionName || n.name || ''
-    const permissionCode = n.permissionCode || n.code || ''
-    const childrenRaw = n.children ?? []
-    const children = childrenRaw.length > 0 ? normalizePermissionTree(childrenRaw) : undefined
-    return {
-      ...(n as Permission),
-      permissionName,
-      permissionCode,
-      children
-    } as Permission
-  })
+function buildCheckedLeafKeys(tree: GrantTreeNode[], grants: RoleGrants): string[] {
+  const keys: string[] = []
+  const walk = (nodes: GrantTreeNode[]) => {
+    for (const n of nodes) {
+      if (n.nodeType === 'PERM') {
+        if (grants.permissionCodes.includes(n.nodeKey.slice(5))) keys.push(n.nodeKey)
+        continue
+      }
+      if (n.nodeType === 'MENU') {
+        const hasPermChildren = (n.children ?? []).some((c) => c.nodeType === 'PERM')
+        if (!hasPermChildren && grants.menuCodes.includes(n.nodeKey.slice(5))) keys.push(n.nodeKey)
+      }
+      walk(n.children ?? [])
+    }
+  }
+  walk(tree)
+  return keys
 }
 
 async function openAssignPermission(row: Role) {
@@ -188,30 +185,31 @@ async function openAssignPermission(row: Role) {
   permDialogVisible.value = true
   permLoading.value = true
   try {
-    // 并行加载权限树 + 当前角色已分配权限
-    const [tree, checked] = await Promise.all([
-      getPermissionTree(),
-      getRolePermissions(row.roleCode)
-    ])
-    // 后端 tree 接口实际返回 name/code 字段（与前端 Permission 类型的
-    // permissionName/permissionCode 不一致），此处做一次归一化映射，
-    // 让 el-tree 的 label/node-key 能正确命中，同时保留前端类型契约。
-    permTreeData.value = normalizePermissionTree(tree as unknown as PermissionLike[])
-    // 等待树渲染后回显勾选
+    // 并行加载授权树 + 当前角色已授权（菜单+权限）
+    const [tree, grants] = await Promise.all([getGrantTree(), getRolePermissions(row.roleCode)])
+    permTreeData.value = tree
     await nextTick()
-    permTreeRef.value?.setCheckedKeys(checked, false)
+    permTreeRef.value?.setCheckedKeys(buildCheckedLeafKeys(tree, grants), false)
   } finally {
     permLoading.value = false
   }
 }
 
 async function handleAssignSubmit() {
-  // check-strictly 模式下父子独立勾选，直接取已勾选项即可
-  const codes = permTreeRef.value?.getCheckedKeys(false) as string[]
+  const checked = (permTreeRef.value?.getCheckedKeys(false) ?? []) as string[]
+  const half = (permTreeRef.value?.getHalfCheckedKeys() ?? []) as string[]
+  // 父子联动：勾了权限的菜单必在 checked/half 中 → 自动入 menu_rel，不会出现"有权限没菜单"；
+  // 'group:other' 虚拟组 key 天然被 menu:/perm: 前缀过滤丢弃
+  const menuCodes = [...new Set(
+    [...checked, ...half].filter((k) => typeof k === 'string' && k.startsWith('menu:')).map((k) => k.slice(5))
+  )]
+  const permissionCodes = checked
+    .filter((k) => typeof k === 'string' && k.startsWith('perm:'))
+    .map((k) => k.slice(5))
 
   permSubmitLoading.value = true
   try {
-    await updateRolePermissions(currentRoleCode.value, codes)
+    await updateRolePermissions(currentRoleCode.value, { menuCodes, permissionCodes })
     ElMessage.success('权限保存成功')
     permDialogVisible.value = false
   } finally {
@@ -362,16 +360,15 @@ loadPage()
     </el-dialog>
 
     <!-- 分配权限弹窗 -->
-    <el-dialog v-model="permDialogVisible" title="分配权限" width="480px" :close-on-click-modal="false">
+    <el-dialog v-model="permDialogVisible" title="分配权限" width="640px" :close-on-click-modal="false">
       <div v-loading="permLoading" class="perm-tree-wrap">
         <el-tree
           ref="permTreeRef"
           :data="permTreeData"
           show-checkbox
-          node-key="permissionCode"
-          :props="{ label: 'permissionName', children: 'children' }"
+          node-key="nodeKey"
+          :props="{ label: 'name', children: 'children' }"
           default-expand-all
-          check-strictly
         />
       </div>
       <template #footer>
