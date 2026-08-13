@@ -61,10 +61,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import * as echarts from 'echarts';
 import { getRegions } from '@/api/park';
-import type { RegionItem, ParkCard } from '@/types/park';
-import { PROVINCE_CENTERS } from '@/utils/region';
+import type { RegionItem } from '@/types/park';
+import { useRegionHeatmap } from '@/composables/useRegionHeatmap';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
@@ -73,31 +72,34 @@ const cityCode = ref('');
 const cityName = ref('');
 const districts = ref<RegionItem[]>([]);
 const loading = ref(true);
-let myChart: echarts.ECharts | null = null;
 
 const totalParks = computed(() => districts.value.reduce((s, i) => s + i.count, 0));
+
+// 热力图：城市区县边界（DataV {cityCode}_full），显示区县名，按机构数暖色填色
+const heatmap = useRegionHeatmap({
+  containerId: 'vital-city-map',
+  get geoCode() {
+    return cityCode.value;
+  },
+  get items() {
+    return districts.value;
+  },
+  showLabels: true,
+  onRegionClick: (r) => navigateToDistrict(r.code),
+});
 
 async function fetchData() {
   loading.value = true;
   try {
-    // 并行：区县列表 + 机构坐标（地图散点用）
-    const [districtResult, parkResult] = await Promise.all([
-      getRegions({
-        category: 'vital',
-        level: 'district',
-        provinceCode: provinceCode.value,
-        cityCode: cityCode.value,
-      }),
-      getRegions({
-        category: 'vital',
-        level: 'park',
-        provinceCode: provinceCode.value,
-        cityCode: cityCode.value,
-      }).catch(() => ({ parkList: [] as ParkCard[] })),
-    ]);
-    districts.value = districtResult.items || [];
+    const result = await getRegions({
+      category: 'vital',
+      level: 'district',
+      provinceCode: provinceCode.value,
+      cityCode: cityCode.value,
+    });
+    districts.value = result.items || [];
     await nextTick();
-    setTimeout(() => initChart(parkResult.parkList || []), 300);
+    heatmap.init();
   } catch {
     districts.value = [];
   } finally {
@@ -105,128 +107,26 @@ async function fetchData() {
   }
 }
 
-async function initChart(parks: ParkCard[]) {
-  // #ifdef H5
-  const container = document.getElementById('vital-city-map');
-  if (!container) return;
-
-  let provinceGeo: any = null;
-  try {
-    const resp = await fetch(`/static/geo/provinces/${provinceCode.value}.json`);
-    provinceGeo = await resp.json();
-  } catch {
-    console.warn('[vital/city] 省份 GeoJSON 加载失败:', provinceCode.value);
-    return;
-  }
-
-  // 从省份 GeoJSON 中找到当前城市的 centroid
-  let cityCenter: [number, number] | null = null;
-  provinceGeo.features.forEach((f: any) => {
-    const cp = f.properties?.centroid || f.properties?.center || f.properties?.cp;
-    if (String(f.properties?.adcode) === cityCode.value) {
-      cityName.value = f.properties?.name || '';
-      if (cp) cityCenter = [cp[0], cp[1]];
-    }
+function navigateToDistrict(districtCode: string) {
+  uni.navigateTo({
+    url: `/pages/business/park/vital/district?category=vital&provinceCode=${provinceCode.value}&cityCode=${cityCode.value}&districtCode=${districtCode}`,
   });
-
-  // 兜底：用省份中心
-  if (!cityCenter) {
-    const fallback = PROVINCE_CENTERS[provinceCode.value];
-    if (fallback) cityCenter = [fallback.lng, fallback.lat];
-  }
-
-  const mapName = 'vital-city-' + provinceCode.value;
-  echarts.registerMap(mapName, provinceGeo);
-  myChart = echarts.init(container);
-
-  // 机构真实坐标散点
-  const scatterData = parks
-    .filter((p) => p.latitude && p.longitude)
-    .map((p) => ({
-      name: p.shortName || p.fullName,
-      value: [p.longitude!, p.latitude!, 1],
-      code: p.parkCode,
-    }));
-
-  const geoConfig: any = {
-    map: mapName,
-    roam: true,
-    scaleLimit: { min: 1, max: 15 },
-    zoom: 5,
-    top: 20,
-    aspectScale: 0.85,
-    label: { show: false },
-    itemStyle: {
-      areaColor: '#eef4ff',
-      borderColor: '#dcdfe6',
-      borderWidth: 0.5,
-    },
-    emphasis: {
-      itemStyle: { areaColor: '#d6e4ff', borderColor: '#409eff' },
-      label: { show: true, fontSize: 9 },
-    },
-  };
-  if (cityCenter) {
-    geoConfig.center = cityCenter;
-  }
-
-  myChart.setOption({
-    geo: geoConfig,
-    tooltip: {
-      trigger: 'item',
-      formatter: (p: any) => (p.data ? p.data.name : p.name),
-    },
-    series: [
-      {
-        type: 'effectScatter',
-        coordinateSystem: 'geo',
-        rippleEffect: { period: 4, scale: 3, brushType: 'stroke' },
-        symbolSize: 10,
-        itemStyle: {
-          color: '#409eff',
-          shadowBlur: 6,
-          shadowColor: 'rgba(64,158,255,0.4)',
-        },
-        data: scatterData,
-      },
-    ],
-  });
-
-  myChart.on('click', (params: any) => {
-    if (params.data?.code) {
-      uni.navigateTo({
-        url: `/pages/business/park/vital/detail?parkCode=${params.data.code}`,
-      });
-    }
-  });
-
-  window.addEventListener('resize', handleResize);
-  // #endif
-}
-
-function handleResize() {
-  myChart?.resize();
 }
 
 function onDistrictClick(item: RegionItem) {
-  uni.navigateTo({
-    url: `/pages/business/park/vital/district?category=vital&provinceCode=${provinceCode.value}&cityCode=${cityCode.value}&districtCode=${item.code}`,
-  });
+  navigateToDistrict(item.code);
 }
 
 onLoad((options: any) => {
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
   if (options?.cityCode) cityCode.value = options.cityCode;
+  if (options?.cityName) cityName.value = decodeURIComponent(options.cityName);
 });
 
 onMounted(fetchData);
 
 onUnmounted(() => {
-  // #ifdef H5
-  window.removeEventListener('resize', handleResize);
-  myChart?.dispose();
-  myChart = null;
-  // #endif
+  heatmap.dispose();
 });
 </script>
 

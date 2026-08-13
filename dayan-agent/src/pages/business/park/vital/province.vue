@@ -51,19 +51,31 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import * as echarts from 'echarts';
 import { getRegions } from '@/api/park';
 import type { RegionItem, DrillLevel } from '@/types/park';
 import { MUNICIPALITIES } from '@/types/park';
+import { useRegionHeatmap } from '@/composables/useRegionHeatmap';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const provinceCode = ref('');
 const regions = ref<RegionItem[]>([]);
 const loading = ref(true);
-let myChart: echarts.ECharts | null = null;
 
 const isMuni = computed(() => MUNICIPALITIES.includes(provinceCode.value));
 const totalParks = computed(() => regions.value.reduce((s, i) => s + i.count, 0));
+
+// 热力图：省级边界聚焦，显示市级名称（直辖市直接显示区县），区域按机构数暖色填色
+const heatmap = useRegionHeatmap({
+  containerId: 'vital-province-map',
+  get geoCode() {
+    return provinceCode.value;
+  },
+  get items() {
+    return regions.value;
+  },
+  showLabels: true,
+  onRegionClick: (r) => handleNavigate(r.code, r.name),
+});
 
 async function fetchData() {
   loading.value = true;
@@ -81,7 +93,7 @@ async function fetchData() {
     const result = await getRegions(params);
     regions.value = result.items || [];
     await nextTick();
-    setTimeout(initChart, 300);
+    heatmap.init();
   } catch {
     regions.value = [];
   } finally {
@@ -89,117 +101,20 @@ async function fetchData() {
   }
 }
 
-async function initChart() {
-  // #ifdef H5
-  const container = document.getElementById('vital-province-map');
-  if (!container) return;
-
-  let provinceGeo: any = null;
-  try {
-    const resp = await fetch(`/static/geo/provinces/${provinceCode.value}.json`);
-    provinceGeo = await resp.json();
-  } catch {
-    console.warn('[vital/province] 省份 GeoJSON 加载失败:', provinceCode.value);
-    return;
-  }
-
-  const centroidMap: Record<string, [number, number]> = {};
-  provinceGeo.features.forEach((f: any) => {
-    const cp = f.properties?.centroid || f.properties?.center || f.properties?.cp;
-    if (cp) centroidMap[f.properties.name] = [cp[0], cp[1]];
-  });
-
-  const mapName = 'vital-province-' + provinceCode.value;
-  echarts.registerMap(mapName, provinceGeo);
-  myChart = echarts.init(container);
-
-  const scatterData = regions.value
-    .filter((r) => r.count > 0)
-    .map((r) => {
-      const coord = centroidMap[r.name];
-      return {
-        name: r.name,
-        value: coord ? [...coord, r.count] : [],
-        code: r.code,
-      };
-    })
-    .filter((d) => d.value.length > 0);
-
-  myChart.setOption({
-    geo: {
-      map: mapName,
-      roam: true,
-      scaleLimit: { min: 1, max: 10 },
-      zoom: 1,
-      top: 20,
-      aspectScale: 0.85,
-      label: {
-        show: true,
-        fontSize: 9,
-        color: 'rgba(0,0,0,0.5)',
-      },
-      itemStyle: {
-        areaColor: '#eef4ff',
-        borderColor: '#dcdfe6',
-        borderWidth: 0.5,
-      },
-      emphasis: {
-        itemStyle: { areaColor: '#d6e4ff', borderColor: '#409eff' },
-        label: { show: true },
-      },
-    },
-    tooltip: {
-      trigger: 'item',
-      formatter: (p: any) =>
-        p.data ? `${p.data.name}<br/>机构：${p.data.value?.[2] || 0} 家` : p.name,
-    },
-    series: [
-      {
-        type: 'effectScatter',
-        coordinateSystem: 'geo',
-        rippleEffect: { period: 4, scale: 3, brushType: 'stroke' },
-        symbolSize: 10,
-        itemStyle: {
-          color: '#409eff',
-          shadowBlur: 6,
-          shadowColor: 'rgba(64,158,255,0.4)',
-        },
-        data: scatterData,
-      },
-    ],
-  });
-
-  myChart.on('click', (params: any) => {
-    if (params.data?.code) {
-      handleNavigate(params.data.code);
-    }
-  });
-
-  myChart.on('mouseover', () => {
-    myChart?.dispatchAction({ type: 'downplay' });
-  });
-
-  window.addEventListener('resize', handleResize);
-  // #endif
-}
-
-function handleResize() {
-  myChart?.resize();
-}
-
 function onItemClick(item: RegionItem) {
-  handleNavigate(item.code);
+  handleNavigate(item.code, item.name);
 }
 
 /** 导航：直辖市→district.vue（跳过 city）；普通省→city.vue */
-function handleNavigate(cityOrDistrictCode: string) {
+function handleNavigate(cityOrDistrictCode: string, name?: string) {
   if (isMuni.value) {
     uni.navigateTo({
       url: `/pages/business/park/vital/district?category=vital&provinceCode=${provinceCode.value}&cityCode=${provinceCode.value.substring(0, 2) + '0100'}&districtCode=${cityOrDistrictCode}`,
     });
   } else {
+    const nameQuery = name ? `&cityName=${encodeURIComponent(name)}` : '';
     uni.navigateTo({
-      url: `/pages/business/park/vital/city?category=vital&provinceCode=${provinceCode.value}&cityCode=${cityOrDistrictCode}`,
+      url: `/pages/business/park/vital/city?category=vital&provinceCode=${provinceCode.value}&cityCode=${cityOrDistrictCode}${nameQuery}`,
     });
   }
 }
@@ -211,11 +126,7 @@ onLoad((options: any) => {
 onMounted(fetchData);
 
 onUnmounted(() => {
-  // #ifdef H5
-  window.removeEventListener('resize', handleResize);
-  myChart?.dispose();
-  myChart = null;
-  // #endif
+  heatmap.dispose();
 });
 </script>
 

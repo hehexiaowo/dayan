@@ -51,40 +51,49 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import * as echarts from 'echarts';
 import { getRegions } from '@/api/park';
 import type { RegionItem, DrillLevel } from '@/types/park';
 import { MUNICIPALITIES } from '@/types/park';
+import { useRegionHeatmap } from '@/composables/useRegionHeatmap';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
-const category = 'care' as const;
 const provinceCode = ref('');
 const regions = ref<RegionItem[]>([]);
 const loading = ref(true);
-let myChart: echarts.ECharts | null = null;
 
 const isMuni = computed(() => MUNICIPALITIES.includes(provinceCode.value));
 const totalParks = computed(() => regions.value.reduce((s, i) => s + i.count, 0));
 
+// 热力图：省级边界聚焦，显示市级名称（直辖市直接显示区县），区域按机构数暖色填色
+const heatmap = useRegionHeatmap({
+  containerId: 'care-province-map',
+  get geoCode() {
+    return provinceCode.value;
+  },
+  get items() {
+    return regions.value;
+  },
+  showLabels: true,
+  onRegionClick: (r) => handleNavigate(r.code, r.name),
+});
+
 async function fetchData() {
   loading.value = true;
   try {
-    // 直辖市：直接查 district 层（跳过 city）
     const level: DrillLevel = isMuni.value ? 'district' : 'city';
     const params: any = {
-      category,
+      category: 'care',
       level,
       provinceCode: provinceCode.value,
     };
     if (isMuni.value) {
-      // 直辖市的 cityCode = 省 code 前2位 + '0100'
       params.cityCode = provinceCode.value.substring(0, 2) + '0100';
     }
 
     const result = await getRegions(params);
     regions.value = result.items || [];
     await nextTick();
-    setTimeout(initChart, 300);
+    heatmap.init();
   } catch {
     regions.value = [];
   } finally {
@@ -92,121 +101,20 @@ async function fetchData() {
   }
 }
 
-async function initChart() {
-  // #ifdef H5
-  const container = document.getElementById('care-province-map');
-  if (!container) return;
-
-  // 加载省份 GeoJSON
-  let provinceGeo: any = null;
-  try {
-    const resp = await fetch(`/static/geo/provinces/${provinceCode.value}.json`);
-    provinceGeo = await resp.json();
-  } catch {
-    console.warn('[care/province.vue] 省份 GeoJSON 加载失败:', provinceCode.value);
-    return;
-  }
-
-  // centroid 映射
-  const centroidMap: Record<string, [number, number]> = {};
-  provinceGeo.features.forEach((f: any) => {
-    const cp = f.properties?.centroid || f.properties?.center || f.properties?.cp;
-    if (cp) centroidMap[f.properties.name] = [cp[0], cp[1]];
-  });
-
-  const mapName = 'care-province-' + provinceCode.value;
-  echarts.registerMap(mapName, provinceGeo);
-  myChart = echarts.init(container);
-
-  const scatterData = regions.value
-    .filter((r) => r.count > 0)
-    .map((r) => {
-      const coord = centroidMap[r.name];
-      return {
-        name: r.name,
-        value: coord ? [...coord, r.count] : [],
-        code: r.code,
-      };
-    })
-    .filter((d) => d.value.length > 0);
-
-  myChart.setOption({
-    geo: {
-      map: mapName,
-      roam: true,
-      scaleLimit: { min: 1, max: 10 },
-      zoom: 1,
-      top: 20,
-      aspectScale: 0.85,
-      label: {
-        show: true,
-        fontSize: 9,
-        color: 'rgba(0,0,0,0.5)',
-      },
-      itemStyle: {
-        areaColor: '#fff8ed',
-        borderColor: '#dcdfe6',
-        borderWidth: 0.5,
-      },
-      emphasis: {
-        itemStyle: { areaColor: '#ffe8cc', borderColor: '#ff9900' },
-        label: { show: true },
-      },
-    },
-    tooltip: {
-      trigger: 'item',
-      formatter: (p: any) =>
-        p.data ? `${p.data.name}<br/>机构：${p.data.value?.[2] || 0} 家` : p.name,
-    },
-    series: [
-      {
-        type: 'effectScatter',
-        coordinateSystem: 'geo',
-        rippleEffect: { period: 4, scale: 3, brushType: 'stroke' },
-        symbolSize: 10,
-        itemStyle: {
-          color: '#ff9900',
-          shadowBlur: 6,
-          shadowColor: 'rgba(255,153,0,0.4)',
-        },
-        data: scatterData,
-      },
-    ],
-  });
-
-  myChart.on('click', (params: any) => {
-    if (params.data?.code) {
-      handleNavigate(params.data.code);
-    }
-  });
-
-  myChart.on('mouseover', () => {
-    myChart?.dispatchAction({ type: 'downplay' });
-  });
-
-  window.addEventListener('resize', handleResize);
-  // #endif
-}
-
-function handleResize() {
-  myChart?.resize();
-}
-
 function onItemClick(item: RegionItem) {
-  handleNavigate(item.code);
+  handleNavigate(item.code, item.name);
 }
 
 /** 导航：直辖市→district.vue（跳过 city）；普通省→city.vue */
-function handleNavigate(cityOrDistrictCode: string) {
+function handleNavigate(cityOrDistrictCode: string, name?: string) {
   if (isMuni.value) {
-    // 直辖市：code 是区县 code，直接去 district 页
     uni.navigateTo({
       url: `/pages/business/park/care/district?category=care&provinceCode=${provinceCode.value}&cityCode=${provinceCode.value.substring(0, 2) + '0100'}&districtCode=${cityOrDistrictCode}`,
     });
   } else {
-    // 普通省：code 是城市 code，去 city 页选区
+    const nameQuery = name ? `&cityName=${encodeURIComponent(name)}` : '';
     uni.navigateTo({
-      url: `/pages/business/park/care/city?category=care&provinceCode=${provinceCode.value}&cityCode=${cityOrDistrictCode}`,
+      url: `/pages/business/park/care/city?category=care&provinceCode=${provinceCode.value}&cityCode=${cityOrDistrictCode}${nameQuery}`,
     });
   }
 }
@@ -218,11 +126,7 @@ onLoad((options: any) => {
 onMounted(fetchData);
 
 onUnmounted(() => {
-  // #ifdef H5
-  window.removeEventListener('resize', handleResize);
-  myChart?.dispose();
-  myChart = null;
-  // #endif
+  heatmap.dispose();
 });
 </script>
 
@@ -252,7 +156,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #fff7e6, #ffe8cc);
+  background: linear-gradient(135deg, #e8f0fe, #d4e4fc);
 }
 .map-placeholder-text {
   font-size: 28rpx;
@@ -276,7 +180,7 @@ onUnmounted(() => {
   display: block;
   font-size: 40rpx;
   font-weight: bold;
-  color: $brand-warning;
+  color: $brand-primary;
 }
 .stat-label {
   display: block;
@@ -326,7 +230,7 @@ onUnmounted(() => {
 }
 .col-count {
   font-size: 28rpx;
-  color: $brand-warning;
+  color: $brand-primary;
   font-weight: bold;
 }
 .arrow {
