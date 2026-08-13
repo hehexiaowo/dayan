@@ -377,7 +377,6 @@ onPullDownRefresh(async () => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .page {
   padding: 0 $spacing-md 140rpx;
@@ -467,7 +466,7 @@ onPullDownRefresh(async () => {
 }
 .article-card:active {
   transform: scale(0.99);
-  background: darken(#fff, 2%);
+  background: #fafafa; /* = darken(#fff, 2%) */
 }
 
 /* 徽标 */

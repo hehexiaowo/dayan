@@ -530,8 +530,6 @@ onLoad(async (options: any) => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
-@import '@/styles/common.scss';
 
 .detail-page {
   min-height: 100vh;

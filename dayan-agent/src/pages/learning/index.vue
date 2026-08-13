@@ -196,8 +196,6 @@ onPullDownRefresh(async () => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
-@import '@/styles/common.scss';
 
 .page {
   padding: $spacing-md $spacing-md 60rpx;

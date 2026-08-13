@@ -154,8 +154,6 @@ onLoad((options: any) => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
-@import '@/styles/common.scss';
 
 .preview-page {
   min-height: 100vh;

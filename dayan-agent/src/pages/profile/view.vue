@@ -184,8 +184,6 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
-@import '@/styles/common.scss';
 
 .page {
   padding: 0 0 160rpx;

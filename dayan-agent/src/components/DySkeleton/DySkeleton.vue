@@ -38,7 +38,6 @@ withDefaults(
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .dy-skeleton {
   display: flex;

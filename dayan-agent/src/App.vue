@@ -13,10 +13,8 @@ onHide(() => {
 </script>
 
 <style lang="scss">
-@import 'uview-ui/theme.scss';
-@import 'uview-ui/index.scss';
-@import '@/styles/variables.scss';
-@import '@/styles/common.scss';
+/* 公共样式类 dy-* 全局引入（uview 未使用，不引入其样式） */
+@use '@/styles/common.scss';
 
 /* 全局样式 */
 page {

@@ -234,7 +234,6 @@ onLoad(async (query) => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .page {
   padding-bottom: 60rpx;

@@ -131,7 +131,6 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .city-page {
   min-height: 100vh;

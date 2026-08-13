@@ -2,7 +2,7 @@
  * 大雁养老 Agent 端设计令牌
  *
  * 统一全项目颜色/间距/圆角/阴影/渐变，消除硬编码 hex。
- * 各页面 @import '@/styles/variables.scss' 后使用。
+ * 由 uni.scss 通过 @use 自动注入每个组件，页面/组件内直接使用 $brand-* 等变量，无需手动引入。
  */
 
 // ===== 品牌色系 =====
@@ -10,6 +10,7 @@ $brand-primary: #409eff;
 $brand-primary-dark: #337ecc;
 $brand-primary-light: #ecf5ff;
 $brand-success: #19be6b;
+$brand-success-dark: #149a57; // = darken($brand-success, 8%)，旅居头部渐变用
 $brand-success-light: #edfff3;
 $brand-warning: #ff9900;
 $brand-warning-light: #fff7e6;

@@ -1,8 +1,9 @@
 /**
  * 大雁养老 Agent 端公共样式类
  *
- * 需配合 variables.scss 使用，页面内 @import '@/styles/common' 即可。
+ * 由 App.vue 通过 @use 全局引入一次，所有页面可直接使用 dy-* 类，页面内请勿重复引入。
  */
+@use '@/styles/variables.scss' as *;
 
 // ===== 卡片 =====
 .dy-card {

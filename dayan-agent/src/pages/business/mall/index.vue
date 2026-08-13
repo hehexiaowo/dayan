@@ -127,7 +127,6 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .page {
   padding: $spacing-md $spacing-md 140rpx;

@@ -47,7 +47,6 @@ const defaultIcon = '空';
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .dy-empty {
   display: flex;

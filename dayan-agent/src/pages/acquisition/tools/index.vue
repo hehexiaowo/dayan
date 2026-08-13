@@ -68,7 +68,6 @@ function onOpenTool(tool: ToolItem) {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .page {
   min-height: 100vh;

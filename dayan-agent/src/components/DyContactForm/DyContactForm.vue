@@ -60,7 +60,6 @@ async function onSubmit() {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .contact-form {
   margin: $spacing-md;

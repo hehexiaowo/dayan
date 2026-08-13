@@ -444,7 +444,6 @@ async function onWxLogin() {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .login-page {
   min-height: 100vh;

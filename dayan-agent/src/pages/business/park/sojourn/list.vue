@@ -88,7 +88,6 @@ onMounted(fetchData);
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .list-page {
   min-height: 100vh;
@@ -96,7 +95,7 @@ onMounted(fetchData);
 }
 
 .header-section {
-  background: linear-gradient(135deg, $brand-success 0%, darken($brand-success, 8%) 100%);
+  background: linear-gradient(135deg, $brand-success 0%, $brand-success-dark 100%);
   padding: $spacing-xl $spacing-md $spacing-lg;
   text-align: center;
   border-bottom-left-radius: $radius-lg;

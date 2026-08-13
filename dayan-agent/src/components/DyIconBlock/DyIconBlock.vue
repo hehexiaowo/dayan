@@ -37,7 +37,6 @@ const colorClass = computed(() => `is-${props.color}`);
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/variables.scss';
 
 .dy-icon-block {
   display: inline-flex;

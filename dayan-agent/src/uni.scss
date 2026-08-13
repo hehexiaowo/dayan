@@ -5,7 +5,7 @@ $u-success: #19be6b;
 $u-error: #fa3534;
 $u-info: #909399;
 
-/* 项目设计令牌（用 @ 别名，避免 uni.scss 被注入各目录页面时相对路径失真） */
-@import '@/styles/variables.scss';
+/* 项目设计令牌（@use 注入后各组件样式内可直接用 $brand-* 等变量，页面无需重复引入） */
+@use '@/styles/variables.scss' as *;
 
-/* 公共样式类（通过 @import '@/styles/common' 在页面中按需引入） */
+/* 公共样式类 dy-* 由 App.vue 全局引入，页面无需重复引入 */
