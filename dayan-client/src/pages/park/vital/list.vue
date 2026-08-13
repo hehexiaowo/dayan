@@ -10,18 +10,18 @@
         <text class="map-placeholder-text">地图组件（仅 H5 支持）</text>
       </view>
       <!-- #endif -->
+    </view>
 
-      <!-- 统计卡片 -->
-      <view v-if="regions.length" class="stats-card">
-        <view class="stat-item">
-          <text class="stat-value">{{ regions.length }}</text>
-          <text class="stat-label">覆盖省份</text>
-        </view>
-        <view class="stat-divider"></view>
-        <view class="stat-item">
-          <text class="stat-value">{{ totalParks }}</text>
-          <text class="stat-label">养老机构总数</text>
-        </view>
+    <!-- 统计卡片 -->
+    <view v-if="regions.length" class="stats-card">
+      <view class="stat-item">
+        <text class="stat-value">{{ regions.length }}</text>
+        <text class="stat-label">覆盖省份</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-value">{{ totalParks }}</text>
+        <text class="stat-label">养老机构总数</text>
       </view>
     </view>
 
@@ -137,18 +137,20 @@ async function initChart() {
       scaleLimit: { min: 1, max: 10 },
       zoom: 1.2,
       top: 20,
+      aspectScale: 0.85,
       label: {
         show: true,
         fontSize: 8,
-        color: 'rgba(0,0,0,0.6)',
+        color: 'rgba(0,0,0,0.5)',
       },
       itemStyle: {
-        areaColor: '#f0f6ff',
-        borderColor: 'rgba(0, 0, 0, 0.2)',
+        areaColor: '#eef4ff',
+        borderColor: '#dcdfe6',
+        borderWidth: 0.5,
       },
       emphasis: {
-        itemStyle: { areaColor: '#f0f6ff' },
-        label: { borderWidth: 0 },
+        itemStyle: { areaColor: '#d6e4ff', borderColor: '#409eff' },
+        label: { show: true },
       },
     },
     tooltip: {
@@ -160,12 +162,12 @@ async function initChart() {
       {
         type: 'effectScatter',
         coordinateSystem: 'geo',
-        rippleEffect: { period: 4, scale: 4, brushType: 'fill' },
-        symbolSize: 8,
+        rippleEffect: { period: 4, scale: 3, brushType: 'stroke' },
+        symbolSize: 10,
         itemStyle: {
           color: '#409eff',
-          shadowBlur: 8,
-          shadowColor: 'rgba(64,158,255,0.5)',
+          shadowBlur: 6,
+          shadowColor: 'rgba(64,158,255,0.4)',
         },
         data: scatterData,
       },
@@ -247,11 +249,8 @@ onUnmounted(() => {
 
 /* 统计卡片 */
 .stats-card {
-  position: absolute;
-  bottom: $spacing-sm;
-  left: $spacing-md;
-  right: $spacing-md;
-  background: rgba(255, 255, 255, 0.95);
+  margin: $spacing-sm $spacing-md 0;
+  background: $bg-card;
   border-radius: $radius-md;
   padding: $spacing-sm $spacing-md;
   display: flex;
