@@ -1,6 +1,6 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
-import type { Role, RoleQuery } from '@/types/role'
+import type { Role, RoleQuery, RoleGrants } from '@/types/role'
 
 /**
  * 角色接口封装。
@@ -51,19 +51,19 @@ export function deleteRole(roleCode: string): Promise<void> {
   })
 }
 
-/** 查询角色已有权限编码：GET /admin-api/roles/{roleCode}/permissions */
-export function getRolePermissions(roleCode: string): Promise<string[]> {
-  return request<string[]>({
+/** 查询角色授权（菜单码+权限码）：GET /admin-api/roles/{roleCode}/permissions */
+export function getRolePermissions(roleCode: string): Promise<RoleGrants> {
+  return request<RoleGrants>({
     url: `/admin-api/roles/${roleCode}/permissions`,
     method: 'get'
   })
 }
 
-/** 保存角色权限编码集合：PUT /admin-api/roles/{roleCode}/permissions */
-export function updateRolePermissions(roleCode: string, permissionCodes: string[]): Promise<void> {
+/** 保存角色授权（菜单+权限，全量覆盖）：PUT /admin-api/roles/{roleCode}/permissions */
+export function updateRolePermissions(roleCode: string, grants: RoleGrants): Promise<void> {
   return request<void>({
     url: `/admin-api/roles/${roleCode}/permissions`,
     method: 'put',
-    data: permissionCodes
+    data: grants
   })
 }

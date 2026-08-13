@@ -79,3 +79,17 @@ export function buildPermissionTree(list: Permission[], parentCode: string | nul
       return children.length > 0 ? { ...p, children } : { ...p, children: undefined }
     })
 }
+
+/**
+ * 角色授权树节点（后端 com.dayan.system.vo.MenuGrantTreeVO）。
+ *
+ * nodeKey 带类型前缀：'menu:'+menuCode（目录/菜单）、'perm:'+permissionCode（操作权限）、
+ * 'group:other'（其他权限虚拟组，保存时丢弃）。
+ */
+export interface GrantTreeNode {
+  nodeKey: string
+  name: string
+  /** DIR 目录 / MENU 菜单 / PERM 操作权限 / GROUP 虚拟组 */
+  nodeType: 'DIR' | 'MENU' | 'PERM' | 'GROUP'
+  children?: GrantTreeNode[]
+}

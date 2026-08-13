@@ -79,3 +79,12 @@ export interface RoleQuery {
   /** 每页条数 */
   size: number
 }
+
+/**
+ * 角色授权（菜单可见性 + 接口权限）。
+ * 对应后端 OrganRoleGrantsDTO：GET/PUT /roles/{roleCode}/permissions。
+ */
+export interface RoleGrants {
+  menuCodes: string[]
+  permissionCodes: string[]
+}

@@ -1,5 +1,6 @@
 import { request } from '@/utils/request'
 import type { Menu, DomainType } from '@/types/menu'
+import type { GrantTreeNode } from '@/types/permission'
 
 /**
  * 菜单接口封装。
@@ -62,5 +63,13 @@ export function deleteMenu(menuCode: string): Promise<void> {
   return request<void>({
     url: `/admin-api/menus/${menuCode}`,
     method: 'delete'
+  })
+}
+
+/** 角色授权树（目录→菜单→操作权限）：GET /admin-api/menus/grant-tree */
+export function getGrantTree(): Promise<GrantTreeNode[]> {
+  return request<GrantTreeNode[]>({
+    url: '/admin-api/menus/grant-tree',
+    method: 'get'
   })
 }
