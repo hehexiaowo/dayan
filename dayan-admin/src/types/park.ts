@@ -990,6 +990,20 @@ export const DISPLAY_BLOCK_TYPE_OPTIONS = [
 export const displayBlockTypeLabel = (v?: string) =>
   DISPLAY_BLOCK_TYPE_OPTIONS.find((o) => o.value === v)?.label ?? (v || '--')
 
+/** 业态选项（与后端 NetworkType 枚举 / 字典 network_type 一致） */
+export const NETWORK_TYPE_OPTIONS = [
+  { value: 'vital', label: '活力长居' },
+  { value: 'care', label: '照护长居' },
+  { value: 'sojourn', label: '旅居' }
+] as const
+
+export const networkTypeLabel = (v?: string) =>
+  NETWORK_TYPE_OPTIONS.find((o) => o.value === v)?.label ?? (v || '--')
+
+/** 逗号分隔业态串 → string[]（空串→[]） */
+export const networkTagsToList = (s?: string): string[] =>
+  (s || '').split(',').map((t) => t.trim()).filter(Boolean)
+
 /** 机构展示板块实体 */
 export interface ParkDisplayBlock {
   id?: number
@@ -1006,6 +1020,8 @@ export interface ParkDisplayBlock {
   imageDescriptions?: string
   sortOrder?: number
   status?: number
+  /** 适用业态（逗号分隔 vital/care/sojourn），空=全部 */
+  networkTags?: string
   createdAt?: string
 }
 

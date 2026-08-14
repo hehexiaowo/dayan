@@ -20,7 +20,13 @@ import {
   deleteDisplayBlock
 } from '@/api/park-display'
 import type { ParkDisplayBlock, ParkDisplayBlockQuery } from '@/types/park'
-import { DISPLAY_BLOCK_TYPE_OPTIONS, displayBlockTypeLabel } from '@/types/park'
+import {
+  DISPLAY_BLOCK_TYPE_OPTIONS,
+  displayBlockTypeLabel,
+  NETWORK_TYPE_OPTIONS,
+  networkTypeLabel,
+  networkTagsToList
+} from '@/types/park'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { formatFileUrl } from '@/utils/file'
 
@@ -58,6 +64,9 @@ const formRef = ref<FormInstance>()
 const imagesArr = ref<string[]>([])
 const imageDescsArr = ref<string[]>([])
 
+/** 业态多选数组态：提交时 join 为 form.networkTags，回显时 split */
+const networkTagsArr = ref<string[]>([])
+
 const form = reactive({
   id: undefined as number | undefined,
   parkCode: '',
@@ -67,7 +76,8 @@ const form = reactive({
   images: '',
   imageDescriptions: '',
   sortOrder: 0,
-  status: 1
+  status: 1,
+  networkTags: ''
 })
 
 const rules: FormRules = {
@@ -84,8 +94,10 @@ function resetForm() {
   form.imageDescriptions = ''
   form.sortOrder = 0
   form.status = 1
+  form.networkTags = ''
   imagesArr.value = []
   imageDescsArr.value = []
+  networkTagsArr.value = []
 }
 
 function openCreate() {
@@ -105,6 +117,8 @@ function openEdit(row: ParkDisplayBlock) {
   form.content = row.content || ''
   form.sortOrder = row.sortOrder ?? 0
   form.status = row.status ?? 1
+  form.networkTags = row.networkTags || ''
+  networkTagsArr.value = networkTagsToList(row.networkTags)
   // 解析 JSON 数组
   imagesArr.value = parseJsonArr(row.images)
   imageDescsArr.value = parseJsonArr(row.imageDescriptions)
@@ -144,6 +158,7 @@ async function handleSubmit() {
     // 数组 → JSON 字符串
     form.images = JSON.stringify(imagesArr.value)
     form.imageDescriptions = JSON.stringify(imageDescsArr.value)
+    form.networkTags = networkTagsArr.value.join(',')
     if (dialogMode.value === 'create') {
       await createDisplayBlock(form)
       ElMessage.success('新增成功')
@@ -234,6 +249,19 @@ defineExpose({ loadPage })
         </template>
       </el-table-column>
       <el-table-column prop="blockTitle" label="板块标题" min-width="150" show-overflow-tooltip />
+      <el-table-column label="适用业态" width="220" align="center">
+        <template #default="{ row }">
+          <template v-if="networkTagsToList(row.networkTags).length">
+            <el-tag
+              v-for="t in networkTagsToList(row.networkTags)"
+              :key="t"
+              size="small"
+              style="margin-right: 4px"
+            >{{ networkTypeLabel(t) }}</el-tag>
+          </template>
+          <el-tag v-else size="small" type="info">全部</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="封面" width="80" align="center">
         <template #default="{ row }">
           <el-image
@@ -312,6 +340,16 @@ defineExpose({ loadPage })
           <el-col :span="12">
             <el-form-item label="板块标题">
               <el-input v-model="form.blockTitle" placeholder="如：居住环境" maxlength="100" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="适用业态">
+              <el-checkbox-group v-model="networkTagsArr">
+                <el-checkbox v-for="o in NETWORK_TYPE_OPTIONS" :key="o.value" :value="o.value">
+                  {{ o.label }}
+                </el-checkbox>
+              </el-checkbox-group>
+              <div class="form-tip">不勾选 = 三种业态详情页全部展示</div>
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -398,6 +436,12 @@ defineExpose({ loadPage })
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+  .form-tip {
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.4;
+    width: 100%;
   }
 }
 </style>
