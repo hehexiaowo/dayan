@@ -3,7 +3,7 @@
  * 对接后端 ParkClientController（/client-api/park/*），复用 ParkAgentQueryService 只读服务。
  */
 import request from '@/utils/request';
-import type { CategoryCount, RegionDrillResult, RegionQuery, ParkDetail, ParkFullDetail } from '@/types/park';
+import type { CategoryCount, RegionDrillResult, RegionQuery, ParkCategory, ParkDetail, ParkFullDetail } from '@/types/park';
 
 /**
  * 三分类机构数量统计
@@ -41,11 +41,13 @@ export function getParkDetail(parkCode: string): Promise<ParkDetail> {
 
 /**
  * 机构完整详情（聚合主表+全部子实体）
- * GET /client-api/park/{parkCode}/full
+ * GET /client-api/park/{parkCode}/full?network=vital
+ * network 有值时服务端过滤展示板块（板块空 tags=全部业态）
  */
-export function getParkFullDetail(parkCode: string): Promise<ParkFullDetail> {
+export function getParkFullDetail(parkCode: string, network?: ParkCategory): Promise<ParkFullDetail> {
   return request<ParkFullDetail>({
     url: `/park/${parkCode}/full`,
     method: 'GET',
+    data: network ? { network } : undefined,
   });
 }

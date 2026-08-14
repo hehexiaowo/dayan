@@ -289,8 +289,8 @@
       </view>
 
       <!-- 图文展示板块 -->
-      <view v-if="detail.displayBlocks?.length" class="display-section">
-        <view v-for="block in detail.displayBlocks" :key="block.id" class="display-block">
+      <view v-if="visibleBlocks.length" class="display-section">
+        <view v-for="block in visibleBlocks" :key="block.id" class="display-block">
           <text v-if="block.blockTitle" class="block-title">{{ block.blockTitle }}</text>
           <rich-text v-if="block.content" :nodes="block.content" class="block-content" />
           <view v-if="parseImageList(block.images).length" class="block-images">
@@ -328,6 +328,13 @@ import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const detail = ref<ParkFullDetail | null>(null);
+
+/** 业态过滤后的展示板块：板块 networkTags 为空=属于全部业态 */
+const visibleBlocks = computed(() =>
+  (detail.value?.displayBlocks || []).filter(
+    (b) => !b.networkTags?.length || b.networkTags.includes('vital'),
+  ),
+);
 const loading = ref(true);
 const loadError = ref(false);
 const swiperCurrent = ref(0);

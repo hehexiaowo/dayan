@@ -457,7 +457,7 @@ async function loadDetail(code: string) {
   loading.value = true;
   loadError.value = false;
   try {
-    detail.value = await getParkFullDetail(code);
+    detail.value = await getParkFullDetail(code, NETWORK);
   } catch {
     loadError.value = true;
   } finally {

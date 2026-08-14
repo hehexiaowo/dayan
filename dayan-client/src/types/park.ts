@@ -274,6 +274,8 @@ export interface ParkDisplayBlock {
   blockTitle?: string;
   content?: string;
   images?: string;
+  /** 适用业态（空数组=全部业态） */
+  networkTags?: string[];
 }
 
 /** 机构完整详情（主表 + 全部子实体聚合） */
