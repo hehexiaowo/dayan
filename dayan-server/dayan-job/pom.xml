@@ -23,6 +23,11 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-service</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-order</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-finance</artifactId></dependency>
+        <!-- 定价预约生效到点翻转（park_pricing.pending_flag） -->
+        <dependency>
+            <groupId>com.dayan</groupId>
+            <artifactId>dayan-module-park</artifactId>
+        </dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-security</artifactId></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter</artifactId></dependency>
         <dependency>

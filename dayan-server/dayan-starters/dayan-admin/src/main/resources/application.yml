@@ -66,6 +66,9 @@ dayan:
     # 富文本内嵌资源公网基地址（富文本图片/视频完整 URL 生成用）。
     # 必须配置为 C 端/小程序可访问的公网地址（如 https://files.example.com），留空回退 MinIO endpoint 直链（通常仅内网可用）。
     public-base-url: ${MINIO_PUBLIC_BASE_URL:}
+  # 订单服务端权威取价：strict=偏差拒单（默认）；warn=告警并按权威价入账；off=采信客户端（回滚开关）
+  order:
+    price-check: ${ORDER_PRICE_CHECK:strict}
 
 springdoc:
   swagger-ui:

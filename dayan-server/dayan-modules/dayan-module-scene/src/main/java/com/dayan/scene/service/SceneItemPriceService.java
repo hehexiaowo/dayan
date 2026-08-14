@@ -6,6 +6,8 @@ import com.dayan.scene.dto.SceneItemPriceQueryDTO;
 import com.dayan.scene.dto.SceneItemPriceUpdateDTO;
 import com.dayan.scene.vo.SceneItemPriceVO;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -21,6 +23,12 @@ public interface SceneItemPriceService {
     List<SceneItemPriceVO> list(SceneItemPriceQueryDTO query);
 
     SceneItemPriceVO getDetail(Long id);
+
+    /**
+     * 取场景在指定日期的当前有效按人价（status=1, price_type=1, 日期窗口内）。
+     * channelPrice 非空优先；不存在返回 null。
+     */
+    BigDecimal getCurrentPersonPrice(String sceneCode, LocalDate activeOn);
 
     Long create(SceneItemPriceCreateDTO dto);
 

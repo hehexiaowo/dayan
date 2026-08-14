@@ -23,7 +23,22 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-channel</artifactId></dependency>
         <!-- 场景订单下单需扣减排期容量 -->
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-scene</artifactId></dependency>
+        <!-- 旅居订单服务端权威取价：查询机构定价（park_pricing） -->
+        <dependency>
+            <groupId>com.dayan</groupId>
+            <artifactId>dayan-module-park</artifactId>
+        </dependency>
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
         <dependency><groupId>org.mapstruct</groupId><artifactId>mapstruct</artifactId></dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

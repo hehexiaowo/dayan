@@ -5,6 +5,7 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.park.dto.ParkPricingCreateDTO;
 import com.dayan.park.dto.ParkPricingQueryDTO;
+import com.dayan.park.dto.ParkPricingReviseDTO;
 import com.dayan.park.dto.ParkPricingUpdateDTO;
 import com.dayan.park.service.ParkPricingService;
 import com.dayan.park.vo.ParkPricingVO;
@@ -75,6 +76,13 @@ public class ParkPricingAdminController {
                           @RequestBody ParkPricingUpdateDTO dto) {
         parkPricingService.update(id, dto);
         return R.ok();
+    }
+
+    @Operation(summary = "调价（版本化：立即/预约生效）")
+    @SaCheckPermission("park:pricing:update")
+    @PostMapping("/{id}/revise")
+    public R<Long> revise(@PathVariable Long id, @RequestBody @Valid ParkPricingReviseDTO dto) {
+        return R.ok(parkPricingService.revise(id, dto));
     }
 
     @Operation(summary = "删除定价")

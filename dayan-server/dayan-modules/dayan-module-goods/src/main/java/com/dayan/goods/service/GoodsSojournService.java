@@ -26,6 +26,9 @@ public interface GoodsSojournService {
     /** 按 skuCode 查询单个 SKU（不存在返回 null） */
     GoodsSojournVO getByCode(String skuCode);
 
+    /** 按 skuCode 查有效在售 SKU（status=1 且在有效期内），不存在返回 null */
+    GoodsSojournVO getEffectiveByCode(String skuCode);
+
     Long create(GoodsSojournCreateDTO dto);
 
     void update(Long id, GoodsSojournUpdateDTO dto);

@@ -17,6 +17,7 @@ import com.dayan.order.entity.OrderSojourn;
 import com.dayan.order.enums.OrderEvent;
 import com.dayan.order.enums.OrderType;
 import com.dayan.order.mapper.OrderSojournMapper;
+import com.dayan.order.service.OrderPriceResolver;
 import com.dayan.order.service.OrderSojournService;
 import com.dayan.order.service.OrderStatusChangeRecordHelper;
 import com.dayan.order.vo.OrderSojournVO;
@@ -62,6 +63,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
     private final StateMachineEngine stateMachineEngine;
     private final SequenceProvider sequenceProvider;
     private final OrderStatusChangeRecordHelper changeRecordHelper;
+    private final OrderPriceResolver orderPriceResolver;
 
     // ====== 查询 ======
 
@@ -102,11 +104,24 @@ public class OrderSojournServiceImpl implements OrderSojournService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(CreateOrderSojournDTO dto) {
-        // 金额校验：total = room + care + food + other；pay = total - discount
-        BigDecimal room = dto.getRoomFee() == null ? BigDecimal.ZERO : dto.getRoomFee();
-        BigDecimal care = dto.getCareFee() == null ? BigDecimal.ZERO : dto.getCareFee();
-        BigDecimal food = dto.getFoodFee() == null ? BigDecimal.ZERO : dto.getFoodFee();
+        // 服务端权威取价（E2）：strict 偏差拒单 / warn 按权威价入账 / off 采信客户端
+        Integer stayDaysForPrice = dto.getStayDays();
+        if ((stayDaysForPrice == null || stayDaysForPrice <= 0)
+                && dto.getCheckinDate() != null && dto.getCheckoutDate() != null) {
+            stayDaysForPrice = (int) Math.max(java.time.temporal.ChronoUnit.DAYS
+                    .between(dto.getCheckinDate(), dto.getCheckoutDate()), 0);
+        }
+        int priceStayDays = stayDaysForPrice == null ? 1 : Math.max(stayDaysForPrice, 1);
+        OrderPriceResolver.SojournAuthority authority =
+                orderPriceResolver.resolveSojourn(dto, priceStayDays);
+        BigDecimal room = authority.roomFee() != null ? authority.roomFee()
+                : (dto.getRoomFee() == null ? BigDecimal.ZERO : dto.getRoomFee());
+        BigDecimal care = authority.careFee() != null ? authority.careFee()
+                : (dto.getCareFee() == null ? BigDecimal.ZERO : dto.getCareFee());
+        BigDecimal food = authority.foodFee() != null ? authority.foodFee()
+                : (dto.getFoodFee() == null ? BigDecimal.ZERO : dto.getFoodFee());
         BigDecimal other = dto.getOtherFee() == null ? BigDecimal.ZERO : dto.getOtherFee();
+        // 金额校验：total = room + care + food + other；pay = total - discount
         BigDecimal totalAmount = room.add(care).add(food).add(other);
         BigDecimal discount = dto.getDiscountAmount() == null ? BigDecimal.ZERO : dto.getDiscountAmount();
         if (discount.compareTo(BigDecimal.ZERO) < 0) {
@@ -160,7 +175,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         entity.setDiscountAmount(discount);
         entity.setPayAmount(payAmount);
         entity.setCouponCode(dto.getCouponCode());
-        entity.setDepositAmount(dto.getDepositAmount());
+        entity.setDepositAmount(authority.depositAmount() != null ? authority.depositAmount() : dto.getDepositAmount());
         entity.setEquityCode(dto.getEquityCode());
         entity.setContactName(dto.getContactName());
         entity.setContactPhone(dto.getContactPhone());

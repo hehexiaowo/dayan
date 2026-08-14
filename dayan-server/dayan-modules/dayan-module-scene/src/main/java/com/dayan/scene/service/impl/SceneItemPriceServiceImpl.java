@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -56,6 +57,25 @@ public class SceneItemPriceServiceImpl implements SceneItemPriceService {
     @Override
     public SceneItemPriceVO getDetail(Long id) {
         return toVO(requirePrice(id));
+    }
+
+    @Override
+    public BigDecimal getCurrentPersonPrice(String sceneCode, LocalDate activeOn) {
+        SceneItemPrice price = sceneItemPriceMapper.selectList(new LambdaQueryWrapper<SceneItemPrice>()
+                .eq(SceneItemPrice::getSceneCode, sceneCode)
+                .eq(SceneItemPrice::getPriceType, 1)
+                .eq(SceneItemPrice::getStatus, 1)
+                .and(w -> w.isNull(SceneItemPrice::getEffectiveDate)
+                        .or().le(SceneItemPrice::getEffectiveDate, activeOn))
+                .and(w -> w.isNull(SceneItemPrice::getExpireDate)
+                        .or().ge(SceneItemPrice::getExpireDate, activeOn))
+                .orderByDesc(SceneItemPrice::getId)
+                .last("LIMIT 1"))
+                .stream().findFirst().orElse(null);
+        if (price == null) {
+            return null;
+        }
+        return price.getChannelPrice() != null ? price.getChannelPrice() : price.getSalePrice();
     }
 
     @Override
