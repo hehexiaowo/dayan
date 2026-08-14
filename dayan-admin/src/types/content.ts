@@ -74,6 +74,8 @@ export interface ContentInfo {
   sourceType?: number
   sourceUrl?: string
   tags?: string
+  /** 适用业态（逗号分隔 vital/care/sojourn），空=全部 */
+  networkTags?: string
   /** 是否置顶：1是 0否 */
   isTop?: number
   /** 是否推荐：1是 0否 */
@@ -110,6 +112,8 @@ export interface ContentInfoQuery extends PageQuery {
   auditStatus?: number
   isTop?: number
   isRecommend?: number
+  /** 适用业态过滤（逗号分隔，空=全部） */
+  network?: string
 }
 
 // ==================== 内容多媒体 ====================

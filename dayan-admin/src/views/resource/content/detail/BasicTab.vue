@@ -5,6 +5,7 @@ import { getContent, updateContent } from '@/api/content'
 import { useBusinessDictOptions } from '@/composables/useBusinessDict'
 import type { ContentInfo } from '@/types/content'
 import { CONTENT_TYPE_OPTIONS, SOURCE_TYPE_OPTIONS } from '@/types/content'
+import { NETWORK_TYPE_OPTIONS, networkTagsToList } from '@/types/park'
 import FileUploader from '@/components/FileUploader/index.vue'
 import RichEditor from '@/components/RichEditor/index.vue'
 
@@ -30,11 +31,17 @@ async function loadDetail() {
 const dialogVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
-const form = reactive({} as ContentInfo)
+const form = reactive({ networkTags: '' } as ContentInfo)
+
+/** 业态多选数组态：提交时 join 为 form.networkTags，回显时 split */
+const networkTagsArr = ref<string[]>([])
 
 function openEdit() {
   if (!detail.value) return
   Object.assign(form, detail.value)
+  // VO 返回 String 逗号串形态，空串 = 全部业态
+  form.networkTags = detail.value.networkTags || ''
+  networkTagsArr.value = networkTagsToList(detail.value.networkTags)
   dialogVisible.value = true
 }
 
@@ -47,6 +54,8 @@ async function handleSubmit() {
   }
   submitLoading.value = true
   try {
+    // 勾选数组 → 逗号串（空串 = 清空恢复全部业态）
+    form.networkTags = networkTagsArr.value.join(',')
     await updateContent(props.contentCode, form)
     ElMessage.success('修改成功')
     dialogVisible.value = false
@@ -128,6 +137,16 @@ onMounted(() => {
               <el-select v-model="form.sourceType" style="width: 100%">
                 <el-option v-for="o in SOURCE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="适用业态">
+              <el-checkbox-group v-model="networkTagsArr">
+                <el-checkbox v-for="o in NETWORK_TYPE_OPTIONS" :key="o.value" :value="o.value">
+                  {{ o.label }}
+                </el-checkbox>
+              </el-checkbox-group>
+              <div style="font-size: 12px; color: #909399; width: 100%">不勾选 = 全部业态展示（C 端内容流）</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
