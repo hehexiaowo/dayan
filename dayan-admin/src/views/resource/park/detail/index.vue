@@ -60,11 +60,11 @@ function operateStatusText(s?: number): string {
 
 const tabs = [
   { name: 'basic', label: '基本信息' },
+  { name: 'periphery', label: '周边信息' },
+  { name: 'adviser', label: '联系信息' },
   { name: 'svc-config', label: '价格配置' },
   { name: 'asset', label: '素材仓库' },
-  { name: 'display-settings', label: '页面展示' },
-  { name: 'adviser', label: '联系信息' },
-  { name: 'periphery', label: '周边信息' }
+  { name: 'display-settings', label: '页面展示' }
 ] as const
 </script>
 
