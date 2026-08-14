@@ -8,6 +8,7 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.statemachine.StateMachineEngine;
+import com.dayan.common.core.util.HtmlSanitizer;
 import com.dayan.park.dto.ParkInfoCreateDTO;
 import com.dayan.park.dto.ParkInfoQueryDTO;
 import com.dayan.park.dto.ParkInfoUpdateDTO;
@@ -127,8 +128,8 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         entity.setLongitude(dto.getLongitude());
         entity.setLatitude(dto.getLatitude());
         entity.setServiceHotline(dto.getServiceHotline());
-        entity.setBaseDescription(dto.getBaseDescription());
-        entity.setSpecialtyDescription(dto.getSpecialtyDescription());
+        entity.setBaseDescription(HtmlSanitizer.clean(dto.getBaseDescription()));
+        entity.setSpecialtyDescription(HtmlSanitizer.clean(dto.getSpecialtyDescription()));
         entity.setTotalArea(dto.getTotalArea());
         entity.setBuildingArea(dto.getBuildingArea());
         entity.setGreenAreaRate(dto.getGreenAreaRate());
@@ -214,8 +215,8 @@ public class ParkInfoServiceImpl implements ParkInfoService {
             if (dto.getLatitude() != null) update.setLatitude(dto.getLatitude());
         }
         if (dto.getServiceHotline() != null) update.setServiceHotline(dto.getServiceHotline());
-        if (dto.getBaseDescription() != null) update.setBaseDescription(dto.getBaseDescription());
-        if (dto.getSpecialtyDescription() != null) update.setSpecialtyDescription(dto.getSpecialtyDescription());
+        if (dto.getBaseDescription() != null) update.setBaseDescription(HtmlSanitizer.clean(dto.getBaseDescription()));
+        if (dto.getSpecialtyDescription() != null) update.setSpecialtyDescription(HtmlSanitizer.clean(dto.getSpecialtyDescription()));
         if (dto.getTotalArea() != null) update.setTotalArea(dto.getTotalArea());
         if (dto.getBuildingArea() != null) update.setBuildingArea(dto.getBuildingArea());
         if (dto.getGreenAreaRate() != null) update.setGreenAreaRate(dto.getGreenAreaRate());

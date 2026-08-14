@@ -26,9 +26,13 @@ public class StorageProperties {
     @Value("${dayan.storage.max-size:10485760}")
     private long maxSize;
 
+    @Value("${dayan.storage.public-base-url:}")
+    private String publicBaseUrl;
+
     public String getEndpoint() { return endpoint; }
     public String getAccessKey() { return accessKey; }
     public String getSecretKey() { return secretKey; }
     public String getBucket() { return bucket; }
     public long getMaxSize() { return maxSize; }
+    public String getPublicBaseUrl() { return publicBaseUrl; }
 }

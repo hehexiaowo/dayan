@@ -16,4 +16,6 @@ public class FileUploadDTO {
     private String originalName;
     /** 文件大小（字节） */
     private long size;
+    /** 完整 URL（富文本内嵌资源用；agent/client rich-text 渲染不做 URL 改写） */
+    private String absoluteUrl;
 }

@@ -102,6 +102,7 @@ public class FileAdminController {
             dto.setUrl("/admin-api/v1/files/preview/" + key);
             dto.setOriginalName(originalName);
             dto.setSize(size);
+            dto.setAbsoluteUrl(buildAbsoluteUrl(key));
             FileUploadedEvent event = new FileUploadedEvent();
             event.setKey(key);
             event.setOriginalName(originalName);
@@ -152,5 +153,14 @@ public class FileAdminController {
             log.error("文件预览失败 key={}", key, e);
             response.setStatus(500);
         }
+    }
+
+    /** 富文本内嵌资源完整 URL：优先 public-base-url，未配置回退 MinIO 公开桶直链 */
+    private String buildAbsoluteUrl(String key) {
+        String base = storageProperties.getPublicBaseUrl();
+        if (base != null && !base.isBlank()) {
+            return (base.endsWith("/") ? base : base + "/") + key;
+        }
+        return storageProperties.getEndpoint() + "/" + storageProperties.getBucket() + "/" + key;
     }
 }

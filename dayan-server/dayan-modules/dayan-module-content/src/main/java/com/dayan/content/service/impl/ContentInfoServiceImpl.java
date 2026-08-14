@@ -8,6 +8,7 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.statemachine.StateMachineEngine;
+import com.dayan.common.core.util.HtmlSanitizer;
 import com.dayan.content.dto.ContentInfoAuditDTO;
 import com.dayan.content.dto.ContentInfoCreateDTO;
 import com.dayan.content.dto.ContentInfoQueryDTO;
@@ -116,7 +117,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
         entity.setAuthorAvatar(dto.getAuthorAvatar());
         entity.setCoverImage(dto.getCoverImage());
         entity.setSummary(dto.getSummary());
-        entity.setContentBody(dto.getContentBody());
+        entity.setContentBody(HtmlSanitizer.clean(dto.getContentBody()));
         entity.setSourceType(dto.getSourceType());
         entity.setSourceUrl(dto.getSourceUrl());
         entity.setTags(dto.getTags());
@@ -156,7 +157,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
         if (dto.getAuthorAvatar() != null) update.setAuthorAvatar(dto.getAuthorAvatar());
         if (dto.getCoverImage() != null) update.setCoverImage(dto.getCoverImage());
         if (dto.getSummary() != null) update.setSummary(dto.getSummary());
-        if (dto.getContentBody() != null) update.setContentBody(dto.getContentBody());
+        if (dto.getContentBody() != null) update.setContentBody(HtmlSanitizer.clean(dto.getContentBody()));
         if (dto.getSourceType() != null) update.setSourceType(dto.getSourceType());
         if (dto.getSourceUrl() != null) update.setSourceUrl(dto.getSourceUrl());
         if (dto.getTags() != null) update.setTags(dto.getTags());
