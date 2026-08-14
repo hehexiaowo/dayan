@@ -227,8 +227,10 @@ public class ParkAssetServiceImpl implements ParkAssetService {
             wrapper.eq(ParkAsset::getSourceType, query.getSourceType());
         }
         if (query.getKeyword() != null && !query.getKeyword().isEmpty()) {
-            wrapper.and(w -> w.like(ParkAsset::getAssetName, query.getKeyword())
-                    .or().like(ParkAsset::getAssetUrl, query.getKeyword()));
+            String kw = query.getKeyword()
+                    .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            wrapper.and(w -> w.like(ParkAsset::getAssetName, kw)
+                    .or().like(ParkAsset::getAssetUrl, kw));
         }
         if (query.getStatus() != null) {
             wrapper.eq(ParkAsset::getStatus, query.getStatus());

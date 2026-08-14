@@ -116,6 +116,8 @@ public class FileAdminController {
             event.setAssetSourceRef(assetSourceRef);
             eventPublisher.publishEvent(event);
             return R.ok(dto);
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             log.error("文件上传失败", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败: " + e.getMessage());
@@ -161,6 +163,10 @@ public class FileAdminController {
         if (base != null && !base.isBlank()) {
             return (base.endsWith("/") ? base : base + "/") + key;
         }
-        return storageProperties.getEndpoint() + "/" + storageProperties.getBucket() + "/" + key;
+        String endpoint = storageProperties.getEndpoint();
+        if (endpoint.endsWith("/")) {
+            endpoint = endpoint.substring(0, endpoint.length() - 1);
+        }
+        return endpoint + "/" + storageProperties.getBucket() + "/" + key;
     }
 }

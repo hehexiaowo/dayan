@@ -1,6 +1,7 @@
 package com.dayan.common.core.enums;
 
 import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,5 +36,22 @@ class NetworkTypeTest {
         assertThatThrownBy(() -> NetworkType.normalizeTags("vital,bad"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("bad");
+    }
+
+    @Test
+    void normalizeTags_中段空段被忽略() {
+        assertThat(NetworkType.normalizeTags("vital,,care")).isEqualTo("vital,care");
+    }
+
+    @Test
+    void of_null返回null() {
+        assertThat(NetworkType.of(null)).isNull();
+    }
+
+    @Test
+    void normalizeTags_非法值携带PARAM_ERROR码() {
+        assertThatThrownBy(() -> NetworkType.normalizeTags("bad"))
+                .isInstanceOf(BusinessException.class)
+                .extracting("code").isEqualTo(ErrorCode.PARAM_ERROR.getCode());
     }
 }
