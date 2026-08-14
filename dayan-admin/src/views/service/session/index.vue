@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
@@ -8,9 +8,10 @@ import {
   updateSession,
   deleteSession,
   transitionSession,
-  assignButler
+  assignButler,
+  listButlers
 } from '@/api/service'
-import type { ServiceSession, ServiceSessionQuery } from '@/types/service'
+import type { ButlerInfo, ServiceSession, ServiceSessionQuery } from '@/types/service'
 import {
   SessionStatus,
   SESSION_STATUS_OPTIONS,
@@ -169,25 +170,45 @@ async function handleTransition(
   }
 }
 
-/** 分配管家（assign_butler）：需选择管家，用 prompt 收集 butlerCode 后调专用端点。 */
-async function handleAssignButler(row: ServiceSession) {
-  if (!row.sessionCode) return
-  let butlerCode = ''
+// ---------- 分配管家（下拉选择弹窗） ----------
+/**
+ * 改造：原先用 prompt 手输 butlerCode，体验差且易错。
+ * 现改为独立弹窗 + el-select（数据源 listButlers，仅展示在职管家）。
+ */
+const butlerOptions = ref<ButlerInfo[]>([])
+const assignDialogVisible = ref(false)
+const assignTargetCode = ref('')
+const assignButlerCode = ref('')
+
+async function loadButlerOptions() {
   try {
-    const { value } = await ElMessageBox.prompt('请输入要分配的管家编码', '分配管家', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputPlaceholder: '管家编码（butlerCode）',
-      inputValidator: (v: string) => !!v?.trim() || '管家编码不能为空'
-    })
-    butlerCode = value.trim()
+    // status=1 仅在职管家
+    butlerOptions.value = await listButlers({ status: 1 })
   } catch {
+    butlerOptions.value = []
+  }
+}
+
+onMounted(loadButlerOptions)
+
+function handleAssignButler(row: ServiceSession) {
+  if (!row.sessionCode) return
+  assignTargetCode.value = row.sessionCode
+  assignButlerCode.value = row.butlerCode ?? ''
+  assignDialogVisible.value = true
+}
+
+async function handleAssignSubmit() {
+  if (!assignButlerCode.value) {
+    ElMessage.warning('请选择管家')
     return
   }
   actionLoading.value = true
   try {
-    await assignButler(row.sessionCode, butlerCode)
-    ElMessage.success(`已分配管家：${butlerCode}`)
+    await assignButler(assignTargetCode.value, assignButlerCode.value)
+    const found = butlerOptions.value.find((b) => b.butlerCode === assignButlerCode.value)
+    ElMessage.success(`已分配管家：${found?.fullName ?? assignButlerCode.value}`)
+    assignDialogVisible.value = false
     loadPage()
   } finally {
     actionLoading.value = false
@@ -440,6 +461,35 @@ loadPage()
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 分配管家弹窗（下拉选择） -->
+    <el-dialog v-model="assignDialogVisible" title="分配管家" width="460px" :close-on-click-modal="false">
+      <el-form label-width="90px">
+        <el-form-item label="会话编码">
+          <el-input :model-value="assignTargetCode" disabled />
+        </el-form-item>
+        <el-form-item label="指派管家">
+          <el-select
+            v-model="assignButlerCode"
+            placeholder="请选择管家"
+            filterable
+            clearable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="b in butlerOptions"
+              :key="b.butlerCode"
+              :label="`${b.fullName}（${b.butlerCode}）`"
+              :value="b.butlerCode!"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="assignDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="actionLoading" @click="handleAssignSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>

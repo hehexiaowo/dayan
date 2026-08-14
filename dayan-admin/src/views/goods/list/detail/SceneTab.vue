@@ -12,7 +12,7 @@
  * - salesCount create 硬编码 0，UpdateDTO 无此字段，表单不展示。
  * - sceneCode 无跨模块选择器文档，暂用 el-input 兜底。
  */
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -21,12 +21,16 @@ import {
   updateScene,
   deleteScene
 } from '@/api/goods-sku'
+import { listScenes } from '@/api/scene'
+import { listParks } from '@/api/park'
 import {
   SKU_STATUS_OPTIONS,
   skuStatusLabel,
   skuStatusTagType
 } from '@/types/goods'
 import type { GoodsScene, GoodsSceneQuery } from '@/types/goods'
+import type { SceneInfo } from '@/types/scene'
+import type { ParkInfo } from '@/types/park'
 import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
@@ -51,6 +55,35 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   )
 
 loadPage()
+
+/** 场景/机构下拉选项 + 名称映射（后端 VO 不带名称，前端自行映射） */
+const sceneOptions = ref<SceneInfo[]>([])
+const parkOptions = ref<ParkInfo[]>([])
+const sceneNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const s of sceneOptions.value) {
+    if (s.sceneCode) map[s.sceneCode] = s.sceneName || s.sceneCode
+  }
+  return map
+})
+const parkNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const p of parkOptions.value) {
+    if (p.parkCode) map[p.parkCode] = p.fullName || p.shortName || p.parkCode
+  }
+  return map
+})
+async function loadOptions() {
+  try {
+    const [scenes, parks] = await Promise.all([listScenes(), listParks()])
+    sceneOptions.value = scenes
+    parkOptions.value = parks
+  } catch {
+    sceneOptions.value = []
+    parkOptions.value = []
+  }
+}
+onMounted(loadOptions)
 
 // ---------- 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -184,8 +217,12 @@ async function handleDeleteRow(row: GoodsScene) {
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="skuCode" label="规格编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="skuName" label="规格名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="sceneCode" label="场景编码" min-width="120" show-overflow-tooltip />
-      <el-table-column prop="parkCode" label="园区编码" min-width="120" show-overflow-tooltip />
+      <el-table-column label="场景" min-width="140" show-overflow-tooltip>
+        <template #default="{ row }">{{ sceneNameMap[row.sceneCode] || row.sceneCode || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="机构" min-width="140" show-overflow-tooltip>
+        <template #default="{ row }">{{ parkNameMap[row.parkCode] || row.parkCode || '-' }}</template>
+      </el-table-column>
       <el-table-column prop="skuPrice" label="SKU 价格" width="110" align="right" />
       <el-table-column prop="personLimit" label="人数上限" width="100" align="center" />
       <el-table-column prop="durationHours" label="时长(小时)" width="110" align="center" />
@@ -235,20 +272,33 @@ async function handleDeleteRow(row: GoodsScene) {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="场景编码" prop="sceneCode">
-              <!-- TODO: sceneCode 暂无跨模块选择器文档，先用 input 兜底 -->
-              <el-input
+            <el-form-item label="场景" prop="sceneCode">
+              <el-select
                 v-model="form.sceneCode"
-                placeholder="场景编码"
-                maxlength="50"
+                placeholder="选择场景"
+                filterable
                 :disabled="dialogMode === 'edit'"
-              />
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="s in sceneOptions"
+                  :key="s.sceneCode"
+                  :label="s.sceneName || s.sceneCode"
+                  :value="s.sceneCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="园区编码" prop="parkCode">
-              <!-- parkCode DDL NOT NULL，前端强制必填 -->
-              <el-input v-model="form.parkCode" placeholder="园区编码" maxlength="50" />
+            <el-form-item label="机构" prop="parkCode">
+              <el-select v-model="form.parkCode" placeholder="选择机构" filterable clearable style="width: 100%">
+                <el-option
+                  v-for="p in parkOptions"
+                  :key="p.parkCode"
+                  :label="p.fullName || p.shortName || p.parkCode"
+                  :value="p.parkCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

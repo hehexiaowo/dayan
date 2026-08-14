@@ -12,11 +12,13 @@ import com.dayan.organ.dto.OrganRoleGrantsDTO;
 import com.dayan.organ.dto.OrganRoleQueryDTO;
 import com.dayan.organ.dto.OrganRoleUpdateDTO;
 import com.dayan.organ.entity.OrganAccountRoleRel;
+import com.dayan.organ.entity.OrganInfo;
 import com.dayan.organ.entity.OrganPermission;
 import com.dayan.organ.entity.OrganRole;
 import com.dayan.organ.entity.OrganRoleMenuRel;
 import com.dayan.organ.entity.OrganRolePermissionShip;
 import com.dayan.organ.mapper.OrganAccountRoleRelMapper;
+import com.dayan.organ.mapper.OrganInfoMapper;
 import com.dayan.organ.mapper.OrganPermissionMapper;
 import com.dayan.organ.mapper.OrganRoleMapper;
 import com.dayan.organ.mapper.OrganRoleMenuRelMapper;
@@ -32,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +59,7 @@ public class OrganRoleServiceImpl implements OrganRoleService {
     private final OrganAccountRoleRelMapper accountRoleRelMapper;
     private final OrganRoleMenuRelMapper roleMenuRelMapper;
     private final OrganPermissionMapper permissionMapper;
+    private final OrganInfoMapper organInfoMapper;
     private final CodeGenerator codeGenerator;
 
     @Override
@@ -73,10 +78,31 @@ public class OrganRoleServiceImpl implements OrganRoleService {
                 query.getSize() == null ? 10L : query.getSize());
         IPage<OrganRole> result = roleMapper.selectPage(page, wrapper);
 
+        // 批量解析机构名，避免 N+1
+        Map<String, String> organNameMap = resolveOrganNames(result.getRecords());
+
         List<OrganRoleSimpleVO> records = result.getRecords().stream()
-                .map(this::toSimpleVO)
+                .map(r -> toSimpleVO(r, organNameMap))
                 .collect(Collectors.toList());
         return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), records);
+    }
+
+    /** 批量解析 organCode → 机构名（优先全称，回退简称）。 */
+    private Map<String, String> resolveOrganNames(List<OrganRole> roles) {
+        Set<String> organCodes = roles.stream()
+                .map(OrganRole::getOrganCode)
+                .filter(c -> c != null && !c.isEmpty())
+                .collect(Collectors.toSet());
+        if (organCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<OrganInfo> organs = organInfoMapper.selectList(new LambdaQueryWrapper<OrganInfo>()
+                .in(OrganInfo::getOrganCode, organCodes));
+        return organs.stream()
+                .collect(Collectors.toMap(OrganInfo::getOrganCode,
+                        o -> o.getFullName() != null && !o.getFullName().isEmpty()
+                                ? o.getFullName() : o.getShortName(),
+                        (x, y) -> x));
     }
 
     @Override
@@ -245,11 +271,12 @@ public class OrganRoleServiceImpl implements OrganRoleService {
         }
     }
 
-    private OrganRoleSimpleVO toSimpleVO(OrganRole role) {
+    private OrganRoleSimpleVO toSimpleVO(OrganRole role, Map<String, String> organNameMap) {
         OrganRoleSimpleVO vo = new OrganRoleSimpleVO();
         vo.setRoleCode(role.getRoleCode());
         vo.setRoleName(role.getRoleName());
         vo.setOrganCode(role.getOrganCode());
+        vo.setOrganName(organNameMap.get(role.getOrganCode()));
         vo.setRoleType(role.getRoleType());
         vo.setStatus(role.getStatus());
         vo.setSortOrder(role.getSortOrder());

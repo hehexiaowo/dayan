@@ -74,6 +74,12 @@ export interface Account {
   isAdmin?: number
   /** 备注 */
   remark?: string
+  /** 机构名称（列表 VO 解析回填，提交时不传） */
+  organName?: string
+  /** 已分配角色编码列表（详情 VO / 表单回显用） */
+  roleCodes?: string[]
+  /** 已分配角色名称列表（列表 VO 解析回填，仅展示） */
+  roleNames?: string[]
 }
 
 /** 账号分页查询参数 */

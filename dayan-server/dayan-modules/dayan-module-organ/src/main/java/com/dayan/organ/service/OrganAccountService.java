@@ -7,10 +7,26 @@ import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.security.password.PasswordService;
 import com.dayan.organ.entity.OrganAccount;
+import com.dayan.organ.entity.OrganAccountRoleRel;
+import com.dayan.organ.entity.OrganInfo;
+import com.dayan.organ.entity.OrganRole;
 import com.dayan.organ.mapper.OrganAccountMapper;
+import com.dayan.organ.mapper.OrganAccountRoleRelMapper;
+import com.dayan.organ.mapper.OrganInfoMapper;
+import com.dayan.organ.mapper.OrganRoleMapper;
+import com.dayan.organ.vo.OrganAccountVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 核心账号管理服务（Admin 端 organ_account CRUD + 重置密码 + 状态切换）。
@@ -24,9 +40,12 @@ public class OrganAccountService {
 
     private final OrganAccountMapper accountMapper;
     private final PasswordService passwordService;
+    private final OrganInfoMapper organInfoMapper;
+    private final OrganRoleMapper roleMapper;
+    private final OrganAccountRoleRelMapper accountRoleRelMapper;
 
-    public PageResult<OrganAccount> page(String organCode, String username, String realName,
-                                         Integer accountStatus, long current, long size) {
+    public PageResult<OrganAccountVO> page(String organCode, String username, String realName,
+                                           Integer accountStatus, long current, long size) {
         LambdaQueryWrapper<OrganAccount> wrapper = new LambdaQueryWrapper<OrganAccount>()
                 .orderByDesc(OrganAccount::getCreatedAt);
         // organCode 为空时不加过滤（超管可查看全部机构账号）
@@ -45,15 +64,29 @@ public class OrganAccountService {
             wrapper.eq(OrganAccount::getAccountStatus, accountStatus);
         }
         Page<OrganAccount> page = accountMapper.selectPage(new Page<>(current, size), wrapper);
-        // 脱敏密码（不返回）
-        page.getRecords().forEach(a -> a.setPassword(null));
-        return new PageResult<>(current, size, page.getTotal(), page.getRecords());
+        List<OrganAccount> accounts = page.getRecords();
+
+        // 批量解析机构名 + 角色，避免 N+1（VO 不含 password/salt，天然脱敏）
+        Map<String, String> organNameMap = resolveOrganNames(accounts);
+        Map<String, List<String>> accountRoles = resolveAccountRoleCodes(accounts);
+        Set<String> allRoleCodes = accountRoles.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<String, String> roleNameMap = resolveRoleNames(allRoleCodes);
+
+        List<OrganAccountVO> records = accounts.stream()
+                .map(a -> toVO(a, organNameMap, accountRoles, roleNameMap))
+                .toList();
+        return new PageResult<>(current, size, page.getTotal(), records);
     }
 
-    public OrganAccount getDetail(String accountCode) {
+    public OrganAccountVO getDetail(String accountCode) {
         OrganAccount account = selectByCode(accountCode);
-        account.setPassword(null);
-        return account;
+        Map<String, String> organNameMap = resolveOrganNames(List.of(account));
+        Map<String, List<String>> accountRoles = resolveAccountRoleCodes(List.of(account));
+        Map<String, String> roleNameMap = resolveRoleNames(
+                accountRoles.getOrDefault(accountCode, Collections.emptyList()));
+        return toVO(account, organNameMap, accountRoles, roleNameMap);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -132,6 +165,81 @@ public class OrganAccountService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "账号不存在: " + accountCode);
         }
         return account;
+    }
+
+    /** 批量解析 organCode → 机构名（优先全称，回退简称）。 */
+    private Map<String, String> resolveOrganNames(List<OrganAccount> accounts) {
+        Set<String> organCodes = accounts.stream()
+                .map(OrganAccount::getOrganCode)
+                .filter(c -> c != null && !c.isEmpty())
+                .collect(Collectors.toSet());
+        if (organCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<OrganInfo> organs = organInfoMapper.selectList(new LambdaQueryWrapper<OrganInfo>()
+                .in(OrganInfo::getOrganCode, organCodes));
+        return organs.stream()
+                .collect(Collectors.toMap(OrganInfo::getOrganCode,
+                        o -> o.getFullName() != null && !o.getFullName().isEmpty()
+                                ? o.getFullName() : o.getShortName(),
+                        (x, y) -> x));
+    }
+
+    /** 批量解析 accountCode → roleCode 列表。 */
+    private Map<String, List<String>> resolveAccountRoleCodes(List<OrganAccount> accounts) {
+        Set<String> accountCodes = accounts.stream()
+                .map(OrganAccount::getAccountCode)
+                .filter(c -> c != null && !c.isEmpty())
+                .collect(Collectors.toSet());
+        if (accountCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<OrganAccountRoleRel> rels = accountRoleRelMapper.selectList(
+                new LambdaQueryWrapper<OrganAccountRoleRel>()
+                        .in(OrganAccountRoleRel::getAccountCode, accountCodes));
+        return rels.stream()
+                .collect(Collectors.groupingBy(OrganAccountRoleRel::getAccountCode,
+                        Collectors.mapping(OrganAccountRoleRel::getRoleCode, Collectors.toList())));
+    }
+
+    /** 批量解析 roleCode → roleName。 */
+    private Map<String, String> resolveRoleNames(Collection<String> roleCodes) {
+        if (roleCodes == null || roleCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<OrganRole> roles = roleMapper.selectList(new LambdaQueryWrapper<OrganRole>()
+                .in(OrganRole::getRoleCode, roleCodes));
+        return roles.stream()
+                .collect(Collectors.toMap(OrganRole::getRoleCode, OrganRole::getRoleName, (x, y) -> x));
+    }
+
+    private OrganAccountVO toVO(OrganAccount a, Map<String, String> organNameMap,
+                                Map<String, List<String>> accountRoles, Map<String, String> roleNameMap) {
+        OrganAccountVO vo = new OrganAccountVO();
+        vo.setId(a.getId());
+        vo.setOrganCode(a.getOrganCode());
+        vo.setOrganName(organNameMap.get(a.getOrganCode()));
+        vo.setAccountCode(a.getAccountCode());
+        vo.setUsername(a.getUsername());
+        vo.setRealName(a.getRealName());
+        vo.setAvatar(a.getAvatar());
+        vo.setGender(a.getGender());
+        vo.setPhone(a.getPhone());
+        vo.setEmail(a.getEmail());
+        vo.setLastLoginTime(a.getLastLoginTime());
+        vo.setLastLoginIp(a.getLastLoginIp());
+        vo.setLoginCount(a.getLoginCount());
+        vo.setPwdUpdateTime(a.getPwdUpdateTime());
+        vo.setAccountStatus(a.getAccountStatus());
+        vo.setIsAdmin(a.getIsAdmin());
+        vo.setRemark(a.getRemark());
+        List<String> roleCodes = accountRoles.getOrDefault(a.getAccountCode(), Collections.emptyList());
+        vo.setRoleCodes(roleCodes);
+        vo.setRoleNames(roleCodes.stream()
+                .map(roleNameMap::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
+        return vo;
     }
 
     private String generateAccountCode() {

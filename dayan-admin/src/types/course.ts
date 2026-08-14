@@ -120,3 +120,102 @@ export interface CourseInfoQuery extends PageQuery {
   /** 是否推荐 */
   isRecommend?: number
 }
+
+// ==================== 课程讲师 ====================
+
+/**
+ * 课程讲师实体（后端 CourseLecturerVO）。独立资源，被 CourseInfo.lecturerCode 引用。
+ */
+export interface CourseLecturer {
+  id?: number
+  /** 讲师编码（LT 前缀，系统生成） */
+  lecturerCode?: string
+  lecturerName: string
+  /** 性别：1男 2女 0未知 */
+  gender?: number
+  avatar?: string
+  /** 职称/头衔 */
+  title?: string
+  organization?: string
+  specialty?: string
+  introduction?: string
+  certifications?: string
+  phone?: string
+  email?: string
+  courseCount?: number
+  studentCount?: number
+  ratingAvg?: number
+  /** 是否平台认证：0否 1是 */
+  isCertified?: number
+  sortOrder?: number
+  /** 状态：0禁用 1启用 */
+  status?: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface CourseLecturerQuery extends PageQuery {
+  lecturerCode?: string
+  lecturerName?: string
+  organization?: string
+  isCertified?: number
+  status?: number
+}
+
+// ==================== 学习记录 ====================
+
+/** 学习记录状态：0已退课 1学习中 2已完成 3已过期 */
+export enum LearnStatus {
+  REFUNDED = 0,
+  LEARNING = 1,
+  COMPLETED = 2,
+  EXPIRED = 3
+}
+
+export const LEARN_STATUS_OPTIONS = [
+  { label: '已退课', value: LearnStatus.REFUNDED },
+  { label: '学习中', value: LearnStatus.LEARNING },
+  { label: '已完成', value: LearnStatus.COMPLETED },
+  { label: '已过期', value: LearnStatus.EXPIRED }
+] as const
+
+/**
+ * 学习记录实体（后端 CourseRecordLearnVO，雪花 id）。按 courseCode 关联。
+ */
+export interface CourseRecordLearn {
+  id?: number
+  courseCode: string
+  clientCode?: string
+  agentCode?: string
+  learnerName: string
+  learnerPhone?: string
+  enrollTime?: string
+  orderCode?: string
+  currentLesson?: number
+  totalLesson: number
+  /** 学习进度（%） */
+  learnProgress?: number
+  /** 累计学习时长（分钟） */
+  totalLearnTime?: number
+  lastLearnTime?: string
+  /** 是否完成：0否 1是 */
+  isCompleted?: number
+  completeTime?: string
+  certificateUrl?: string
+  /** 课程评分 1-5 */
+  rating?: number
+  ratingContent?: string
+  status?: LearnStatus
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface CourseRecordLearnQuery extends PageQuery {
+  courseCode?: string
+  clientCode?: string
+  agentCode?: string
+  learnerName?: string
+  learnerPhone?: string
+  isCompleted?: number
+  status?: LearnStatus
+}

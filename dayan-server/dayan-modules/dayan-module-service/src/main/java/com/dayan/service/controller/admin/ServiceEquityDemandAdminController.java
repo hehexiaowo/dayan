@@ -3,6 +3,7 @@ package com.dayan.service.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.service.dto.ServiceEquityDemandCreateDTO;
 import com.dayan.service.dto.ServiceEquityDemandQueryDTO;
 import com.dayan.service.dto.ServiceEquityDemandUpdateDTO;
@@ -51,6 +52,7 @@ public class ServiceEquityDemandAdminController {
     }
 
     @Operation(summary = "新增需求")
+    @OperationLog(module = "权益需求", action = "新增")
     @SaCheckPermission("service:equity-demand:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceEquityDemandCreateDTO dto) {
@@ -58,6 +60,7 @@ public class ServiceEquityDemandAdminController {
     }
 
     @Operation(summary = "修改需求")
+    @OperationLog(module = "权益需求", action = "修改")
     @SaCheckPermission("service:equity-demand:update")
     @PutMapping("/{demandCode}")
     public R<Void> update(@PathVariable String demandCode,
@@ -67,6 +70,7 @@ public class ServiceEquityDemandAdminController {
     }
 
     @Operation(summary = "删除需求")
+    @OperationLog(module = "权益需求", action = "删除")
     @SaCheckPermission("service:equity-demand:delete")
     @DeleteMapping("/{demandCode}")
     public R<Void> delete(@PathVariable String demandCode) {

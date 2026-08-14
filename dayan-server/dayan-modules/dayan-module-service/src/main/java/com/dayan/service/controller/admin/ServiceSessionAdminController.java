@@ -3,6 +3,7 @@ package com.dayan.service.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.service.dto.AssignButlerDTO;
 import com.dayan.service.dto.CancelSessionDTO;
 import com.dayan.service.dto.ServiceSessionCreateDTO;
@@ -59,6 +60,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "创建会话（初始状态=待分配）")
+    @OperationLog(module = "服务会话", action = "新增")
     @SaCheckPermission("service:session:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceSessionCreateDTO dto) {
@@ -66,6 +68,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "修改会话（普通字段）")
+    @OperationLog(module = "服务会话", action = "修改")
     @SaCheckPermission("service:session:update")
     @PutMapping("/{sessionCode}")
     public R<Void> update(@PathVariable String sessionCode,
@@ -75,6 +78,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "删除会话")
+    @OperationLog(module = "服务会话", action = "删除")
     @SaCheckPermission("service:session:delete")
     @DeleteMapping("/{sessionCode}")
     public R<Void> delete(@PathVariable String sessionCode) {
@@ -85,6 +89,7 @@ public class ServiceSessionAdminController {
     // ====== 状态机业务动作 ======
 
     @Operation(summary = "分配管家（assign_butler: 1→2）")
+    @OperationLog(module = "服务会话", action = "分配管家")
     @SaCheckPermission("service:session:assign-butler")
     @PostMapping("/assign-butler")
     public R<Void> assignButler(@RequestBody @Valid AssignButlerDTO dto) {
@@ -93,6 +98,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "提交需求（submit_demand: 2→3）")
+    @OperationLog(module = "服务会话", action = "提交需求")
     @SaCheckPermission("service:session:submit-demand")
     @PostMapping("/submit-demand")
     public R<Void> submitDemand(@RequestParam String sessionCode) {
@@ -101,6 +107,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "确认方案（confirm_solution: 3→4，校验已接受方案）")
+    @OperationLog(module = "服务会话", action = "确认方案")
     @SaCheckPermission("service:session:confirm-solution")
     @PostMapping("/confirm-solution")
     public R<Void> confirmSolution(@RequestParam String sessionCode) {
@@ -109,6 +116,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "驳回方案（reject_solution: 3→2，方案 adjustCount+1）")
+    @OperationLog(module = "服务会话", action = "驳回方案")
     @SaCheckPermission("service:session:reject-solution")
     @PostMapping("/reject-solution")
     public R<Void> rejectSolution(@RequestParam String sessionCode) {
@@ -117,6 +125,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "开始服务（start_service: 4→5，校验已确认安排）")
+    @OperationLog(module = "服务会话", action = "开始服务")
     @SaCheckPermission("service:session:start-service")
     @PostMapping("/start-service")
     public R<Void> startService(@RequestParam String sessionCode) {
@@ -125,6 +134,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "完成服务（finish: 5→6）")
+    @OperationLog(module = "服务会话", action = "完成服务")
     @SaCheckPermission("service:session:finish")
     @PostMapping("/finish")
     public R<Void> finish(@RequestParam String sessionCode) {
@@ -133,6 +143,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "取消会话（cancel: 1/2/5→7）")
+    @OperationLog(module = "服务会话", action = "取消会话")
     @SaCheckPermission("service:session:cancel")
     @PostMapping("/cancel")
     public R<Void> cancel(@RequestBody @Valid CancelSessionDTO dto) {
@@ -141,6 +152,7 @@ public class ServiceSessionAdminController {
     }
 
     @Operation(summary = "通用状态机流转（传 sessionCode + event）")
+    @OperationLog(module = "服务会话", action = "状态流转")
     @SaCheckPermission("service:session:transition")
     @PostMapping("/transition")
     public R<Integer> transition(@RequestBody @Valid TransitionDTO dto) {
@@ -150,6 +162,7 @@ public class ServiceSessionAdminController {
     // ====== 子状态管理（独立于状态机） ======
 
     @Operation(summary = "更新子状态（终态且 refund_done 时拒绝）")
+    @OperationLog(module = "服务会话", action = "更新子状态")
     @SaCheckPermission("service:session:sub-status")
     @PostMapping("/sub-status")
     public R<Void> updateSubStatus(@RequestBody @Valid SubStatusUpdateDTO dto) {

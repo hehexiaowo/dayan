@@ -2,6 +2,7 @@ package com.dayan.finance.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.finance.dto.CreateReconciliationDTO;
 import com.dayan.finance.dto.FinanceReconciliationQueryDTO;
 import com.dayan.finance.dto.ReconciliationConfirmDTO;
@@ -52,6 +53,7 @@ public class FinanceReconciliationAdminController {
     }
 
     @Operation(summary = "创建对账记录")
+    @OperationLog(module = "财务对账", action = "新增")
     @SaCheckPermission("finance:reconciliation:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid CreateReconciliationDTO dto) {
@@ -59,6 +61,7 @@ public class FinanceReconciliationAdminController {
     }
 
     @Operation(summary = "完成对账（0→1，无差异）")
+    @OperationLog(module = "财务对账", action = "完成对账")
     @SaCheckPermission("finance:reconciliation:complete")
     @PostMapping("/complete/{reconCode}")
     public R<Void> complete(@PathVariable String reconCode) {
@@ -67,6 +70,7 @@ public class FinanceReconciliationAdminController {
     }
 
     @Operation(summary = "提交差异（0→2 待确认）")
+    @OperationLog(module = "财务对账", action = "提交差异")
     @SaCheckPermission("finance:reconciliation:submit-diff")
     @PostMapping("/submit-diff")
     public R<Void> submitDiff(@RequestBody @Valid ReconciliationSubmitDiffDTO dto) {
@@ -75,6 +79,7 @@ public class FinanceReconciliationAdminController {
     }
 
     @Operation(summary = "确认对账（2→3 已确认）")
+    @OperationLog(module = "财务对账", action = "确认")
     @SaCheckPermission("finance:reconciliation:confirm")
     @PostMapping("/confirm")
     public R<Void> confirm(@RequestBody @Valid ReconciliationConfirmDTO dto) {

@@ -12,9 +12,15 @@
  * - shareChannel 5 态（1微信 2朋友圈 3复制链接 4二维码 5短信）。
  * - bizCode/clientCode 无统一选择器，用 input 兜底 + TODO。
  */
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { listAgentShareRecordsByAgent, createAgentShareRecord } from '@/api/agent'
+import { listContents } from '@/api/content'
+import { listScenes } from '@/api/scene'
+import { listAllOrgans } from '@/api/organ'
+import { listBatches } from '@/api/equity'
+import { listCourses } from '@/api/course'
+import { pageClients } from '@/api/client'
 import {
   SHARE_TYPE_OPTIONS,
   SHARE_CHANNEL_OPTIONS,
@@ -22,6 +28,7 @@ import {
   shareChannelLabel
 } from '@/types/agent'
 import type { AgentShareRecord } from '@/types/agent'
+import type { ClientInfo } from '@/types/client'
 import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
@@ -80,6 +87,55 @@ function openCreate() {
   form.agentCode = props.agentCode
   dialogVisible.value = true
 }
+
+/** 业务对象下拉（按 shareType 动态切换：1内容 2场景 3机构 4权益 5课程） */
+interface BizOption {
+  code: string
+  name: string
+}
+const bizOptions = ref<BizOption[]>([])
+async function loadBizOptions(shareType?: number) {
+  if (!shareType) {
+    bizOptions.value = []
+    return
+  }
+  try {
+    let opts: BizOption[] = []
+    if (shareType === 1) {
+      opts = (await listContents()).map((c) => ({ code: c.contentCode!, name: c.title || c.contentCode! }))
+    } else if (shareType === 2) {
+      opts = (await listScenes()).map((s) => ({ code: s.sceneCode!, name: s.sceneName || s.sceneCode! }))
+    } else if (shareType === 3) {
+      opts = (await listAllOrgans()).map((o) => ({ code: o.organCode, name: o.fullName || o.shortName || o.organCode }))
+    } else if (shareType === 4) {
+      opts = (await listBatches()).map((b) => ({ code: b.batchCode!, name: b.batchName || b.batchCode! }))
+    } else if (shareType === 5) {
+      opts = (await listCourses()).map((c) => ({ code: c.courseCode!, name: c.courseName || c.courseCode! }))
+    }
+    bizOptions.value = opts
+  } catch {
+    bizOptions.value = []
+  }
+}
+watch(
+  () => form.shareType,
+  (t) => {
+    form.bizCode = ''
+    loadBizOptions(t)
+  }
+)
+
+/** 客户下拉 */
+const clientOptions = ref<ClientInfo[]>([])
+async function loadClients() {
+  try {
+    const res = await pageClients({ current: 1, size: 1000 })
+    clientOptions.value = res.records
+  } catch {
+    clientOptions.value = []
+  }
+}
+loadClients()
 
 async function handleSubmit() {
   if (!formRef.value) return
@@ -163,15 +219,27 @@ defineExpose({ loadList })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="业务编码">
-              <!-- TODO: 按 shareType 接对应业务选择器（内容/场景/机构/权益/课程），暂用 input 兜底 -->
-              <el-input v-model="form.bizCode" placeholder="关联业务编码" maxlength="64" />
+            <el-form-item label="业务对象">
+              <el-select
+                v-model="form.bizCode"
+                :placeholder="form.shareType ? '选择业务对象' : '请先选择分享类型'"
+                filterable
+                style="width: 100%"
+              >
+                <el-option v-for="o in bizOptions" :key="o.code" :label="o.name" :value="o.code" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="客户编码">
-              <!-- TODO: 接入客户选择器，暂用 input 兜底 -->
-              <el-input v-model="form.clientCode" placeholder="客户编码（可选）" maxlength="64" />
+            <el-form-item label="客户">
+              <el-select v-model="form.clientCode" placeholder="选择客户（可选）" filterable clearable style="width: 100%">
+                <el-option
+                  v-for="c in clientOptions"
+                  :key="c.clientCode"
+                  :label="c.clientName || c.clientCode"
+                  :value="c.clientCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>

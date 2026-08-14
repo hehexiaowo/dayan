@@ -78,6 +78,23 @@ public class SupplierInfoServiceImpl implements SupplierInfoService {
     }
 
     @Override
+    public List<SupplierInfoVO> list(SupplierInfoQueryDTO query) {
+        LambdaQueryWrapper<SupplierInfo> wrapper = new LambdaQueryWrapper<SupplierInfo>()
+                .eq(query.getSupplierCode() != null && !query.getSupplierCode().isEmpty(),
+                        SupplierInfo::getSupplierCode, query.getSupplierCode())
+                .like(query.getFullName() != null && !query.getFullName().isEmpty(),
+                        SupplierInfo::getFullName, query.getFullName())
+                .like(query.getShortName() != null && !query.getShortName().isEmpty(),
+                        SupplierInfo::getShortName, query.getShortName())
+                .eq(query.getSupplierType() != null,
+                        SupplierInfo::getSupplierType, query.getSupplierType())
+                .eq(query.getStatus() != null, SupplierInfo::getStatus, query.getStatus())
+                .eq(query.getAuditStatus() != null, SupplierInfo::getAuditStatus, query.getAuditStatus())
+                .orderByDesc(SupplierInfo::getCreatedAt);
+        return supplierInfoMapper.selectList(wrapper).stream().map(this::toVO).toList();
+    }
+
+    @Override
     public SupplierInfoVO getDetail(String supplierCode) {
         return toVO(requireSupplier(supplierCode));
     }

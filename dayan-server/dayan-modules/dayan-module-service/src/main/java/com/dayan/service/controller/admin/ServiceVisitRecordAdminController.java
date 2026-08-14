@@ -3,6 +3,7 @@ package com.dayan.service.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.service.dto.ServiceVisitRecordCreateDTO;
 import com.dayan.service.dto.ServiceVisitRecordQueryDTO;
 import com.dayan.service.dto.ServiceVisitRecordUpdateDTO;
@@ -52,6 +53,7 @@ public class ServiceVisitRecordAdminController {
     }
 
     @Operation(summary = "新增探访记录")
+    @OperationLog(module = "拜访记录", action = "新增")
     @SaCheckPermission("service:visit-record:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid ServiceVisitRecordCreateDTO dto) {
@@ -59,6 +61,7 @@ public class ServiceVisitRecordAdminController {
     }
 
     @Operation(summary = "修改探访记录")
+    @OperationLog(module = "拜访记录", action = "修改")
     @SaCheckPermission("service:visit-record:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
@@ -68,6 +71,7 @@ public class ServiceVisitRecordAdminController {
     }
 
     @Operation(summary = "删除探访记录")
+    @OperationLog(module = "拜访记录", action = "删除")
     @SaCheckPermission("service:visit-record:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

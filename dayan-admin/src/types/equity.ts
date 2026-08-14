@@ -299,3 +299,212 @@ export interface EquityDepotQuery extends PageQuery {
   carrierType?: CarrierType
   equityStatus?: EquityStatus
 }
+
+// ---------------- 激活渠道 ----------------
+
+/**
+ * 权益激活渠道：对齐后端 EquityActivateVO.activateChannel。
+ * 1=APP / 2=小程序 / 3=H5 / 4=管家代激活 / 5=代理人代激活。
+ */
+export enum ActivateChannel {
+  /** APP */
+  APP = 1,
+  /** 小程序 */
+  MINI_PROGRAM = 2,
+  /** H5 */
+  H5 = 3,
+  /** 管家代激活 */
+  MANAGER = 4,
+  /** 代理人代激活 */
+  AGENT = 5
+}
+
+/** 激活渠道选项 */
+export const ACTIVATE_CHANNEL_OPTIONS = [
+  { label: 'APP', value: ActivateChannel.APP },
+  { label: '小程序', value: ActivateChannel.MINI_PROGRAM },
+  { label: 'H5', value: ActivateChannel.H5 },
+  { label: '管家代激活', value: ActivateChannel.MANAGER },
+  { label: '代理人代激活', value: ActivateChannel.AGENT }
+] as const
+
+// ---------------- 换持有人状态 ----------------
+
+/**
+ * 换持有人状态：对齐后端 EquityChangeHolderVO.changeStatus。
+ * 0=待处理 / 1=已完成 / 2=已回滚。
+ */
+export enum ChangeHolderStatus {
+  /** 待处理 */
+  PENDING = 0,
+  /** 已完成 */
+  DONE = 1,
+  /** 已回滚 */
+  ROLLED_BACK = 2
+}
+
+/** 换持有人状态选项 */
+export const CHANGE_HOLDER_STATUS_OPTIONS = [
+  { label: '待处理', value: ChangeHolderStatus.PENDING },
+  { label: '已完成', value: ChangeHolderStatus.DONE },
+  { label: '已回滚', value: ChangeHolderStatus.ROLLED_BACK }
+] as const
+
+// ---------------- 权益激活记录 ----------------
+
+/**
+ * 权益激活记录实体（后端 EquityActivateVO，雪花ID）。
+ *
+ * 记录由 depot 激活生命周期自动产生，管理端仅查询。
+ */
+export interface EquityActivate {
+  id?: number
+  /** 激活码 */
+  activateCode?: string
+  /** 权益编码 */
+  equityCode?: string
+  /** 商品编码 */
+  goodsCode?: string
+  /** 客户编码 */
+  clientCode?: string
+  /** 客户全名 */
+  clientFullName?: string
+  /** 客户手机号 */
+  clientPhone?: string
+  /** 激活渠道：1=APP / 2=小程序 / 3=H5 / 4=管家代激活 / 5=代理人代激活 */
+  activateChannel?: ActivateChannel
+  /** 激活来源编码 */
+  activateSourceCode?: string
+  /** 激活时间（yyyy-MM-dd HH:mm:ss） */
+  activateTime?: string
+  /** 过期时间（yyyy-MM-dd HH:mm:ss） */
+  expireTime?: string
+  /** 是否已实名核验：1=是 / 0=否 */
+  isIdCardVerified?: number
+  /** 是否已签署协议：1=是 / 0=否 */
+  isAgreementSigned?: number
+  /** IP 地址 */
+  ipAddress?: string
+  /** 设备信息 */
+  deviceInfo?: string
+  /** 备注 */
+  remark?: string
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/**
+ * 权益激活记录分页查询参数（后端 EquityActivateQueryDTO）。
+ */
+export interface EquityActivateQuery extends PageQuery {
+  activateCode?: string
+  equityCode?: string
+  goodsCode?: string
+  clientCode?: string
+  activateChannel?: ActivateChannel
+}
+
+// ---------------- 权益更换权益人记录 ----------------
+
+/**
+ * 权益更换权益人记录实体（后端 EquityChangeHolderVO，雪花ID）。
+ *
+ * 记录由 depot 换持有人生命周期自动产生，管理端仅查询。
+ * oldPersonIdCard / newPersonIdCard 在管理端按需返回解密后明文。
+ */
+export interface EquityChangeHolder {
+  id?: number
+  /** 权益编码 */
+  equityCode?: string
+  /** 原使用人编码 */
+  oldUsePersonCode?: string
+  /** 原权益人姓名 */
+  oldPersonName?: string
+  /** 原权益人身份证号（明文） */
+  oldPersonIdCard?: string
+  /** 新使用人编码 */
+  newUsePersonCode?: string
+  /** 新权益人姓名 */
+  newPersonName?: string
+  /** 新权益人身份证号（明文） */
+  newPersonIdCard?: string
+  /** 更换原因 */
+  changeReason?: string
+  /** 更换状态：0=待处理 / 1=已完成 / 2=已回滚 */
+  changeStatus?: ChangeHolderStatus
+  /** 操作时间（yyyy-MM-dd HH:mm:ss） */
+  operateTime?: string
+  /** 操作人编码 */
+  operatorCode?: string
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/**
+ * 权益更换权益人记录分页查询参数（后端 EquityChangeHolderQueryDTO）。
+ */
+export interface EquityChangeHolderQuery extends PageQuery {
+  equityCode?: string
+  changeStatus?: ChangeHolderStatus
+  operatorCode?: string
+}
+
+// ---------------- 权益使用人 ----------------
+
+/**
+ * 权益使用人实体（后端 EquityUsePersonVO，雪花ID）。
+ *
+ * id 序列化为字符串（雪花ID超 JS 安全整数，前端按 string 处理避免精度丢失）。
+ * usePersonIdCard 在管理端返回解密后明文。
+ * usePersonGender 复用 @/types/client 的 Gender（0未知 1男 2女）。
+ */
+export interface EquityUsePerson {
+  /** 主键（雪花ID，后端序列化为字符串，前端按 string 处理） */
+  id?: string
+  /** 权益编码 */
+  equityCode?: string
+  /** 权益持有人编码 */
+  clientCode?: string
+  /** 使用人姓名 */
+  usePersonName?: string
+  /** 使用人性别：0未知 1男 2女（复用 Gender） */
+  usePersonGender?: number
+  /** 使用人出生日期（yyyy-MM-dd） */
+  usePersonBirthday?: string
+  /** 使用人年龄 */
+  usePersonAge?: number
+  /** 使用人手机号 */
+  usePersonPhone?: string
+  /** 使用人身份证号（明文） */
+  usePersonIdCard?: string
+  /** 与持有人关系 */
+  relationWithHolder?: string
+  /** 健康状况简述 */
+  healthStatus?: string
+  /** 照护需求简述 */
+  careNeed?: string
+  /** 是否默认权益人：1=是 / 0=否 */
+  isDefaultHolder?: number
+  /** 备注 */
+  remark?: string
+  /** 创建时间 */
+  createdAt?: string
+}
+
+/**
+ * 权益使用人分页查询参数（后端 EquityUsePersonQueryDTO）。
+ */
+export interface EquityUsePersonQuery extends PageQuery {
+  equityCode?: string
+  clientCode?: string
+  usePersonName?: string
+  isDefaultHolder?: number
+}
+
+/** 设置默认权益人入参（后端 SetDefaultHolderDTO）。 */
+export interface SetDefaultHolderPayload {
+  /** 使用人 id */
+  id: string
+  /** 权益编码 */
+  equityCode: string
+}

@@ -18,6 +18,19 @@ export function pageContents(query: ContentInfoQuery): Promise<PageResult<Conten
   })
 }
 
+/**
+ * 内容全量列表（下拉/关联用）：GET /admin-api/content/info/list
+ * 注意：后端 list 返回 PageResult（内部 size=1000），前端拆出 records 返回数组。
+ */
+export async function listContents(query?: Partial<ContentInfoQuery>): Promise<ContentInfo[]> {
+  const res = await request<PageResult<ContentInfo>>({
+    url: '/admin-api/content/info/list',
+    method: 'get',
+    params: query
+  })
+  return res.records
+}
+
 /** 内容详情：GET /admin-api/content/info/{contentCode} */
 export function getContent(contentCode: string): Promise<ContentInfo> {
   return request<ContentInfo>({

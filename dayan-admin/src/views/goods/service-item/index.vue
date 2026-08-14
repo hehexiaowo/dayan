@@ -219,7 +219,7 @@ loadPage()
         <el-table-column prop="validDays" label="有效天数" width="90" />
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
+            <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ COMMON_STATUS_OPTIONS.find((o) => o.value === row.status)?.label ?? row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="140" fixed="right">

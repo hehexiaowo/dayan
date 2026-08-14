@@ -39,10 +39,10 @@ export interface SystemDictCommon {
 }
 
 /**
- * 字典类型预设列表。
+ * 字典类型预设（fallback）。
  *
- * 后端没有提供「字典类型列表」接口（字典 controller 仅按类型查询项），
- * 此处硬编码常见类型供字典页左侧选择。
+ * 运行时以 listDictTypes() 接口返回为准（动态加载真实存在的类型）；
+ * 此处仅作接口不可用时的兜底，避免左侧菜单空白。
  */
 export const DICT_TYPE_OPTIONS = [
   { label: '权益状态', value: 'equity_status' },
@@ -54,3 +54,32 @@ export const DICT_TYPE_OPTIONS = [
   { label: '角色类型', value: 'role_type' },
   { label: '菜单类型', value: 'menu_type' }
 ] as const
+
+/**
+ * 业务字典项（后端 SystemDictBusiness 实体，表 system_dict_business）。
+ * 按 domain（业务域）组织，区别于通用字典 SystemDictCommon。
+ */
+export interface SystemDictBusiness {
+  id?: number
+  dictType: string
+  dictCode: string
+  dictName: string
+  dictValue: string
+  parentCode?: string
+  /** 所属业务域（如 park/scene/order） */
+  domain?: string
+  sortOrder?: number
+  /** 状态：1启用 0禁用 */
+  status?: number
+  remark?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** 业务字典分页查询参数 */
+export interface SystemDictBusinessQuery {
+  dictType?: string
+  domain?: string
+  current: number
+  size: number
+}

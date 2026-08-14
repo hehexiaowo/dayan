@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -13,12 +14,14 @@ import {
   publishContent,
   offlineContent
 } from '@/api/content'
-import type { ContentInfo, ContentInfoQuery } from '@/types/content'
+import { listContentCategories } from '@/api/content-sub'
+import type { ContentInfo, ContentInfoQuery, ContentCategory } from '@/types/content'
 import {
   ContentType,
   ContentStatus,
   CONTENT_TYPE_OPTIONS,
   CONTENT_STATUS_OPTIONS,
+  AUDIT_STATUS_OPTIONS,
   SOURCE_TYPE_OPTIONS
 } from '@/types/content'
 import FileUploader from '@/components/FileUploader/index.vue'
@@ -45,10 +48,37 @@ const {
     initialQuery: {
       title: '',
       contentType: undefined,
-      contentStatus: undefined
+      contentStatus: undefined,
+      categoryCode: ''
     }
   }
 )
+
+const router = useRouter()
+
+/** 分类下拉选项 + 名称映射（后端 VO 不带 categoryName，前端自行映射） */
+const categoryOptions = ref<ContentCategory[]>([])
+const categoryNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const c of categoryOptions.value) {
+    if (c.categoryCode) map[c.categoryCode] = c.categoryName
+  }
+  return map
+})
+
+async function loadCategories() {
+  try {
+    categoryOptions.value = await listContentCategories()
+  } catch {
+    categoryOptions.value = []
+  }
+}
+
+/** 跳转内容详情 */
+function openDetail(row: ContentInfo) {
+  if (!row.contentCode) return
+  router.push({ name: 'ContentDetail', params: { contentCode: row.contentCode } })
+}
 
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -187,6 +217,7 @@ function handleReset() {
   query.title = ''
   query.contentType = undefined
   query.contentStatus = undefined
+  query.categoryCode = ''
   handleSearch()
 }
 
@@ -307,7 +338,10 @@ function contentStatusTagType(status?: number): 'success' | 'warning' | 'danger'
 }
 
 // 初始化加载
-loadPage()
+onMounted(() => {
+  loadCategories()
+  loadPage()
+})
 </script>
 
 <template>
@@ -326,6 +360,16 @@ loadPage()
         <el-form-item label="内容状态">
           <el-select v-model="query.contentStatus" placeholder="全部" clearable style="width: 140px">
             <el-option v-for="o in CONTENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="query.categoryCode" placeholder="全部分类" clearable filterable style="width: 180px">
+            <el-option
+              v-for="c in categoryOptions"
+              :key="c.categoryCode"
+              :label="c.categoryName"
+              :value="c.categoryCode!"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -352,6 +396,9 @@ loadPage()
             <el-tag type="info">{{ contentTypeLabel(row.contentType) }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="分类" min-width="120" show-overflow-tooltip>
+          <template #default="{ row }">{{ categoryNameMap[row.categoryCode] || row.categoryCode || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="authorName" label="作者" min-width="120" show-overflow-tooltip />
         <el-table-column prop="viewCount" label="浏览量" width="90" align="center" />
         <el-table-column prop="contentStatus" label="状态" width="110" align="center">
@@ -362,8 +409,9 @@ loadPage()
           </template>
         </el-table-column>
         <el-table-column prop="publishTime" label="发布时间" min-width="160" show-overflow-tooltip />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button
               v-if="row.contentStatus === ContentStatus.DRAFT"
@@ -454,8 +502,15 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="分类编码">
-              <el-input v-model="form.categoryCode" placeholder="分类编码" maxlength="50" />
+            <el-form-item label="分类">
+              <el-select v-model="form.categoryCode" placeholder="选择分类" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="c in categoryOptions"
+                  :key="c.categoryCode"
+                  :label="c.categoryName"
+                  :value="c.categoryCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -529,8 +584,9 @@ loadPage()
         </el-form-item>
         <el-form-item label="审核结果">
           <el-radio-group v-model="auditForm.auditStatus">
-            <el-radio :value="2">通过</el-radio>
-            <el-radio :value="3">驳回</el-radio>
+            <el-radio v-for="o in AUDIT_STATUS_OPTIONS" :key="o.value" :value="o.value">
+              {{ o.label }}
+            </el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="审核备注">

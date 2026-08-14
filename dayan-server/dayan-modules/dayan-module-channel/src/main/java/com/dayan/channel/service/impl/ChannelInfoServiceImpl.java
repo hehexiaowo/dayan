@@ -1,6 +1,7 @@
 package com.dayan.channel.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.dayan.channel.dto.ChannelAuditDTO;
 import com.dayan.channel.dto.ChannelInfoCreateDTO;
 import com.dayan.channel.dto.ChannelInfoQueryDTO;
 import com.dayan.channel.dto.ChannelInfoUpdateDTO;
@@ -254,6 +255,22 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         channelInfoMapper.delete(new LambdaQueryWrapper<ChannelInfo>()
                 .eq(ChannelInfo::getChannelCode, channelCode));
         log.info("删除渠道成功: channelCode={}", channelCode);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void audit(ChannelAuditDTO dto) {
+        ChannelInfo existing = requireChannel(dto.getChannelCode());
+        Integer auditStatus = dto.getAuditStatus();
+        // 业务校验：auditStatus 仅允许 1=通过 / 2=驳回
+        if (auditStatus == null || (auditStatus != 1 && auditStatus != 2)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "审核状态非法（仅支持 1=通过 / 2=驳回）");
+        }
+        ChannelInfo update = new ChannelInfo();
+        update.setId(existing.getId());
+        update.setAuditStatus(auditStatus);
+        channelInfoMapper.updateById(update);
+        log.info("渠道审核完成: channelCode={}, auditStatus={}", dto.getChannelCode(), auditStatus);
     }
 
     // ====== 内部方法 ======

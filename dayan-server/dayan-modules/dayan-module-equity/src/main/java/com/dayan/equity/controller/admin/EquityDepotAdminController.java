@@ -2,6 +2,7 @@ package com.dayan.equity.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.equity.dto.ActivateDTO;
 import com.dayan.equity.dto.ChangeDoneDTO;
 import com.dayan.equity.dto.ChangeHolderDTO;
@@ -59,6 +60,7 @@ public class EquityDepotAdminController {
     }
 
     @Operation(summary = "批量入库（生成 N 张权益）")
+    @OperationLog(module = "权益库存", action = "入库")
     @SaCheckPermission("equity:depot:stock-in")
     @PostMapping("/stock-in")
     public R<Integer> stockIn(@RequestBody @Valid StockInDTO dto) {
@@ -66,6 +68,7 @@ public class EquityDepotAdminController {
     }
 
     @Operation(summary = "出库（批量 0→1）")
+    @OperationLog(module = "权益库存", action = "出库")
     @SaCheckPermission("equity:depot:outbound")
     @PostMapping("/outbound")
     public R<Integer> outbound(@RequestBody @Valid OutboundDTO dto) {
@@ -73,6 +76,7 @@ public class EquityDepotAdminController {
     }
 
     @Operation(summary = "激活（1→2 + 写激活记录 + 自动建默认使用人）")
+    @OperationLog(module = "权益库存", action = "激活")
     @SaCheckPermission("equity:depot:activate")
     @PostMapping("/activate")
     public R<String> activate(@RequestBody @Valid ActivateDTO dto) {
@@ -80,6 +84,7 @@ public class EquityDepotAdminController {
     }
 
     @Operation(summary = "作废（0/1→6）")
+    @OperationLog(module = "权益库存", action = "作废")
     @SaCheckPermission("equity:depot:void")
     @PostMapping("/void")
     public R<Void> voidEquity(@RequestBody @Valid VoidDTO dto) {
@@ -88,6 +93,7 @@ public class EquityDepotAdminController {
     }
 
     @Operation(summary = "发起更换权益人（2→7）")
+    @OperationLog(module = "权益库存", action = "变更持有人")
     @SaCheckPermission("equity:depot:change-holder")
     @PostMapping("/change-holder")
     public R<Long> changeHolder(@RequestBody @Valid ChangeHolderDTO dto) {
@@ -95,6 +101,7 @@ public class EquityDepotAdminController {
     }
 
     @Operation(summary = "完成更换权益人（7→2 + 切换默认使用人）")
+    @OperationLog(module = "权益库存", action = "完成变更持有人")
     @SaCheckPermission("equity:depot:change-done")
     @PostMapping("/change-done")
     public R<Void> changeDone(@RequestBody @Valid ChangeDoneDTO dto) {
@@ -103,6 +110,7 @@ public class EquityDepotAdminController {
     }
 
     @Operation(summary = "回滚更换权益人（7→2 + change_status=2）")
+    @OperationLog(module = "权益库存", action = "回滚变更持有人")
     @SaCheckPermission("equity:depot:change-rollback")
     @PostMapping("/change-rollback")
     public R<Void> changeRollback(@RequestBody @Valid ChangeRollbackDTO dto) {
@@ -111,6 +119,7 @@ public class EquityDepotAdminController {
     }
 
     @Operation(summary = "权益状态流转（start_service/end_service/complete/shelf_expire/expire 等）")
+    @OperationLog(module = "权益库存", action = "状态流转")
     @SaCheckPermission("equity:depot:transition")
     @PostMapping("/transition")
     public R<Integer> transition(@RequestParam @NotBlank String equityCode,

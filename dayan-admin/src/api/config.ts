@@ -8,13 +8,14 @@ import type { SystemConfig, ConfigQuery } from '@/types/config'
  * 对应后端 SystemConfigAdminController（/admin-api/configs/*），完整 CRUD。
  */
 
-/** 分页查询配置：GET /admin-api/configs?configGroup&current&size */
+/** 分页查询配置：GET /admin-api/configs?configGroup&configKey&current&size */
 export function pageConfigs(query: ConfigQuery): Promise<PageResult<SystemConfig>> {
   return request<PageResult<SystemConfig>>({
     url: '/admin-api/configs',
     method: 'get',
     params: {
       configGroup: query.configGroup || undefined,
+      configKey: query.configKey || undefined,
       current: query.current,
       size: query.size
     }

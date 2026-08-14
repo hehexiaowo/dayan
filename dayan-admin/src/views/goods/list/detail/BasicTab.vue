@@ -380,4 +380,10 @@ defineExpose({ loadDetail })
 .basic-toolbar {
   margin-bottom: 16px;
 }
+/* 统一 el-descriptions 标签列宽（如"商品编码"/"销量（只读）"长短不一），固定宽度且不换行 */
+:deep(.el-descriptions__label) {
+  width: 120px;
+  min-width: 120px;
+  white-space: nowrap;
+}
 </style>

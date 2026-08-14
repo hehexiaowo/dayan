@@ -16,6 +16,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * Admin 端供应商信息接口（审核流）。
  *
@@ -37,12 +39,11 @@ public class SupplierInfoAdminController {
         return R.ok(supplierInfoService.page(query));
     }
 
-    @Operation(summary = "供应商列表（全量）")
+    @Operation(summary = "供应商列表（全量，下拉用）")
     @SaCheckPermission("supplier:info:list")
     @GetMapping("/list")
-    public R<PageResult<SupplierInfoVO>> list(SupplierInfoQueryDTO query) {
-        query.setSize(1000L);
-        return R.ok(supplierInfoService.page(query));
+    public R<List<SupplierInfoVO>> list(SupplierInfoQueryDTO query) {
+        return R.ok(supplierInfoService.list(query));
     }
 
     @Operation(summary = "供应商详情")

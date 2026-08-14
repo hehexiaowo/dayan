@@ -2,6 +2,7 @@ package com.dayan.equity.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.equity.dto.EquityBatchCreateDTO;
 import com.dayan.equity.dto.EquityBatchQueryDTO;
 import com.dayan.equity.dto.EquityBatchUpdateDTO;
@@ -58,6 +59,7 @@ public class EquityBatchAdminController {
     }
 
     @Operation(summary = "新增权益批次")
+    @OperationLog(module = "权益批次", action = "新增")
     @SaCheckPermission("equity:batch:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid EquityBatchCreateDTO dto) {
@@ -65,6 +67,7 @@ public class EquityBatchAdminController {
     }
 
     @Operation(summary = "修改权益批次")
+    @OperationLog(module = "权益批次", action = "修改")
     @SaCheckPermission("equity:batch:update")
     @PutMapping("/{batchCode}")
     public R<Void> update(@PathVariable String batchCode,
@@ -74,6 +77,7 @@ public class EquityBatchAdminController {
     }
 
     @Operation(summary = "删除权益批次（仅未生产）")
+    @OperationLog(module = "权益批次", action = "删除")
     @SaCheckPermission("equity:batch:delete")
     @DeleteMapping("/{batchCode}")
     public R<Void> delete(@PathVariable String batchCode) {

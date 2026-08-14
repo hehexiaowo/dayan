@@ -5,6 +5,7 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.organ.entity.OrganAccount;
 import com.dayan.organ.service.OrganAccountService;
+import com.dayan.organ.vo.OrganAccountVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class OrganAccountAdminController {
     @Operation(summary = "账号分页列表")
     @SaCheckPermission("organ:account:list")
     @GetMapping
-    public R<PageResult<OrganAccount>> page(
+    public R<PageResult<OrganAccountVO>> page(
             @RequestParam(required = false) String organCode,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String realName,
@@ -37,7 +38,7 @@ public class OrganAccountAdminController {
     @Operation(summary = "账号详情")
     @SaCheckPermission("organ:account:query")
     @GetMapping("/{accountCode}")
-    public R<OrganAccount> getDetail(@PathVariable String accountCode) {
+    public R<OrganAccountVO> getDetail(@PathVariable String accountCode) {
         return R.ok(accountService.getDetail(accountCode));
     }
 

@@ -18,11 +18,12 @@ export function pageSuppliers(query: SupplierInfoQuery): Promise<PageResult<Supp
   })
 }
 
-/** 供应商列表（全量）：GET /admin-api/supplier/info/list */
-export function listSuppliers(): Promise<SupplierInfo[]> {
+/** 供应商列表（全量，下拉/关联用）：GET /admin-api/supplier/info/list */
+export function listSuppliers(query?: Partial<SupplierInfoQuery>): Promise<SupplierInfo[]> {
   return request<SupplierInfo[]>({
     url: '/admin-api/supplier/info/list',
-    method: 'get'
+    method: 'get',
+    params: query
   })
 }
 

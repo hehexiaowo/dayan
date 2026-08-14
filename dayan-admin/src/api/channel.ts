@@ -68,3 +68,19 @@ export function deleteChannel(channelCode: string): Promise<void> {
     method: 'delete'
   })
 }
+
+/**
+ * 审核渠道（待审→通过/驳回）：POST /admin-api/channels/audit
+ * auditStatus: 1=通过 / 2=驳回。
+ */
+export function auditChannel(data: {
+  channelCode: string
+  auditStatus: number
+  auditRemark?: string
+}): Promise<void> {
+  return request<void>({
+    url: '/admin-api/channels/audit',
+    method: 'post',
+    data
+  })
+}

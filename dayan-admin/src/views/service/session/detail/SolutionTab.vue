@@ -169,42 +169,33 @@ async function handleDelete(row: ServiceEquitySolution) {
   loadPage()
 }
 
-// ---------- 接受标记（业务链端点） ----------
+// ---------- 接受标记（业务链端点，单弹窗 radio + 反馈） ----------
 const acceptLoading = ref(false)
+const acceptDialogVisible = ref(false)
+const acceptTargetCode = ref('')
+const acceptForm = reactive({
+  isAccepted: 1,
+  clientFeedback: ''
+})
 
-async function handleAccept(row: ServiceEquitySolution) {
+function handleAccept(row: ServiceEquitySolution) {
   if (!row.solutionCode) return
-  // 先选目标状态
-  let isAccepted = 1
-  try {
-    const { value } = await ElMessageBox.prompt('选择接受标记：0=否 / 1=是 / 2=需调整', '方案接受标记', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputPlaceholder: '请输入 0 / 1 / 2（默认 1）',
-      inputValue: '1',
-      inputValidator: (v: string) => ['0', '1', '2'].includes((v ?? '').trim()) || '请输入 0、1 或 2'
-    })
-    isAccepted = Number(value.trim())
-  } catch {
-    return
-  }
-  // 可选填客户反馈
-  let clientFeedback: string | undefined
-  try {
-    const { value } = await ElMessageBox.prompt('客户反馈（可选，留空跳过）', '客户反馈', {
-      confirmButtonText: '确定',
-      cancelButtonText: '跳过',
-      inputType: 'textarea',
-      inputPlaceholder: '客户反馈意见（可选）'
-    })
-    clientFeedback = value?.trim() || undefined
-  } catch {
-    // 用户点「跳过」也继续提交
-  }
+  acceptTargetCode.value = row.solutionCode
+  acceptForm.isAccepted = row.isAccepted ?? 1
+  acceptForm.clientFeedback = row.clientFeedback ?? ''
+  acceptDialogVisible.value = true
+}
+
+async function handleAcceptSubmit() {
   acceptLoading.value = true
   try {
-    await acceptServiceEquitySolution(row.solutionCode, isAccepted, clientFeedback)
+    await acceptServiceEquitySolution(
+      acceptTargetCode.value,
+      acceptForm.isAccepted,
+      acceptForm.clientFeedback.trim() || undefined
+    )
     ElMessage.success('接受标记已更新')
+    acceptDialogVisible.value = false
     loadPage()
   } finally {
     acceptLoading.value = false
@@ -466,6 +457,45 @@ defineExpose({ loadPage })
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 接受标记弹窗（radio + 反馈） -->
+    <el-dialog
+      v-model="acceptDialogVisible"
+      title="方案接受标记"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="90px">
+        <el-form-item label="方案编码">
+          <el-input :model-value="acceptTargetCode" disabled />
+        </el-form-item>
+        <el-form-item label="接受标记">
+          <el-radio-group v-model="acceptForm.isAccepted">
+            <el-radio
+              v-for="o in SOLUTION_IS_ACCEPTED_OPTIONS"
+              :key="o.value"
+              :value="o.value"
+            >
+              {{ o.label }}
+            </el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="客户反馈">
+          <el-input
+            v-model="acceptForm.clientFeedback"
+            type="textarea"
+            :rows="3"
+            placeholder="客户反馈意见（可选）"
+            maxlength="500"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="acceptDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="acceptLoading" @click="handleAcceptSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>

@@ -14,7 +14,7 @@
  *   前端课程 tab 的 stock label 标"库存/学员上限"。
  * - courseCode 无跨模块选择器文档，暂用 el-input 兜底。
  */
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -23,6 +23,7 @@ import {
   updateCourse,
   deleteCourse
 } from '@/api/goods-sku'
+import { listCourses } from '@/api/course'
 import {
   COURSE_TYPE_OPTIONS,
   SKU_STATUS_OPTIONS,
@@ -31,6 +32,7 @@ import {
   skuStatusTagType
 } from '@/types/goods'
 import type { GoodsCourse, GoodsCourseQuery } from '@/types/goods'
+import type { CourseInfo } from '@/types/course'
 import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
@@ -55,6 +57,24 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   )
 
 loadPage()
+
+/** 课程下拉选项 + 名称映射（后端 VO 不带 courseName，前端自行映射） */
+const courseOptions = ref<CourseInfo[]>([])
+const courseNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const c of courseOptions.value) {
+    if (c.courseCode) map[c.courseCode] = c.courseName || c.courseCode
+  }
+  return map
+})
+async function loadCourses() {
+  try {
+    courseOptions.value = await listCourses()
+  } catch {
+    courseOptions.value = []
+  }
+}
+onMounted(loadCourses)
 
 // ---------- 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -189,7 +209,9 @@ async function handleDeleteRow(row: GoodsCourse) {
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="skuCode" label="规格编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="skuName" label="规格名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="courseCode" label="课程编码" min-width="120" show-overflow-tooltip />
+      <el-table-column label="课程" min-width="140" show-overflow-tooltip>
+        <template #default="{ row }">{{ courseNameMap[row.courseCode] || row.courseCode || '-' }}</template>
+      </el-table-column>
       <el-table-column prop="courseType" label="课程类型" width="110" align="center">
         <template #default="{ row }">{{ courseTypeLabel(row.courseType) }}</template>
       </el-table-column>
@@ -243,14 +265,21 @@ async function handleDeleteRow(row: GoodsCourse) {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="课程编码" prop="courseCode">
-              <!-- TODO: courseCode 暂无跨模块选择器文档，先用 input 兜底 -->
-              <el-input
+            <el-form-item label="课程" prop="courseCode">
+              <el-select
                 v-model="form.courseCode"
-                placeholder="课程编码"
-                maxlength="50"
+                placeholder="选择课程"
+                filterable
                 :disabled="dialogMode === 'edit'"
-              />
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="c in courseOptions"
+                  :key="c.courseCode"
+                  :label="c.courseName || c.courseCode"
+                  :value="c.courseCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

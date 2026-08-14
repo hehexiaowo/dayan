@@ -5,13 +5,27 @@ import type { SystemDictCommon } from '@/types/dict'
  * 字典接口封装。
  *
  * 对应后端 SystemDictAdminController（/admin-api/dicts/*）。
- * 字典为只读数据：后端仅提供查询，无新增/修改/删除（由 seed 初始化）。
+ * 查询：listByType（业务消费，仅启用）/ listAllByType（管理页，含禁用）/ listTypes（类型枚举）。
+ * 管理：字典项 CRUD（写入后后端失效缓存）。
  */
 
-/** 按字典类型查询字典项列表：GET /admin-api/dicts/type/{dictType} */
+/** 全部字典类型枚举：GET /admin-api/dicts/types */
+export function listDictTypes(): Promise<string[]> {
+  return request<string[]>({ url: '/admin-api/dicts/types', method: 'get' })
+}
+
+/** 按类型查询字典项列表（仅启用，业务消费用）：GET /admin-api/dicts/type/{dictType} */
 export function listDictByType(dictType: string): Promise<SystemDictCommon[]> {
   return request<SystemDictCommon[]>({
     url: `/admin-api/dicts/type/${dictType}`,
+    method: 'get'
+  })
+}
+
+/** 按类型查询全部字典项（含禁用，管理页用）：GET /admin-api/dicts/type/{dictType}/all */
+export function listAllDictByType(dictType: string): Promise<SystemDictCommon[]> {
+  return request<SystemDictCommon[]>({
+    url: `/admin-api/dicts/type/${dictType}/all`,
     method: 'get'
   })
 }
@@ -23,3 +37,19 @@ export function getDictDetail(dictType: string, dictCode: string): Promise<Syste
     method: 'get'
   })
 }
+
+/** 新增字典项：POST /admin-api/dicts */
+export function createDict(data: Partial<SystemDictCommon>): Promise<number> {
+  return request<number>({ url: '/admin-api/dicts', method: 'post', data })
+}
+
+/** 修改字典项：PUT /admin-api/dicts/{id} */
+export function updateDict(id: number, data: Partial<SystemDictCommon>): Promise<void> {
+  return request<void>({ url: `/admin-api/dicts/${id}`, method: 'put', data })
+}
+
+/** 删除字典项：DELETE /admin-api/dicts/{id} */
+export function deleteDict(id: number): Promise<void> {
+  return request<void>({ url: `/admin-api/dicts/${id}`, method: 'delete' })
+}
+

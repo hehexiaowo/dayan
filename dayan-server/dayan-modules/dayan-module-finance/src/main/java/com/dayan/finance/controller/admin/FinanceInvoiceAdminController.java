@@ -2,6 +2,7 @@ package com.dayan.finance.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.finance.dto.ApplyInvoiceDTO;
 import com.dayan.finance.dto.FinanceInvoiceQueryDTO;
 import com.dayan.finance.dto.InvoiceAuditDTO;
@@ -54,6 +55,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "申请发票")
+    @OperationLog(module = "财务发票", action = "申请")
     @SaCheckPermission("finance:invoice:apply")
     @PostMapping("/apply")
     public R<String> apply(@RequestBody @Valid ApplyInvoiceDTO dto) {
@@ -61,6 +63,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "审核发票（0→1）")
+    @OperationLog(module = "财务发票", action = "审核")
     @SaCheckPermission("finance:invoice:audit")
     @PostMapping("/audit")
     public R<Void> audit(@RequestBody @Valid InvoiceAuditDTO dto) {
@@ -69,6 +72,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "开具发票（1→2）")
+    @OperationLog(module = "财务发票", action = "开具")
     @SaCheckPermission("finance:invoice:issue")
     @PostMapping("/issue")
     public R<Void> issue(@RequestBody @Valid InvoiceIssueDTO dto) {
@@ -77,6 +81,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "寄出发票（2→3）")
+    @OperationLog(module = "财务发票", action = "寄出")
     @SaCheckPermission("finance:invoice:send")
     @PostMapping("/send")
     public R<Void> send(@RequestBody @Valid InvoiceSendDTO dto) {
@@ -85,6 +90,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "完成发票（3→4）")
+    @OperationLog(module = "财务发票", action = "完成")
     @SaCheckPermission("finance:invoice:finish")
     @PostMapping("/finish")
     public R<Void> finish(@RequestBody @Valid InvoiceOperateDTO dto) {
@@ -93,6 +99,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "作废发票（→5）")
+    @OperationLog(module = "财务发票", action = "作废")
     @SaCheckPermission("finance:invoice:void")
     @PostMapping("/void")
     public R<Void> voidInvoice(@RequestBody @Valid InvoiceOperateDTO dto) {
@@ -101,6 +108,7 @@ public class FinanceInvoiceAdminController {
     }
 
     @Operation(summary = "红冲发票（→6）")
+    @OperationLog(module = "财务发票", action = "红冲")
     @SaCheckPermission("finance:invoice:red-flush")
     @PostMapping("/red-flush")
     public R<Void> redFlush(@RequestBody @Valid InvoiceOperateDTO dto) {

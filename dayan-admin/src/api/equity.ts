@@ -5,15 +5,25 @@ import type {
   EquityBatchQuery,
   EquityBatchStats,
   EquityDepot,
-  EquityDepotQuery
+  EquityDepotQuery,
+  EquityActivate,
+  EquityActivateQuery,
+  EquityChangeHolder,
+  EquityChangeHolderQuery,
+  EquityUsePerson,
+  EquityUsePersonQuery,
+  SetDefaultHolderPayload
 } from '@/types/equity'
 
 /**
  * 权益域接口封装。
  *
- * 对应后端两个 Admin 控制器（均挂在 /admin-api 前缀下）：
+ * 对应后端 Admin 控制器（均挂在 /admin-api 前缀下）：
  * - EquityBatchAdminController（/admin-api/equity/batch/*）
  * - EquityDepotAdminController（/admin-api/equity/depot/*）
+ * - EquityActivateAdminController（/admin-api/equity/activate/*，仅查询）
+ * - EquityChangeHolderAdminController（/admin-api/equity/change-holder/*，仅查询）
+ * - EquityUsePersonAdminController（/admin-api/equity/use-person/*，CRUD + set-default）
  */
 
 // ============================================================
@@ -148,3 +158,135 @@ export function transitionDepot(equityCode: string, event: string): Promise<numb
 // - outbound(data: OutboundDTO): POST /admin-api/equity/depot/outbound
 // - activate(data: ActivateDTO): POST /admin-api/equity/depot/activate
 // - voidEquity(data: VoidDTO):   POST /admin-api/equity/depot/void
+
+// ============================================================
+// 权益激活记录（/admin-api/equity/activate，仅查询）
+// ============================================================
+// 记录由 depot.activate 生命周期自动产生，管理端不直接新增/修改/删除。
+
+/** 激活记录分页：GET /admin-api/equity/activate/page */
+export function pageEquityActivates(query: EquityActivateQuery): Promise<PageResult<EquityActivate>> {
+  return request<PageResult<EquityActivate>>({
+    url: '/admin-api/equity/activate/page',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 激活记录列表（全量）：GET /admin-api/equity/activate/list */
+export function listEquityActivates(query: EquityActivateQuery): Promise<EquityActivate[]> {
+  return request<EquityActivate[]>({
+    url: '/admin-api/equity/activate/list',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 按权益编码查激活记录：GET /admin-api/equity/activate/{equityCode} */
+export function getEquityActivate(equityCode: string): Promise<EquityActivate> {
+  return request<EquityActivate>({
+    url: `/admin-api/equity/activate/${equityCode}`,
+    method: 'get'
+  })
+}
+
+// ============================================================
+// 权益更换权益人记录（/admin-api/equity/change-holder，仅查询）
+// ============================================================
+// 记录由 depot 换持有人生命周期自动产生，发起/完成/回滚在 /equity/depot 下。
+
+/** 更换记录分页：GET /admin-api/equity/change-holder/page */
+export function pageEquityChangeHolders(
+  query: EquityChangeHolderQuery
+): Promise<PageResult<EquityChangeHolder>> {
+  return request<PageResult<EquityChangeHolder>>({
+    url: '/admin-api/equity/change-holder/page',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 按权益编码列出更换历史：GET /admin-api/equity/change-holder/list-by-equity/{equityCode} */
+export function listEquityChangeHoldersByEquity(equityCode: string): Promise<EquityChangeHolder[]> {
+  return request<EquityChangeHolder[]>({
+    url: `/admin-api/equity/change-holder/list-by-equity/${equityCode}`,
+    method: 'get'
+  })
+}
+
+/** 更换记录详情：GET /admin-api/equity/change-holder/{id} */
+export function getEquityChangeHolder(id: string): Promise<EquityChangeHolder> {
+  return request<EquityChangeHolder>({
+    url: `/admin-api/equity/change-holder/${id}`,
+    method: 'get'
+  })
+}
+
+// ============================================================
+// 权益使用人（/admin-api/equity/use-person，CRUD + set-default）
+// ============================================================
+// id 序列化为字符串（雪花ID），故 update/remove 接收 string。
+
+/** 使用人分页：GET /admin-api/equity/use-person/page */
+export function pageEquityUsePersons(query: EquityUsePersonQuery): Promise<PageResult<EquityUsePerson>> {
+  return request<PageResult<EquityUsePerson>>({
+    url: '/admin-api/equity/use-person/page',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 按权益编码列出全部使用人：GET /admin-api/equity/use-person/list-by-equity/{equityCode} */
+export function listEquityUsePersonsByEquity(equityCode: string): Promise<EquityUsePerson[]> {
+  return request<EquityUsePerson[]>({
+    url: `/admin-api/equity/use-person/list-by-equity/${equityCode}`,
+    method: 'get'
+  })
+}
+
+/** 使用人详情：GET /admin-api/equity/use-person/{id} */
+export function getEquityUsePerson(id: string): Promise<EquityUsePerson> {
+  return request<EquityUsePerson>({
+    url: `/admin-api/equity/use-person/${id}`,
+    method: 'get'
+  })
+}
+
+/** 登记使用人：POST /admin-api/equity/use-person（返回新 id） */
+export function createEquityUsePerson(data: Partial<EquityUsePerson>): Promise<string> {
+  return request<string>({
+    url: '/admin-api/equity/use-person',
+    method: 'post',
+    data
+  })
+}
+
+/** 修改使用人：PUT /admin-api/equity/use-person/{id} */
+export function updateEquityUsePerson(id: string, data: Partial<EquityUsePerson>): Promise<void> {
+  return request<void>({
+    url: `/admin-api/equity/use-person/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+/** 删除使用人：DELETE /admin-api/equity/use-person/{id} */
+export function deleteEquityUsePerson(id: string): Promise<void> {
+  return request<void>({
+    url: `/admin-api/equity/use-person/${id}`,
+    method: 'delete'
+  })
+}
+
+/**
+ * 设置默认权益人：POST /admin-api/equity/use-person/set-default
+ *
+ * 将指定使用人置为默认（is_default_holder=1），同 equity_code 下其它使用人置 0。
+ */
+export function setDefaultEquityUsePerson(payload: SetDefaultHolderPayload): Promise<void> {
+  return request<void>({
+    url: '/admin-api/equity/use-person/set-default',
+    method: 'post',
+    data: payload
+  })
+}

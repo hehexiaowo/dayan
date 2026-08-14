@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { listChannels, treeChannels, getChannel, createChannel, updateChannel, deleteChannel } from '@/api/channel'
+import {
+  listChannels,
+  treeChannels,
+  getChannel,
+  createChannel,
+  updateChannel,
+  deleteChannel,
+  auditChannel
+} from '@/api/channel'
+import { listDistributors } from '@/api/distributor'
 import {
   ChannelStatus,
   CHANNEL_STATUS_OPTIONS,
@@ -14,6 +23,7 @@ import {
   type ChannelInfo,
   type ChannelInfoQuery
 } from '@/types/channel'
+import type { DistributorInfo } from '@/types/distributor'
 import RegionSelect from '@/components/RegionSelect.vue'
 import FileUploader from '@/components/FileUploader/index.vue'
 
@@ -36,8 +46,27 @@ const query = reactive<ChannelInfoQuery>({
   fullName: '',
   channelType: undefined,
   status: undefined,
-  auditStatus: undefined
+  auditStatus: undefined,
+  distributorCode: ''
 })
+
+/** 分销商下拉选项 + 名称映射（后端 VO 不带 distributorName，前端自行映射） */
+const distributorOptions = ref<DistributorInfo[]>([])
+const distributorNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const d of distributorOptions.value) {
+    if (d.distributorCode) map[d.distributorCode] = d.fullName || d.shortName || d.distributorCode
+  }
+  return map
+})
+
+async function loadDistributors() {
+  try {
+    distributorOptions.value = await listDistributors()
+  } catch {
+    distributorOptions.value = []
+  }
+}
 
 async function loadTree() {
   loading.value = true
@@ -46,6 +75,9 @@ async function loadTree() {
     const [list, tree] = await Promise.all([listChannels(query), treeChannels(query)])
     flatList.value = list
     treeData.value = tree
+  } catch {
+    flatList.value = []
+    treeData.value = []
   } finally {
     loading.value = false
   }
@@ -68,6 +100,7 @@ function handleReset() {
   query.channelType = undefined
   query.status = undefined
   query.auditStatus = undefined
+  query.distributorCode = ''
   loadTree()
 }
 
@@ -309,8 +342,56 @@ function auditStatusTagType(status?: number): 'success' | 'warning' | 'danger' |
   }
 }
 
+function statusLabel(s?: number): string {
+  const found = CHANNEL_STATUS_OPTIONS.find((o) => o.value === s)
+  return found ? found.label : s != null ? String(s) : '--'
+}
+
+function statusTagType(s?: number): 'success' | 'info' {
+  return s === ChannelStatus.ENABLED ? 'success' : 'info'
+}
+
+// ---------- 审核流 ----------
+const auditDialogVisible = ref(false)
+const auditSubmitLoading = ref(false)
+const auditForm = reactive<{ channelCode: string; fullName: string; auditStatus: number; auditRemark: string }>({
+  channelCode: '',
+  fullName: '',
+  // 1=通过 / 2=驳回（对齐后端 ChannelAuditDTO），默认通过
+  auditStatus: 1,
+  auditRemark: ''
+})
+
+function openAudit(row: ChannelInfo) {
+  if (!row.channelCode) return
+  auditForm.channelCode = row.channelCode
+  auditForm.fullName = row.fullName ?? ''
+  auditForm.auditStatus = 1
+  auditForm.auditRemark = ''
+  auditDialogVisible.value = true
+}
+
+async function handleAuditSubmit() {
+  auditSubmitLoading.value = true
+  try {
+    await auditChannel({
+      channelCode: auditForm.channelCode,
+      auditStatus: auditForm.auditStatus,
+      auditRemark: auditForm.auditRemark || undefined
+    })
+    ElMessage.success(auditForm.auditStatus === 1 ? '已通过' : '已驳回')
+    auditDialogVisible.value = false
+    loadTree()
+  } finally {
+    auditSubmitLoading.value = false
+  }
+}
+
 // 初始化加载
-loadTree()
+onMounted(() => {
+  loadDistributors()
+  loadTree()
+})
 </script>
 
 <template>
@@ -334,6 +415,16 @@ loadTree()
         <el-form-item label="审核状态">
           <el-select v-model="query.auditStatus" placeholder="全部" clearable style="width: 120px">
             <el-option v-for="o in CHANNEL_AUDIT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="分销商">
+          <el-select v-model="query.distributorCode" placeholder="全部分销商" clearable filterable style="width: 200px">
+            <el-option
+              v-for="d in distributorOptions"
+              :key="d.distributorCode"
+              :label="d.fullName || d.shortName || d.distributorCode"
+              :value="d.distributorCode!"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -380,10 +471,13 @@ loadTree()
         <el-table-column prop="contactPhone" label="联系电话" min-width="130" />
         <el-table-column prop="agentCount" label="代理人" width="80" align="center" />
         <el-table-column prop="sortOrder" label="排序" width="70" align="center" />
+        <el-table-column label="分销商" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ distributorNameMap[row.distributorCode] || row.distributorCode || '-' }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">
-              {{ row.status === 1 ? '启用' : '禁用' }}
+            <el-tag :type="statusTagType(row.status)">
+              {{ statusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -394,9 +488,10 @@ loadTree()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
+            <el-button v-if="row.auditStatus === ChannelAuditStatus.PENDING" link type="warning" size="small" @click="openAudit(row)">审核</el-button>
             <el-button link type="primary" size="small" @click="openCreate(row)">新增子级</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
@@ -484,8 +579,15 @@ loadTree()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="分销商编码">
-              <el-input v-model="form.distributorCode" placeholder="分销商编码" maxlength="50" />
+            <el-form-item label="分销商">
+              <el-select v-model="form.distributorCode" placeholder="选择分销商" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="d in distributorOptions"
+                  :key="d.distributorCode"
+                  :label="d.fullName || d.shortName || d.distributorCode"
+                  :value="d.distributorCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -516,18 +618,6 @@ loadTree()
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="审核状态">
-              <el-select v-model="form.auditStatus" style="width: 100%">
-                <el-option
-                  v-for="o in CHANNEL_AUDIT_STATUS_OPTIONS"
-                  :key="o.value"
-                  :label="o.label"
-                  :value="o.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
           <el-col :span="24">
             <el-form-item label="渠道描述">
               <el-input v-model="form.description" type="textarea" :rows="2" placeholder="渠道描述" />
@@ -543,6 +633,28 @@ loadTree()
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 审核弹窗 -->
+    <el-dialog v-model="auditDialogVisible" title="渠道审核" width="520px" :close-on-click-modal="false">
+      <el-form label-width="90px">
+        <el-form-item label="渠道">
+          <span>{{ auditForm.fullName }}</span>
+        </el-form-item>
+        <el-form-item label="审核结果">
+          <el-radio-group v-model="auditForm.auditStatus">
+            <el-radio :value="1">通过</el-radio>
+            <el-radio :value="2">驳回</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="审核备注">
+          <el-input v-model="auditForm.auditRemark" type="textarea" :rows="3" placeholder="审核备注（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="auditDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="auditSubmitLoading" @click="handleAuditSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>

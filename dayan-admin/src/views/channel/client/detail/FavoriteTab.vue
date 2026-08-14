@@ -11,13 +11,18 @@
  * - targetType 枚举后端无 @Schema 文档，暂用 el-input-number 兜底 + TODO。
  * - targetCode/targetName 必填。
  */
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
   listClientFavoritesByClient,
   createClientFavorite,
   deleteClientFavorite
 } from '@/api/client-sub'
+import { listAllOrgans } from '@/api/organ'
+import { listScenes } from '@/api/scene'
+import { listCourses } from '@/api/course'
+import { listContents } from '@/api/content'
+import { FAVORITE_TARGET_TYPE_OPTIONS } from '@/types/agent'
 import type { ClientFavorite } from '@/types/client'
 
 const props = defineProps<{
@@ -81,6 +86,41 @@ function openCreate() {
   form.clientCode = props.clientCode
   dialogVisible.value = true
 }
+
+/** 收藏对象下拉（按 targetType 动态切换：1机构 2场景 3课程 4内容） */
+interface TargetOption {
+  code: string
+  name: string
+}
+const targetOptions = ref<TargetOption[]>([])
+async function loadTargetOptions(targetType?: number) {
+  if (!targetType) {
+    targetOptions.value = []
+    return
+  }
+  try {
+    let opts: TargetOption[] = []
+    if (targetType === 1) {
+      opts = (await listAllOrgans()).map((o) => ({ code: o.organCode, name: o.fullName || o.shortName || o.organCode }))
+    } else if (targetType === 2) {
+      opts = (await listScenes()).map((s) => ({ code: s.sceneCode!, name: s.sceneName || s.sceneCode! }))
+    } else if (targetType === 3) {
+      opts = (await listCourses()).map((c) => ({ code: c.courseCode!, name: c.courseName || c.courseCode! }))
+    } else if (targetType === 4) {
+      opts = (await listContents()).map((c) => ({ code: c.contentCode!, name: c.title || c.contentCode! }))
+    }
+    targetOptions.value = opts
+  } catch {
+    targetOptions.value = []
+  }
+}
+watch(
+  () => form.targetType,
+  (t) => {
+    form.targetCode = ''
+    loadTargetOptions(t)
+  }
+)
 
 async function handleSubmit() {
   if (!formRef.value) return
@@ -158,14 +198,23 @@ defineExpose({ loadList })
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <!-- TODO: targetType 枚举值待后端补 @Schema 文档后改为 select -->
             <el-form-item label="对象类型" prop="targetType">
-              <el-input-number v-model="form.targetType" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.targetType" placeholder="选择类型" style="width: 100%">
+                <el-option v-for="o in FAVORITE_TARGET_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="对象编码" prop="targetCode">
-              <el-input v-model="form.targetCode" placeholder="收藏对象编码" maxlength="64" />
+            <el-form-item label="对象" prop="targetCode">
+              <el-select
+                v-model="form.targetCode"
+                :placeholder="form.targetType ? '选择对象' : '请先选择类型'"
+                :disabled="!form.targetType"
+                filterable
+                style="width: 100%"
+              >
+                <el-option v-for="o in targetOptions" :key="o.code" :label="o.name" :value="o.code" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="24">

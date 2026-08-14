@@ -94,6 +94,18 @@ const routes: RouteRecordRaw[] = [
         name: 'SessionDetail',
         component: () => import('@/views/service/session/detail/index.vue'),
         meta: { title: '会话详情', hidden: true }
+      },
+      {
+        path: 'resource/content/detail/:contentCode',
+        name: 'ContentDetail',
+        component: () => import('@/views/resource/content/detail/index.vue'),
+        meta: { title: '内容详情', hidden: true }
+      },
+      {
+        path: 'resource/course/detail/:courseCode',
+        name: 'CourseDetail',
+        component: () => import('@/views/resource/course/detail/index.vue'),
+        meta: { title: '课程详情', hidden: true }
       }
     ]
   },

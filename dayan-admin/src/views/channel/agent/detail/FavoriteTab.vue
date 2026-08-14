@@ -10,13 +10,17 @@
  * - targetType 4 态（1养老机构 2场景 3课程 4内容）。
  * - targetCode 按 targetType 指向不同实体，无统一选择器，用 input 兜底 + TODO。
  */
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
   listAgentFavoritesByAgent,
   createAgentFavorite,
   deleteAgentFavorite
 } from '@/api/agent'
+import { listAllOrgans } from '@/api/organ'
+import { listScenes } from '@/api/scene'
+import { listCourses } from '@/api/course'
+import { listContents } from '@/api/content'
 import {
   FAVORITE_TARGET_TYPE_OPTIONS,
   favoriteTargetTypeLabel
@@ -79,6 +83,41 @@ function openCreate() {
   form.agentCode = props.agentCode
   dialogVisible.value = true
 }
+
+/** 收藏对象下拉（按 targetType 动态切换数据源：1机构 2场景 3课程 4内容） */
+interface TargetOption {
+  code: string
+  name: string
+}
+const targetOptions = ref<TargetOption[]>([])
+async function loadTargetOptions(targetType?: number) {
+  if (!targetType) {
+    targetOptions.value = []
+    return
+  }
+  try {
+    let opts: TargetOption[] = []
+    if (targetType === 1) {
+      opts = (await listAllOrgans()).map((o) => ({ code: o.organCode, name: o.fullName || o.shortName || o.organCode }))
+    } else if (targetType === 2) {
+      opts = (await listScenes()).map((s) => ({ code: s.sceneCode!, name: s.sceneName || s.sceneCode! }))
+    } else if (targetType === 3) {
+      opts = (await listCourses()).map((c) => ({ code: c.courseCode!, name: c.courseName || c.courseCode! }))
+    } else if (targetType === 4) {
+      opts = (await listContents()).map((c) => ({ code: c.contentCode!, name: c.title || c.contentCode! }))
+    }
+    targetOptions.value = opts
+  } catch {
+    targetOptions.value = []
+  }
+}
+watch(
+  () => form.targetType,
+  (t) => {
+    form.targetCode = ''
+    loadTargetOptions(t)
+  }
+)
 
 async function handleSubmit() {
   if (!formRef.value) return
@@ -165,9 +204,16 @@ defineExpose({ loadList })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="对象编码" prop="targetCode">
-              <!-- TODO: 按 targetType 接对应业务选择器（养老机构/场景/课程/内容），暂用 input 兜底 -->
-              <el-input v-model="form.targetCode" placeholder="收藏对象编码" maxlength="64" />
+            <el-form-item label="对象" prop="targetCode">
+              <el-select
+                v-model="form.targetCode"
+                :placeholder="form.targetType ? '选择对象' : '请先选择类型'"
+                :disabled="!form.targetType"
+                filterable
+                style="width: 100%"
+              >
+                <el-option v-for="o in targetOptions" :key="o.code" :label="o.name" :value="o.code" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>

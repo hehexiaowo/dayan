@@ -1,5 +1,6 @@
 package com.dayan.channel.service;
 
+import com.dayan.channel.dto.ChannelAuditDTO;
 import com.dayan.channel.dto.ChannelInfoCreateDTO;
 import com.dayan.channel.dto.ChannelInfoQueryDTO;
 import com.dayan.channel.dto.ChannelInfoUpdateDTO;
@@ -46,6 +47,11 @@ public interface ChannelInfoService {
      * 删除渠道（校验子渠道存在性）。
      */
     void delete(String channelCode);
+
+    /**
+     * 审核渠道（待审 → 通过/驳回）。
+     */
+    void audit(ChannelAuditDTO dto);
 
     /** 校验当前渠道有管理能力，否则抛 BusinessException */
     void requireManageCapability();

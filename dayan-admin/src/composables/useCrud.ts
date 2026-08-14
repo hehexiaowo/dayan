@@ -57,6 +57,10 @@ export function useCrud<T extends Record<string, any>, Q extends PageQuery, K ex
       const res = await api.page(merged)
       tableData.value = res.records
       total.value = res.total
+    } catch {
+      // 请求失败：清空旧数据避免误导（错误提示由全局响应拦截器统一处理）
+      tableData.value = []
+      total.value = 0
     } finally {
       loading.value = false
     }

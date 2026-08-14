@@ -4,6 +4,7 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.organ.dto.OrganInfoCreateDTO;
 import com.dayan.organ.dto.OrganInfoQueryDTO;
 import com.dayan.organ.dto.OrganInfoUpdateDTO;
+import com.dayan.organ.vo.OrganInfoSimpleVO;
 import com.dayan.organ.vo.OrganInfoVO;
 
 /**
@@ -20,4 +21,9 @@ public interface OrganInfoService {
     void update(String organCode, OrganInfoUpdateDTO dto);
 
     void delete(String organCode);
+
+    /**
+     * 全量启用组织列表（下拉选择用，不分页）。
+     */
+    java.util.List<OrganInfoSimpleVO> listAll();
 }

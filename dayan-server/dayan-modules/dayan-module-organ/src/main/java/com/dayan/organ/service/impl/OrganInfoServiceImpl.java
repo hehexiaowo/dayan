@@ -11,6 +11,7 @@ import com.dayan.organ.dto.OrganInfoUpdateDTO;
 import com.dayan.organ.entity.OrganInfo;
 import com.dayan.organ.mapper.OrganInfoMapper;
 import com.dayan.organ.service.OrganInfoService;
+import com.dayan.organ.vo.OrganInfoSimpleVO;
 import com.dayan.organ.vo.OrganInfoVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -128,6 +129,15 @@ public class OrganInfoServiceImpl implements OrganInfoService {
                 .eq(OrganInfo::getOrganCode, organCode));
     }
 
+    @Override
+    public List<OrganInfoSimpleVO> listAll() {
+        List<OrganInfo> list = organInfoMapper.selectList(new LambdaQueryWrapper<OrganInfo>()
+                .ne(OrganInfo::getStatus, 0)
+                .orderByAsc(OrganInfo::getSortOrder)
+                .orderByAsc(OrganInfo::getId));
+        return list.stream().map(this::toSimpleVO).toList();
+    }
+
     private OrganInfo selectByCode(String organCode) {
         OrganInfo organ = organInfoMapper.selectOne(new LambdaQueryWrapper<OrganInfo>()
                 .eq(OrganInfo::getOrganCode, organCode).last("LIMIT 1"));
@@ -142,6 +152,16 @@ public class OrganInfoServiceImpl implements OrganInfoService {
         long ts = System.currentTimeMillis() % 100000L;
         int rand = (int) (Math.random() * 1000);
         return String.format("OR%05d%03d", ts, rand);
+    }
+
+    private OrganInfoSimpleVO toSimpleVO(OrganInfo entity) {
+        OrganInfoSimpleVO vo = new OrganInfoSimpleVO();
+        vo.setOrganCode(entity.getOrganCode());
+        vo.setFullName(entity.getFullName());
+        vo.setShortName(entity.getShortName());
+        vo.setOrganType(entity.getOrganType());
+        vo.setStatus(entity.getStatus());
+        return vo;
     }
 
     private OrganInfoVO toVO(OrganInfo entity) {

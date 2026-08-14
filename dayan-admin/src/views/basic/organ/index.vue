@@ -1,37 +1,35 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { listDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/api/department'
-import {
-  DepartmentStatus,
-  DEPARTMENT_STATUS_OPTIONS,
-  DEPT_TYPE_OPTIONS,
-  buildDepartmentTree,
-  type Department
-} from '@/types/department'
+import { useCrud } from '@/composables/useCrud'
+import { pageOrgans, createOrgan, updateOrgan, deleteOrgan } from '@/api/organ'
+import type { Organ, OrganQuery } from '@/types/organ'
+import { OrganStatus, ORGAN_STATUS_OPTIONS, ORGAN_TYPE_OPTIONS } from '@/types/organ'
 
 /**
- * 部门管理页（树形表格）。
+ * 机构管理页。
  *
- * - 后端 /departments 返回平铺列表，前端用 buildDepartmentTree 组树展示；
- * - 主键为 (organCode, deptCode) 联合键，update/delete 均带 organCode 路径段。
+ * - CRUD 标准模式（useCrud 分页）；
+ * - 机构编码 organCode 由后端自动生成，编辑时禁用；
+ * - 机构为扁平结构（无 parentCode），故用分页表格而非树形。
  */
 
-const organCode = ref('')
-const loading = ref(false)
-const treeData = ref<Department[]>([])
-const flatList = ref<Department[]>([])
-
-async function loadTree() {
-  loading.value = true
-  try {
-    const list = await listDepartments(organCode.value)
-    flatList.value = list
-    treeData.value = buildDepartmentTree(list)
-  } finally {
-    loading.value = false
+const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
+  Organ,
+  OrganQuery
+>(
+  {
+    page: pageOrgans
+  },
+  {
+    initialQuery: {
+      organCode: '',
+      fullName: '',
+      organType: undefined,
+      status: undefined
+    }
   }
-}
+)
 
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -39,93 +37,66 @@ const dialogType = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-const form = reactive<Department>({
-  organCode: '',
-  deptCode: '',
-  deptName: '',
-  parentCode: null,
-  ancestors: '',
-  deptType: 2,
-  leaderName: '',
-  leaderPhone: '',
+const form = reactive<Organ>({
+  organCode: undefined,
+  fullName: '',
+  shortName: '',
+  organType: 1,
+  unifiedCreditCode: '',
+  legalPerson: '',
+  contactPerson: '',
+  contactPhone: '',
+  address: '',
+  status: OrganStatus.ENABLED,
   sortOrder: 0,
-  status: DepartmentStatus.ENABLED,
   remark: ''
 })
 
-const rules: FormRules = {
-  organCode: [{ required: true, message: '请输入机构编码', trigger: 'blur' }],
-  deptCode: [
-    { required: true, message: '请输入部门编码', trigger: 'blur' },
-    { max: 100, message: '部门编码长度不能超过 100', trigger: 'blur' }
-  ],
-  deptName: [{ required: true, message: '请输入部门名称', trigger: 'blur' }],
+const rules: FormRules<Organ> = {
+  fullName: [{ required: true, message: '请输入机构全称', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
-}
-
-/** 供父级选择用的树（基于平铺列表组树） */
-const parentTreeOptions = ref<Department[]>([])
-
-function buildParentOptions(excludeCode?: string): Department[] {
-  const tree = buildDepartmentTree(flatList.value)
-  if (excludeCode) {
-    const filterNode = (nodes: Department[]): Department[] => {
-      const result: Department[] = []
-      for (const n of nodes) {
-        if (n.deptCode === excludeCode) continue
-        const children = n.children ? filterNode(n.children) : undefined
-        result.push(children ? { ...n, children } : { ...n, children: undefined })
-      }
-      return result
-    }
-    return filterNode(tree)
-  }
-  return tree
 }
 
 function resetForm() {
   Object.assign(form, {
-    organCode: organCode.value,
-    deptCode: '',
-    deptName: '',
-    parentCode: null,
-    ancestors: '',
-    deptType: 2,
-    leaderName: '',
-    leaderPhone: '',
+    organCode: undefined,
+    fullName: '',
+    shortName: '',
+    organType: 1,
+    unifiedCreditCode: '',
+    legalPerson: '',
+    contactPerson: '',
+    contactPhone: '',
+    address: '',
+    status: OrganStatus.ENABLED,
     sortOrder: 0,
-    status: DepartmentStatus.ENABLED,
     remark: ''
   })
 }
 
-function openCreate(parent?: Department) {
+function openCreate() {
   dialogType.value = 'create'
   resetForm()
-  if (parent) {
-    form.parentCode = parent.deptCode
-  }
-  parentTreeOptions.value = buildParentOptions()
   dialogVisible.value = true
 }
 
-function openEdit(row: Department) {
+function openEdit(row: Organ) {
   dialogType.value = 'edit'
   resetForm()
   Object.assign(form, {
     organCode: row.organCode,
-    deptCode: row.deptCode,
-    deptName: row.deptName,
-    parentCode: row.parentCode,
-    ancestors: row.ancestors,
-    deptType: row.deptType,
-    leaderName: row.leaderName,
-    leaderPhone: row.leaderPhone,
-    sortOrder: row.sortOrder,
+    fullName: row.fullName,
+    shortName: row.shortName,
+    organType: row.organType,
+    unifiedCreditCode: row.unifiedCreditCode,
+    legalPerson: row.legalPerson,
+    contactPerson: row.contactPerson,
+    contactPhone: row.contactPhone,
+    address: row.address,
     status: row.status,
+    sortOrder: row.sortOrder,
     remark: row.remark
   })
-  parentTreeOptions.value = buildParentOptions(row.deptCode)
   dialogVisible.value = true
 }
 
@@ -140,79 +111,91 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialogType.value === 'create') {
-      await createDepartment(form)
+      await createOrgan(form)
       ElMessage.success('新增成功')
-    } else {
-      await updateDepartment(form.organCode, form.deptCode, form)
+    } else if (form.organCode) {
+      await updateOrgan(form.organCode, form)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
-    loadTree()
+    loadPage()
   } finally {
     submitLoading.value = false
   }
 }
 
-async function handleDeleteRow(row: Department) {
-  await ElMessageBox.confirm(`确定删除部门「${row.deptName}」吗？若存在子部门将一并影响。`, '提示', {
+async function handleDeleteRow(row: Organ) {
+  if (!row.organCode) return
+  await ElMessageBox.confirm(`确定删除机构「${row.fullName}」吗？`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await deleteDepartment(row.organCode, row.deptCode)
+  await deleteOrgan(row.organCode)
   ElMessage.success('删除成功')
-  loadTree()
+  loadPage()
 }
 
-function typeText(t?: number) {
-  return DEPT_TYPE_OPTIONS.find((o) => o.value === t)?.label ?? (t != null ? String(t) : '-')
+function handleReset() {
+  query.fullName = ''
+  query.organCode = ''
+  query.organType = undefined
+  query.status = undefined
+  handleSearch()
 }
 
 // 初始化加载
-loadTree()
+loadPage()
 </script>
 
 <template>
   <div class="page-container">
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
+      <el-form :inline="true" :model="query" @submit.prevent>
+        <el-form-item label="机构编码">
+          <el-input v-model="query.organCode" placeholder="机构编码" clearable @keyup.enter="handleSearch" />
+        </el-form-item>
+        <el-form-item label="机构全称">
+          <el-input v-model="query.fullName" placeholder="机构全称" clearable @keyup.enter="handleSearch" />
+        </el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="query.organType" placeholder="全部" clearable style="width: 140px">
+            <el-option v-for="o in ORGAN_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
+            <el-option v-for="o in ORGAN_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <div class="header-left">
-            <span class="header-title">部门列表</span>
-            <el-input
-              v-model="organCode"
-              placeholder="机构编码"
-              clearable
-              style="width: 160px; margin-left: 16px"
-              @keyup.enter="loadTree"
-            />
-            <el-button :icon="'Search'" style="margin-left: 8px" @click="loadTree">查询</el-button>
-          </div>
-          <div>
-            <el-button :icon="'Refresh'" @click="loadTree">刷新</el-button>
-            <el-button type="primary" :icon="'Plus'" @click="openCreate()">新增部门</el-button>
-          </div>
+          <span>机构列表</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增机构</el-button>
         </div>
       </template>
 
-      <el-table
-        v-loading="loading"
-        :data="treeData"
-        border
-        stripe
-        row-key="deptCode"
-        :tree-props="{ children: 'children' }"
-        default-expand-all
-      >
-        <el-table-column prop="deptName" label="部门名称" min-width="200" />
-        <el-table-column prop="deptCode" label="部门编码" min-width="160" show-overflow-tooltip />
-        <el-table-column label="类型" width="100" align="center">
+      <el-table v-loading="loading" :data="tableData" border stripe row-key="organCode">
+        <el-table-column prop="organCode" label="机构编码" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="fullName" label="机构全称" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="shortName" label="简称" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="organType" label="类型" width="100" align="center">
           <template #default="{ row }">
-            <el-tag>{{ typeText(row.deptType) }}</el-tag>
+            {{ ORGAN_TYPE_OPTIONS.find((o) => o.value === row.organType)?.label ?? row.organType }}
           </template>
         </el-table-column>
-        <el-table-column prop="leaderName" label="负责人" width="120" />
-        <el-table-column prop="leaderPhone" label="联系电话" min-width="130" />
+        <el-table-column prop="unifiedCreditCode" label="统一社会信用代码" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="legalPerson" label="法人" width="110" />
         <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
@@ -221,62 +204,86 @@ loadTree()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openCreate(row)">新增子级</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination-wrap">
+        <el-pagination
+          :current-page="query.current"
+          :page-size="query.size"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @current-change="handlePageChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
     </el-card>
 
     <!-- 新增 / 编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogType === 'create' ? '新增部门' : '编辑部门'"
-      width="600px"
+      :title="dialogType === 'create' ? '新增机构' : '编辑机构'"
+      width="640px"
       :close-on-click-modal="false"
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="机构编码" prop="organCode">
-              <el-input v-model="form.organCode" placeholder="机构编码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="部门编码" prop="deptCode">
+            <el-form-item label="机构编码">
               <el-input
-                v-model="form.deptCode"
-                placeholder="部门编码"
-                :disabled="dialogType === 'edit'"
+                :model-value="dialogType === 'create' ? '保存时自动生成' : form.organCode"
+                disabled
               />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="部门名称" prop="deptName">
-              <el-input v-model="form.deptName" placeholder="部门名称" />
+            <el-form-item label="机构全称" prop="fullName">
+              <el-input v-model="form.fullName" placeholder="机构全称" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="父级部门">
-              <el-tree-select
-                v-model="form.parentCode"
-                :data="parentTreeOptions"
-                :props="{ label: 'deptName', value: 'deptCode', children: 'children' }"
-                check-strictly
-                clearable
-                placeholder="顶级（不选）"
-                style="width: 100%"
-              />
+            <el-form-item label="简称">
+              <el-input v-model="form.shortName" placeholder="简称" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="部门类型">
-              <el-select v-model="form.deptType" placeholder="部门类型" style="width: 100%">
-                <el-option v-for="o in DEPT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+            <el-form-item label="机构类型">
+              <el-select v-model="form.organType" placeholder="机构类型" style="width: 100%">
+                <el-option v-for="o in ORGAN_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="统一信用代码">
+              <el-input v-model="form.unifiedCreditCode" placeholder="统一社会信用代码" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="法定代表人">
+              <el-input v-model="form.legalPerson" placeholder="法定代表人" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="联系人">
+              <el-input v-model="form.contactPerson" placeholder="联系人" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="联系电话">
+              <el-input v-model="form.contactPhone" placeholder="联系电话" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="form.status" style="width: 100%">
+                <el-option v-for="o in ORGAN_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -285,21 +292,9 @@ loadTree()
               <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="负责人">
-              <el-input v-model="form.leaderName" placeholder="负责人姓名" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="联系电话">
-              <el-input v-model="form.leaderPhone" placeholder="联系电话" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="form.status" style="width: 100%">
-                <el-option v-for="o in DEPARTMENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-              </el-select>
+          <el-col :span="24">
+            <el-form-item label="详细地址">
+              <el-input v-model="form.address" placeholder="详细地址" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -324,19 +319,21 @@ loadTree()
   gap: 16px;
 }
 
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
 
-  .header-left {
-    display: flex;
-    align-items: center;
-
-    .header-title {
-      font-size: 16px;
-      font-weight: 500;
-    }
-  }
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

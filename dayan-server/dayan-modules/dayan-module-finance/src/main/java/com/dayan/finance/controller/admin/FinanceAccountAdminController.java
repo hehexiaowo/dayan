@@ -2,6 +2,7 @@ package com.dayan.finance.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.finance.dto.AccountReceiveDTO;
 import com.dayan.finance.dto.CreateAccountDTO;
 import com.dayan.finance.dto.FinanceAccountQueryDTO;
@@ -51,6 +52,7 @@ public class FinanceAccountAdminController {
     }
 
     @Operation(summary = "创建账目")
+    @OperationLog(module = "财务账户", action = "新增")
     @SaCheckPermission("finance:account:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid CreateAccountDTO dto) {
@@ -58,6 +60,7 @@ public class FinanceAccountAdminController {
     }
 
     @Operation(summary = "账目收/付款（推进 account_status）")
+    @OperationLog(module = "财务账户", action = "收付款")
     @SaCheckPermission("finance:account:receive")
     @PostMapping("/receive")
     public R<Void> receive(@RequestBody @Valid AccountReceiveDTO dto) {

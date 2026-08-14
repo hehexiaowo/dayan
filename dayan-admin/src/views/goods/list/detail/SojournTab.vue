@@ -15,7 +15,7 @@
  * - salesCount create 硬编码 0，UpdateDTO 无此字段，表单不展示。
  * - roomTypeCode/careTypeCode/foodTypeCode 无跨模块选择器文档，暂用 el-input 兜底。
  */
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -24,12 +24,20 @@ import {
   updateSojourn,
   deleteSojourn
 } from '@/api/goods-sku'
+import { listParks } from '@/api/park'
+import { listRoomTypes } from '@/api/park-room'
+import { listCareTypes } from '@/api/park-care'
+import { listFoodTypes } from '@/api/park-food'
 import {
   SKU_STATUS_OPTIONS,
   skuStatusLabel,
   skuStatusTagType
 } from '@/types/goods'
 import type { GoodsSojourn, GoodsSojournQuery } from '@/types/goods'
+import type { ParkInfo } from '@/types/park'
+import type { ParkRoomType } from '@/types/park-room'
+import type { ParkCareType } from '@/types/park-care'
+import type { ParkFoodType } from '@/types/park-food'
 import { formatDateTime, formatDate } from '@/utils/format'
 
 const props = defineProps<{
@@ -54,6 +62,69 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   )
 
 loadPage()
+
+/** 机构下拉 + 房型/照护/餐饮联动选项（随 parkCode 变化重载） */
+const parkOptions = ref<ParkInfo[]>([])
+const roomTypeOptions = ref<ParkRoomType[]>([])
+const careTypeOptions = ref<ParkCareType[]>([])
+const foodTypeOptions = ref<ParkFoodType[]>([])
+const parkNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const p of parkOptions.value) {
+    if (p.parkCode) map[p.parkCode] = p.fullName || p.shortName || p.parkCode
+  }
+  return map
+})
+
+/** 编辑回填时临时关闭 watch 的清空逻辑，避免覆盖刚回填的子类型选择 */
+const suppressSubWatch = ref(false)
+
+async function loadParks() {
+  try {
+    parkOptions.value = await listParks()
+  } catch {
+    parkOptions.value = []
+  }
+}
+
+/** 按机构加载房型/照护/餐饮子类型（联动） */
+async function loadSubTypes(parkCode: string) {
+  if (!parkCode) {
+    roomTypeOptions.value = []
+    careTypeOptions.value = []
+    foodTypeOptions.value = []
+    return
+  }
+  try {
+    const [rooms, cares, foods] = await Promise.all([
+      listRoomTypes(parkCode),
+      listCareTypes(parkCode),
+      listFoodTypes(parkCode)
+    ])
+    roomTypeOptions.value = rooms
+    careTypeOptions.value = cares
+    foodTypeOptions.value = foods
+  } catch {
+    roomTypeOptions.value = []
+    careTypeOptions.value = []
+    foodTypeOptions.value = []
+  }
+}
+
+/** 切换机构时重载子类型并清空已选（编辑回填时仅重载不清空） */
+watch(
+  () => form.parkCode,
+  (code) => {
+    if (!suppressSubWatch.value) {
+      form.roomTypeCode = ''
+      form.careTypeCode = ''
+      form.foodTypeCode = ''
+    }
+    loadSubTypes(code || '')
+  }
+)
+
+onMounted(loadParks)
 
 // ---------- 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -120,11 +191,15 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: GoodsSojourn) {
+async function openEdit(row: GoodsSojourn) {
   dialogMode.value = 'edit'
+  // 抑制 watch 清空，回填阶段由 openEdit 自行加载子类型
+  suppressSubWatch.value = true
   resetForm()
   Object.assign(form, row)
   dialogVisible.value = true
+  await loadSubTypes(row.parkCode || '')
+  suppressSubWatch.value = false
 }
 
 /** 轻量预校验：minDays ≤ maxDays、effectiveDate ≤ expireDate（后端兜底，仅提示） */
@@ -231,8 +306,12 @@ async function handleDeleteRow(row: GoodsSojourn) {
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="skuCode" label="规格编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="skuName" label="规格名称" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="parkCode" label="园区编码" min-width="120" show-overflow-tooltip />
-      <el-table-column prop="roomTypeCode" label="房型编码" min-width="120" show-overflow-tooltip />
+      <el-table-column label="机构" min-width="140" show-overflow-tooltip>
+        <template #default="{ row }">{{ parkNameMap[row.parkCode] || row.parkCode || '-' }}</template>
+      </el-table-column>
+      <el-table-column prop="roomTypeName" label="房型" min-width="120" show-overflow-tooltip>
+        <template #default="{ row }">{{ row.roomTypeName || row.roomTypeCode || '-' }}</template>
+      </el-table-column>
       <el-table-column prop="roomTypeName" label="房型名称" min-width="120" show-overflow-tooltip />
       <el-table-column prop="skuPrice" label="SKU 价格" width="110" align="right" />
       <el-table-column prop="priceUnit" label="价格单位" width="100" align="center" />
@@ -290,14 +369,33 @@ async function handleDeleteRow(row: GoodsSojourn) {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="园区编码" prop="parkCode">
-              <el-input v-model="form.parkCode" placeholder="园区编码" maxlength="50" />
+            <el-form-item label="机构" prop="parkCode">
+              <el-select v-model="form.parkCode" placeholder="选择机构" filterable style="width: 100%">
+                <el-option
+                  v-for="p in parkOptions"
+                  :key="p.parkCode"
+                  :label="p.fullName || p.shortName || p.parkCode"
+                  :value="p.parkCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="房型编码" prop="roomTypeCode">
-              <!-- TODO: roomTypeCode 暂无跨模块选择器文档，先用 input 兜底 -->
-              <el-input v-model="form.roomTypeCode" placeholder="房型编码" maxlength="50" />
+            <el-form-item label="房型" prop="roomTypeCode">
+              <el-select
+                v-model="form.roomTypeCode"
+                :placeholder="form.parkCode ? '选择房型' : '请先选择机构'"
+                :disabled="!form.parkCode"
+                filterable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="r in roomTypeOptions"
+                  :key="r.roomTypeCode"
+                  :label="r.roomTypeName || r.roomTypeCode"
+                  :value="r.roomTypeCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -306,15 +404,41 @@ async function handleDeleteRow(row: GoodsSojourn) {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <!-- TODO: careTypeCode 暂无跨模块选择器文档，先用 input 兜底 -->
-            <el-form-item label="照护类型编码">
-              <el-input v-model="form.careTypeCode" placeholder="照护类型编码" maxlength="50" />
+            <el-form-item label="照护类型">
+              <el-select
+                v-model="form.careTypeCode"
+                :placeholder="form.parkCode ? '选择照护类型' : '请先选择机构'"
+                :disabled="!form.parkCode"
+                filterable
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="c in careTypeOptions"
+                  :key="c.careTypeCode"
+                  :label="c.careTypeName || c.careTypeCode"
+                  :value="c.careTypeCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <!-- TODO: foodTypeCode 暂无跨模块选择器文档，先用 input 兜底 -->
-            <el-form-item label="餐饮类型编码">
-              <el-input v-model="form.foodTypeCode" placeholder="餐饮类型编码" maxlength="50" />
+            <el-form-item label="餐饮类型">
+              <el-select
+                v-model="form.foodTypeCode"
+                :placeholder="form.parkCode ? '选择餐饮类型' : '请先选择机构'"
+                :disabled="!form.parkCode"
+                filterable
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="f in foodTypeOptions"
+                  :key="f.foodTypeCode"
+                  :label="f.foodTypeName || f.foodTypeCode"
+                  :value="f.foodTypeCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">

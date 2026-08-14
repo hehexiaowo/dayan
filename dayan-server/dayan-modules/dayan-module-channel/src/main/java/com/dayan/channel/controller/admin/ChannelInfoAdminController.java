@@ -1,6 +1,7 @@
 package com.dayan.channel.controller.admin;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.dayan.channel.dto.ChannelAuditDTO;
 import com.dayan.channel.dto.ChannelInfoCreateDTO;
 import com.dayan.channel.dto.ChannelInfoQueryDTO;
 import com.dayan.channel.dto.ChannelInfoUpdateDTO;
@@ -75,6 +76,15 @@ public class ChannelInfoAdminController {
     @DeleteMapping("/{channelCode}")
     public R<Void> delete(@PathVariable String channelCode) {
         channelInfoService.delete(channelCode);
+        return R.ok();
+    }
+
+    @Operation(summary = "审核渠道（待审→通过/驳回）")
+    @OperationLog(module = "渠道管理", action = "审核")
+    @SaCheckPermission("channel:info:audit")
+    @PostMapping("/audit")
+    public R<Void> audit(@RequestBody @Valid ChannelAuditDTO dto) {
+        channelInfoService.audit(dto);
         return R.ok();
     }
 }

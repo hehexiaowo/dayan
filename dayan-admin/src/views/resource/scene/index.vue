@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
@@ -16,7 +16,9 @@ import {
   reshelvesScene,
   fullScene
 } from '@/api/scene'
+import { listParks } from '@/api/park'
 import type { SceneInfo, SceneInfoQuery } from '@/types/scene'
+import type { ParkInfo } from '@/types/park'
 import {
   SceneType,
   SceneStatus,
@@ -54,10 +56,29 @@ const {
     initialQuery: {
       sceneName: '',
       sceneType: undefined,
-      sceneStatus: undefined
+      sceneStatus: undefined,
+      parkCode: ''
     }
   }
 )
+
+/** 机构下拉选项 + 名称映射（后端 VO 不带 parkName，前端自行映射） */
+const parkOptions = ref<ParkInfo[]>([])
+const parkNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const p of parkOptions.value) {
+    if (p.parkCode) map[p.parkCode] = p.fullName || p.shortName || p.parkCode
+  }
+  return map
+})
+
+async function loadParks() {
+  try {
+    parkOptions.value = await listParks()
+  } catch {
+    parkOptions.value = []
+  }
+}
 
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -220,6 +241,7 @@ function handleReset() {
   query.sceneName = ''
   query.sceneType = undefined
   query.sceneStatus = undefined
+  query.parkCode = ''
   handleSearch()
 }
 
@@ -393,7 +415,10 @@ function goDetail(row: SceneInfo) {
 }
 
 // 初始化加载
-loadPage()
+onMounted(() => {
+  loadParks()
+  loadPage()
+})
 </script>
 
 <template>
@@ -412,6 +437,16 @@ loadPage()
         <el-form-item label="场景状态">
           <el-select v-model="query.sceneStatus" placeholder="全部" clearable style="width: 140px">
             <el-option v-for="o in SCENE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="机构">
+          <el-select v-model="query.parkCode" placeholder="全部机构" clearable filterable style="width: 200px">
+            <el-option
+              v-for="p in parkOptions"
+              :key="p.parkCode"
+              :label="p.fullName || p.shortName || p.parkCode"
+              :value="p.parkCode!"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -438,7 +473,9 @@ loadPage()
             <el-tag type="info">{{ sceneTypeLabel(row.sceneType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="parkCode" label="机构" min-width="120" show-overflow-tooltip />
+        <el-table-column label="机构" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ parkNameMap[row.parkCode] || row.parkCode || '-' }}</template>
+        </el-table-column>
         <el-table-column label="价格" width="120" align="center">
           <template #default="{ row }">
             {{ priceLabel(row) }}
@@ -560,7 +597,14 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="关联机构">
-              <el-input v-model="form.parkCode" placeholder="养老机构编码（parkCode）" maxlength="50" />
+              <el-select v-model="form.parkCode" placeholder="选择养老机构" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="p in parkOptions"
+                  :key="p.parkCode"
+                  :label="p.fullName || p.shortName || p.parkCode"
+                  :value="p.parkCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">

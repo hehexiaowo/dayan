@@ -3,6 +3,7 @@ package com.dayan.service.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.service.dto.ArrangeConfirmDTO;
 import com.dayan.service.dto.ServiceEquityArrangeCreateDTO;
 import com.dayan.service.dto.ServiceEquityArrangeQueryDTO;
@@ -53,6 +54,7 @@ public class ServiceEquityArrangeAdminController {
     }
 
     @Operation(summary = "新增安排")
+    @OperationLog(module = "全程安排", action = "新增")
     @SaCheckPermission("service:equity-arrange:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceEquityArrangeCreateDTO dto) {
@@ -60,6 +62,7 @@ public class ServiceEquityArrangeAdminController {
     }
 
     @Operation(summary = "修改安排")
+    @OperationLog(module = "全程安排", action = "修改")
     @SaCheckPermission("service:equity-arrange:update")
     @PutMapping("/{arrangeCode}")
     public R<Void> update(@PathVariable String arrangeCode,
@@ -69,6 +72,7 @@ public class ServiceEquityArrangeAdminController {
     }
 
     @Operation(summary = "确认安排（isConfirmed 置 1，写 confirmTime）")
+    @OperationLog(module = "全程安排", action = "确认安排")
     @SaCheckPermission("service:equity-arrange:confirm")
     @PostMapping("/confirm")
     public R<Void> confirm(@RequestBody @Valid ArrangeConfirmDTO dto) {
@@ -77,6 +81,7 @@ public class ServiceEquityArrangeAdminController {
     }
 
     @Operation(summary = "删除安排")
+    @OperationLog(module = "全程安排", action = "删除")
     @SaCheckPermission("service:equity-arrange:delete")
     @DeleteMapping("/{arrangeCode}")
     public R<Void> delete(@PathVariable String arrangeCode) {

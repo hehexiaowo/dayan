@@ -2,6 +2,7 @@ package com.dayan.finance.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.finance.dto.FinanceFlowQueryDTO;
 import com.dayan.finance.dto.RecordFlowDTO;
 import com.dayan.finance.service.FinanceFlowService;
@@ -50,6 +51,7 @@ public class FinanceFlowAdminController {
     }
 
     @Operation(summary = "记录财务流水")
+    @OperationLog(module = "财务流水", action = "记录")
     @SaCheckPermission("finance:flow:record")
     @PostMapping("/record")
     public R<String> record(@RequestBody @Valid RecordFlowDTO dto) {

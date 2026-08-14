@@ -12,13 +12,14 @@
  * - status 2 态（0已解绑 1服务中）。
  * - clientCode 无客户选择器文档，用 input 兜底 + TODO。
  */
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
   listAgentClientRelsByAgent,
   bindAgentClient,
   unbindAgentClient
 } from '@/api/agent'
+import { pageClients } from '@/api/client'
 import {
   BIND_TYPE_OPTIONS,
   CLIENT_REL_STATUS_OPTIONS,
@@ -27,6 +28,7 @@ import {
   clientRelStatusTagType
 } from '@/types/agent'
 import type { AgentClientRel } from '@/types/agent'
+import type { ClientInfo } from '@/types/client'
 import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
@@ -51,6 +53,18 @@ async function loadList() {
 }
 
 loadList()
+
+/** 客户下拉选项（绑定客户用） */
+const clientOptions = ref<ClientInfo[]>([])
+async function loadClients() {
+  try {
+    const res = await pageClients({ current: 1, size: 1000 })
+    clientOptions.value = res.records
+  } catch {
+    clientOptions.value = []
+  }
+}
+onMounted(loadClients)
 
 // ---------- 绑定弹窗 ----------
 const dialogVisible = ref(false)
@@ -177,9 +191,15 @@ defineExpose({ loadList })
         <el-form-item label="代理人编码">
           <el-input :model-value="props.agentCode" disabled />
         </el-form-item>
-        <el-form-item label="客户编码" prop="clientCode">
-          <!-- TODO: 接入客户选择器（需客户列表接口），暂用 input 兜底 -->
-          <el-input v-model="form.clientCode" placeholder="客户编码" maxlength="64" />
+        <el-form-item label="客户" prop="clientCode">
+          <el-select v-model="form.clientCode" placeholder="选择客户" filterable style="width: 100%">
+            <el-option
+              v-for="c in clientOptions"
+              :key="c.clientCode"
+              :label="c.clientName || c.clientCode"
+              :value="c.clientCode!"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="绑定类型">
           <el-select v-model="form.bindType" style="width: 100%">

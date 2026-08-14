@@ -32,11 +32,15 @@ import {
 } from '@/types/service'
 import type { ButlerServiceRecord, ButlerServiceRecordQuery } from '@/types/service'
 import { formatDateTime, formatDate } from '@/utils/format'
+import { useClientPicker } from '@/composables/useClientPicker'
 
 const props = defineProps<{
   /** 管家编码（路由参数） */
   butlerCode: string
 }>()
+
+// ---------- 客户远程搜索选择器（pageClients 数据源） ----------
+const { clientOptions, clientLoading, searchClients, ensureClient } = useClientPicker()
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
   useCrud<ButlerServiceRecord, ButlerServiceRecordQuery, string>(
@@ -114,6 +118,8 @@ function openEdit(row: ButlerServiceRecord) {
     communicateWay: row.communicateWay,
     remark: row.remark ?? ''
   })
+  // 编辑回填时确保已选客户出现在候选列表（否则只显示 code）
+  ensureClient(row.clientCode)
   dialogVisible.value = true
 }
 
@@ -238,9 +244,24 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="客户编码" prop="clientCode">
-              <!-- TODO: 接入客户选择器（需客户列表接口），暂用 input 兜底 -->
-              <el-input v-model="form.clientCode" placeholder="客户编码" maxlength="64" />
+            <el-form-item label="客户" prop="clientCode">
+              <el-select
+                v-model="form.clientCode"
+                filterable
+                remote
+                clearable
+                :remote-method="searchClients"
+                :loading="clientLoading"
+                placeholder="输入客户姓名搜索"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="c in clientOptions"
+                  :key="c.clientCode"
+                  :label="`${c.fullName}（${c.clientCode}）`"
+                  :value="c.clientCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

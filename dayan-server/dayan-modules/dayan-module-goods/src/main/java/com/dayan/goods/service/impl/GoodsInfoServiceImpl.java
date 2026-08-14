@@ -48,14 +48,16 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
     /** 序列键（全局共享计数，channelCode=0） */
     private static final String SEQ_KEY = "code:seq:" + CODE_PREFIX + ":0";
 
-    /** 默认商品状态：0=下架 */
+    /** 默认商品状态：0=草稿 */
     private static final int DEFAULT_GOODS_STATUS = 0;
     /** 默认审核状态：0=待审 */
     private static final int DEFAULT_AUDIT_STATUS = 0;
-    /** 上架 */
-    private static final int STATUS_ON = 1;
-    /** 下架 */
-    private static final int STATUS_OFF = 0;
+    /** 上架（DDL 5 态：2=已上架） */
+    private static final int STATUS_ON_SHELF = 2;
+    /** 下架（DDL 5 态：3=已下架） */
+    private static final int STATUS_OFF_SHELF = 3;
+    /** 售罄（DDL 5 态：4=已售罄） */
+    private static final int STATUS_SOLD_OUT = 4;
 
     private final GoodsInfoMapper goodsInfoMapper;
     private final GoodsSceneMapper sceneMapper;
@@ -161,9 +163,18 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void shelf(GoodsInfoShelfDTO dto) {
         GoodsInfo existing = requireGoods(dto.getGoodsCode());
-        Integer target = dto.getGoodsStatus();
-        if (target == null || (target != STATUS_ON && target != STATUS_OFF)) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "goodsStatus 仅支持 0=下架 / 1=上架");
+        Integer input = dto.getGoodsStatus();
+        // 入参约定 0=下架 / 1=上架 / 4=售罄（保持前端兼容），映射到 DDL 5 态落库，避免与 goods_status 5 态语义错位
+        if (input == null || (input != 0 && input != 1 && input != 4)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "goodsStatus 仅支持 0=下架 / 1=上架 / 4=售罄");
+        }
+        int target;
+        if (input == 1) {
+            target = STATUS_ON_SHELF;
+        } else if (input == 4) {
+            target = STATUS_SOLD_OUT;
+        } else {
+            target = STATUS_OFF_SHELF;
         }
         GoodsInfo update = new GoodsInfo();
         update.setId(existing.getId());

@@ -14,7 +14,6 @@ import {
   type ConfigValueType,
   CONFIG_VALUE_TYPE_OPTIONS,
   CONFIG_ENV_OPTIONS,
-  CONFIG_SCOPE_OPTIONS,
   CONFIG_GROUP_OPTIONS
 } from '@/types/config'
 
@@ -33,7 +32,7 @@ const crud = useCrud<SystemConfig, ConfigQuery>(
     update: updateConfig,
     remove: deleteConfig
   },
-  { initialQuery: { configGroup: '' } }
+  { initialQuery: { configGroup: '', configKey: '' } }
 )
 
 const {
@@ -64,7 +63,7 @@ function defaultForm(): SystemConfig {
     configValue: '',
     valueType: 'string',
     env: 'all',
-    scope: 'system',
+    scope: 'global',
     organCode: null,
     userCode: null,
     configName: '',
@@ -88,8 +87,7 @@ const rules: FormRules<SystemConfig> = {
     { max: 100, message: '配置名称长度不能超过 100', trigger: 'blur' }
   ],
   valueType: [{ required: true, message: '请选择值类型', trigger: 'change' }],
-  env: [{ required: true, message: '请选择环境', trigger: 'change' }],
-  scope: [{ required: true, message: '请选择作用域', trigger: 'change' }]
+  env: [{ required: true, message: '请选择环境', trigger: 'change' }]
 }
 
 /** 打开新增弹窗 */
@@ -158,10 +156,11 @@ function valueTypeTagType(vt: string) {
   return map[vt] || 'info'
 }
 
-/** scope 标签文案 */
-function scopeLabel(scope: string): string {
-  const o = CONFIG_SCOPE_OPTIONS.find((i) => i.value === scope)
-  return o ? o.label : scope
+/** 重置搜索条件 */
+function handleReset() {
+  query.configGroup = ''
+  query.configKey = ''
+  handleSearch()
 }
 
 /** env 标签文案 */
@@ -183,7 +182,7 @@ loadPage()
           v-model="query.configGroup"
           placeholder="全部分组"
           clearable
-          style="width: 200px"
+          style="width: 180px"
           @change="handleSearch"
         >
           <el-option
@@ -193,9 +192,19 @@ loadPage()
             :value="item.value"
           />
         </el-select>
+        <el-input
+          v-model="query.configKey"
+          placeholder="配置 Key"
+          clearable
+          style="width: 220px"
+          @keyup.enter="handleSearch"
+        />
         <div class="toolbar-actions">
           <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>查询
+          </el-button>
+          <el-button @click="handleReset">
+            <el-icon><Refresh /></el-icon>重置
           </el-button>
           <el-button @click="openCreate">
             <el-icon><Plus /></el-icon>新增配置
@@ -227,9 +236,6 @@ loadPage()
         </el-table-column>
         <el-table-column label="环境" width="80" align="center">
           <template #default="{ row }">{{ envLabel(row.env) }}</template>
-        </el-table-column>
-        <el-table-column label="作用域" width="90" align="center">
-          <template #default="{ row }">{{ scopeLabel(row.scope) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" align="center" fixed="right">
           <template #default="{ row }">
@@ -307,7 +313,7 @@ loadPage()
         </el-form-item>
 
         <el-row :gutter="16">
-          <el-col :span="8">
+          <el-col :span="12">
             <el-form-item label="值类型" prop="valueType">
               <el-select v-model="form.valueType" placeholder="选择类型" style="width: 100%">
                 <el-option
@@ -319,23 +325,11 @@ loadPage()
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="12">
             <el-form-item label="环境" prop="env">
               <el-select v-model="form.env" placeholder="选择环境" style="width: 100%">
                 <el-option
                   v-for="item in CONFIG_ENV_OPTIONS"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="作用域" prop="scope">
-              <el-select v-model="form.scope" placeholder="选择作用域" style="width: 100%">
-                <el-option
-                  v-for="item in CONFIG_SCOPE_OPTIONS"
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"

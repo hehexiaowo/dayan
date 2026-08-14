@@ -2,6 +2,7 @@ package com.dayan.finance.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.finance.dto.BillAuditDTO;
 import com.dayan.finance.dto.BillFinishSettleDTO;
 import com.dayan.finance.dto.FinanceBillQueryDTO;
@@ -52,6 +53,7 @@ public class FinanceBillAdminController {
     }
 
     @Operation(summary = "生成结算单")
+    @OperationLog(module = "财务账单", action = "生成")
     @SaCheckPermission("finance:bill:generate")
     @PostMapping("/generate")
     public R<String> generate(@RequestBody @Valid GenerateBillDTO dto) {
@@ -59,6 +61,7 @@ public class FinanceBillAdminController {
     }
 
     @Operation(summary = "审核结算单（0→1 通过 / 0→4 拒绝）")
+    @OperationLog(module = "财务账单", action = "审核")
     @SaCheckPermission("finance:bill:audit")
     @PostMapping("/audit")
     public R<Void> audit(@RequestBody @Valid BillAuditDTO dto) {
@@ -67,6 +70,7 @@ public class FinanceBillAdminController {
     }
 
     @Operation(summary = "开始结算（1→2）")
+    @OperationLog(module = "财务账单", action = "开始结算")
     @SaCheckPermission("finance:bill:start-settle")
     @PostMapping("/start-settle/{billCode}")
     public R<Void> startSettle(@PathVariable String billCode) {
@@ -75,6 +79,7 @@ public class FinanceBillAdminController {
     }
 
     @Operation(summary = "完成结算（2→3）")
+    @OperationLog(module = "财务账单", action = "完成结算")
     @SaCheckPermission("finance:bill:finish-settle")
     @PostMapping("/finish-settle")
     public R<Void> finishSettle(@RequestBody @Valid BillFinishSettleDTO dto) {

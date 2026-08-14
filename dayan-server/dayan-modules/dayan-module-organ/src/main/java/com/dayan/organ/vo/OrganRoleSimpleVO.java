@@ -17,6 +17,9 @@ public class OrganRoleSimpleVO {
     /** 所属组织编码 */
     private String organCode;
 
+    /** 所属组织名称（organ_info.full_name 解析） */
+    private String organName;
+
     /** 角色类型 */
     private Integer roleType;
 

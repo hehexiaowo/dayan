@@ -2,6 +2,7 @@ package com.dayan.finance.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.finance.dto.CreatePaymentDTO;
 import com.dayan.finance.dto.FinancePaymentQueryDTO;
 import com.dayan.finance.dto.PaymentMarkFailedDTO;
@@ -52,6 +53,7 @@ public class FinancePaymentAdminController {
     }
 
     @Operation(summary = "创建支付记录")
+    @OperationLog(module = "财务支付", action = "新增")
     @SaCheckPermission("finance:payment:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid CreatePaymentDTO dto) {
@@ -59,6 +61,7 @@ public class FinancePaymentAdminController {
     }
 
     @Operation(summary = "标记支付成功（0→1）")
+    @OperationLog(module = "财务支付", action = "标记成功")
     @SaCheckPermission("finance:payment:mark-success")
     @PostMapping("/mark-success")
     public R<Void> markSuccess(@RequestBody @Valid PaymentMarkSuccessDTO dto) {
@@ -67,6 +70,7 @@ public class FinancePaymentAdminController {
     }
 
     @Operation(summary = "标记支付失败（0→2）")
+    @OperationLog(module = "财务支付", action = "标记失败")
     @SaCheckPermission("finance:payment:mark-failed")
     @PostMapping("/mark-failed")
     public R<Void> markFailed(@RequestBody @Valid PaymentMarkFailedDTO dto) {

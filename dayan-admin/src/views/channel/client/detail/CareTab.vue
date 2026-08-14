@@ -12,7 +12,7 @@
  *   长文本（parkRecommendations/evalResult/specialRequirements）用 textarea。
  * - budgetMin/budgetMax 是 BigDecimal；evalDate/expectedCheckinDate 是 date。
  */
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -21,7 +21,9 @@ import {
   updateCareNeed,
   deleteCareNeed
 } from '@/api/client-sub'
+import { listButlers } from '@/api/service'
 import type { ClientCareNeed, ClientCareNeedQuery } from '@/types/client'
+import type { ButlerInfo } from '@/types/service'
 
 const props = defineProps<{
   /** 客户编码（路由参数） */
@@ -48,6 +50,17 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 )
 
 loadPage()
+
+/** 管家下拉选项（watch 联动 butlerFullName 见 form 定义后） */
+const butlerOptions = ref<ButlerInfo[]>([])
+async function loadButlers() {
+  try {
+    butlerOptions.value = await listButlers()
+  } catch {
+    butlerOptions.value = []
+  }
+}
+onMounted(loadButlers)
 
 // ---------- 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -114,6 +127,15 @@ function openEdit(row: ClientCareNeed) {
   Object.assign(form, row)
   dialogVisible.value = true
 }
+
+// 选 butler 后联动回填 butlerFullName（找不到则保留原值，避免编辑回填被清空）
+watch(
+  () => form.butlerCode,
+  (code) => {
+    const b = butlerOptions.value.find((x) => x.butlerCode === code)
+    if (b) form.butlerFullName = b.butlerName || ''
+  }
+)
 
 async function handleSubmit() {
   if (!formRef.value) return
@@ -263,13 +285,20 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="评估管家编码">
-              <el-input v-model="form.butlerCode" placeholder="管家编码" maxlength="64" />
+            <el-form-item label="评估管家">
+              <el-select v-model="form.butlerCode" placeholder="选择管家" filterable clearable style="width: 100%">
+                <el-option
+                  v-for="b in butlerOptions"
+                  :key="b.butlerCode"
+                  :label="b.butlerName || b.butlerCode"
+                  :value="b.butlerCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="评估管家姓名">
-              <el-input v-model="form.butlerFullName" placeholder="管家姓名" maxlength="50" />
+            <el-form-item label="管家姓名">
+              <el-input v-model="form.butlerFullName" placeholder="选择管家后自动带出" disabled />
             </el-form-item>
           </el-col>
           <el-col :span="12">

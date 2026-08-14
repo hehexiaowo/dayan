@@ -67,3 +67,27 @@ export function deleteAccount(accountCode: string): Promise<void> {
     method: 'delete'
   })
 }
+
+/**
+ * 账号-角色关联接口。
+ *
+ * 对应后端 OrganAccountRoleAdminController（/admin-api/account-roles/*）。
+ * 角色分配为「全量覆盖」语义。
+ */
+
+/** 查询账号已分配角色编码列表：GET /admin-api/account-roles/{accountCode}/roles */
+export function getAccountRoles(accountCode: string): Promise<string[]> {
+  return request<string[]>({
+    url: `/admin-api/account-roles/${accountCode}/roles`,
+    method: 'get'
+  })
+}
+
+/** 给账号分配角色（全量覆盖）：PUT /admin-api/account-roles/{accountCode}/roles */
+export function assignAccountRoles(accountCode: string, roleCodes: string[]): Promise<void> {
+  return request<void>({
+    url: `/admin-api/account-roles/${accountCode}/roles`,
+    method: 'put',
+    data: roleCodes
+  })
+}

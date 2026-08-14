@@ -7,6 +7,8 @@ import com.dayan.supplier.dto.SupplierInfoUpdateDTO;
 import com.dayan.supplier.vo.SupplierInfoVO;
 import com.dayan.common.core.resp.PageResult;
 
+import java.util.List;
+
 /**
  * 供应商信息服务。
  *
@@ -19,6 +21,11 @@ public interface SupplierInfoService {
      * 分页查询。
      */
     PageResult<SupplierInfoVO> page(SupplierInfoQueryDTO query);
+
+    /**
+     * 全量列表（不分页，下拉/关联选择用）。
+     */
+    List<SupplierInfoVO> list(SupplierInfoQueryDTO query);
 
     /**
      * 详情。

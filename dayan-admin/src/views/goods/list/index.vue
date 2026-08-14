@@ -247,8 +247,8 @@ async function handleDeleteRow(row: GoodsInfo) {
 }
 
 // ---------- 上下架 ----------
-// shelf 接口语义偏差（已知遗留）：判断是否上架用 DDL 的 2（ON_SHELF），
-// 但 shelf 接口传 0/1（0下架/1上架）。详见 api/goods.ts shelfGoods 注释。
+// shelf 接口入参 0=下架 / 1=上架 / 4=售罄（后端映射到 DDL 5 态落库）。
+// 判断是否上架用 DDL 的 2（ON_SHELF）。
 async function handleShelf(row: GoodsInfo) {
   if (!row.goodsCode) return
   const isOnShelf = row.goodsStatus === GoodsStatus.ON_SHELF
@@ -265,6 +265,19 @@ async function handleShelf(row: GoodsInfo) {
     goodsStatus: targetStatus
   })
   ElMessage.success(`${action}成功`)
+  loadPage()
+}
+
+/** 置售罄（shelf 传 4，仅已上架商品可操作） */
+async function handleSoldOut(row: GoodsInfo) {
+  if (!row.goodsCode) return
+  await ElMessageBox.confirm(`确定将「${row.goodsName}」标记为售罄吗？`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await shelfGoods({ goodsCode: row.goodsCode, goodsStatus: 4 })
+  ElMessage.success('已标记售罄')
   loadPage()
 }
 
@@ -444,7 +457,7 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
@@ -456,6 +469,15 @@ loadPage()
               @click="handleShelf(row)"
             >
               下架
+            </el-button>
+            <el-button
+              v-if="row.goodsStatus === GoodsStatus.ON_SHELF"
+              link
+              type="danger"
+              size="small"
+              @click="handleSoldOut(row)"
+            >
+              置售罄
             </el-button>
             <el-button
               v-else

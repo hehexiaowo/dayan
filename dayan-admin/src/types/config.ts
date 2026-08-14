@@ -89,6 +89,8 @@ export interface SystemConfig {
 export interface ConfigQuery {
   /** 配置分组筛选 */
   configGroup?: string
+  /** 配置 Key 模糊筛选 */
+  configKey?: string
   current: number
   size: number
 }

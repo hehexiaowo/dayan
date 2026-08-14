@@ -3,6 +3,7 @@ package com.dayan.service.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.service.dto.ServiceEquitySolutionCreateDTO;
 import com.dayan.service.dto.ServiceEquitySolutionQueryDTO;
 import com.dayan.service.dto.ServiceEquitySolutionUpdateDTO;
@@ -53,6 +54,7 @@ public class ServiceEquitySolutionAdminController {
     }
 
     @Operation(summary = "新增方案")
+    @OperationLog(module = "权益方案", action = "新增")
     @SaCheckPermission("service:equity-solution:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceEquitySolutionCreateDTO dto) {
@@ -60,6 +62,7 @@ public class ServiceEquitySolutionAdminController {
     }
 
     @Operation(summary = "修改方案")
+    @OperationLog(module = "权益方案", action = "修改")
     @SaCheckPermission("service:equity-solution:update")
     @PutMapping("/{solutionCode}")
     public R<Void> update(@PathVariable String solutionCode,
@@ -69,6 +72,7 @@ public class ServiceEquitySolutionAdminController {
     }
 
     @Operation(summary = "方案接受/拒绝标记（0=否, 1=是, 2=需调整）")
+    @OperationLog(module = "权益方案", action = "接受标记")
     @SaCheckPermission("service:equity-solution:accept")
     @PostMapping("/accept")
     public R<Void> accept(@RequestBody @Valid SolutionAcceptDTO dto) {
@@ -77,6 +81,7 @@ public class ServiceEquitySolutionAdminController {
     }
 
     @Operation(summary = "删除方案")
+    @OperationLog(module = "权益方案", action = "删除")
     @SaCheckPermission("service:equity-solution:delete")
     @DeleteMapping("/{solutionCode}")
     public R<Void> delete(@PathVariable String solutionCode) {

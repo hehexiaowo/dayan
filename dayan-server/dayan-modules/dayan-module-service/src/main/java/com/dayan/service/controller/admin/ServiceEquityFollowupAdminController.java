@@ -3,6 +3,7 @@ package com.dayan.service.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.service.dto.ServiceEquityFollowupCreateDTO;
 import com.dayan.service.dto.ServiceEquityFollowupQueryDTO;
 import com.dayan.service.dto.ServiceEquityFollowupUpdateDTO;
@@ -52,6 +53,7 @@ public class ServiceEquityFollowupAdminController {
     }
 
     @Operation(summary = "新增回访")
+    @OperationLog(module = "回访品控", action = "新增")
     @SaCheckPermission("service:equity-followup:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ServiceEquityFollowupCreateDTO dto) {
@@ -59,6 +61,7 @@ public class ServiceEquityFollowupAdminController {
     }
 
     @Operation(summary = "修改回访")
+    @OperationLog(module = "回访品控", action = "修改")
     @SaCheckPermission("service:equity-followup:update")
     @PutMapping("/{followupCode}")
     public R<Void> update(@PathVariable String followupCode,
@@ -68,6 +71,7 @@ public class ServiceEquityFollowupAdminController {
     }
 
     @Operation(summary = "删除回访")
+    @OperationLog(module = "回访品控", action = "删除")
     @SaCheckPermission("service:equity-followup:delete")
     @DeleteMapping("/{followupCode}")
     public R<Void> delete(@PathVariable String followupCode) {

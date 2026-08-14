@@ -18,10 +18,13 @@ import {
   createChannelAccount,
   updateChannelAccount,
   deleteChannelAccount,
-  resetChannelAccountPassword
+  resetChannelAccountPassword,
+  pageChannelRoles,
+  getChannelAccountRoles,
+  updateChannelAccountRoles
 } from '@/api/channel-sub'
 import { CHANNEL_ACCOUNT_STATUS_OPTIONS, CHANNEL_IS_ADMIN_OPTIONS } from '@/types/channel'
-import type { ChannelAccount, ChannelAccountQuery } from '@/types/channel'
+import type { ChannelAccount, ChannelAccountQuery, ChannelRole } from '@/types/channel'
 import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{
@@ -182,6 +185,45 @@ async function handleResetPassword(row: ChannelAccount) {
   ElMessage.success('密码已重置')
 }
 
+// ---------- 分配角色 ----------
+const roleDialogVisible = ref(false)
+const roleLoading = ref(false)
+const roleSubmitLoading = ref(false)
+const roleOptions = ref<ChannelRole[]>([])
+const checkedRoleCodes = ref<string[]>([])
+const currentAccountCode = ref('')
+
+async function openAssignRole(row: ChannelAccount) {
+  if (!row.accountCode) return
+  currentAccountCode.value = row.accountCode
+  roleDialogVisible.value = true
+  roleLoading.value = true
+  try {
+    const [roles, granted] = await Promise.all([
+      pageChannelRoles({ channelCode: props.channelCode, current: 1, size: 1000 }),
+      getChannelAccountRoles(row.accountCode)
+    ])
+    roleOptions.value = roles.records
+    checkedRoleCodes.value = granted
+  } catch {
+    roleOptions.value = []
+    checkedRoleCodes.value = []
+  } finally {
+    roleLoading.value = false
+  }
+}
+
+async function handleRoleSubmit() {
+  roleSubmitLoading.value = true
+  try {
+    await updateChannelAccountRoles(currentAccountCode.value, checkedRoleCodes.value)
+    ElMessage.success('角色保存成功')
+    roleDialogVisible.value = false
+  } finally {
+    roleSubmitLoading.value = false
+  }
+}
+
 // ---------- 辅助渲染 ----------
 function accountStatusLabel(v?: number): string {
   const found = CHANNEL_ACCOUNT_STATUS_OPTIONS.find((o) => o.value === v)
@@ -251,6 +293,7 @@ defineExpose({ loadPage })
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button link type="success" size="small" @click="openAssignRole(row)">分配角色</el-button>
           <el-button link type="warning" size="small" @click="handleResetPassword(row)">重置密码</el-button>
           <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
         </template>
@@ -373,6 +416,23 @@ defineExpose({ loadPage })
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 分配角色弹窗 -->
+    <el-dialog v-model="roleDialogVisible" title="分配角色" width="520px" :close-on-click-modal="false">
+      <div v-loading="roleLoading" style="max-height: 420px; overflow: auto">
+        <el-checkbox-group v-model="checkedRoleCodes">
+          <div v-for="r in roleOptions" :key="r.roleCode" style="padding: 4px 0">
+            <el-checkbox :value="r.roleCode">
+              {{ r.roleName }}（{{ r.roleCode }}）
+            </el-checkbox>
+          </div>
+        </el-checkbox-group>
+      </div>
+      <template #footer>
+        <el-button @click="roleDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="roleSubmitLoading" @click="handleRoleSubmit">保存</el-button>
       </template>
     </el-dialog>
   </div>

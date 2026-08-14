@@ -27,7 +27,8 @@ import type {
  * - ChannelOpenPlatform：自增 id（Long），路径参数用 id（与其他子表不同）。
  * - ChannelConfig*：不带主键路径，按 channelCode 整体 list/save（先删后增全量覆盖）。
  *
- * 权限分配端点（role 绑权限、account 绑角色）本次不实现，留待后续。
+ * 权限分配：role 绑权限（channel-roles/{roleCode}/permissions）、account 绑角色
+ * （channel-account-roles/{accountCode}/roles）、权限列表（channel-permissions/all）。
  */
 
 // ==================== 渠道账户（channel-accounts）====================
@@ -234,5 +235,57 @@ export function saveGoodsConfigs(channelCode: string, data: ChannelConfigGoods[]
     url: `/admin-api/channel-configs/${channelCode}/goods`,
     method: 'put',
     data
+  })
+}
+
+// ==================== 权限分配（role 绑权限 / account 绑角色）====================
+
+/** 渠道权限项（授权勾选用） */
+export interface ChannelPermissionOption {
+  permissionCode: string
+  permissionName: string
+  parentCode?: string
+  permissionType?: number
+}
+
+/** 全部启用渠道权限（授权勾选用）：GET /admin-api/channel-permissions/all */
+export function listAllChannelPermissions(): Promise<ChannelPermissionOption[]> {
+  return request<ChannelPermissionOption[]>({
+    url: '/admin-api/channel-permissions/all',
+    method: 'get'
+  })
+}
+
+/** 查询角色已分配权限码：GET /admin-api/channel-roles/{roleCode}/permissions */
+export function getChannelRolePermissions(roleCode: string): Promise<string[]> {
+  return request<string[]>({
+    url: `/admin-api/channel-roles/${roleCode}/permissions`,
+    method: 'get'
+  })
+}
+
+/** 给角色分配权限（全量覆盖，body=权限码数组）：PUT /admin-api/channel-roles/{roleCode}/permissions */
+export function updateChannelRolePermissions(roleCode: string, permissionCodes: string[]): Promise<void> {
+  return request<void>({
+    url: `/admin-api/channel-roles/${roleCode}/permissions`,
+    method: 'put',
+    data: permissionCodes
+  })
+}
+
+/** 查询账户已分配角色码：GET /admin-api/channel-account-roles/{accountCode}/roles */
+export function getChannelAccountRoles(accountCode: string): Promise<string[]> {
+  return request<string[]>({
+    url: `/admin-api/channel-account-roles/${accountCode}/roles`,
+    method: 'get'
+  })
+}
+
+/** 给账户分配角色（全量覆盖，body=角色码数组）：PUT /admin-api/channel-account-roles/{accountCode}/roles */
+export function updateChannelAccountRoles(accountCode: string, roleCodes: string[]): Promise<void> {
+  return request<void>({
+    url: `/admin-api/channel-account-roles/${accountCode}/roles`,
+    method: 'put',
+    data: roleCodes
   })
 }

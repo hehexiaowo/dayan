@@ -17,7 +17,11 @@ import {
   pageChannelRoles,
   createChannelRole,
   updateChannelRole,
-  deleteChannelRole
+  deleteChannelRole,
+  listAllChannelPermissions,
+  getChannelRolePermissions,
+  updateChannelRolePermissions,
+  type ChannelPermissionOption
 } from '@/api/channel-sub'
 import { CHANNEL_ROLE_TYPE_OPTIONS, CHANNEL_ROLE_STATUS_OPTIONS } from '@/types/channel'
 import type { ChannelRole, ChannelRoleQuery } from '@/types/channel'
@@ -142,6 +146,45 @@ async function handleDelete(row: ChannelRole) {
   loadPage()
 }
 
+// ---------- 分配权限 ----------
+const permDialogVisible = ref(false)
+const permLoading = ref(false)
+const permSubmitLoading = ref(false)
+const permOptions = ref<ChannelPermissionOption[]>([])
+const checkedPermCodes = ref<string[]>([])
+const currentRoleCode = ref('')
+
+async function openAssignPerm(row: ChannelRole) {
+  if (!row.roleCode) return
+  currentRoleCode.value = row.roleCode
+  permDialogVisible.value = true
+  permLoading.value = true
+  try {
+    const [all, granted] = await Promise.all([
+      listAllChannelPermissions(),
+      getChannelRolePermissions(row.roleCode)
+    ])
+    permOptions.value = all
+    checkedPermCodes.value = granted
+  } catch {
+    permOptions.value = []
+    checkedPermCodes.value = []
+  } finally {
+    permLoading.value = false
+  }
+}
+
+async function handlePermSubmit() {
+  permSubmitLoading.value = true
+  try {
+    await updateChannelRolePermissions(currentRoleCode.value, checkedPermCodes.value)
+    ElMessage.success('权限保存成功')
+    permDialogVisible.value = false
+  } finally {
+    permSubmitLoading.value = false
+  }
+}
+
 // ---------- 辅助渲染 ----------
 function roleTypeLabel(v?: number): string {
   const found = CHANNEL_ROLE_TYPE_OPTIONS.find((o) => o.value === v)
@@ -213,6 +256,7 @@ defineExpose({ loadPage })
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button link type="success" size="small" @click="openAssignPerm(row)">分配权限</el-button>
           <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -279,19 +323,29 @@ defineExpose({ loadPage })
               <el-input v-model="form.description" type="textarea" :rows="2" placeholder="角色描述" />
             </el-form-item>
           </el-col>
-          <el-col v-if="dialogMode === 'edit'" :span="24">
-            <el-alert
-              type="info"
-              :closable="false"
-              title="权限分配功能待后续实现；当前仅支持角色基本信息维护。"
-              show-icon
-            />
-          </el-col>
+          <!-- 权限分配已移至列表「分配权限」按钮 -->
         </el-row>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 分配权限弹窗 -->
+    <el-dialog v-model="permDialogVisible" title="分配权限" width="560px" :close-on-click-modal="false">
+      <div v-loading="permLoading" class="perm-list-wrap">
+        <el-checkbox-group v-model="checkedPermCodes">
+          <div v-for="p in permOptions" :key="p.permissionCode" style="padding: 4px 0">
+            <el-checkbox :value="p.permissionCode">
+              {{ p.permissionName }}（{{ p.permissionCode }}）
+            </el-checkbox>
+          </div>
+        </el-checkbox-group>
+      </div>
+      <template #footer>
+        <el-button @click="permDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="permSubmitLoading" @click="handlePermSubmit">保存</el-button>
       </template>
     </el-dialog>
   </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -8,9 +8,15 @@ import {
   updateAccount,
   deleteAccount,
   resetPassword,
-  switchAccountStatus
+  switchAccountStatus,
+  getAccountRoles,
+  assignAccountRoles
 } from '@/api/account'
+import { listAllOrgans } from '@/api/organ'
+import { pageRoles } from '@/api/role'
 import type { Account, AccountQuery } from '@/types/account'
+import type { OrganSimple } from '@/types/organ'
+import type { Role } from '@/types/role'
 import { AccountStatus, ACCOUNT_STATUS_OPTIONS, GENDER_OPTIONS } from '@/types/account'
 import { formatDateTime } from '@/utils/format'
 
@@ -58,8 +64,50 @@ const form = reactive<Account>({
   email: '',
   accountStatus: AccountStatus.ENABLED,
   isAdmin: 0,
-  remark: ''
+  remark: '',
+  roleCodes: []
 })
+
+/** 机构下拉选项（/organs/all） */
+const organOptions = ref<OrganSimple[]>([])
+/** 当前机构下可选角色（随 form.organCode 变化重载） */
+const roleOptions = ref<Role[]>([])
+
+async function loadOrgans() {
+  try {
+    organOptions.value = await listAllOrgans()
+  } catch {
+    organOptions.value = []
+  }
+}
+
+/** 加载某机构下的角色列表（供表单多选） */
+async function loadRoles(organCode: string) {
+  if (!organCode) {
+    roleOptions.value = []
+    return
+  }
+  try {
+    const res = await pageRoles({ organCode, current: 1, size: 1000 })
+    roleOptions.value = res.records
+  } catch {
+    roleOptions.value = []
+  }
+}
+
+/** 编辑回显时临时关闭 watch 的清空逻辑，避免覆盖刚加载的已分配角色 */
+const suppressRoleWatch = ref(false)
+
+/** 切换机构时重载角色选项并清空已选角色（程序化回显时仅重载不清空） */
+watch(
+  () => form.organCode,
+  (code) => {
+    if (!suppressRoleWatch.value) {
+      form.roleCodes = []
+    }
+    loadRoles(code)
+  }
+)
 
 const rules: FormRules<Account> = {
   organCode: [
@@ -123,7 +171,8 @@ function resetForm() {
     email: '',
     accountStatus: AccountStatus.ENABLED,
     isAdmin: 0,
-    remark: ''
+    remark: '',
+    roleCodes: []
   })
 }
 
@@ -133,8 +182,10 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: Account) {
+async function openEdit(row: Account) {
   dialogType.value = 'edit'
+  // 临时抑制 watch 清空，回显阶段由 openEdit 自行加载已分配角色
+  suppressRoleWatch.value = true
   resetForm()
   Object.assign(form, {
     organCode: row.organCode,
@@ -146,10 +197,17 @@ function openEdit(row: Account) {
     email: row.email,
     accountStatus: row.accountStatus,
     isAdmin: row.isAdmin,
-    remark: row.remark
+    remark: row.remark,
+    roleCodes: []
   })
   form.password = '' // 编辑时密码留空表示不修改
   dialogVisible.value = true
+  // 加载该机构角色选项 + 回显账号已分配角色
+  await loadRoles(row.organCode)
+  if (row.accountCode) {
+    form.roleCodes = await getAccountRoles(row.accountCode)
+  }
+  suppressRoleWatch.value = false
 }
 
 async function handleSubmit() {
@@ -167,12 +225,17 @@ async function handleSubmit() {
     if (dialogType.value === 'edit' && !payload.password) {
       delete payload.password
     }
+    // 角色走单独的分配接口，不随账号主体提交
+    const roleCodes = payload.roleCodes ?? []
+    delete payload.roleCodes
 
     if (dialogType.value === 'create') {
-      await createAccount(payload)
+      const accountCode = await createAccount(payload)
+      await assignAccountRoles(accountCode, roleCodes)
       ElMessage.success('新增成功')
     } else if (form.accountCode) {
       await updateAccount(form.accountCode, payload)
+      await assignAccountRoles(form.accountCode, roleCodes)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -234,6 +297,9 @@ function genderText(v?: number) {
 }
 
 // 初始化加载
+onMounted(() => {
+  loadOrgans()
+})
 loadPage()
 </script>
 
@@ -243,7 +309,14 @@ loadPage()
     <el-card shadow="never" class="search-card">
       <el-form :inline="true" :model="query" @submit.prevent>
         <el-form-item label="机构">
-          <el-input v-model="query.organCode" placeholder="机构编码" clearable />
+          <el-select v-model="query.organCode" placeholder="全部机构" clearable filterable style="width: 200px">
+            <el-option
+              v-for="o in organOptions"
+              :key="o.organCode"
+              :label="o.fullName || o.shortName || o.organCode"
+              :value="o.organCode"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="账号">
           <el-input v-model="query.username" placeholder="登录账号" clearable @keyup.enter="handleSearch" />
@@ -276,6 +349,19 @@ loadPage()
         <el-table-column prop="accountCode" label="账号编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="username" label="登录账号" min-width="120" show-overflow-tooltip />
         <el-table-column prop="realName" label="姓名" min-width="100" />
+        <el-table-column prop="organName" label="机构" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.organName || row.organCode || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="角色" min-width="180">
+          <template #default="{ row }">
+            <template v-if="row.roleNames && row.roleNames.length">
+              <el-tag v-for="name in row.roleNames" :key="name" size="small" style="margin-right: 4px">
+                {{ name }}
+              </el-tag>
+            </template>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="gender" label="性别" width="70">
           <template #default="{ row }">{{ genderText(row.gender) }}</template>
         </el-table-column>
@@ -326,8 +412,30 @@ loadPage()
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="机构编码" prop="organCode">
-              <el-input v-model="form.organCode" placeholder="机构编码" />
+            <el-form-item label="机构" prop="organCode">
+              <el-select v-model="form.organCode" placeholder="请选择机构" filterable style="width: 100%">
+                <el-option
+                  v-for="o in organOptions"
+                  :key="o.organCode"
+                  :label="o.fullName || o.shortName || o.organCode"
+                  :value="o.organCode"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="角色">
+              <el-select
+                v-model="form.roleCodes"
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                :placeholder="form.organCode ? '请选择角色' : '请先选择机构'"
+                :disabled="!form.organCode"
+                style="width: 100%"
+              >
+                <el-option v-for="r in roleOptions" :key="r.roleCode" :label="r.roleName" :value="r.roleCode!" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

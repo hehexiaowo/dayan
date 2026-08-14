@@ -35,6 +35,9 @@ async function loadData() {
     const res = await pageStateMachines({ ...query })
     tableData.value = res.records
     total.value = res.total
+  } catch {
+    tableData.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -77,10 +80,14 @@ function defaultForm(): SystemStateMachine {
     bizType: 'order',
     fromState: 0,
     fromStateName: '',
+    fromSubState: null,
     toState: 0,
     toStateName: '',
+    toSubState: null,
     eventCode: '',
     eventName: '',
+    conditionExpr: null,
+    actionBean: null,
     sortOrder: 0,
     status: 1,
     remark: null
@@ -275,7 +282,7 @@ onMounted(() => {
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="状态机编码" prop="machineCode">
-              <el-input v-model="form.machineCode" placeholder="如 order_state_machine" />
+              <el-input v-model="form.machineCode" placeholder="如 ORDER_SM（大写）" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -361,6 +368,26 @@ onMounted(() => {
             </el-form-item>
           </el-col>
         </el-row>
+
+        <el-divider content-position="left">高级配置（可选）</el-divider>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="起始子状态">
+              <el-input v-model="form.fromSubState" placeholder="子状态值（可空）" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="目标子状态">
+              <el-input v-model="form.toSubState" placeholder="子状态值（可空）" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="条件表达式">
+          <el-input v-model="form.conditionExpr" placeholder="流转条件表达式（可空）" />
+        </el-form-item>
+        <el-form-item label="执行器 Bean">
+          <el-input v-model="form.actionBean" placeholder="流转执行器 bean 名（可空）" />
+        </el-form-item>
 
         <el-form-item label="状态">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />

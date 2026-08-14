@@ -2,6 +2,7 @@ package com.dayan.equity.controller.admin;
 
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.log.operation.OperationLog;
 import com.dayan.equity.dto.EquityUsePersonCreateDTO;
 import com.dayan.equity.dto.EquityUsePersonQueryDTO;
 import com.dayan.equity.dto.EquityUsePersonUpdateDTO;
@@ -52,6 +53,7 @@ public class EquityUsePersonAdminController {
     }
 
     @Operation(summary = "登记使用人（≤3/身份证唯一/默认唯一）")
+    @OperationLog(module = "权益使用人", action = "新增")
     @SaCheckPermission("equity:use-person:create")
     @PostMapping
     public R<Long> create(@RequestBody @Valid EquityUsePersonCreateDTO dto) {
@@ -59,6 +61,7 @@ public class EquityUsePersonAdminController {
     }
 
     @Operation(summary = "修改使用人")
+    @OperationLog(module = "权益使用人", action = "修改")
     @SaCheckPermission("equity:use-person:update")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id,
@@ -68,6 +71,7 @@ public class EquityUsePersonAdminController {
     }
 
     @Operation(summary = "删除使用人")
+    @OperationLog(module = "权益使用人", action = "删除")
     @SaCheckPermission("equity:use-person:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
@@ -76,6 +80,7 @@ public class EquityUsePersonAdminController {
     }
 
     @Operation(summary = "设置默认权益人（同 equity_code 下其它置 0）")
+    @OperationLog(module = "权益使用人", action = "设置默认权益人")
     @SaCheckPermission("equity:use-person:set-default")
     @PostMapping("/set-default")
     public R<Void> setDefault(@RequestBody @Valid SetDefaultHolderDTO dto) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -10,7 +11,8 @@ import {
   publishCourse,
   offlineCourse
 } from '@/api/course'
-import type { CourseInfo, CourseInfoQuery } from '@/types/course'
+import { listCourseLecturers } from '@/api/course-sub'
+import type { CourseInfo, CourseInfoQuery, CourseLecturer } from '@/types/course'
 import {
   CourseType,
   COURSE_TYPE_OPTIONS,
@@ -34,10 +36,37 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
       initialQuery: {
         courseName: '',
         courseType: undefined,
-        courseStatus: undefined
+        courseStatus: undefined,
+        lecturerCode: ''
       }
     }
   )
+
+const router = useRouter()
+
+/** 讲师下拉选项 + 名称映射（后端 VO 不带 lecturerName，前端自行映射） */
+const lecturerOptions = ref<CourseLecturer[]>([])
+const lecturerNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const l of lecturerOptions.value) {
+    if (l.lecturerCode) map[l.lecturerCode] = l.lecturerName
+  }
+  return map
+})
+
+async function loadLecturers() {
+  try {
+    lecturerOptions.value = await listCourseLecturers({ status: 1 })
+  } catch {
+    lecturerOptions.value = []
+  }
+}
+
+/** 跳转课程详情 */
+function openDetail(row: CourseInfo) {
+  if (!row.courseCode) return
+  router.push({ name: 'CourseDetail', params: { courseCode: row.courseCode } })
+}
 
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -186,6 +215,7 @@ function handleReset() {
   query.courseName = ''
   query.courseType = undefined
   query.courseStatus = undefined
+  query.lecturerCode = ''
   handleSearch()
 }
 
@@ -196,7 +226,10 @@ function courseTypeLabel(type?: number): string {
 }
 
 // 初始化加载
-loadPage()
+onMounted(() => {
+  loadLecturers()
+  loadPage()
+})
 </script>
 
 <template>
@@ -220,6 +253,16 @@ loadPage()
         <el-form-item label="状态">
           <el-select v-model="query.courseStatus" placeholder="全部" clearable style="width: 120px">
             <el-option v-for="o in COURSE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="讲师">
+          <el-select v-model="query.lecturerCode" placeholder="全部讲师" clearable filterable style="width: 180px">
+            <el-option
+              v-for="l in lecturerOptions"
+              :key="l.lecturerCode"
+              :label="l.lecturerName"
+              :value="l.lecturerCode!"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -246,7 +289,9 @@ loadPage()
             <el-tag>{{ courseTypeLabel(row.courseType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="lecturerCode" label="讲师编码" min-width="120" show-overflow-tooltip />
+        <el-table-column label="讲师" min-width="120" show-overflow-tooltip>
+          <template #default="{ row }">{{ lecturerNameMap[row.lecturerCode] || row.lecturerCode || '-' }}</template>
+        </el-table-column>
         <el-table-column label="售价" width="100" align="right">
           <template #default="{ row }"> ¥{{ row.salePrice ?? 0 }} </template>
         </el-table-column>
@@ -263,8 +308,9 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button
               v-if="row.courseStatus === CourseStatus.OFFLINE"
@@ -328,8 +374,15 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="讲师编码">
-              <el-input v-model="form.lecturerCode" placeholder="讲师编码" />
+            <el-form-item label="讲师">
+              <el-select v-model="form.lecturerCode" placeholder="选择讲师" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="l in lecturerOptions"
+                  :key="l.lecturerCode"
+                  :label="`${l.lecturerName}${l.title ? '（' + l.title + '）' : ''}`"
+                  :value="l.lecturerCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="24">

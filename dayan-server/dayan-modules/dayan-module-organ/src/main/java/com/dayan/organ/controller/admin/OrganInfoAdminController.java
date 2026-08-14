@@ -7,12 +7,15 @@ import com.dayan.organ.dto.OrganInfoCreateDTO;
 import com.dayan.organ.dto.OrganInfoQueryDTO;
 import com.dayan.organ.dto.OrganInfoUpdateDTO;
 import com.dayan.organ.service.OrganInfoService;
+import com.dayan.organ.vo.OrganInfoSimpleVO;
 import com.dayan.organ.vo.OrganInfoVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Admin 端组织信息接口。
@@ -30,6 +33,13 @@ public class OrganInfoAdminController {
     @GetMapping
     public R<PageResult<OrganInfoVO>> page(OrganInfoQueryDTO query) {
         return R.ok(organInfoService.page(query));
+    }
+
+    @Operation(summary = "启用组织全量列表（下拉用）")
+    @SaCheckPermission("organ:info:list")
+    @GetMapping("/all")
+    public R<List<OrganInfoSimpleVO>> listAll() {
+        return R.ok(organInfoService.listAll());
     }
 
     @Operation(summary = "组织详情")

@@ -1,21 +1,31 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { listDictByType } from '@/api/dict'
+import { reactive, ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import {
+  listDictTypes,
+  listAllDictByType,
+  createDict,
+  updateDict,
+  deleteDict
+} from '@/api/dict'
 import { DICT_TYPE_OPTIONS, type SystemDictCommon } from '@/types/dict'
 
 /**
- * 字典管理页（只读）。
+ * 字典管理页。
  *
- * 后端字典 controller 仅提供查询（无 CRUD，字典由 seed 初始化）。
- * 左侧选择字典类型，右侧展示该类型的字典项列表。
+ * - 左侧字典类型从后端 listDictTypes() 动态加载（根治硬编码脱节）；
+ * - 右侧展示该类型全部字典项（含禁用，管理用），支持新增/编辑/删除；
+ * - 切换类型显式 loadData（不再 watch+click 双触发）。
  */
 
 const loading = ref(false)
 const tableData = ref<SystemDictCommon[]>([])
+/** 字典类型列表（动态加载，失败时回退到预设） */
+const dictTypes = ref<string[]>(DICT_TYPE_OPTIONS.map((o) => o.value))
 /** 当前选中的字典类型 */
-const currentType = ref<string>(DICT_TYPE_OPTIONS[0].value)
+const currentType = ref<string>(dictTypes.value[0])
 
-/** 拉取当前类型的字典项 */
+/** 拉取当前类型的全部字典项（含禁用） */
 async function loadData() {
   if (!currentType.value) {
     tableData.value = []
@@ -23,29 +33,119 @@ async function loadData() {
   }
   loading.value = true
   try {
-    tableData.value = await listDictByType(currentType.value)
-  } catch (err) {
-    // 错误消息已由响应拦截器统一提示
+    tableData.value = await listAllDictByType(currentType.value)
+  } catch {
     tableData.value = []
-    void err
   } finally {
     loading.value = false
   }
 }
 
-/** 切换字典类型 */
+/** 加载字典类型枚举 */
+async function loadTypes() {
+  try {
+    const types = await listDictTypes()
+    if (types.length) dictTypes.value = types
+  } catch {
+    // 接口失败时保留 DICT_TYPE_OPTIONS 回退
+  }
+  // 当前类型不在列表中则切到第一个
+  if (dictTypes.value.length && !dictTypes.value.includes(currentType.value)) {
+    currentType.value = dictTypes.value[0]
+  }
+  loadData()
+}
+
+/** 切换字典类型（显式加载，避免重复请求） */
 function handleTypeChange(type: string) {
   currentType.value = type
   loadData()
 }
 
-// 类型变化时重新拉取（兜底，确保 watch 与点击两条路径都能触发）
-watch(currentType, () => {
+// ---------------- 新增/编辑弹窗 ----------------
+const dialogVisible = ref(false)
+const dialogMode = ref<'create' | 'edit'>('create')
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
+
+function defaultForm(): SystemDictCommon {
+  return {
+    dictType: currentType.value,
+    dictCode: '',
+    dictName: '',
+    dictValue: '',
+    parentCode: null,
+    level: 1,
+    sortOrder: 0,
+    icon: null,
+    cssClass: null,
+    status: 1,
+    isDefault: 0,
+    remark: null
+  }
+}
+
+const form = reactive<SystemDictCommon>(defaultForm())
+
+const rules: FormRules<SystemDictCommon> = {
+  dictCode: [{ required: true, message: '请输入字典编码', trigger: 'blur' }],
+  dictName: [{ required: true, message: '请输入字典名称', trigger: 'blur' }],
+  dictValue: [{ required: true, message: '请输入字典值', trigger: 'blur' }]
+}
+
+function openCreate() {
+  dialogMode.value = 'create'
+  Object.assign(form, defaultForm())
+  dialogVisible.value = true
+}
+
+function openEdit(row: SystemDictCommon) {
+  dialogMode.value = 'edit'
+  Object.assign(form, defaultForm(), row)
+  dialogVisible.value = true
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+  submitLoading.value = true
+  try {
+    if (dialogMode.value === 'create') {
+      await createDict(form)
+      ElMessage.success('新增成功')
+    } else if (form.id) {
+      await updateDict(form.id, form)
+      ElMessage.success('修改成功')
+    }
+    dialogVisible.value = false
+    loadData()
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function onDelete(row: SystemDictCommon) {
+  if (!row.id) return
+  try {
+    await ElMessageBox.confirm(`确定删除字典项「${row.dictName}」吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  } catch {
+    return
+  }
+  await deleteDict(row.id)
+  ElMessage.success('删除成功')
   loadData()
-})
+}
 
 onMounted(() => {
-  loadData()
+  loadTypes()
 })
 </script>
 
@@ -58,30 +158,21 @@ onMounted(() => {
           <template #header>
             <span class="card-title">字典类型</span>
           </template>
-          <el-menu
-            :default-active="currentType"
-            class="type-menu"
-            @select="handleTypeChange"
-          >
-            <el-menu-item
-              v-for="item in DICT_TYPE_OPTIONS"
-              :key="item.value"
-              :index="item.value"
-            >
-              {{ item.label }}
-              <span class="type-code">{{ item.value }}</span>
+          <el-menu :default-active="currentType" class="type-menu" @select="handleTypeChange">
+            <el-menu-item v-for="t in dictTypes" :key="t" :index="t">
+              {{ t }}
             </el-menu-item>
           </el-menu>
         </el-card>
       </el-col>
 
-      <!-- 右侧：字典项列表（只读） -->
+      <!-- 右侧：字典项列表（可增删改） -->
       <el-col :span="19" :xs="24">
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
               <span class="card-title">字典项（{{ currentType }}）</span>
-              <el-tag type="info" size="small">只读</el-tag>
+              <el-button type="primary" size="small" @click="openCreate">新增字典项</el-button>
             </div>
           </template>
 
@@ -110,10 +201,82 @@ onMounted(() => {
               </template>
             </el-table-column>
             <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
+            <el-table-column label="操作" width="140" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+                <el-button link type="danger" size="small" @click="onDelete(row)">删除</el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 新增/编辑弹窗 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogMode === 'create' ? '新增字典项' : '编辑字典项'"
+      width="600px"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="字典类型">
+              <el-input v-model="form.dictType" :disabled="dialogMode === 'edit'" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="字典编码" prop="dictCode">
+              <el-input v-model="form.dictCode" :disabled="dialogMode === 'edit'" placeholder="类型内唯一" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="字典名称" prop="dictName">
+              <el-input v-model="form.dictName" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="字典值" prop="dictValue">
+              <el-input v-model="form.dictValue" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="排序号">
+              <el-input-number v-model="form.sortOrder" :min="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="层级">
+              <el-input-number v-model="form.level" :min="1" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态">
+              <el-select v-model="form.status" style="width: 100%">
+                <el-option label="启用" :value="1" />
+                <el-option label="禁用" :value="0" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="是否默认">
+              <el-switch v-model="form.isDefault" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="备注">
+              <el-input v-model="form.remark" type="textarea" :rows="2" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -141,18 +304,6 @@ onMounted(() => {
 
   .type-menu {
     border-right: none;
-
-    .el-menu-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .type-code {
-      font-size: 12px;
-      color: #8a8f99;
-      margin-left: 8px;
-    }
   }
 
   .text-muted {

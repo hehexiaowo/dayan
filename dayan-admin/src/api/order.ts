@@ -1,13 +1,24 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
-import type { OrderEquity, OrderEquityQuery, OrderScene, OrderSceneQuery } from '@/types/order'
+import type {
+  OrderCourse,
+  OrderCourseQuery,
+  OrderEquity,
+  OrderEquityQuery,
+  OrderScene,
+  OrderSceneQuery,
+  OrderSojourn,
+  OrderSojournQuery
+} from '@/types/order'
 
 /**
- * 订单域接口封装（权益订单 + 场景订单）。
+ * 订单域接口封装（权益订单 + 场景订单 + 课程订单 + 旅居订单）。
  *
  * 对应后端：
  * - OrderEquityAdminController（/admin-api/order/equity/*）
  * - OrderSceneAdminController（/admin-api/order/scene/*）
+ * - OrderCourseAdminController（/admin-api/order/course/*）
+ * - OrderSojournAdminController（/admin-api/order/sojourn/*）
  *
  * 第一版只实现列表 / 详情 / 取消；生命周期端点（pay-callback / deliver / complete /
  * apply-refund）暂留 TODO，由后续迭代补全。
@@ -93,3 +104,83 @@ export function cancelOrderScene(data: {
 // - payCallback（0→1 已支付）：POST /admin-api/order/scene/pay-callback
 // - complete（3→4 已完成）：POST /admin-api/order/scene/complete
 // - applyRefund（1/2/3→6 退款中）：POST /admin-api/order/scene/apply-refund
+
+// ==================== 课程订单 ====================
+
+/** 课程订单分页：GET /admin-api/order/course/page */
+export function pageOrderCourses(query: OrderCourseQuery): Promise<PageResult<OrderCourse>> {
+  return request<PageResult<OrderCourse>>({
+    url: '/admin-api/order/course/page',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 课程订单详情：GET /admin-api/order/course/{orderCode} */
+export function getOrderCourse(orderCode: string): Promise<OrderCourse> {
+  return request<OrderCourse>({
+    url: `/admin-api/order/course/${orderCode}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 取消课程订单：POST /admin-api/order/course/cancel
+ *
+ * 入参对齐后端 OrderCancelDTO（@RequestBody），状态机流转：0→5 或 6→5。
+ */
+export function cancelOrderCourse(data: {
+  orderCode: string
+  cancelReason: string
+}): Promise<void> {
+  return request<void>({
+    url: '/admin-api/order/course/cancel',
+    method: 'post',
+    data
+  })
+}
+
+// TODO 第一版暂不开放的生命周期端点（后端已实现，按需放开注释）：
+// - payCallback（0→1 已支付）：POST /admin-api/order/course/pay-callback
+// - complete（3→4 已完成）：POST /admin-api/order/course/complete
+// - applyRefund（1/2/3→6 退款中）：POST /admin-api/order/course/apply-refund
+
+// ==================== 旅居订单 ====================
+
+/** 旅居订单分页：GET /admin-api/order/sojourn/page */
+export function pageOrderSojourns(query: OrderSojournQuery): Promise<PageResult<OrderSojourn>> {
+  return request<PageResult<OrderSojourn>>({
+    url: '/admin-api/order/sojourn/page',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 旅居订单详情：GET /admin-api/order/sojourn/{orderCode} */
+export function getOrderSojourn(orderCode: string): Promise<OrderSojourn> {
+  return request<OrderSojourn>({
+    url: `/admin-api/order/sojourn/${orderCode}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 取消旅居订单：POST /admin-api/order/sojourn/cancel
+ *
+ * 入参对齐后端 OrderCancelDTO（@RequestBody），状态机流转：0→5 或 6→5。
+ */
+export function cancelOrderSojourn(data: {
+  orderCode: string
+  cancelReason: string
+}): Promise<void> {
+  return request<void>({
+    url: '/admin-api/order/sojourn/cancel',
+    method: 'post',
+    data
+  })
+}
+
+// TODO 第一版暂不开放的生命周期端点（后端已实现，按需放开注释）：
+// - payCallback（0→1 已支付）：POST /admin-api/order/sojourn/pay-callback
+// - complete（3→4 已完成，离店）：POST /admin-api/order/sojourn/complete
+// - applyRefund（1/2/3→6 退款中）：POST /admin-api/order/sojourn/apply-refund

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
@@ -11,7 +11,9 @@ import {
   deletePark,
   transitionPark
 } from '@/api/park'
+import { listSuppliers } from '@/api/supplier'
 import type { ParkInfo, ParkInfoQuery } from '@/types/park'
+import type { SupplierInfo } from '@/types/supplier'
 import {
   ParkOperateStatus,
   PARK_OPERATE_STATUS_OPTIONS,
@@ -40,12 +42,32 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
     initialQuery: {
       fullName: '',
       cityCode: '',
-      operateStatus: undefined
+      operateStatus: undefined,
+      supplierCode: ''
     }
   }
 )
 
 const router = useRouter()
+
+/** 供应商下拉选项 + 名称映射（后端 VO 不带 supplierName，前端自行映射） */
+const supplierOptions = ref<SupplierInfo[]>([])
+const supplierNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const s of supplierOptions.value) {
+    if (s.supplierCode) map[s.supplierCode] = s.fullName || s.shortName || s.supplierCode
+  }
+  return map
+})
+
+async function loadSuppliers() {
+  try {
+    // 仅列已合作的供应商作为可选项（status=1）
+    supplierOptions.value = await listSuppliers({ status: 1 })
+  } catch {
+    supplierOptions.value = []
+  }
+}
 
 /** 跳转机构详情页（主从详情页 / tab 式，管理子表） */
 function goDetail(row: ParkInfo) {
@@ -83,7 +105,7 @@ const form = reactive<ParkInfo>({
 
 const rules: FormRules<ParkInfo> = {
   fullName: [{ required: true, message: '请输入机构全称', trigger: 'blur' }],
-  supplierCode: [{ required: true, message: '请输入供应商编码', trigger: 'blur' }]
+  supplierCode: [{ required: true, message: '请选择供应商', trigger: 'change' }]
 }
 
 function resetForm() {
@@ -94,6 +116,7 @@ function resetForm() {
     supplierCode: '',
     brand: '',
     abilityType: undefined,
+    networkTags: [],
     natureType: undefined,
     dayanLevel: undefined,
     provinceCode: '',
@@ -209,6 +232,7 @@ function handleReset() {
   query.fullName = ''
   query.cityCode = ''
   query.operateStatus = undefined
+  query.supplierCode = ''
   handleSearch()
 }
 
@@ -271,7 +295,10 @@ function operateStatusTagType(status?: number): 'success' | 'warning' | 'danger'
 }
 
 // 初始化加载
-loadPage()
+onMounted(() => {
+  loadSuppliers()
+  loadPage()
+})
 </script>
 
 <template>
@@ -288,6 +315,16 @@ loadPage()
         <el-form-item label="运营状态">
           <el-select v-model="query.operateStatus" placeholder="全部" clearable style="width: 140px">
             <el-option v-for="o in PARK_OPERATE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="供应商">
+          <el-select v-model="query.supplierCode" placeholder="全部供应商" clearable filterable style="width: 200px">
+            <el-option
+              v-for="s in supplierOptions"
+              :key="s.supplierCode"
+              :label="s.fullName || s.shortName || s.supplierCode"
+              :value="s.supplierCode!"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -309,7 +346,9 @@ loadPage()
       <el-table v-loading="loading" :data="tableData" border stripe row-key="parkCode">
         <el-table-column prop="parkCode" label="机构编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="fullName" label="机构名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="supplierCode" label="供应商编码" min-width="130" show-overflow-tooltip />
+        <el-table-column label="供应商" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">{{ supplierNameMap[row.supplierCode] || row.supplierCode || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="city" label="城市" min-width="110" show-overflow-tooltip />
         <el-table-column prop="totalBeds" label="总床位" width="90" align="center" />
         <el-table-column prop="availableBeds" label="可用床位" width="100" align="center" />
@@ -420,8 +459,15 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="供应商编码" prop="supplierCode">
-              <el-input v-model="form.supplierCode" placeholder="供应商编码" maxlength="50" />
+            <el-form-item label="供应商" prop="supplierCode">
+              <el-select v-model="form.supplierCode" placeholder="选择供应商" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="s in supplierOptions"
+                  :key="s.supplierCode"
+                  :label="s.fullName || s.shortName || s.supplierCode"
+                  :value="s.supplierCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

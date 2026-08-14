@@ -1,12 +1,15 @@
 package com.dayan.system.service;
 
 import com.dayan.system.entity.SystemDictCommon;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
@@ -89,6 +92,90 @@ public class DictService {
      */
     public void evict(String dictType) {
         redisTemplate.delete(CACHE_PREFIX + dictType);
+    }
+
+    /**
+     * 全部字典类型枚举（distinct dict_type，供前端左侧类型选择）。
+     */
+    public List<String> listTypes() {
+        List<SystemDictCommon> all = dictMapper.selectList(null);
+        return all.stream()
+                .map(SystemDictCommon::getDictType)
+                .filter(t -> t != null && !t.isEmpty())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 按类型查询全部字典项（含禁用，管理页用；不过滤 status、不走缓存）。
+     */
+    public List<SystemDictCommon> listAllByType(String dictType) {
+        return dictMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDictCommon>()
+                        .eq(SystemDictCommon::getDictType, dictType)
+                        .orderByAsc(SystemDictCommon::getSortOrder));
+    }
+
+    /**
+     * 新增字典项。（dictType, dictCode）唯一校验，写入后失效缓存。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Long create(SystemDictCommon dict) {
+        Long count = dictMapper.selectCount(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDictCommon>()
+                        .eq(SystemDictCommon::getDictType, dict.getDictType())
+                        .eq(SystemDictCommon::getDictCode, dict.getDictCode()));
+        if (count > 0) {
+            throw new BusinessException(ErrorCode.BUSINESS, "字典编码已存在: " + dict.getDictCode());
+        }
+        if (dict.getStatus() == null) dict.setStatus(1);
+        if (dict.getIsDefault() == null) dict.setIsDefault(0);
+        if (dict.getSortOrder() == null) dict.setSortOrder(0);
+        dictMapper.insert(dict);
+        evict(dict.getDictType());
+        return dict.getId();
+    }
+
+    /**
+     * 修改字典项（按 id）。新旧 dictType 缓存均失效。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void update(Long id, SystemDictCommon dict) {
+        SystemDictCommon existing = dictMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "字典项不存在: id=" + id);
+        }
+        dict.setId(id);
+        // dictCode 变更时校验新 (dictType, dictCode) 唯一
+        String newCode = dict.getDictCode();
+        if (newCode != null && !newCode.equals(existing.getDictCode())) {
+            Long count = dictMapper.selectCount(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDictCommon>()
+                            .eq(SystemDictCommon::getDictType, existing.getDictType())
+                            .eq(SystemDictCommon::getDictCode, newCode));
+            if (count > 0) {
+                throw new BusinessException(ErrorCode.BUSINESS, "字典编码已存在: " + newCode);
+            }
+        }
+        dictMapper.updateById(dict);
+        evict(existing.getDictType());
+        if (dict.getDictType() != null && !dict.getDictType().equals(existing.getDictType())) {
+            evict(dict.getDictType());
+        }
+    }
+
+    /**
+     * 删除字典项（按 id）。失效对应类型缓存。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Long id) {
+        SystemDictCommon existing = dictMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "字典项不存在: id=" + id);
+        }
+        dictMapper.deleteById(id);
+        evict(existing.getDictType());
     }
 
     private String serialize(SystemDictCommon d) {

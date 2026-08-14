@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, reactive, ref } from 'vue'
+import { nextTick, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -10,7 +10,9 @@ import {
   getRolePermissions,
   updateRolePermissions
 } from '@/api/role'
+import { listAllOrgans } from '@/api/organ'
 import type { Role, RoleQuery } from '@/types/role'
+import type { OrganSimple } from '@/types/organ'
 import { RoleStatus, ROLE_STATUS_OPTIONS, ROLE_TYPE_OPTIONS, DATA_SCOPE_OPTIONS } from '@/types/role'
 import { getGrantTree } from '@/api/menu'
 import type { GrantTreeNode } from '@/types/permission'
@@ -45,6 +47,17 @@ const dialogVisible = ref(false)
 const dialogType = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
+
+/** 机构下拉选项（/organs/all） */
+const organOptions = ref<OrganSimple[]>([])
+
+async function loadOrgans() {
+  try {
+    organOptions.value = await listAllOrgans()
+  } catch {
+    organOptions.value = []
+  }
+}
 
 const form = reactive<Role>({
   organCode: '',
@@ -247,6 +260,9 @@ async function handleAssignSubmit() {
 }
 
 // 初始化加载
+onMounted(() => {
+  loadOrgans()
+})
 loadPage()
 </script>
 
@@ -256,7 +272,14 @@ loadPage()
     <el-card shadow="never" class="search-card">
       <el-form :inline="true" :model="query" @submit.prevent>
         <el-form-item label="机构">
-          <el-input v-model="query.organCode" placeholder="机构编码" clearable />
+          <el-select v-model="query.organCode" placeholder="全部机构" clearable filterable style="width: 200px">
+            <el-option
+              v-for="o in organOptions"
+              :key="o.organCode"
+              :label="o.fullName || o.shortName || o.organCode"
+              :value="o.organCode"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="角色名">
           <el-input v-model="query.roleName" placeholder="角色名称" clearable @keyup.enter="handleSearch" />
@@ -288,6 +311,9 @@ loadPage()
       <el-table v-loading="loading" :data="tableData" border stripe row-key="roleCode">
         <el-table-column prop="roleCode" label="角色编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="roleName" label="角色名称" min-width="140" />
+        <el-table-column prop="organName" label="机构" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.organName || row.organCode || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="roleType" label="角色类型" width="110">
           <template #default="{ row }">
             {{ ROLE_TYPE_OPTIONS.find((o) => o.value === row.roleType)?.label ?? row.roleType }}
@@ -340,8 +366,15 @@ loadPage()
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="机构编码" prop="organCode">
-              <el-input v-model="form.organCode" placeholder="机构编码" />
+            <el-form-item label="机构" prop="organCode">
+              <el-select v-model="form.organCode" placeholder="请选择机构" filterable style="width: 100%">
+                <el-option
+                  v-for="o in organOptions"
+                  :key="o.organCode"
+                  :label="o.fullName || o.shortName || o.organCode"
+                  :value="o.organCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

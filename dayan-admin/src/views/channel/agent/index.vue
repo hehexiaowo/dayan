@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
@@ -64,6 +64,19 @@ async function loadChannelTree() {
     channelTree.value = []
   }
 }
+
+/** 渠道编码→名称映射（递归渠道树，列表回显用；后端 VO 不带 channelName） */
+const channelNameMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  const walk = (nodes: ChannelInfo[]) => {
+    for (const n of nodes) {
+      if (n.channelCode) map[n.channelCode] = n.fullName || n.shortName || n.channelCode
+      if (n.children) walk(n.children)
+    }
+  }
+  walk(channelTree.value)
+  return map
+})
 
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -328,7 +341,9 @@ onMounted(() => {
           <template #default="{ row }">{{ genderText(row.gender) }}</template>
         </el-table-column>
         <el-table-column prop="phone" label="手机号" min-width="120" />
-        <el-table-column prop="channelCode" label="所属渠道" min-width="140" show-overflow-tooltip />
+        <el-table-column label="所属渠道" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ channelNameMap[row.channelCode] || row.channelCode || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="companyName" label="保险公司" min-width="140" show-overflow-tooltip />
         <el-table-column prop="employeeNo" label="工号" min-width="100" show-overflow-tooltip />
         <el-table-column prop="clientCount" label="客户数" width="80" align="center" />

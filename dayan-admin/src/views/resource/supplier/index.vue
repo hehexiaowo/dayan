@@ -32,7 +32,7 @@ import FileUploader from '@/components/FileUploader/index.vue'
  *
  * 状态约定：
  * - supplierType：1机构 / 2服务商 / 3商品供应商
- * - status：1启用 / 0禁用
+ * - status：0待审 / 1已合作 / 2已暂停 / 3已终止（后端审核流驱动，前端不可直接改）
  * - auditStatus：0待审 / 1通过 / 2驳回
  */
 
@@ -542,13 +542,6 @@ loadPage()
           <el-col :span="12">
             <el-form-item label="Logo">
               <FileUploader v-model="form.logoUrl" type="image" module="supplier" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-select v-model="form.status" placeholder="状态" style="width: 100%">
-                <el-option v-for="o in SUPPLIER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

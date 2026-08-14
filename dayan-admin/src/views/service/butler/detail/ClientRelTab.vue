@@ -26,11 +26,15 @@ import {
 } from '@/types/service'
 import type { ButlerClientRel } from '@/types/service'
 import { formatDateTime } from '@/utils/format'
+import { useClientPicker } from '@/composables/useClientPicker'
 
 const props = defineProps<{
   /** 管家编码（路由参数） */
   butlerCode: string
 }>()
+
+// ---------- 客户远程搜索选择器（pageClients 数据源） ----------
+const { clientOptions, clientLoading, searchClients } = useClientPicker()
 
 // ---------- 列表（手动 list，非分页） ----------
 const loading = ref(false)
@@ -171,9 +175,24 @@ defineExpose({ loadList })
         <el-form-item label="管家编码">
           <el-input :model-value="props.butlerCode" disabled />
         </el-form-item>
-        <el-form-item label="客户编码" prop="clientCode">
-          <!-- TODO: 接入客户选择器（需客户列表接口），暂用 input 兜底 -->
-          <el-input v-model="form.clientCode" placeholder="客户编码" maxlength="64" />
+        <el-form-item label="客户" prop="clientCode">
+          <el-select
+            v-model="form.clientCode"
+            filterable
+            remote
+            clearable
+            :remote-method="searchClients"
+            :loading="clientLoading"
+            placeholder="输入客户姓名搜索"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="c in clientOptions"
+              :key="c.clientCode"
+              :label="`${c.fullName}（${c.clientCode}）`"
+              :value="c.clientCode!"
+            />
+          </el-select>
         </el-form-item>
         <el-alert
           type="info"
