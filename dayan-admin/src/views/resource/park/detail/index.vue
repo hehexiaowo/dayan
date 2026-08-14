@@ -61,7 +61,7 @@ function operateStatusText(s?: number): string {
 
 const tabs = [
   { name: 'basic', label: '基本信息' },
-  { name: 'svc-config', label: '服务配置' },
+  { name: 'svc-config', label: '价格配置' },
   { name: 'asset', label: '素材库' },
   { name: 'display-config', label: '网络展示' },
   { name: 'adviser', label: '联系顾问' },
