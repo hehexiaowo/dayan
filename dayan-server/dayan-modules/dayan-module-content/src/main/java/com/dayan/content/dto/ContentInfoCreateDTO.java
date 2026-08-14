@@ -39,6 +39,9 @@ public class ContentInfoCreateDTO {
     private Integer sourceType;
     private String sourceUrl;
     private String tags;
+    /** 适用业态（逗号分隔 vital/care/sojourn），空=全部 */
+    @Size(max = 64)
+    private String networkTags;
     private Integer isTop;
     private Integer isRecommend;
     private Integer isComment;

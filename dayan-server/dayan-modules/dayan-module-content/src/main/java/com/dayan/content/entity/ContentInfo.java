@@ -59,6 +59,9 @@ public class ContentInfo extends BaseEntity {
     /** 标签 */
     private String tags;
 
+    /** 适用业态（逗号分隔 vital/care/sojourn），空=全部 */
+    private String networkTags;
+
     /** 是否置顶 */
     private Integer isTop;
 

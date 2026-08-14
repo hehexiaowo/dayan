@@ -1,5 +1,6 @@
 package com.dayan.content.dto;
 
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
@@ -20,6 +21,9 @@ public class ContentInfoUpdateDTO {
     private Integer sourceType;
     private String sourceUrl;
     private String tags;
+    /** 适用业态（逗号分隔 vital/care/sojourn），空串=清空恢复全部 */
+    @Size(max = 64)
+    private String networkTags;
     private Integer isTop;
     private Integer isRecommend;
     private Integer isComment;

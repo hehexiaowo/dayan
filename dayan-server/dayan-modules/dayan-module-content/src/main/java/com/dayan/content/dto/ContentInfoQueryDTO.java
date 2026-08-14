@@ -22,4 +22,6 @@ public class ContentInfoQueryDTO {
     private Integer isRecommend;
     /** 渠道隔离用：本渠道已配置的内容编码集合 */
     private java.util.List<String> contentCodes;
+    /** 业态过滤（单业态 vital/care/sojourn；空=不过滤） */
+    private String network;
 }

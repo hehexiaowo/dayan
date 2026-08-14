@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dayan.common.core.code.SequenceProvider;
+import com.dayan.common.core.enums.NetworkType;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
@@ -85,6 +86,13 @@ public class ContentInfoServiceImpl implements ContentInfoService {
                 .orderByDesc(ContentInfo::getIsTop)
                 .orderByDesc(ContentInfo::getPublishTime)
                 .orderByDesc(ContentInfo::getCreatedAt);
+        if (query.getNetwork() != null && !query.getNetwork().isEmpty()
+                && NetworkType.of(query.getNetwork()) != null) {
+            // 空串含 NULL/''=全部业态；FIND_IN_SET 精确匹配逗号串成员
+            wrapper.and(w -> w.isNull(ContentInfo::getNetworkTags)
+                    .or().eq(ContentInfo::getNetworkTags, "")
+                    .or().apply("FIND_IN_SET({0}, network_tags) > 0", query.getNetwork()));
+        }
         if (query.getContentCodes() != null && !query.getContentCodes().isEmpty()) {
             wrapper.in(ContentInfo::getContentCode, query.getContentCodes());
         }
@@ -121,6 +129,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
         entity.setSourceType(dto.getSourceType());
         entity.setSourceUrl(dto.getSourceUrl());
         entity.setTags(dto.getTags());
+        entity.setNetworkTags(NetworkType.normalizeTags(dto.getNetworkTags()));
         entity.setIsTop(dto.getIsTop() == null ? 0 : dto.getIsTop());
         entity.setIsRecommend(dto.getIsRecommend() == null ? 0 : dto.getIsRecommend());
         entity.setIsComment(dto.getIsComment() == null ? 1 : dto.getIsComment());
@@ -161,6 +170,17 @@ public class ContentInfoServiceImpl implements ContentInfoService {
         if (dto.getSourceType() != null) update.setSourceType(dto.getSourceType());
         if (dto.getSourceUrl() != null) update.setSourceUrl(dto.getSourceUrl());
         if (dto.getTags() != null) update.setTags(dto.getTags());
+        if (dto.getNetworkTags() != null) {
+            String normalized = NetworkType.normalizeTags(dto.getNetworkTags());
+            if (normalized == null) {
+                // 空串=恢复全部业态：updateById 的 NOT_NULL 策略忽略 null 字段，需显式置 NULL
+                contentInfoMapper.update(null, new LambdaUpdateWrapper<ContentInfo>()
+                        .eq(ContentInfo::getId, existing.getId())
+                        .set(ContentInfo::getNetworkTags, null));
+            } else {
+                update.setNetworkTags(normalized);
+            }
+        }
         if (dto.getIsTop() != null) update.setIsTop(dto.getIsTop());
         if (dto.getIsRecommend() != null) update.setIsRecommend(dto.getIsRecommend());
         if (dto.getIsComment() != null) update.setIsComment(dto.getIsComment());
