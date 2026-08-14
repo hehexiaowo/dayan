@@ -121,9 +121,11 @@ function openPicker(tag: string) {
 
 function onPicked(keys: string[]) {
   const tag = pickerTarget.value
-  if (!tag || !keys.length) return
+  // 防御：AssetPicker 对脏数据（assetUrl 为空）可能 emit ''，合并前过滤
+  const picked = keys.filter((k) => k)
+  if (!tag || !picked.length) return
   const cfg = configData[tag]
-  const merged = [...new Set([...cfg.banners, ...keys])]
+  const merged = [...new Set([...cfg.banners, ...picked])]
   cfg.banners = merged.slice(0, 12)
   if (merged.length > cfg.banners.length) ElMessage.info('轮播图最多 12 张，超出部分已忽略')
 }
@@ -145,8 +147,12 @@ function parseConfig(raw?: string): NetworkConfig {
   if (!raw) return { banners: [], thumbnail: '' }
   try {
     const parsed = JSON.parse(raw)
+    // 防御：历史数据可能含空串/重复项（避免 :key 冲突），过滤+去重并截断到上限 12
+    const list: string[] = Array.isArray(parsed.banners)
+      ? parsed.banners.filter((k: unknown): k is string => typeof k === 'string' && !!k)
+      : []
     return {
-      banners: Array.isArray(parsed.banners) ? parsed.banners.filter((k: unknown) => typeof k === 'string') : [],
+      banners: [...new Set(list)].slice(0, 12),
       thumbnail: typeof parsed.thumbnail === 'string' ? parsed.thumbnail : '',
     }
   } catch {
