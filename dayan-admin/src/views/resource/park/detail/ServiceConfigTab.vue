@@ -2,7 +2,7 @@
 /**
  * 机构详情页 - 价格配置 tab（5 合 1 容器）。
  *
- * 将房型 / 照护等级 / 餐饮方案 / 设施配置 / 服务项目 5 个结构化资料 tab
+ * 将房间类型 / 照护等级 / 餐饮方案 / 设施配置 / 服务项目 5 个结构化资料 tab
  * 合并到统一的「价格配置」顶层 tab，内部用 el-tabs 切换子面板。
  * 每个子面板复用原有组件，不做内部逻辑改动。
  */
@@ -20,7 +20,7 @@ const activeName = ref('room')
 
 <template>
   <el-tabs v-model="activeName" type="card" class="svc-config-tabs">
-    <el-tab-pane label="房型" name="room" lazy>
+    <el-tab-pane label="房间类型" name="room" lazy>
       <RoomTab v-if="activeName === 'room'" :park-code="parkCode" />
     </el-tab-pane>
     <el-tab-pane label="照护等级" name="care" lazy>
