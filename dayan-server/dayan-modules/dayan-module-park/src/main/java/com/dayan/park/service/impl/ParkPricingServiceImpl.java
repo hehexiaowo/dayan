@@ -8,6 +8,7 @@ import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.park.dto.ParkPricingCreateDTO;
 import com.dayan.park.dto.ParkPricingQueryDTO;
+import com.dayan.park.dto.ParkPricingReviseDTO;
 import com.dayan.park.dto.ParkPricingUpdateDTO;
 import com.dayan.park.entity.ParkPricing;
 import com.dayan.park.entity.ParkPricingItem;
@@ -163,15 +164,12 @@ public class ParkPricingServiceImpl implements ParkPricingService {
         LocalDate expire = dto.getExpireDate() != null ? dto.getExpireDate() : existing.getExpireDate();
         validateDateRange(effective, expire);
 
+        // 仅描述性字段可直改；价格数值与维度字段已从 UpdateDTO 移除（调价走 revise）
         ParkPricing update = new ParkPricing();
         update.setId(existing.getId());
         if (dto.getPlanName() != null) update.setPlanName(dto.getPlanName());
         if (dto.getRefName() != null) update.setRefName(dto.getRefName());
-        if (dto.getBillingCycle() != null) update.setBillingCycle(dto.getBillingCycle());
         if (dto.getPriceUnit() != null) update.setPriceUnit(dto.getPriceUnit());
-        if (dto.getOriginalPrice() != null) update.setOriginalPrice(dto.getOriginalPrice());
-        if (dto.getSalePrice() != null) update.setSalePrice(dto.getSalePrice());
-        if (dto.getDiscountRate() != null) update.setDiscountRate(dto.getDiscountRate());
         if (dto.getPriceDescription() != null) update.setPriceDescription(dto.getPriceDescription());
         if (dto.getIncludesItems() != null) update.setIncludesItems(dto.getIncludesItems());
         if (dto.getEffectiveDate() != null) update.setEffectiveDate(dto.getEffectiveDate());
@@ -181,16 +179,69 @@ public class ParkPricingServiceImpl implements ParkPricingService {
         if (dto.getPriceChangeReason() != null) update.setPriceChangeReason(dto.getPriceChangeReason());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
-        if (dto.getIsCurrent() != null) {
-            int isCurrent = (dto.getIsCurrent() == IS_CURRENT_YES) ? IS_CURRENT_YES : 0;
-            if (isCurrent == IS_CURRENT_YES) {
-                clearOtherCurrent(existing.getParkCode(), existing.getChargeType(),
-                        existing.getRefCode(), existing.getBillingCycle(), id);
-            }
-            update.setIsCurrent(isCurrent);
-        }
         pricingMapper.updateById(update);
         log.info("更新定价方案成功: id={}", id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long revise(Long id, ParkPricingReviseDTO dto) {
+        ParkPricing base = requirePricing(id);
+        LocalDate newEffective = dto.getEffectiveDate();
+        boolean immediate = !newEffective.isAfter(LocalDate.now());
+
+        // 预约生效：作废同维度旧的待生效记录（保证一条链）
+        if (!immediate) {
+            pricingMapper.delete(new LambdaQueryWrapper<ParkPricing>()
+                    .eq(ParkPricing::getParkCode, base.getParkCode())
+                    .eq(ParkPricing::getChargeType, base.getChargeType())
+                    .eq(ParkPricing::getRefCode, base.getRefCode())
+                    .eq(ParkPricing::getBillingCycle, base.getBillingCycle())
+                    .eq(ParkPricing::getPendingFlag, 1)
+                    .ne(ParkPricing::getId, base.getId()));
+        }
+
+        // 新版本记录（继承维度与描述性字段）
+        ParkPricing next = new ParkPricing();
+        next.setParkCode(base.getParkCode());
+        next.setPlanName(base.getPlanName());
+        next.setChargeType(base.getChargeType());
+        next.setRefType(base.getRefType());
+        next.setRefCode(base.getRefCode());
+        next.setRefName(base.getRefName());
+        next.setBillingCycle(base.getBillingCycle());
+        next.setPriceUnit(base.getPriceUnit());
+        next.setOriginalPrice(dto.getOriginalPrice() != null ? dto.getOriginalPrice() : base.getOriginalPrice());
+        next.setSalePrice(dto.getSalePrice());
+        next.setDiscountRate(dto.getDiscountRate() != null ? dto.getDiscountRate() : base.getDiscountRate());
+        next.setPriceDescription(base.getPriceDescription());
+        next.setIncludesItems(base.getIncludesItems());
+        next.setEffectiveDate(newEffective);
+        next.setExpireDate(base.getExpireDate());
+        next.setIsCurrent(immediate ? IS_CURRENT_YES : 0);
+        next.setPendingFlag(immediate ? 0 : 1);
+        next.setIsPromotion(base.getIsPromotion() == null ? 0 : base.getIsPromotion());
+        next.setPromotionDescription(base.getPromotionDescription());
+        next.setPriceChangeReason(dto.getPriceChangeReason());
+        next.setSortOrder(base.getSortOrder() == null ? 0 : base.getSortOrder());
+        next.setStatus(1);
+
+        // 立即生效：先置旧当前价为 0（uk_current 生成列要求同维度仅一个 is_current=1）
+        if (immediate) {
+            clearOtherCurrent(base.getParkCode(), base.getChargeType(), base.getRefCode(),
+                    base.getBillingCycle(), null);
+        }
+        pricingMapper.insert(next);
+        // 立即生效且基线就是当前价：把基线置 0（clearOtherCurrent 已覆盖，此处幂等兜底）
+        if (immediate && base.getIsCurrent() != null && base.getIsCurrent() == IS_CURRENT_YES) {
+            ParkPricing flip = new ParkPricing();
+            flip.setId(base.getId());
+            flip.setIsCurrent(0);
+            pricingMapper.updateById(flip);
+        }
+        log.info("调价成功: baseId={}, newId={}, salePrice={}, effective={}, immediate={}",
+                id, next.getId(), dto.getSalePrice(), newEffective, immediate);
+        return next.getId();
     }
 
     @Override

@@ -73,6 +73,9 @@ public class ParkPricing extends BaseEntity {
     /** 是否当前生效价格（0=历史 1=当前） */
     private Integer isCurrent;
 
+    /** 预约生效标记：1=待生效（到点由调度器翻转），0=无/已生效 */
+    private Integer pendingFlag;
+
     /** 是否促销价 */
     private Integer isPromotion;
 
