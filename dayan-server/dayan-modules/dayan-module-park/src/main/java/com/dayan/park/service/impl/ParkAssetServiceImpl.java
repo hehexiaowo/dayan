@@ -11,12 +11,15 @@ import com.dayan.park.dto.ParkAssetUpdateDTO;
 import com.dayan.park.entity.ParkAsset;
 import com.dayan.park.mapper.ParkAssetMapper;
 import com.dayan.park.service.ParkAssetService;
+import com.dayan.park.service.support.AssetRefMap;
 import com.dayan.park.vo.ParkAssetVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +32,9 @@ import java.util.stream.Collectors;
 public class ParkAssetServiceImpl implements ParkAssetService {
 
     private final ParkAssetMapper assetMapper;
+
+    /** 引用校验用原生查询（跨表 count，不建 XML） */
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public PageResult<ParkAssetVO> page(ParkAssetQueryDTO query) {
@@ -123,8 +129,36 @@ public class ParkAssetServiceImpl implements ParkAssetService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         ParkAsset existing = requireAsset(id);
+        List<String> refs = findReferences(existing.getAssetUrl());
+        if (!refs.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    "素材被以下位置引用，无法删除：" + String.join("、", refs));
+        }
         assetMapper.deleteById(existing.getId());
         log.info("删除素材成功: id={}", id);
+    }
+
+    /** 按 AssetRefMap 逐表反查引用；返回命中项的展示名列表 */
+    private List<String> findReferences(String assetUrl) {
+        if (assetUrl == null || assetUrl.isEmpty()) {
+            return List.of();
+        }
+        List<String> hits = new ArrayList<>();
+        for (AssetRefMap.RefCheck check : AssetRefMap.CHECKS) {
+            String sql = switch (check.match()) {
+                case EXACT -> "SELECT COUNT(*) FROM " + check.table()
+                        + " WHERE " + check.column() + " = ? AND deleted = 0";
+                case JSON_LIKE -> "SELECT COUNT(*) FROM " + check.table()
+                        + " WHERE " + check.column() + " LIKE CONCAT('%\"', ?, '\"%') AND deleted = 0";
+                case HTML_LIKE -> "SELECT COUNT(*) FROM " + check.table()
+                        + " WHERE " + check.column() + " LIKE CONCAT('%', ?, '%') AND deleted = 0";
+            };
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, assetUrl);
+            if (count != null && count > 0) {
+                hits.add(check.label());
+            }
+        }
+        return hits;
     }
 
     @Override
