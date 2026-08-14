@@ -25,8 +25,7 @@ import AssetTab from './AssetTab.vue'
 import ServiceConfigTab from './ServiceConfigTab.vue'
 import AdviserTab from './AdviserTab.vue'
 import PeripheryPane from './PeripheryPane.vue'
-import DisplayPane from './DisplayPane.vue'
-import DisplayConfigTab from './DisplayConfigTab.vue'
+import DisplaySettingsTab from './DisplaySettingsTab.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -63,10 +62,9 @@ const tabs = [
   { name: 'basic', label: '基本信息' },
   { name: 'svc-config', label: '价格配置' },
   { name: 'asset', label: '素材库' },
-  { name: 'display-config', label: '网络展示' },
+  { name: 'display-settings', label: '页面展示' },
   { name: 'adviser', label: '联系顾问' },
-  { name: 'periphery', label: '周边相关' },
-  { name: 'display', label: '展示板块' }
+  { name: 'periphery', label: '周边相关' }
 ] as const
 </script>
 
@@ -105,10 +103,9 @@ const tabs = [
         <BasicTab v-if="t.name === 'basic'" :park-code="parkCode" />
         <ServiceConfigTab v-else-if="t.name === 'svc-config'" :park-code="parkCode" />
         <AssetTab v-else-if="t.name === 'asset'" :park-code="parkCode" />
-        <DisplayConfigTab v-else-if="t.name === 'display-config'" :park-code="parkCode" />
         <AdviserTab v-else-if="t.name === 'adviser'" :park-code="parkCode" />
         <PeripheryPane v-else-if="t.name === 'periphery'" :park-code="parkCode" />
-        <DisplayPane v-else-if="t.name === 'display'" :park-code="parkCode" />
+        <DisplaySettingsTab v-else-if="t.name === 'display-settings'" :park-code="parkCode" />
       </el-tab-pane>
     </el-tabs>
   </div>
