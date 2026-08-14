@@ -18,16 +18,16 @@ const activeName = ref('image')
     </el-alert>
     <el-tabs v-model="activeName" type="card">
       <el-tab-pane label="图片" name="image" lazy>
-        <AssetPane v-if="activeName === 'image'" :asset-type="1" />
+        <AssetPane :asset-type="1" />
       </el-tab-pane>
       <el-tab-pane label="视频" name="video" lazy>
-        <AssetPane v-if="activeName === 'video'" :asset-type="2" />
+        <AssetPane :asset-type="2" />
       </el-tab-pane>
       <el-tab-pane label="文档" name="file" lazy>
-        <AssetPane v-if="activeName === 'file'" :asset-type="3" />
+        <AssetPane :asset-type="3" />
       </el-tab-pane>
       <el-tab-pane label="VR" name="vr" lazy>
-        <AssetPane v-if="activeName === 'vr'" :asset-type="4" />
+        <AssetPane :asset-type="4" />
       </el-tab-pane>
     </el-tabs>
   </div>

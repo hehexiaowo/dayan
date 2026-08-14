@@ -157,7 +157,12 @@ onMounted(() => {
           </el-col>
           <el-col :span="24">
             <el-form-item label="正文">
-              <RichEditor v-model="form.contentBody" module="content" register-asset />
+              <RichEditor
+                v-model="form.contentBody"
+                module="content"
+                register-asset
+                placeholder="正文支持图文混排，插图自动上传并登记素材库"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">

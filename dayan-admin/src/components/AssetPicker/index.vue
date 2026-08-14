@@ -51,6 +51,9 @@ async function load() {
     })
     records.value = res.records ?? []
     total.value = res.total ?? 0
+  } catch {
+    // request 拦截器已弹错误 toast，这里仅记录不中断
+    console.warn('[AssetPicker] 素材列表加载失败')
   } finally {
     loading.value = false
   }

@@ -994,9 +994,9 @@ export const displayBlockTypeLabel = (v?: string) =>
 
 /** 业态选项（与后端 NetworkType 枚举 / 字典 network_type 一致） */
 export const NETWORK_TYPE_OPTIONS = [
-  { value: 'vital', label: '活力长居' },
-  { value: 'care', label: '照护长居' },
-  { value: 'sojourn', label: '旅居' }
+  { label: '活力长居', value: 'vital' },
+  { label: '照护长居', value: 'care' },
+  { label: '旅居', value: 'sojourn' }
 ] as const
 
 export const networkTypeLabel = (v?: string) =>

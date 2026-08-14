@@ -54,11 +54,11 @@ const uploading = ref(false)
 
 const pickerVisible = ref(false)
 
-/** 素材库选择回填：单选 set，多选 append（受 limit 截断） */
+/** 素材库选择回填：单选 set，多选 append（去重 + 受 limit 截断） */
 function onPicked(keys: string[]) {
   if (keys.length === 0) return
   if (props.multiple) {
-    const merged = [...multiValue.value, ...keys].slice(0, props.limit)
+    const merged = [...new Set([...multiValue.value, ...keys])].slice(0, props.limit)
     emit('update:modelValue', merged)
   } else {
     emit('update:modelValue', keys[0])

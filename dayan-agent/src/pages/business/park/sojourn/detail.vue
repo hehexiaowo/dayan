@@ -329,10 +329,12 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 const detail = ref<ParkFullDetail | null>(null);
 
+const NETWORK = 'sojourn' as const;
+
 /** 业态过滤后的展示板块：板块 networkTags 为空=属于全部业态 */
 const visibleBlocks = computed(() =>
   (detail.value?.displayBlocks || []).filter(
-    (b) => !b.networkTags?.length || b.networkTags.includes('sojourn'),
+    (b) => !b.networkTags?.length || b.networkTags.includes(NETWORK),
   ),
 );
 const loading = ref(true);
@@ -357,7 +359,6 @@ const networkTagItems = computed(() =>
 );
 
 /** Banner 图片：优先从 sojournConfig.banners 取，fallback 到全部 type=1 图 */
-const NETWORK = 'sojourn' as const;
 const CONFIG_FIELD: Record<string, 'vitalConfig' | 'careConfig' | 'sojournConfig'> = { vital: 'vitalConfig', care: 'careConfig', sojourn: 'sojournConfig' };
 const bannerImages = computed(() => {
   const configRaw = park.value[CONFIG_FIELD[NETWORK]];
