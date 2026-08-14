@@ -52,7 +52,8 @@ public class OrderPriceResolverImpl implements OrderPriceResolver {
         ParkPricingVO dep = parkPricingService.getCurrentFee(dto.getParkCode(), 4, "park", dto.getParkCode());
         if (dep != null) {
             deposit = BillingCycleMath.toOrderAmount(
-                    dep.getSalePrice() != null ? dep.getSalePrice() : dep.getOriginalPrice(), 5, stayDays);
+                    dep.getSalePrice() != null ? dep.getSalePrice() : dep.getOriginalPrice(),
+                    dep.getBillingCycle(), stayDays);
             checkDeviation("押金", dto.getDepositAmount(), deposit);
         }
         return new SojournAuthority(room, care, food, deposit);
@@ -62,8 +63,12 @@ public class OrderPriceResolverImpl implements OrderPriceResolver {
     private BigDecimal feeOf(String parkCode, Integer chargeType, String refType, String refCode,
                              BigDecimal clientValue, String label, int stayDays, boolean required) {
         if (refCode == null || refCode.isEmpty()) {
-            if (required) {
+            if (required && mode() == PriceCheckMode.STRICT) {
                 throw new BusinessException(ErrorCode.PARAM_ERROR, label + "缺少关联类型编码，无法服务端核价");
+            }
+            if (required) {
+                log.warn("[订单核价] {} 缺少关联编码，warn 模式回退客户端值 {}", label, clientValue);
+                return null;
             }
             checkDeviation(label, clientValue, BigDecimal.ZERO);
             return BigDecimal.ZERO.setScale(2);

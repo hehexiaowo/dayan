@@ -502,10 +502,11 @@ defineExpose({ loadPage })
               <el-table-column prop="expireDate" label="失效日期" width="110" align="center">
                 <template #default="{ row: p }">{{ formatDate(p.expireDate) }}</template>
               </el-table-column>
-              <el-table-column prop="isCurrent" label="当前价" width="80" align="center">
+              <el-table-column prop="isCurrent" label="当前价" width="90" align="center">
                 <template #default="{ row: p }">
                   <el-tag v-if="p.isCurrent === 1" type="success" size="small">当前</el-tag>
-                  <span v-else>—</span>
+                  <el-tag v-if="p.pendingFlag === 1" type="warning" size="small">待生效</el-tag>
+                  <span v-if="p.isCurrent !== 1 && p.pendingFlag !== 1">—</span>
                 </template>
               </el-table-column>
               <el-table-column prop="isPromotion" label="促销" width="80" align="center">
@@ -691,6 +692,14 @@ defineExpose({ loadPage })
       :close-on-click-modal="false"
     >
       <el-form ref="priceFormRef" :model="priceForm" :rules="priceRules" label-width="100px">
+        <el-alert
+          v-if="priceDialogMode === 'edit'"
+          type="warning"
+          :closable="false"
+          style="margin-bottom: 8px"
+        >
+          价格、周期与当前价标记不支持直接编辑，调整价格请使用「调价」。
+        </el-alert>
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="计费单位">
@@ -708,6 +717,7 @@ defineExpose({ loadPage })
                 v-model="priceForm.originalPrice"
                 :min="0"
                 :precision="2"
+                :disabled="priceDialogMode === 'edit'"
                 controls-position="right"
                 style="width: 100%"
               />
@@ -719,6 +729,7 @@ defineExpose({ loadPage })
                 v-model="priceForm.salePrice"
                 :min="0"
                 :precision="2"
+                :disabled="priceDialogMode === 'edit'"
                 controls-position="right"
                 style="width: 100%"
               />
@@ -731,6 +742,7 @@ defineExpose({ loadPage })
                 :min="0"
                 :max="100"
                 :precision="2"
+                :disabled="priceDialogMode === 'edit'"
                 controls-position="right"
                 style="width: 100%"
                 @change="discountEdited = true"
@@ -762,7 +774,7 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="是否当前价">
-              <el-switch v-model="priceForm.isCurrent" :active-value="1" :inactive-value="0" />
+              <el-switch v-model="priceForm.isCurrent" :active-value="1" :inactive-value="0" :disabled="priceDialogMode === 'edit'" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

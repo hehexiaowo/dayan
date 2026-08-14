@@ -501,6 +501,8 @@ export interface ParkPricing {
   expireDate?: string
   /** 是否当前价：1是 / 0否 */
   isCurrent?: number
+  /** 预约生效标记：1=待生效（到点自动切换） */
+  pendingFlag?: number
   /** 是否促销：1是 / 0否 */
   isPromotion?: number
   /** 促销说明 */

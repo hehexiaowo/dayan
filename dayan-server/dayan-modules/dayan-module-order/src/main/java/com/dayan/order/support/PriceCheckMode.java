@@ -9,6 +9,8 @@ public enum PriceCheckMode {
         try {
             return valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
+            // 枚举无日志依赖，直接 stderr 输出（启动/配置排障可见即可）
+            System.err.println("[PriceCheckMode] 非法配置值: " + value + "，回退 STRICT");
             return STRICT;
         }
     }

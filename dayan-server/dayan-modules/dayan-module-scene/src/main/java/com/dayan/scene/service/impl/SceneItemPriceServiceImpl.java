@@ -59,6 +59,11 @@ public class SceneItemPriceServiceImpl implements SceneItemPriceService {
         return toVO(requirePrice(id));
     }
 
+    /**
+     * 取场景在指定日期的当前有效按人价；channelPrice 非空优先。
+     * 注意：channel_price 为该场景统一的渠道结算价（表无渠道维度），非空时优先于 sale_price——
+     * 规格 §E.2 的按渠道取价在现 schema 下不可行，此为既定降级口径。
+     */
     @Override
     public BigDecimal getCurrentPersonPrice(String sceneCode, LocalDate activeOn) {
         SceneItemPrice price = sceneItemPriceMapper.selectList(new LambdaQueryWrapper<SceneItemPrice>()

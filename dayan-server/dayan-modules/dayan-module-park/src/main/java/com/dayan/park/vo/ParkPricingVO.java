@@ -29,6 +29,8 @@ public class ParkPricingVO {
     private LocalDate effectiveDate;
     private LocalDate expireDate;
     private Integer isCurrent;
+    /** 预约生效标记：1=待生效（到点自动切换） */
+    private Integer pendingFlag;
     private Integer isPromotion;
     private String promotionDescription;
     private String priceChangeReason;

@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -187,8 +188,15 @@ public class ParkPricingServiceImpl implements ParkPricingService {
     @Transactional(rollbackFor = Exception.class)
     public Long revise(Long id, ParkPricingReviseDTO dto) {
         ParkPricing base = requirePricing(id);
+        // 基线本身是待生效记录：作废其预约（否则到点调度器会翻转它覆盖本次调价）
+        if (base.getPendingFlag() != null && base.getPendingFlag() == 1) {
+            ParkPricing deactivate = new ParkPricing();
+            deactivate.setId(base.getId());
+            deactivate.setPendingFlag(0);
+            pricingMapper.updateById(deactivate);
+        }
         LocalDate newEffective = dto.getEffectiveDate();
-        boolean immediate = !newEffective.isAfter(LocalDate.now());
+        boolean immediate = !newEffective.isAfter(LocalDate.now(ZoneId.of("Asia/Shanghai")));
 
         // 预约生效：作废同维度旧的待生效记录（保证一条链）
         if (!immediate) {
@@ -339,6 +347,7 @@ public class ParkPricingServiceImpl implements ParkPricingService {
         vo.setEffectiveDate(entity.getEffectiveDate());
         vo.setExpireDate(entity.getExpireDate());
         vo.setIsCurrent(entity.getIsCurrent());
+        vo.setPendingFlag(entity.getPendingFlag());
         vo.setIsPromotion(entity.getIsPromotion());
         vo.setPromotionDescription(entity.getPromotionDescription());
         vo.setPriceChangeReason(entity.getPriceChangeReason());
