@@ -387,6 +387,9 @@ public class ParkInfoServiceImpl implements ParkInfoService {
                 entity.getNetworkTags() != null
                         ? Arrays.asList(entity.getNetworkTags().split(","))
                         : null);
+        vo.setVitalConfig(entity.getVitalConfig());
+        vo.setCareConfig(entity.getCareConfig());
+        vo.setSojournConfig(entity.getSojournConfig());
         vo.setNatureType(entity.getNatureType());
         vo.setNatureTypeDescription(entity.getNatureTypeDescription());
         vo.setSpecialtyTag(entity.getSpecialtyTag());
