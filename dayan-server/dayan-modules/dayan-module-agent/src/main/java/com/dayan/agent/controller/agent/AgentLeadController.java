@@ -4,13 +4,12 @@ import com.dayan.agent.dto.AgentLeadCreateDTO;
 import com.dayan.agent.dto.AgentLeadQueryDTO;
 import com.dayan.agent.dto.AgentLeadUpdateDTO;
 import com.dayan.agent.service.AgentLeadService;
-import com.dayan.agent.service.AgentLeadTraceService;
-import com.dayan.agent.vo.AgentLeadTraceVO;
 import com.dayan.agent.vo.AgentLeadVO;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
-import com.dayan.common.mybatis.context.ContextHolder;
+import com.dayan.lead.vo.LeadInfoVO;
+import com.dayan.lead.vo.LeadTraceVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,6 +23,9 @@ import java.util.List;
  *
  * <p>路径：{@code /agent-api/leads}（由 dayan-agent 启动模块的 context-path 拼接）。
  * 所有查询/操作自动限定为当前登录代理人的线索。
+ *
+ * <p>线索池（{@code /leads/pool}）来自 lead 域 lead_info：访客由分享追踪自动建档，
+ * 代理人认领后才生成自己的 agent_lead CRM 线索。
  */
 @Tag(name = "Agent 线索")
 @RestController
@@ -32,12 +34,28 @@ import java.util.List;
 public class AgentLeadController {
 
     private final AgentLeadService agentLeadService;
-    private final AgentLeadTraceService agentLeadTraceService;
 
     @Operation(summary = "分页查询我的线索")
     @GetMapping
     public R<PageResult<AgentLeadVO>> page(AgentLeadQueryDTO query) {
         return R.ok(agentLeadService.page(query));
+    }
+
+    @Operation(summary = "线索池分页（本渠道未被认领的访客线索）")
+    @GetMapping("/pool")
+    public R<PageResult<LeadInfoVO>> pool(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean onlyWithPhone,
+            @RequestParam(defaultValue = "1") long current,
+            @RequestParam(defaultValue = "10") long size) {
+        return R.ok(agentLeadService.pagePool(keyword, onlyWithPhone, current, size));
+    }
+
+    @Operation(summary = "认领线索池线索")
+    @OperationLog(module = "线索", action = "认领")
+    @PostMapping("/claim/{visitorLeadCode}")
+    public R<Long> claim(@PathVariable String visitorLeadCode) {
+        return R.ok(agentLeadService.claim(visitorLeadCode));
     }
 
     @Operation(summary = "线索详情")
@@ -70,10 +88,9 @@ public class AgentLeadController {
         return R.ok();
     }
 
-    @Operation(summary = "线索互动记录（互动时间线）")
+    @Operation(summary = "线索互动记录（互动时间线，来自 lead 域记录表）")
     @GetMapping("/{leadId}/traces")
-    public R<List<AgentLeadTraceVO>> traces(@PathVariable Long leadId) {
-        String agentCode = ContextHolder.getAccountCode();
-        return R.ok(agentLeadTraceService.listByLeadId(leadId, agentCode));
+    public R<List<LeadTraceVO>> traces(@PathVariable Long leadId) {
+        return R.ok(agentLeadService.traces(leadId));
     }
 }

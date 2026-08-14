@@ -1,18 +1,26 @@
 package com.dayan.agent.controller.agent;
 
 import com.dayan.agent.service.AgentCardService;
-import com.dayan.agent.service.AgentLeadTraceService;
+import com.dayan.agent.service.AgentInfoService;
 import com.dayan.agent.service.PosterTemplateService;
 import com.dayan.agent.vo.AgentCardVO;
-import com.dayan.agent.vo.AgentLeadTraceVO;
+import com.dayan.agent.vo.AgentInfoVO;
 import com.dayan.agent.vo.PosterTemplateVO;
+import com.dayan.client.service.ClientInfoService;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.R;
 import com.dayan.content.service.ContentInfoService;
 import com.dayan.content.vo.ContentInfoVO;
+import com.dayan.lead.entity.LeadInfo;
+import com.dayan.lead.service.LeadInfoService;
+import com.dayan.lead.service.LeadTrackService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,7 +35,9 @@ import java.util.Map;
  * （SaTokenConfig 未启用全局拦截，无注解即公开）。
  *
  * <p>客户打开代理人分享的文章链接时，由此接口返回文章内容 + 分享人名片。
+ * 访客追踪写入 lead 域：lead_info 建档 + 互动明细表；留资时自动建客户档案并回填关联。
  */
+@Slf4j
 @Tag(name = "公开分享")
 @RestController
 @RequestMapping("/open/share")
@@ -37,7 +47,10 @@ public class OpenShareController {
     private final ContentInfoService contentInfoService;
     private final AgentCardService agentCardService;
     private final PosterTemplateService posterTemplateService;
-    private final AgentLeadTraceService leadTraceService;
+    private final AgentInfoService agentInfoService;
+    private final LeadTrackService leadTrackService;
+    private final LeadInfoService leadInfoService;
+    private final ClientInfoService clientInfoService;
 
     @Operation(summary = "分享内容详情（公开，含分享人名片）")
     @GetMapping("/content/{contentCode}")
@@ -100,20 +113,56 @@ public class OpenShareController {
             visitorSource = (ua != null && ua.contains("MicroMessenger")) ? "wechat" : "browser";
         }
 
-        String token = leadTraceService.trackVisit(agentCode, shareType, bizCode, bizTitle, visitorToken, visitorSource);
+        // 渠道归属由分享人（代理人）解析；无分享人的直接访问不建档
+        String channelCode = resolveChannelCode(agentCode);
+        String token = leadTrackService.track(channelCode, agentCode, shareType,
+                bizCode, bizTitle, visitorToken, visitorSource);
 
         Map<String, Object> result = new HashMap<>();
         result.put("visitorToken", token);
         return R.ok(result);
     }
 
-    @Operation(summary = "客户留资（公开，更新访客线索的手机号/姓名）")
+    @Operation(summary = "客户留资（公开，回填线索手机号/姓名并自动建客户档案）")
     @PostMapping("/contact")
     public R<Void> leaveContact(@RequestBody Map<String, Object> body) {
         String visitorToken = (String) body.get("visitorToken");
         String phone = (String) body.get("phone");
         String name = (String) body.get("name");
-        leadTraceService.leaveContact(visitorToken, phone, name);
+        if (!StringUtils.hasText(visitorToken) || !StringUtils.hasText(phone)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "访客令牌和手机号不能为空");
+        }
+
+        leadTrackService.leaveContact(visitorToken, phone, name);
+
+        // 留资即建档：find-or-create 客户（档案+无密码账号），并回填线索的客户关联
+        try {
+            LeadInfo lead = leadInfoService.getByVisitorToken(visitorToken);
+            if (lead != null && !StringUtils.hasText(lead.getClientCode())) {
+                String clientCode = clientInfoService.findOrCreateByPhone(
+                        lead.getChannelCode(), phone, name, null);
+                leadTrackService.bindClient(visitorToken, clientCode);
+            }
+        } catch (Exception e) {
+            // 建档失败不阻断留资主流程
+            log.warn("[Lead] 留资自动建档客户失败: {}", e.getMessage());
+        }
         return R.ok();
+    }
+
+    /**
+     * 由代理人编码解析其所属渠道编码（代理人不存在时返回 null，追踪降级为不建档）。
+     */
+    private String resolveChannelCode(String agentCode) {
+        if (!StringUtils.hasText(agentCode)) {
+            return null;
+        }
+        try {
+            AgentInfoVO agent = agentInfoService.getDetail(agentCode);
+            return agent != null ? agent.getChannelCode() : null;
+        } catch (BusinessException e) {
+            log.warn("[Lead] 解析分享人渠道失败: agentCode={}, {}", agentCode, e.getMessage());
+            return null;
+        }
     }
 }

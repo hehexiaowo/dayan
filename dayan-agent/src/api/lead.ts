@@ -1,5 +1,5 @@
 import request from '@/utils/request';
-import type { Lead, LeadTrace, PageQuery, PageResult } from '@/types';
+import type { Lead, LeadPoolItem, LeadTrace, PageQuery, PageResult } from '@/types';
 
 /**
  * 线索查询参数。
@@ -100,5 +100,37 @@ export function getLeadTraces(leadId: string): Promise<LeadTrace[]> {
   return request<LeadTrace[]>({
     url: `/leads/${leadId}/traces`,
     method: 'GET',
+  });
+}
+
+/**
+ * 线索池查询参数。
+ */
+export interface LeadPoolQuery extends PageQuery {
+  keyword?: string;
+  /** 仅看已留资（有手机号） */
+  onlyWithPhone?: boolean;
+}
+
+/**
+ * 线索池分页（GET /agent-api/leads/pool）。
+ * 本渠道内尚未被任何代理人认领的访客线索。
+ */
+export function getLeadPool(query?: LeadPoolQuery): Promise<PageResult<LeadPoolItem>> {
+  return request<PageResult<LeadPoolItem>>({
+    url: '/leads/pool',
+    method: 'GET',
+    data: (query || {}) as Record<string, any>,
+  });
+}
+
+/**
+ * 认领线索池线索（POST /agent-api/leads/claim/{visitorLeadCode}）。
+ * 认领成功后该线索进入我的线索清单。
+ */
+export function claimLead(visitorLeadCode: string): Promise<number> {
+  return request<number>({
+    url: `/leads/claim/${visitorLeadCode}`,
+    method: 'POST',
   });
 }

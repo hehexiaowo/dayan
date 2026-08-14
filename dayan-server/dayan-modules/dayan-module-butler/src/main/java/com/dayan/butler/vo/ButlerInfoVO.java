@@ -21,6 +21,8 @@ public class ButlerInfoVO {
     private String avatar;
     /** 所属组织编码 */
     private String organCode;
+    /** 关联后台账号编码（organ_account.account_code，未开通为 null） */
+    private String accountCode;
     /** 管家等级 */
     private Integer butlerLevel;
     /** 状态：0=停用 / 1=启用 */

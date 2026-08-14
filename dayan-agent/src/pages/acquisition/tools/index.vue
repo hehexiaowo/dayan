@@ -31,21 +31,27 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
+import { getTools } from '@/api/tool';
+import type { ToolInfo } from '@/types';
+
+type ToolColor = 'blue' | 'green' | 'orange' | 'red' | 'gray';
 
 interface ToolItem {
   id: string;
   name: string;
   desc: string;
   icon: string;
-  color: 'blue' | 'green' | 'orange' | 'red' | 'gray';
+  color: ToolColor;
   path: string;
 }
 
-/** 工具列表 — 后续新增在此数组追加即可 */
-const tools: ToolItem[] = [
+/** 兜底工具列表 — 接口不可用/未配置时保证页面不空白（与 tool_info 预置种子一致） */
+const FALLBACK_TOOLS: ToolItem[] = [
   {
-    id: 'pension',
+    id: 'TL00001',
     name: '退休养老金计算器',
     desc: '根据当前工资、缴费年限，估算退休后每月可领养老金',
     icon: '退',
@@ -53,7 +59,7 @@ const tools: ToolItem[] = [
     path: '/pages/acquisition/tools/pension-calculator',
   },
   {
-    id: 'gap',
+    id: 'TL00002',
     name: '养老生活缺口计算器',
     desc: '计算退休资金缺口，帮客户提前做好养老储备规划',
     icon: '缺',
@@ -61,6 +67,48 @@ const tools: ToolItem[] = [
     path: '/pages/acquisition/tools/gap-calculator',
   },
 ];
+
+const tools = ref<ToolItem[]>(FALLBACK_TOOLS);
+
+const TOOL_COLORS: readonly string[] = ['blue', 'green', 'orange', 'red', 'gray'];
+
+/** 从工具配置 JSON 解析图标颜色（非法配置兜底 blue） */
+function parseColor(config?: string): ToolColor {
+  if (!config) return 'blue';
+  try {
+    const color = (JSON.parse(config) as { color?: string }).color;
+    return color && TOOL_COLORS.includes(color) ? (color as ToolColor) : 'blue';
+  } catch {
+    return 'blue';
+  }
+}
+
+function mapTool(t: ToolInfo): ToolItem {
+  return {
+    id: t.toolCode,
+    name: t.toolName,
+    desc: t.toolDesc || '',
+    icon: t.icon || '工',
+    color: parseColor(t.config),
+    path: t.entryPath,
+  };
+}
+
+async function loadTools() {
+  try {
+    const list = await getTools();
+    // 后台已配置则以后台为准；空结果（全部禁用/未配置）保留兜底
+    if (list && list.length > 0) {
+      tools.value = list.map(mapTool);
+    }
+  } catch {
+    // 接口异常时保留兜底列表
+  }
+}
+
+onShow(() => {
+  loadTools();
+});
 
 function onOpenTool(tool: ToolItem) {
   uni.navigateTo({ url: tool.path });

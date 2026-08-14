@@ -1,5 +1,6 @@
 package com.dayan.butler.controller.admin;
 
+import com.dayan.butler.dto.ButlerAccountOpenDTO;
 import com.dayan.butler.dto.ButlerInfoCreateDTO;
 import com.dayan.butler.dto.ButlerInfoQueryDTO;
 import com.dayan.butler.dto.ButlerInfoUpdateDTO;
@@ -67,6 +68,15 @@ public class ButlerInfoAdminController {
                           @RequestBody ButlerInfoUpdateDTO dto) {
         butlerInfoService.update(butlerCode, dto);
         return R.ok();
+    }
+
+    @Operation(summary = "开通管家后台账号")
+    @OperationLog(module = "管家信息", action = "开通后台账号")
+    @SaCheckPermission("butler:info:update")
+    @PostMapping("/{butlerCode}/account")
+    public R<String> openAccount(@PathVariable String butlerCode,
+                                 @RequestBody @Valid ButlerAccountOpenDTO dto) {
+        return R.ok(butlerInfoService.openAccount(butlerCode, dto));
     }
 
     @Operation(summary = "删除管家信息")

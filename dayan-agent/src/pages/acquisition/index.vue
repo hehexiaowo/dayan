@@ -52,6 +52,58 @@
 
     <!-- ===== 下半部分：线索清单区 ===== -->
     <view class="bottom-section">
+      <!-- 线索池（待认领访客线索） -->
+      <view v-if="poolLeads.length" class="pool-section">
+        <view class="list-header">
+          <text class="list-title">线索池</text>
+          <text class="list-count">{{ poolLeads.length }} 条待认领</text>
+        </view>
+        <view
+          v-for="item in poolLeads"
+          :key="item.leadCode"
+          class="card pool-card"
+        >
+          <view class="card-left">
+            <image
+              v-if="item.wxAvatar"
+              :src="item.wxAvatar"
+              mode="aspectFill"
+              class="card-avatar-img"
+            />
+            <DyIconBlock
+              v-else
+              :text="poolName(item).charAt(0) || '?'"
+              color="gray"
+              size="sm"
+              shape="circle"
+            />
+          </view>
+          <view class="card-main">
+            <view class="card-row-top">
+              <text class="card-name">{{ poolName(item) }}</text>
+            </view>
+            <view class="card-row-mid">
+              <text v-if="item.phone" class="card-phone">{{ item.phone }}</text>
+              <text v-else class="card-phone muted">未留手机号</text>
+            </view>
+            <view class="card-row-bottom">
+              <template v-if="item.lastInteractType">
+                <view class="trace-pill" :class="tracePillClass(item.lastInteractType)">
+                  <text class="trace-pill-text">{{ traceTypeText(item.lastInteractType) }}</text>
+                </view>
+                <text class="card-meta-sep">·</text>
+              </template>
+              <text class="card-meta">{{ item.interactCount || 0 }}次互动</text>
+              <text v-if="item.lastInteractTime || item.createdAt" class="card-meta-sep">·</text>
+              <text v-if="item.lastInteractTime || item.createdAt" class="card-meta">{{ formatTime(item.lastInteractTime || item.createdAt, true) }}</text>
+            </view>
+          </view>
+          <view class="claim-btn dy-clickable" @click.stop="onClaim(item)">
+            <text class="claim-btn-text">认领</text>
+          </view>
+        </view>
+      </view>
+
       <!-- 线索标题 + 统计 -->
       <view class="list-header">
         <text class="list-title">线索清单</text>
@@ -166,9 +218,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app';
-import { getLeads } from '@/api/lead';
+import { getLeads, getLeadPool, claimLead } from '@/api/lead';
 import { LeadStatus } from '@/types';
-import type { Lead } from '@/types';
+import type { Lead, LeadPoolItem } from '@/types';
 import { statusText, statusClass, avatarColor, traceTypeText, formatTime } from '@/utils/lead';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
@@ -256,6 +308,44 @@ async function loadList() {
   }
 }
 
+// ---------- 线索池（待认领） ----------
+const poolLeads = ref<LeadPoolItem[]>([]);
+
+/** 线索池展示名：name > wxNickname > 匿名访客 */
+function poolName(item: LeadPoolItem): string {
+  return item.name || item.wxNickname || '匿名访客';
+}
+
+async function loadPool() {
+  try {
+    // 只取前 5 条待认领线索做入口展示，失败静默（不阻塞主列表）
+    const res = await getLeadPool({ current: 1, size: 5 });
+    poolLeads.value = res?.records || [];
+  } catch (e) {
+    poolLeads.value = [];
+  }
+}
+
+async function onClaim(item: LeadPoolItem) {
+  const confirmed = await new Promise<boolean>((resolve) => {
+    uni.showModal({
+      title: '认领线索',
+      content: `确定认领「${poolName(item)}」吗？认领后将进入你的线索清单。`,
+      success: (res) => resolve(!!res.confirm),
+      fail: () => resolve(false),
+    });
+  });
+  if (!confirmed) return;
+  try {
+    await claimLead(item.leadCode);
+    uni.showToast({ title: '认领成功', icon: 'success' });
+    await Promise.all([loadPool(), loadList()]);
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '认领失败，可能已被他人认领', icon: 'none' });
+    loadPool();
+  }
+}
+
 function onSearch() {
   loadList();
 }
@@ -292,14 +382,15 @@ function onLeadClick(lead: Lead) {
   uni.navigateTo({ url: '/pages/acquisition/lead/detail?id=' + lead.id });
 }
 
-// 每次进入/返回页面统一刷新（首次加载、状态变更、新增、删除后同步）
+// 每次进入/返回页面统一刷新（首次加载、状态变更、新增、删除、认领后同步）
 onShow(() => {
   loadList();
+  loadPool();
 });
 
 onPullDownRefresh(async () => {
   try {
-    await loadList();
+    await Promise.all([loadList(), loadPool()]);
   } finally {
     uni.stopPullDownRefresh();
   }
@@ -630,5 +721,23 @@ onPullDownRefresh(async () => {
   color: #fff;
   font-size: 56rpx;
   font-weight: 300;
+}
+
+/* ========== 线索池 ========== */
+.pool-section {
+  margin-bottom: $spacing-md;
+}
+.pool-card {
+  border: 1rpx dashed $brand-primary;
+}
+.claim-btn {
+  flex-shrink: 0;
+  background: $brand-primary;
+  border-radius: $radius-md;
+  padding: 12rpx 28rpx;
+}
+.claim-btn-text {
+  font-size: 24rpx;
+  color: #fff;
 }
 </style>

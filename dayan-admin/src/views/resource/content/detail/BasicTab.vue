@@ -2,8 +2,8 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { getContent, updateContent } from '@/api/content'
-import { listContentCategories } from '@/api/content-sub'
-import type { ContentInfo, ContentCategory } from '@/types/content'
+import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import type { ContentInfo } from '@/types/content'
 import { CONTENT_TYPE_OPTIONS, SOURCE_TYPE_OPTIONS } from '@/types/content'
 import FileUploader from '@/components/FileUploader/index.vue'
 
@@ -12,7 +12,8 @@ const emit = defineEmits<{ (e: 'updated'): void }>()
 
 const loading = ref(false)
 const detail = ref<ContentInfo | null>(null)
-const categoryOptions = ref<ContentCategory[]>([])
+/** 分类下拉选项（业务字典 content_category 承载） */
+const { options: categoryOptions } = useBusinessDictOptions('content_category')
 
 async function loadDetail() {
   loading.value = true
@@ -23,13 +24,6 @@ async function loadDetail() {
   }
 }
 
-async function loadCategories() {
-  try {
-    categoryOptions.value = await listContentCategories()
-  } catch {
-    categoryOptions.value = []
-  }
-}
 
 // ---------- 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -63,7 +57,6 @@ async function handleSubmit() {
 }
 
 onMounted(() => {
-  loadCategories()
   loadDetail()
 })
 </script>
@@ -81,7 +74,7 @@ onMounted(() => {
         {{ CONTENT_TYPE_OPTIONS.find((o) => o.value === detail!.contentType)?.label ?? '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="分类">
-        {{ categoryOptions.find((c) => c.categoryCode === detail!.categoryCode)?.categoryName || detail!.categoryCode || '-' }}
+        {{ categoryOptions.find((c) => c.dictCode === detail!.categoryCode)?.dictName || detail!.categoryCode || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="作者">{{ detail.authorName || '-' }}</el-descriptions-item>
       <el-descriptions-item label="来源类型">
@@ -117,9 +110,9 @@ onMounted(() => {
               <el-select v-model="form.categoryCode" clearable filterable placeholder="选择分类" style="width: 100%">
                 <el-option
                   v-for="c in categoryOptions"
-                  :key="c.categoryCode"
-                  :label="c.categoryName"
-                  :value="c.categoryCode!"
+                  :key="c.dictCode"
+                  :label="c.dictName"
+                  :value="c.dictCode"
                 />
               </el-select>
             </el-form-item>

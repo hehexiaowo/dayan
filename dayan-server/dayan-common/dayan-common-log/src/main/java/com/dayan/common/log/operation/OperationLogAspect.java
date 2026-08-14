@@ -1,6 +1,7 @@
 package com.dayan.common.log.operation;
 
 import com.dayan.common.log.sensitive.SensitiveUtil;
+import com.dayan.common.log.util.UaParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -85,47 +86,13 @@ public class OperationLogAspect {
     }
 
     /**
-     * 按 User-Agent 简单解析设备类型/操作系统/浏览器。
-     * 仅覆盖主流 UA，边缘 UA 解析失败时字段留 null（不影响主流程）。
+     * 按 User-Agent 简单解析设备类型/操作系统/浏览器（委托 {@link UaParser}）。
      */
     private void parseUserAgent(OperationLogRecord record) {
         String ua = record.getUserAgent();
-        if (ua == null || ua.isEmpty()) {
-            return;
-        }
-        String uaLower = ua.toLowerCase();
-        // 设备类型
-        if (uaLower.contains("mobile") || uaLower.contains("android") || uaLower.contains("iphone")) {
-            if (uaLower.contains("tablet") || uaLower.contains("ipad")) {
-                record.setDeviceType("tablet");
-            } else {
-                record.setDeviceType("mobile");
-            }
-        } else {
-            record.setDeviceType("pc");
-        }
-        // 操作系统
-        if (uaLower.contains("windows")) {
-            record.setOs("Windows");
-        } else if (uaLower.contains("mac os") || uaLower.contains("macintosh")) {
-            record.setOs("macOS");
-        } else if (uaLower.contains("linux")) {
-            record.setOs("Linux");
-        } else if (uaLower.contains("android")) {
-            record.setOs("Android");
-        } else if (uaLower.contains("iphone") || uaLower.contains("ipad") || uaLower.contains("ios")) {
-            record.setOs("iOS");
-        }
-        // 浏览器（注意顺序：Edge/Edg 要先于 Chrome 判断，否则会被 Chrome 吞掉）
-        if (uaLower.contains("edg/") || uaLower.contains("edge")) {
-            record.setBrowser("Edge");
-        } else if (uaLower.contains("firefox")) {
-            record.setBrowser("Firefox");
-        } else if (uaLower.contains("chrome")) {
-            record.setBrowser("Chrome");
-        } else if (uaLower.contains("safari")) {
-            record.setBrowser("Safari");
-        }
+        record.setDeviceType(UaParser.deviceType(ua));
+        record.setOs(UaParser.os(ua));
+        record.setBrowser(UaParser.browser(ua));
     }
 
     /**

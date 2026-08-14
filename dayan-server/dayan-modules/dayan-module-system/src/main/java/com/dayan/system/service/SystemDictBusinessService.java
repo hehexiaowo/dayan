@@ -48,6 +48,19 @@ public class SystemDictBusinessService {
                 .orderByAsc(SystemDictBusiness::getSortOrder));
     }
 
+    /**
+     * 按 dictType 全量列表（供业务域以字典为数据源的场景，如内容分类）。
+     *
+     * @param onlyEnabled true 时仅返回启用项
+     */
+    public List<SystemDictBusiness> listByType(String dictType, boolean onlyEnabled) {
+        return businessDictMapper.selectList(new LambdaQueryWrapper<SystemDictBusiness>()
+                .eq(SystemDictBusiness::getDictType, dictType)
+                .eq(onlyEnabled, SystemDictBusiness::getStatus, 1)
+                .orderByAsc(SystemDictBusiness::getSortOrder)
+                .orderByAsc(SystemDictBusiness::getId));
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public Long create(SystemDictBusiness dict) {
         // (dictType, dictCode) 唯一校验

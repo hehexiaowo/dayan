@@ -13,6 +13,10 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.mybatis.context.ContextHolder;
+import com.dayan.lead.service.LeadInfoService;
+import com.dayan.lead.service.LeadTrackService;
+import com.dayan.lead.vo.LeadInfoVO;
+import com.dayan.lead.vo.LeadTraceVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,6 +39,8 @@ import java.util.List;
 public class AgentLeadServiceImpl implements AgentLeadService {
 
     private final AgentLeadMapper leadMapper;
+    private final LeadInfoService leadInfoService;
+    private final LeadTrackService leadTrackService;
 
     private static final DateTimeFormatter CODE_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -67,6 +73,74 @@ public class AgentLeadServiceImpl implements AgentLeadService {
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
         List<AgentLeadVO> records = page.getRecords().stream().map(this::toVO).toList();
         return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), records);
+    }
+
+    @Override
+    public PageResult<LeadInfoVO> pagePool(String keyword, Boolean onlyWithPhone, long current, long size) {
+        String channelCode = ContextHolder.getChannelCode();
+        return leadInfoService.page(channelCode, keyword, onlyWithPhone, true, current, size);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long claim(String visitorLeadCode) {
+        String agentCode = requireCurrentAgentCode();
+        LeadInfoVO poolLead = leadInfoService.getByLeadCode(visitorLeadCode);
+
+        // 防抢单：同一线索只允许被一个代理人认领（含已软删除的历史占用一律放行重认）
+        Long claimed = leadMapper.selectCount(new LambdaQueryWrapper<AgentLead>()
+                .eq(AgentLead::getVisitorLeadCode, visitorLeadCode));
+        if (claimed != null && claimed > 0) {
+            throw new BusinessException(ErrorCode.BUSINESS, "该线索已被认领");
+        }
+
+        AgentLead lead = new AgentLead();
+        lead.setAgentCode(agentCode);
+        lead.setChannelCode(StringUtils.hasText(poolLead.getChannelCode()) ? poolLead.getChannelCode() : "");
+        lead.setLeadCode(generateLeadCode(poolLead.getChannelCode()));
+        lead.setName(StringUtils.hasText(poolLead.getName()) ? poolLead.getName()
+                : (StringUtils.hasText(poolLead.getWxNickname()) ? poolLead.getWxNickname() : "匿名访客"));
+        lead.setPhone(poolLead.getPhone());
+        lead.setGender(0);
+        lead.setLeadStatus(1); // 新线索
+        lead.setSourceType(2); // 分享扫码
+        lead.setVisitorLeadCode(poolLead.getLeadCode());
+        lead.setVisitorToken(poolLead.getVisitorToken());
+        lead.setVisitorSource(poolLead.getVisitorSource());
+        lead.setWxNickname(poolLead.getWxNickname());
+        lead.setWxAvatar(poolLead.getWxAvatar());
+        lead.setLastTraceTime(poolLead.getLastInteractTime());
+        lead.setLastTraceType(poolLead.getLastInteractType());
+        lead.setTraceCount(poolLead.getInteractCount() != null ? poolLead.getInteractCount() : 0);
+        lead.setRemark("线索池认领（" + poolLead.getLeadCode() + "）");
+        leadMapper.insert(lead);
+        log.info("[Lead] 认领线索: visitorLeadCode={}, leadCode={}, agentCode={}",
+                visitorLeadCode, lead.getLeadCode(), agentCode);
+        return lead.getId();
+    }
+
+    @Override
+    public List<LeadTraceVO> traces(Long leadId) {
+        String agentCode = requireCurrentAgentCode();
+        AgentLead lead = leadMapper.selectById(leadId);
+        if (lead == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "线索不存在");
+        }
+        if (!agentCode.equals(lead.getAgentCode())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权查看此线索");
+        }
+        // 手工录入的线索无 lead 域关联，无互动时间线
+        if (!StringUtils.hasText(lead.getVisitorLeadCode())) {
+            return List.of();
+        }
+        LeadInfoVO poolLead;
+        try {
+            poolLead = leadInfoService.getByLeadCode(lead.getVisitorLeadCode());
+        } catch (BusinessException e) {
+            log.warn("[Lead] 线索关联的访客线索不存在: visitorLeadCode={}", lead.getVisitorLeadCode());
+            return List.of();
+        }
+        return leadTrackService.listTraces(poolLead.getVisitorToken(), 50);
     }
 
     @Override
@@ -200,6 +274,7 @@ public class AgentLeadServiceImpl implements AgentLeadService {
         vo.setLeadStatus(lead.getLeadStatus());
         vo.setSourceType(lead.getSourceType());
         vo.setSourceRef(lead.getSourceRef());
+        vo.setVisitorLeadCode(lead.getVisitorLeadCode());
         vo.setVisitorToken(lead.getVisitorToken());
         vo.setVisitorSource(lead.getVisitorSource());
         vo.setWxNickname(lead.getWxNickname());

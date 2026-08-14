@@ -31,6 +31,12 @@ public class SystemDictBusiness extends BaseEntity {
     /** 字典存储值 */
     private String dictValue;
 
+    /** 图标（内容分类等场景使用） */
+    private String icon;
+
+    /** 扩展属性（JSON 字符串）：内容分类的 coverImage/isVisible 等 */
+    private String extra;
+
     /** 父级编码 */
     private String parentCode;
 

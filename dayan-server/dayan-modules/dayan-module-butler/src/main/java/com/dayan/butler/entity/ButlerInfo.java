@@ -34,6 +34,9 @@ public class ButlerInfo extends BaseEntity {
     /** 所属组织编码 */
     private String organCode;
 
+    /** 关联后台账号编码（organ_account.account_code，未开通为 NULL） */
+    private String accountCode;
+
     /** 管家等级 */
     private Integer butlerLevel;
 

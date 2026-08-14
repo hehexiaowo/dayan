@@ -21,6 +21,16 @@ import {
   GOODS_AUDIT_STATUS_OPTIONS
 } from '@/types/goods'
 import FileUploader from '@/components/FileUploader/index.vue'
+import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+
+/** 商品分类选项（业务字典 goods_category，管理入口：系统管理-业务字典） */
+const { options: categoryOptions } = useBusinessDictOptions('goods_category')
+
+/** 分类编码 → 分类名（未命中字典时原样展示编码） */
+function categoryName(code?: string): string {
+  if (!code) return '--'
+  return categoryOptions.value.find((o) => o.dictCode === code)?.dictName ?? code
+}
 
 /**
  * 商品管理页。
@@ -433,7 +443,9 @@ loadPage()
             <el-tag type="info">{{ goodsTypeLabel(row.goodsType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="categoryCode" label="分类编码" min-width="120" show-overflow-tooltip />
+        <el-table-column label="商品分类" min-width="120" show-overflow-tooltip>
+          <template #default="{ row }">{{ categoryName(row.categoryCode) }}</template>
+        </el-table-column>
         <el-table-column prop="brandName" label="品牌" min-width="120" show-overflow-tooltip />
         <el-table-column label="售价" width="120" align="center">
           <template #default="{ row }">
@@ -534,8 +546,15 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="分类编码">
-              <el-input v-model="form.categoryCode" placeholder="分类编码" maxlength="50" />
+            <el-form-item label="商品分类">
+              <el-select v-model="form.categoryCode" placeholder="选择分类" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="o in categoryOptions"
+                  :key="o.dictCode"
+                  :label="o.dictName"
+                  :value="o.dictCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

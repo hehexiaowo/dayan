@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.common.core.exception.AccountLockedException;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
+import com.dayan.common.log.auth.AuthLogRecorder;
+import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.common.redis.RedisKey;
 import com.dayan.common.security.AccountType;
 import com.dayan.common.security.StpKit;
@@ -16,6 +18,7 @@ import com.dayan.organ.service.AdminAuthService;
 import com.dayan.organ.vo.AuthLoginVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +45,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
     private final OrganAccountMapper accountMapper;
     private final PasswordService passwordService;
     private final StringRedisTemplate redisTemplate;
+    private final ObjectProvider<AuthLogRecorder> authLogRecorderProvider;
 
     /** 登录失败锁定阈值 */
     private static final int FAIL_LIMIT = 5;
@@ -60,6 +64,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
                 .eq(OrganAccount::getEmail, dto.getUsername())
                 .last("LIMIT 1"));
         if (account == null) {
+            recordLogin(null, null, dto.getUsername(), false, "账号或密码错误");
             throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
         }
 
@@ -67,14 +72,17 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         String failKey = RedisKey.authFail("admin", dto.getUsername());
         String failCountStr = redisTemplate.opsForValue().get(failKey);
         if (failCountStr != null && Integer.parseInt(failCountStr) >= FAIL_LIMIT) {
+            recordLogin(account.getAccountCode(), account.getRealName(), dto.getUsername(), false, "登录失败次数过多，账号已锁定");
             throw new AccountLockedException("登录失败次数过多，账号已锁定 " + LOCK_MINUTES + " 分钟");
         }
 
         // 3. 校验账号状态
         if (account.getAccountStatus() != null && account.getAccountStatus() == 0) {
+            recordLogin(account.getAccountCode(), account.getRealName(), dto.getUsername(), false, "账号已被锁定");
             throw new AccountLockedException("账号已被锁定，请联系管理员");
         }
         if (account.getAccountStatus() != null && account.getAccountStatus() == 2) {
+            recordLogin(account.getAccountCode(), account.getRealName(), dto.getUsername(), false, "账号已被禁用");
             throw new BusinessException(ErrorCode.BUSINESS, "账号已被禁用");
         }
 
@@ -89,6 +97,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
             String msg = remaining > 0
                     ? "账号或密码错误，剩余尝试次数 " + remaining
                     : "登录失败次数过多，账号已锁定 " + LOCK_MINUTES + " 分钟";
+            recordLogin(account.getAccountCode(), account.getRealName(), dto.getUsername(), false, "账号或密码错误");
             throw new BusinessException(ErrorCode.BUSINESS, msg);
         }
 
@@ -112,6 +121,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         accountMapper.updateById(update);
 
         log.info("Admin 登录成功: accountCode={}, username={}", account.getAccountCode(), account.getUsername());
+        recordLogin(account.getAccountCode(), account.getRealName(), account.getUsername(), true, null);
 
         return AuthLoginVO.builder()
                 .token(logic.getTokenValue())
@@ -125,7 +135,26 @@ public class AdminAuthServiceImpl implements AdminAuthService {
 
     @Override
     public void logout() {
+        recordLogout(ContextHolder.getAccountCode(), ContextHolder.getAccountName());
         StpKit.ADMIN.logout();
+    }
+
+    /** 登录日志（成功/失败），经 SPI 落库到 system_log_organ；无实现时静默跳过 */
+    private void recordLogin(String accountCode, String accountName, String identity,
+                             boolean success, String failReason) {
+        AuthLogRecorder recorder = authLogRecorderProvider.getIfAvailable();
+        if (recorder != null) {
+            recorder.recordLogin(AccountType.ADMIN.getLoginType(), accountCode, accountName,
+                    "password", identity, success, failReason);
+        }
+    }
+
+    /** 登出日志 */
+    private void recordLogout(String accountCode, String accountName) {
+        AuthLogRecorder recorder = authLogRecorderProvider.getIfAvailable();
+        if (recorder != null) {
+            recorder.recordLogout(AccountType.ADMIN.getLoginType(), accountCode, accountName);
+        }
     }
 
     @Override

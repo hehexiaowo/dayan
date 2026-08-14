@@ -31,6 +31,20 @@ public class ButlerInfoCreateDTO {
     /** 状态：0=停用 / 1=启用，默认 1 */
     private Integer status;
 
+    /**
+     * 后台登录用户名（可空）。
+     *
+     * <p>填写即在创建管家的同时开通 organ_account 后台账号（可登录 admin），
+     * 并挂靠"养老管家"部门（DEPT_BUTLER）+ 普通管家角色（ROLE_BUTLER）；
+     * 留空则只建档不开通，后续可走"开通后台账号"接口补办。
+     */
+    @Size(max = 50)
+    private String username;
+
+    /** 后台账号初始密码（可空，留空使用系统默认密码） */
+    @Size(min = 6, max = 64)
+    private String password;
+
     @Size(max = 500)
     private String remark;
 }

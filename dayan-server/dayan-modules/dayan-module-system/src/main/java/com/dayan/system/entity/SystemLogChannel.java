@@ -1,63 +1,22 @@
 package com.dayan.system.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.dayan.common.mybatis.entity.BaseEntity;
+import com.dayan.system.enums.SystemLogSource;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
 /**
- * 表 system_log_channel 对应实体。
+ * 表 system_log_channel 对应实体（渠道端日志）。
+ *
+ * <p>39 号迁移起重建为四端统一 schema（继承 {@link SystemLogEntry}）。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("system_log_channel")
-public class SystemLogChannel extends BaseEntity {
+public class SystemLogChannel extends SystemLogEntry {
 
-    /** 主键 */
-    @TableId(type = IdType.AUTO)
-    private Long id;
-
-
-    /** 渠道编码 */
-    private String channelCode;
-
-    /** 操作账号编码 */
-    private String accountCode;
-
-    /** 操作人姓名 */
-    private String accountName;
-
-    /** 操作模块 */
-    private String module;
-
-    /** 操作动作 */
-    private String action;
-
-    /** 操作对象类型 */
-    private String targetType;
-
-    /** 操作对象编码 */
-    private String targetCode;
-
-    /** 操作内容描述 */
-    private String content;
-
-    /** 变更前数据 */
-    private String beforeData;
-
-    /** 变更后数据 */
-    private String afterData;
-
-    /** 操作IP地址 */
-    private String ipAddress;
-
-    /** 浏览器UA */
-    private String userAgent;
-
-    /** 结果状态 */
-    private Integer resultStatus;
-
-    /** 错误信息 */
-    private String errorMsg;
+    @Override
+    public SystemLogSource logSource() {
+        return SystemLogSource.CHANNEL;
+    }
 }

@@ -30,7 +30,7 @@ import java.util.List;
  * Admin 端旅居预订订单接口（核心链路）。
  *
  * <p>路径前缀 {@code /order/sojourn}（context-path=/admin-api 拼接为 {@code /admin-api/order/sojourn/*}）。
- * 所有状态变更经 ORDER_SM 状态机，并写 system_order_status_log。
+ * 所有状态变更经 ORDER_SM 状态机，并写 order_status_change_record。
  */
 @Tag(name = "旅居预订订单管理（核心链路）")
 @Validated

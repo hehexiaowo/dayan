@@ -8,7 +8,7 @@
  *
  * tab 划分（对应 P9.2 brief，1 主表 + 5 子表）：
  * - 基本信息：ButlerInfo 主表字段编辑（el-descriptions + 编辑弹窗）
- * - 账号：ButlerAccount（分页 + CRUD + 重置密码，主键 number id）
+ * - 账号：后台登录账号（organ_account 开通/展示/重置密码）+ 管家独立账号 ButlerAccount（分页 + CRUD，主键 number id）
  * - 技能：ButlerSkill（分页 + CRUD，主键 number id）
  * - 服务客户：ButlerClientRel（list + bind/unbind/delete，无 update，主键雪花 string）
  * - 服务记录：ButlerServiceRecord（分页 + CRUD，主键雪花 string）

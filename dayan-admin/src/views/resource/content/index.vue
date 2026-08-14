@@ -14,8 +14,8 @@ import {
   publishContent,
   offlineContent
 } from '@/api/content'
-import { listContentCategories } from '@/api/content-sub'
-import type { ContentInfo, ContentInfoQuery, ContentCategory } from '@/types/content'
+import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import type { ContentInfo, ContentInfoQuery } from '@/types/content'
 import {
   ContentType,
   ContentStatus,
@@ -56,23 +56,15 @@ const {
 
 const router = useRouter()
 
-/** 分类下拉选项 + 名称映射（后端 VO 不带 categoryName，前端自行映射） */
-const categoryOptions = ref<ContentCategory[]>([])
+/** 分类下拉选项 + 名称映射（业务字典 content_category 承载，VO 不带名称前端自行映射） */
+const { options: categoryOptions } = useBusinessDictOptions('content_category')
 const categoryNameMap = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {}
   for (const c of categoryOptions.value) {
-    if (c.categoryCode) map[c.categoryCode] = c.categoryName
+    if (c.dictCode) map[c.dictCode] = c.dictName ?? ''
   }
   return map
 })
-
-async function loadCategories() {
-  try {
-    categoryOptions.value = await listContentCategories()
-  } catch {
-    categoryOptions.value = []
-  }
-}
 
 /** 跳转内容详情 */
 function openDetail(row: ContentInfo) {
@@ -339,7 +331,6 @@ function contentStatusTagType(status?: number): 'success' | 'warning' | 'danger'
 
 // 初始化加载
 onMounted(() => {
-  loadCategories()
   loadPage()
 })
 </script>
@@ -366,9 +357,9 @@ onMounted(() => {
           <el-select v-model="query.categoryCode" placeholder="全部分类" clearable filterable style="width: 180px">
             <el-option
               v-for="c in categoryOptions"
-              :key="c.categoryCode"
-              :label="c.categoryName"
-              :value="c.categoryCode!"
+              :key="c.dictCode"
+              :label="c.dictName"
+              :value="c.dictCode"
             />
           </el-select>
         </el-form-item>
@@ -506,9 +497,9 @@ onMounted(() => {
               <el-select v-model="form.categoryCode" placeholder="选择分类" clearable filterable style="width: 100%">
                 <el-option
                   v-for="c in categoryOptions"
-                  :key="c.categoryCode"
-                  :label="c.categoryName"
-                  :value="c.categoryCode!"
+                  :key="c.dictCode"
+                  :label="c.dictName"
+                  :value="c.dictCode"
                 />
               </el-select>
             </el-form-item>

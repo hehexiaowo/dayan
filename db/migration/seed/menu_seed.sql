@@ -31,7 +31,7 @@ VALUES
   ('admin_system_dict', '字典管理', 'admin_system', 2, '/system/dict', 'system/dict/index', 'system:dict:list', 'Collection', 1, 1, 'admin', 1, '字典管理', NOW(), NOW(), 'system', 'system', 0),
   ('admin_system_state_machine', '状态规则', 'admin_system', 2, '/system/state-machine', 'system/stateMachine/index', 'system:sm:list', 'Connection', 2, 1, 'admin', 1, '状态机规则配置', NOW(), NOW(), 'system', 'system', 0),
   ('admin_system_config', '系统配置', 'admin_system', 2, '/system/config', 'system/config/index', 'system:config:list', 'Tools', 3, 1, 'admin', 1, '系统参数配置', NOW(), NOW(), 'system', 'system', 0),
-  ('admin_system_log', '操作日志', 'admin_system', 2, '/system/log', 'system/log/index', 'system:log:list', 'Document', 4, 1, 'admin', 1, '操作审计日志', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_system_log', '系统日志', 'admin_system', 2, '/system/log', 'system/log/index', 'system:log:list', 'Document', 4, 1, 'admin', 1, '四端操作与登录日志审计', NOW(), NOW(), 'system', 'system', 0),
 
   -- ========== 基础管理子菜单（账号/角色/菜单/架构，原系统管理迁出）==========
   ('admin_basic_account', '账号管理', 'admin_basic', 2, '/basic/account', 'basic/account/index', 'organ:account:list', 'User', 1, 1, 'admin', 1, '核心账号管理', NOW(), NOW(), 'system', 'system', 0),

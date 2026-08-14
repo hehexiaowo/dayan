@@ -1,27 +1,30 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { pageOperationLogs } from '@/api/log'
+import { pageSystemLogs } from '@/api/log'
 import {
-  type SystemOperationLog,
-  type OperationLogQuery,
+  type SystemLog,
+  type SystemLogQuery,
+  LOG_SOURCE_OPTIONS,
   RESULT_STATUS_OPTIONS,
   resultStatusLabel
 } from '@/types/log'
 import { formatDateTime } from '@/utils/format'
 
 /**
- * 操作日志审计页。
+ * 系统日志审计页（四端分表）。
  *
- * 展示 system_operation_log 表数据（由 @OperationLog 注解 + AOP 切面异步落库），
- * 支持按模块、操作人编码、结果状态、时间范围筛选。
+ * 展示 system_log_organ / system_log_channel / system_log_agent / system_log_client
+ * 四表数据（操作日志由 @OperationLog 切面落库，登录/登出由 AuthLogRecorder 落库，
+ * module=auth），支持按来源、模块、操作人编码、结果状态、时间范围筛选。
  */
 
 const loading = ref(false)
-const tableData = ref<SystemOperationLog[]>([])
+const tableData = ref<SystemLog[]>([])
 const total = ref(0)
 
-const query = reactive<OperationLogQuery>({
+const query = reactive<SystemLogQuery>({
+  source: 'organ',
   module: '',
   accountCode: '',
   resultStatus: undefined,
@@ -45,13 +48,13 @@ async function loadData() {
       query.startTime = undefined
       query.endTime = undefined
     }
-    const res = await pageOperationLogs({ ...query })
+    const res = await pageSystemLogs({ ...query })
     tableData.value = res.records
     total.value = res.total
   } catch (err) {
     tableData.value = []
     total.value = 0
-    ElMessage.error('加载操作日志失败')
+    ElMessage.error('加载系统日志失败')
     void err
   } finally {
     loading.value = false
@@ -75,6 +78,7 @@ function handleSizeChange(size: number) {
 }
 
 function handleReset() {
+  query.source = 'organ'
   query.module = ''
   query.accountCode = ''
   query.resultStatus = undefined
@@ -87,9 +91,9 @@ function handleReset() {
 
 // ---------------- 详情弹窗 ----------------
 const detailVisible = ref(false)
-const detailRow = ref<SystemOperationLog | null>(null)
+const detailRow = ref<SystemLog | null>(null)
 
-function openDetail(row: SystemOperationLog) {
+function openDetail(row: SystemLog) {
   detailRow.value = row
   detailVisible.value = true
 }
@@ -100,7 +104,7 @@ function statusTagType(status?: number): 'success' | 'danger' {
 }
 
 /** 操作人展示：优先姓名，兜底编码 */
-function operatorDisplay(row: SystemOperationLog): string {
+function operatorDisplay(row: SystemLog): string {
   if (row.accountName) return row.accountName
   if (row.accountCode && row.accountCode !== 'unknown') return row.accountCode
   return row.accountCode || '—'
@@ -126,11 +130,24 @@ onMounted(() => {
     <el-card shadow="never">
       <!-- 搜索栏 -->
       <div class="toolbar">
+        <el-select
+          v-model="query.source"
+          placeholder="日志来源"
+          style="width: 130px"
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="item in LOG_SOURCE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
         <el-input
           v-model="query.module"
-          placeholder="模块"
+          placeholder="模块（auth 为登录登出）"
           clearable
-          style="width: 160px"
+          style="width: 180px"
         />
         <el-input
           v-model="query.accountCode"
@@ -220,7 +237,7 @@ onMounted(() => {
     <!-- 详情弹窗 -->
     <el-dialog
       v-model="detailVisible"
-      title="操作日志详情"
+      title="系统日志详情"
       width="760px"
       destroy-on-close
     >

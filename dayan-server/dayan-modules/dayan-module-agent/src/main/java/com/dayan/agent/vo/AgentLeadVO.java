@@ -33,6 +33,9 @@ public class AgentLeadVO {
     private Integer sourceType;
     private String sourceRef;
 
+    /** 关联访客线索编码（lead_info.lead_code，线索池认领后回填） */
+    private String visitorLeadCode;
+
     /** 访客令牌 */
     private String visitorToken;
     /** 访客来源（wechat/browser/unknown） */

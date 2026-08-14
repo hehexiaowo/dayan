@@ -17,7 +17,7 @@ import java.util.List;
  * 场景报名订单（order_scene）服务 —— 核心链路。
  *
  * <p>所有 order_status 变更必须经 {@code StateMachineEngine.transition("ORDER_SM", from, event)}。
- * 每次状态流转后写一条 system_order_status_log（经 OrderStatusLogHelper）。
+ * 每次状态流转后写一条 order_status_change_record（经 OrderStatusChangeRecordHelper）。
  */
 public interface OrderSceneService {
 

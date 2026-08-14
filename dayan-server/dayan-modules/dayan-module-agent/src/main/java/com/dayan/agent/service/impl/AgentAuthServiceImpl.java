@@ -18,11 +18,14 @@ import com.dayan.channel.mapper.ChannelInfoMapper;
 import com.dayan.common.core.exception.AccountLockedException;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
+import com.dayan.common.log.auth.AuthLogRecorder;
+import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.common.security.AccountType;
 import com.dayan.common.security.StpKit;
 import com.dayan.common.security.password.PasswordService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +60,7 @@ public class AgentAuthServiceImpl implements AgentAuthService {
     private final PasswordService passwordService;
     private final AgentSmsCodeService smsCodeService;
     private final WeChatLoginService weChatLoginService;
+    private final ObjectProvider<AuthLogRecorder> authLogRecorderProvider;
 
     @Override
     public List<ChannelOptionVO> listChannels(String mobile, String openId) {
@@ -101,14 +105,15 @@ public class AgentAuthServiceImpl implements AgentAuthService {
     @Transactional(rollbackFor = Exception.class)
     public AgentLoginVO login(AgentLoginDTO dto) {
         AgentAccount account = findByIdentifier(dto.getChannelCode(), dto.getIdentifier());
-        verifyPassword(account, dto.getPassword());
-        return doLogin(account);
+        verifyPassword(account, dto.getPassword(), dto.getIdentifier(), "password");
+        return doLogin(account, "password", dto.getIdentifier());
     }
 
     @Override
     public AgentLoginVO smsLogin(SmsLoginDTO dto) {
         // 1. 校验验证码
         if (!smsCodeService.verifyAndConsume(dto.getMobile(), dto.getCode())) {
+            recordLogin(null, null, dto.getMobile(), "sms", false, "验证码错误或已过期");
             throw new BusinessException(ErrorCode.BUSINESS, "验证码错误或已过期");
         }
         // 2. 查账号
@@ -117,10 +122,11 @@ public class AgentAuthServiceImpl implements AgentAuthService {
                 .eq(AgentAccount::getPhone, dto.getMobile())
                 .last("LIMIT 1"));
         if (account == null) {
+            recordLogin(null, null, dto.getMobile(), "sms", false, "账号不存在");
             throw new BusinessException(ErrorCode.BUSINESS, "账号不存在");
         }
-        checkAccountStatus(account);
-        return doLogin(account);
+        checkAccountStatus(account, dto.getMobile(), "sms");
+        return doLogin(account, "sms", dto.getMobile());
     }
 
     @Override
@@ -133,10 +139,11 @@ public class AgentAuthServiceImpl implements AgentAuthService {
                 .eq(AgentAccount::getOpenId, openId)
                 .last("LIMIT 1"));
         if (account == null) {
+            recordLogin(null, null, openId, "wx", false, "该微信未绑定代理人账号");
             throw new BusinessException(ErrorCode.NOT_FOUND, "该微信未绑定代理人账号");
         }
-        checkAccountStatus(account);
-        return doLogin(account);
+        checkAccountStatus(account, openId, "wx");
+        return doLogin(account, "wx", openId);
     }
 
     // ==================== 内部方法 ====================
@@ -154,26 +161,40 @@ public class AgentAuthServiceImpl implements AgentAuthService {
         return accountMapper.selectOne(wrapper);
     }
 
-    private void verifyPassword(AgentAccount account, String rawPassword) {
+    private void verifyPassword(AgentAccount account, String rawPassword, String identity, String loginType) {
         if (account == null) {
+            recordLogin(null, null, identity, loginType, false, "账号或密码错误");
             throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
         }
-        checkAccountStatus(account);
+        checkAccountStatus(account, identity, loginType);
         if (!passwordService.matches(rawPassword, account.getPassword())) {
+            recordLogin(account.getAgentCode(), account.getUsername(), identity, loginType, false, "账号或密码错误");
             throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
         }
     }
 
-    private void checkAccountStatus(AgentAccount account) {
+    private void checkAccountStatus(AgentAccount account, String identity, String loginType) {
         if (account.getAccountStatus() != null && account.getAccountStatus() == 0) {
+            recordLogin(account.getAgentCode(), account.getUsername(), identity, loginType, false, "账号已被锁定");
             throw new AccountLockedException("账号已被锁定，请联系管理员");
         }
         if (account.getAccountStatus() != null && account.getAccountStatus() == 2) {
+            recordLogin(account.getAgentCode(), account.getUsername(), identity, loginType, false, "账号已被禁用");
             throw new BusinessException(ErrorCode.BUSINESS, "账号已被禁用");
         }
     }
 
-    private AgentLoginVO doLogin(AgentAccount account) {
+    /** 登录日志（成功/失败），经 SPI 落库到 system_log_agent；无实现时静默跳过 */
+    private void recordLogin(String accountCode, String accountName, String identity, String loginType,
+                             boolean success, String failReason) {
+        AuthLogRecorder recorder = authLogRecorderProvider.getIfAvailable();
+        if (recorder != null) {
+            recorder.recordLogin(AccountType.AGENT.getLoginType(), accountCode, accountName,
+                    loginType, identity, success, failReason);
+        }
+    }
+
+    private AgentLoginVO doLogin(AgentAccount account, String loginType, String identity) {
         StpLogic logic = StpKit.AGENT;
         logic.login(account.getAgentCode());
         logic.getSession().set("channelCode", account.getChannelCode());
@@ -188,6 +209,7 @@ public class AgentAuthServiceImpl implements AgentAuthService {
 
         log.info("Agent 登录成功: agentCode={}, channelCode={}",
                 account.getAgentCode(), account.getChannelCode());
+        recordLogin(account.getAgentCode(), account.getUsername(), identity, loginType, true, null);
 
         return withInfo(AgentLoginVO.builder()
                         .token(logic.getTokenValue())
@@ -224,6 +246,11 @@ public class AgentAuthServiceImpl implements AgentAuthService {
 
     @Override
     public void logout() {
+        AuthLogRecorder recorder = authLogRecorderProvider.getIfAvailable();
+        if (recorder != null) {
+            recorder.recordLogout(AccountType.AGENT.getLoginType(),
+                    ContextHolder.getAccountCode(), ContextHolder.getAccountName());
+        }
         StpKit.AGENT.logout();
     }
 

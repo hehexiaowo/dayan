@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dayan.client.dto.ClientInfoCreateDTO;
 import com.dayan.client.dto.ClientInfoQueryDTO;
 import com.dayan.client.dto.ClientInfoUpdateDTO;
+import com.dayan.client.entity.ClientAccount;
 import com.dayan.client.entity.ClientInfo;
+import com.dayan.client.mapper.ClientAccountMapper;
 import com.dayan.client.mapper.ClientInfoMapper;
 import com.dayan.client.service.ClientInfoService;
 import com.dayan.client.vo.ClientInfoVO;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +34,7 @@ import java.util.List;
 public class ClientInfoServiceImpl implements ClientInfoService {
 
     private final ClientInfoMapper clientInfoMapper;
+    private final ClientAccountMapper clientAccountMapper;
 
     @Override
     public PageResult<ClientInfoVO> page(ClientInfoQueryDTO query) {
@@ -161,6 +165,60 @@ public class ClientInfoServiceImpl implements ClientInfoService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "客户不存在: " + clientCode);
         }
         return client;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String findOrCreateByPhone(String channelCode, String phone, String fullName, String sourceAgentCode) {
+        if (!StringUtils.hasText(channelCode) || !StringUtils.hasText(phone)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "渠道编码和手机号不能为空");
+        }
+        // 1. client_info 按渠道+手机号命中 → 直接复用
+        ClientInfo existing = clientInfoMapper.selectOne(new LambdaQueryWrapper<ClientInfo>()
+                .eq(ClientInfo::getChannelCode, channelCode)
+                .eq(ClientInfo::getPhone, phone)
+                .last("LIMIT 1"));
+        if (existing != null) {
+            return existing.getClientCode();
+        }
+        // 2. client_account 命中（有账无档）→ 复用其 clientCode 补档
+        ClientAccount account = clientAccountMapper.selectOne(new LambdaQueryWrapper<ClientAccount>()
+                .eq(ClientAccount::getChannelCode, channelCode)
+                .eq(ClientAccount::getPhone, phone)
+                .last("LIMIT 1"));
+        String clientCode = account != null ? account.getClientCode() : generateClientCode();
+        // 3. 建客户档案（来源类型 2=代理人邀请，仅在带来源代理人时标记）
+        ClientInfo entity = new ClientInfo();
+        entity.setClientCode(clientCode);
+        entity.setChannelCode(channelCode);
+        entity.setFullName(StringUtils.hasText(fullName) ? fullName
+                : "客户" + phone.substring(Math.max(0, phone.length() - 4)));
+        entity.setPhone(phone);
+        entity.setSourceType(StringUtils.hasText(sourceAgentCode) ? 2 : null);
+        entity.setSourceAgentCode(StringUtils.hasText(sourceAgentCode) ? sourceAgentCode : null);
+        entity.setClientLevel(0);
+        entity.setEquityCount(0);
+        entity.setUsedEquityCount(0);
+        entity.setServiceCount(0);
+        entity.setTotalOrderAmount(java.math.BigDecimal.ZERO);
+        entity.setRegisterTime(LocalDateTime.now());
+        entity.setIsVip(0);
+        entity.setStatus(1);
+        entity.setRemark("线索留资自动建档");
+        clientInfoMapper.insert(entity);
+        // 4. 补登录账号：username/password 留空，后续短信验证码登录激活
+        if (account == null) {
+            ClientAccount acc = new ClientAccount();
+            acc.setClientCode(clientCode);
+            acc.setChannelCode(channelCode);
+            acc.setPhone(phone);
+            acc.setSalt("bcrypt");
+            acc.setLoginCount(0);
+            acc.setAccountStatus(1);
+            clientAccountMapper.insert(acc);
+        }
+        log.info("[Client] 留资自动建档: clientCode={}, channelCode={}", clientCode, channelCode);
+        return clientCode;
     }
 
     /** 简易编码生成：CL + 时间戳后 5 位 + 随机 3 位 */

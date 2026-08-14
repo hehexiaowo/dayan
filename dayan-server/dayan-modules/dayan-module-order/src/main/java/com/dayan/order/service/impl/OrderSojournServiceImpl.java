@@ -18,7 +18,7 @@ import com.dayan.order.enums.OrderEvent;
 import com.dayan.order.enums.OrderType;
 import com.dayan.order.mapper.OrderSojournMapper;
 import com.dayan.order.service.OrderSojournService;
-import com.dayan.order.service.OrderStatusLogHelper;
+import com.dayan.order.service.OrderStatusChangeRecordHelper;
 import com.dayan.order.vo.OrderSojournVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
  *   <li>{@link #cancel}         0→5 或 6→5 + cancelReason</li>
  * </ul>
  *
- * <p>每次 transition 成功后经 {@link OrderStatusLogHelper} 写一条 system_order_status_log。
+ * <p>每次 transition 成功后经 {@link OrderStatusChangeRecordHelper} 写一条 order_status_change_record。
  */
 @Slf4j
 @Service
@@ -61,7 +61,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
     private final OrderSojournMapper orderSojournMapper;
     private final StateMachineEngine stateMachineEngine;
     private final SequenceProvider sequenceProvider;
-    private final OrderStatusLogHelper statusLogHelper;
+    private final OrderStatusChangeRecordHelper changeRecordHelper;
 
     // ====== 查询 ======
 
@@ -169,7 +169,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         entity.setOrderStatus(OrderEvent.STATUS_PENDING_PAY);
         orderSojournMapper.insert(entity);
 
-        statusLogHelper.writeLog(OrderType.SOJOURN, orderCode,
+        changeRecordHelper.writeRecord(OrderType.SOJOURN, orderCode,
                 OrderEvent.STATUS_PENDING_PAY, OrderEvent.STATUS_PENDING_PAY,
                 "订单创建",
                 dto.getOperatorCode(), dto.getOperatorName(), "admin",
@@ -198,7 +198,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         }
         orderSojournMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.SOJOURN, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SOJOURN, order.getOrderCode(),
                 from, to, "支付成功",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "tradeNo=" + dto.getPayTradeNo());
@@ -220,7 +220,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         update.setOrderStatus(to);
         orderSojournMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.SOJOURN, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SOJOURN, order.getOrderCode(),
                 from, to, "业务完结（离店）",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "旅居订单完成");
@@ -241,7 +241,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         update.setOrderStatus(to);
         orderSojournMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.SOJOURN, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SOJOURN, order.getOrderCode(),
                 from, to, "申请退款：" + dto.getRefundReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "旅居订单申请退款");
@@ -263,7 +263,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         update.setCancelReason(dto.getCancelReason());
         orderSojournMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.SOJOURN, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SOJOURN, order.getOrderCode(),
                 from, to, "取消订单：" + dto.getCancelReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "旅居订单取消");

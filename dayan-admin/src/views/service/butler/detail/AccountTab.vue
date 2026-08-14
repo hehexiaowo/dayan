@@ -2,9 +2,13 @@
 /**
  * 管家详情页 - 账号 tab。
  *
- * 分页模式：useCrud（主键 id 自增 number，传 idKey:'id'，fixedParams:{butlerCode}）。
+ * 分上下两区：
+ * 1. 后台登录账号（organ_account）：管家登录 admin 使用的账号。
+ *    - 未开通：提示 + 「开通后台账号」弹窗（username + password，密码留空用系统默认）。
+ *    - 已开通：el-descriptions 展示 + 「重置密码」（走 organ 账号接口）。
+ * 2. 管家独立账号（butler_account，分页 CRUD）：面向未来管家端的独立账号体系，维持不变。
  *
- * 关键约束（与 client 域 account 不同，client account 主键是 clientCode）：
+ * 管家独立账号关键约束（与 client 域 account 不同，client account 主键是 clientCode）：
  * - 主键是自增 id（number），update/delete/reset-password 都用 id。
  * - VO 不含 password（不返回）。
  * - 新建时 password 可填（留空服务端用默认值 dayan@123）；编辑时不改密码（单独走重置按钮）。
@@ -15,18 +19,22 @@ import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
+  getButler,
+  openButlerAccount,
   pageButlerAccounts,
   createButlerAccount,
   updateButlerAccount,
   deleteButlerAccount,
   resetButlerAccountPassword
 } from '@/api/service'
+import { getAccount, resetPassword as resetOrganAccountPassword } from '@/api/account'
 import {
   BUTLER_ACCOUNT_STATUS_OPTIONS,
   butlerAccountStatusLabel,
   butlerAccountStatusTagType
 } from '@/types/service'
 import type { ButlerAccount, ButlerAccountQuery } from '@/types/service'
+import type { Account } from '@/types/account'
 import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
@@ -34,7 +42,76 @@ const props = defineProps<{
   butlerCode: string
 }>()
 
-// ---------- 账号列表（useCrud，主键 id 自增 number） ----------
+// ---------- 后台登录账号（organ_account） ----------
+const organLoading = ref(false)
+const organAccount = ref<Account | null>(null)
+/** 管家已关联的后台账号编码（空串 = 未开通） */
+const organAccountCode = ref('')
+
+async function loadOrganAccount() {
+  organLoading.value = true
+  try {
+    const butler = await getButler(props.butlerCode)
+    organAccountCode.value = butler.accountCode ?? ''
+    organAccount.value = organAccountCode.value ? await getAccount(organAccountCode.value) : null
+  } catch {
+    organAccount.value = null
+  } finally {
+    organLoading.value = false
+  }
+}
+
+loadOrganAccount()
+
+// 开通后台账号弹窗
+const organDialogVisible = ref(false)
+const organSubmitLoading = ref(false)
+const organFormRef = ref<FormInstance>()
+const organForm = reactive({ username: '', password: '' })
+const organRules: FormRules = {
+  username: [{ required: true, message: '请输入登录用户名', trigger: 'blur' }],
+  password: [{ min: 6, max: 64, message: '密码长度 6-64 位', trigger: 'blur' }]
+}
+
+function openOrganCreate() {
+  organForm.username = ''
+  organForm.password = ''
+  organDialogVisible.value = true
+}
+
+async function handleOrganSubmit() {
+  if (!organFormRef.value) return
+  try {
+    await organFormRef.value.validate()
+  } catch {
+    return
+  }
+  organSubmitLoading.value = true
+  try {
+    await openButlerAccount(props.butlerCode, {
+      username: organForm.username,
+      password: organForm.password || undefined
+    })
+    ElMessage.success('后台账号已开通')
+    organDialogVisible.value = false
+    loadOrganAccount()
+  } finally {
+    organSubmitLoading.value = false
+  }
+}
+
+async function handleResetOrganPassword() {
+  if (!organAccountCode.value || !organAccount.value) return
+  await ElMessageBox.confirm(
+    `确定将后台账号「${organAccount.value.username}」的密码重置为默认密码吗？`,
+    '重置密码',
+    { confirmButtonText: '确定重置', cancelButtonText: '取消', type: 'warning' }
+  )
+  await resetOrganAccountPassword(organAccountCode.value)
+  ElMessage.success('密码已重置')
+}
+
+// ---------- 管家独立账号（butler_account，主键 id 自增 number） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
   useCrud<ButlerAccount, ButlerAccountQuery, number>(
     {
@@ -173,6 +250,65 @@ defineExpose({ loadPage })
 
 <template>
   <div class="account-tab">
+    <!-- 后台登录账号（organ_account） -->
+    <el-card shadow="never" class="organ-account-card">
+      <template #header>
+        <div class="card-header">
+          <span>后台登录账号（admin）</span>
+          <el-button
+            v-if="!organAccount"
+            v-permission="'butler:info:update'"
+            type="primary"
+            size="small"
+            @click="openOrganCreate"
+          >
+            开通后台账号
+          </el-button>
+          <el-button
+            v-else
+            v-permission="'organ:account:reset'"
+            link
+            type="warning"
+            size="small"
+            @click="handleResetOrganPassword"
+          >
+            重置密码
+          </el-button>
+        </div>
+      </template>
+      <div v-loading="organLoading">
+        <el-descriptions v-if="organAccount" :column="3" border size="small">
+          <el-descriptions-item label="用户名">{{ organAccount.username }}</el-descriptions-item>
+          <el-descriptions-item label="账号编码">{{ organAccount.accountCode }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="butlerAccountStatusTagType(organAccount.accountStatus)" size="small">
+              {{ butlerAccountStatusLabel(organAccount.accountStatus) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="手机号">{{ organAccount.phone || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="最后登录">
+            {{ formatDateTime(organAccount.lastLoginTime) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="登录次数">{{ organAccount.loginCount ?? 0 }}</el-descriptions-item>
+          <el-descriptions-item label="角色">
+            <template v-if="organAccount.roleNames?.length">
+              <el-tag v-for="r in organAccount.roleNames" :key="r" size="small" class="mr-4">{{ r }}</el-tag>
+            </template>
+            <span v-else>--</span>
+          </el-descriptions-item>
+        </el-descriptions>
+        <el-alert
+          v-else-if="!organLoading"
+          type="info"
+          :closable="false"
+          show-icon
+          title="未开通后台账号。开通后管家可使用该账号登录 admin 后台（归属「养老管家」部门，默认「普通管家」角色）。"
+        />
+      </div>
+    </el-card>
+
+    <el-divider content-position="left">管家独立账号（butler_account，预留未来管家端登录）</el-divider>
+
     <!-- 搜索栏 -->
     <el-form :inline="true" :model="query" @submit.prevent>
       <el-form-item label="用户名">
@@ -234,6 +370,40 @@ defineExpose({ loadPage })
         @size-change="handleSizeChange"
       />
     </div>
+
+    <!-- 开通后台账号弹窗 -->
+    <el-dialog
+      v-model="organDialogVisible"
+      title="开通后台账号"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        title="将为该管家创建 admin 后台登录账号（organ_account），挂靠「养老管家」部门并授予「普通管家」角色。"
+        class="mb-16"
+      />
+      <el-form ref="organFormRef" :model="organForm" :rules="organRules" label-width="110px">
+        <el-form-item label="登录用户名" prop="username">
+          <el-input v-model="organForm.username" placeholder="全平台唯一" maxlength="50" />
+        </el-form-item>
+        <el-form-item label="初始密码" prop="password">
+          <el-input
+            v-model="organForm.password"
+            type="password"
+            show-password
+            placeholder="留空使用系统默认密码"
+            maxlength="64"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="organDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="organSubmitLoading" @click="handleOrganSubmit">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog
@@ -319,6 +489,24 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .account-tab {
+  .organ-account-card {
+    margin-bottom: 8px;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .mr-4 {
+    margin-right: 4px;
+  }
+
+  .mb-16 {
+    margin-bottom: 16px;
+  }
+
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

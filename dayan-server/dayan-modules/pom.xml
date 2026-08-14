@@ -14,7 +14,7 @@
     <artifactId>dayan-modules</artifactId>
     <packaging>pom</packaging>
     <name>dayan-modules</name>
-    <description>大雁养老 - 17 个业务域模块聚合</description>
+    <description>大雁养老 - 19 个业务域模块聚合</description>
 
     <modules>
         <module>dayan-module-system</module>
@@ -34,5 +34,7 @@
         <module>dayan-module-order</module>
         <module>dayan-module-finance</module>
         <module>dayan-module-distributor</module>
+        <module>dayan-module-tool</module>
+        <module>dayan-module-lead</module>
     </modules>
 </project>

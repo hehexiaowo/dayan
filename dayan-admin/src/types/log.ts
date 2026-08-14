@@ -1,22 +1,40 @@
 /**
- * 操作日志相关类型。
+ * 系统日志相关类型（四端分表）。
  *
- * 字段逐字对齐后端 com.dayan.system.entity.SystemOperationLog（含 BaseEntity 的 createdAt 等）。
+ * 字段逐字对齐后端 com.dayan.system.entity.SystemLogEntry（含 BaseEntity 的 createdAt 等）。
+ * 后端按 source（organ/channel/agent/client）路由到 system_log_* 四张表，
+ * 登录/登出事件以 module='auth', action='login'/'logout' 入表。
  */
 
+/** 日志来源（四端） */
+export type LogSource = 'organ' | 'channel' | 'agent' | 'client'
+
+/** 日志来源选项 */
+export const LOG_SOURCE_OPTIONS: { label: string; value: LogSource }[] = [
+  { label: '管理后台', value: 'organ' },
+  { label: '渠道端', value: 'channel' },
+  { label: '代理人端', value: 'agent' },
+  { label: '客户端', value: 'client' }
+]
+
+/** 日志来源标签文案 */
+export function logSourceLabel(source?: string): string {
+  return LOG_SOURCE_OPTIONS.find(o => o.value === source)?.label ?? String(source ?? '')
+}
+
 /**
- * 操作日志（后端 SystemOperationLog 实体）。
+ * 系统日志条目（后端 SystemLogEntry 实体）。
  *
  * 字段语义：
  * - accountType / accountCode / accountName：操作账号类型/编码/姓名
- * - module / action：操作模块 / 操作动作（如 "管家账号" / "新增"）
+ * - module / action：操作模块 / 操作动作（登录登出为 auth/login、auth/logout）
  * - requestMethod / requestUrl / requestParams：请求方法 / URL / 参数（JSON 字符串，已脱敏）
  * - responseResult：响应结果（JSON 字符串，超长截断）
  * - resultStatus：结果状态，1=成功 / 0=失败
  * - duration：执行耗时（毫秒）
  * - ipAddress / userAgent / deviceType / os / browser：终端审计信息
  */
-export interface SystemOperationLog {
+export interface SystemLog {
   id?: number
   /** 链路追踪 ID */
   traceId?: string
@@ -42,7 +60,7 @@ export interface SystemOperationLog {
   requestUrl?: string
   /** 请求方法（GET/POST/PUT/DELETE） */
   requestMethod?: string
-  /** 请求参数（JSON 字符串，已脱敏） */
+  /** 请求参数（JSON 字符串，已脱敏；登录事件为 {"loginType","identity"}） */
   requestParams?: string
   /** 响应结果（JSON 字符串，超长截断） */
   responseResult?: string
@@ -70,8 +88,10 @@ export interface SystemOperationLog {
   createdAt?: string
 }
 
-/** 操作日志分页查询参数 */
-export interface OperationLogQuery {
+/** 系统日志分页查询参数 */
+export interface SystemLogQuery {
+  /** 日志来源（四端分表，必填） */
+  source: LogSource
   /** 模块筛选（模糊匹配） */
   module?: string
   /** 操作账号编码筛选（精确匹配） */

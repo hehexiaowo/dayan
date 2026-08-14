@@ -18,7 +18,7 @@ import com.dayan.order.enums.OrderEvent;
 import com.dayan.order.enums.OrderType;
 import com.dayan.order.mapper.OrderCourseMapper;
 import com.dayan.order.service.OrderCourseService;
-import com.dayan.order.service.OrderStatusLogHelper;
+import com.dayan.order.service.OrderStatusChangeRecordHelper;
 import com.dayan.order.vo.OrderCourseVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  *   <li>{@link #cancel}         0→5 或 6→5 + cancelReason</li>
  * </ul>
  *
- * <p>每次 transition 成功后经 {@link OrderStatusLogHelper} 写一条 system_order_status_log。
+ * <p>每次 transition 成功后经 {@link OrderStatusChangeRecordHelper} 写一条 order_status_change_record。
  */
 @Slf4j
 @Service
@@ -60,7 +60,7 @@ public class OrderCourseServiceImpl implements OrderCourseService {
     private final OrderCourseMapper orderCourseMapper;
     private final StateMachineEngine stateMachineEngine;
     private final SequenceProvider sequenceProvider;
-    private final OrderStatusLogHelper statusLogHelper;
+    private final OrderStatusChangeRecordHelper changeRecordHelper;
 
     // ====== 查询 ======
 
@@ -144,7 +144,7 @@ public class OrderCourseServiceImpl implements OrderCourseService {
         entity.setOrderStatus(OrderEvent.STATUS_PENDING_PAY);
         orderCourseMapper.insert(entity);
 
-        statusLogHelper.writeLog(OrderType.COURSE, orderCode,
+        changeRecordHelper.writeRecord(OrderType.COURSE, orderCode,
                 OrderEvent.STATUS_PENDING_PAY, OrderEvent.STATUS_PENDING_PAY,
                 "订单创建",
                 dto.getOperatorCode(), dto.getOperatorName(), "admin",
@@ -172,7 +172,7 @@ public class OrderCourseServiceImpl implements OrderCourseService {
         }
         orderCourseMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.COURSE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.COURSE, order.getOrderCode(),
                 from, to, "支付成功",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "tradeNo=" + dto.getPayTradeNo());
@@ -194,7 +194,7 @@ public class OrderCourseServiceImpl implements OrderCourseService {
         update.setOrderStatus(to);
         orderCourseMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.COURSE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.COURSE, order.getOrderCode(),
                 from, to, "业务完结",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "课程订单完成");
@@ -215,7 +215,7 @@ public class OrderCourseServiceImpl implements OrderCourseService {
         update.setOrderStatus(to);
         orderCourseMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.COURSE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.COURSE, order.getOrderCode(),
                 from, to, "申请退款：" + dto.getRefundReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "课程订单申请退款");
@@ -237,7 +237,7 @@ public class OrderCourseServiceImpl implements OrderCourseService {
         update.setCancelReason(dto.getCancelReason());
         orderCourseMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.COURSE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.COURSE, order.getOrderCode(),
                 from, to, "取消订单：" + dto.getCancelReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "课程订单取消");

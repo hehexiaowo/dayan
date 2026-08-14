@@ -39,6 +39,8 @@ export interface ButlerInfo {
   avatar?: string
   /** 所属组织编码 */
   organCode?: string
+  /** 关联后台账号编码（organ_account.account_code，未开通为 null） */
+  accountCode?: string
   /** 管家等级：1初级/2中级/3高级/4专家 */
   butlerLevel?: number
   /** 状态：1在职 / 0离职（以 DDL 为准，非启用/禁用） */

@@ -19,7 +19,7 @@ import java.util.List;
  *
  * <p>承载权益订单全生命周期：创建 → 支付 → (部分)发放 → 完成 / 取消 / 退款。
  * 所有 order_status 变更必须经 {@code StateMachineEngine.transition("ORDER_SM", from, event)}。
- * 每次状态流转后写一条 system_order_status_log（经 OrderStatusLogViewMapper）。
+ * 每次状态流转后写一条 order_status_change_record（经 OrderStatusChangeRecordMapper）。
  */
 public interface OrderEquityService {
 

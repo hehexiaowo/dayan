@@ -20,6 +20,10 @@ import {
   COURSE_STATUS_OPTIONS
 } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
+import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+
+/** 课程分类选项（业务字典 course_category，管理入口：系统管理-业务字典） */
+const { options: categoryOptions } = useBusinessDictOptions('course_category')
 
 /**
  * 课程管理页。
@@ -369,8 +373,15 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="分类编码">
-              <el-input v-model="form.categoryCode" placeholder="分类编码" />
+            <el-form-item label="课程分类">
+              <el-select v-model="form.categoryCode" placeholder="选择分类" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="o in categoryOptions"
+                  :key="o.dictCode"
+                  :label="o.dictName"
+                  :value="o.dictCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

@@ -27,7 +27,7 @@ import java.util.List;
  * Admin 端权益采购订单接口（核心链路）。
  *
  * <p>路径前缀 {@code /order/equity}（context-path=/admin-api 拼接为 {@code /admin-api/order/equity/*}）。
- * 所有状态变更经 ORDER_SM 状态机，并写 system_order_status_log。
+ * 所有状态变更经 ORDER_SM 状态机，并写 order_status_change_record。
  */
 @Tag(name = "权益采购订单管理（核心链路）")
 @Validated

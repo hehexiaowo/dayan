@@ -3,26 +3,28 @@ SET NAMES utf8mb4;
 -- rbac_resource_perm.sql  资源管理域菜单补充 + 按钮级权限补齐
 --
 -- 内容：
---   1. 新增「内容分类」「课程讲师」两个独立管理菜单（挂 admin_resource 下）；
+--   1. 新增「课程讲师」独立管理菜单（挂 admin_resource 下）；
 --   2. 补齐 content / course / supplier 三域全部按钮级权限码（rbac_permission_seed.sql
 --      仅覆盖了 park/scene/service/channel/goods 五域，这三域此前未播种，非超管无法授权）。
+--
+-- 历史变更：「内容分类」菜单与 content:category:* 权限随 41 号迁移字典化后由
+--   「系统管理 → 字典管理」承载，已于 44 号迁移下线，本文件不再播种。
 --
 -- 幂等：system_menu 用 ON DUPLICATE KEY UPDATE；organ_permission 用 ON DUPLICATE KEY
 --   UPDATE id=id。现有库可重复 source。超管（is_admin=1）走通配 "*" 不受影响。
 -- =====================================================================
 
 -- ============================================================
--- 一、新增菜单：内容分类、课程讲师（component 指向新建的独立管理页）
+-- 一、新增菜单：课程讲师（component 指向独立管理页）
 -- ============================================================
 INSERT INTO `system_menu`
   (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`, `icon`, `sort_order`, `is_visible`, `domain_type`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
-  ('admin_resource_content_category', '内容分类', 'admin_resource', 2, '/resource/content/category', 'resource/content/category/index', 'content:category:list', 'Collection', 6, 1, 'admin', 1, '内容分类管理', NOW(), NOW(), 'system', 'system', 0),
   ('admin_resource_course_lecturer',  '课程讲师', 'admin_resource', 2, '/resource/course/lecturer',  'resource/course/lecturer/index',  'course:lecturer:list',  'UserFilled', 7, 1, 'admin', 1, '课程讲师管理', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `menu_name` = VALUES(`menu_name`), `component` = VALUES(`component`), `permission_code` = VALUES(`permission_code`), `path` = VALUES(`path`);
 
 -- ============================================================
--- 二、content 域权限（info / category / media / record-read / record-share）
+-- 二、content 域权限（info / media / record-read / record-share）
 -- ============================================================
 INSERT INTO `organ_permission`
   (`permission_code`, `permission_name`, `parent_code`, `permission_type`, `path`, `method`, `sort_order`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
@@ -37,12 +39,6 @@ VALUES
   ('content:info:audit',   '内容审核',   'content:info', 3, '/admin-api/content/info/audit',     'POST',   106, 1, '内容审核流', NOW(), NOW(), 'system', 'system', 0),
   ('content:info:publish', '内容发布',   'content:info', 3, '/admin-api/content/info/publish',   'POST',   107, 1, '内容审核流', NOW(), NOW(), 'system', 'system', 0),
   ('content:info:offline', '内容下线',   'content:info', 3, '/admin-api/content/info/offline',   'POST',   108, 1, '内容审核流', NOW(), NOW(), 'system', 'system', 0),
-  -- content:category
-  ('content:category:list',   '分类列表', 'content:category', 3, '/admin-api/content/category/page', 'GET',    110, 1, '内容分类', NOW(), NOW(), 'system', 'system', 0),
-  ('content:category:query',  '分类详情', 'content:category', 3, '/admin-api/content/category/*',     'GET',    111, 1, '内容分类', NOW(), NOW(), 'system', 'system', 0),
-  ('content:category:create', '新增分类', 'content:category', 3, '/admin-api/content/category',       'POST',   112, 1, '内容分类', NOW(), NOW(), 'system', 'system', 0),
-  ('content:category:update', '修改分类', 'content:category', 3, '/admin-api/content/category',       'PUT',    113, 1, '内容分类', NOW(), NOW(), 'system', 'system', 0),
-  ('content:category:delete', '删除分类', 'content:category', 3, '/admin-api/content/category/*',     'DELETE', 114, 1, '内容分类', NOW(), NOW(), 'system', 'system', 0),
   -- content:media
   ('content:media:list',   '媒体列表', 'content:media', 3, '/admin-api/content/media/page', 'GET',    120, 1, '内容媒体', NOW(), NOW(), 'system', 'system', 0),
   ('content:media:query',  '媒体详情', 'content:media', 3, '/admin-api/content/media/*',    'GET',    121, 1, '内容媒体', NOW(), NOW(), 'system', 'system', 0),
@@ -141,4 +137,39 @@ VALUES
   ('supplier:open-platform:create', '新增开放平台', 'supplier:open-platform', 3, '/admin-api/supplier/open-platform',       'POST',   371, 1, '供应商开放平台', NOW(), NOW(), 'system', 'system', 0),
   ('supplier:open-platform:update', '修改开放平台', 'supplier:open-platform', 3, '/admin-api/supplier/open-platform',       'PUT',    372, 1, '供应商开放平台', NOW(), NOW(), 'system', 'system', 0),
   ('supplier:open-platform:delete', '删除开放平台', 'supplier:open-platform', 3, '/admin-api/supplier/open-platform/*',     'DELETE', 373, 1, '供应商开放平台', NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+
+-- ============================================================
+-- 五、tool 域：获客工具菜单 + 按钮级权限（42_tool_domain.sql 配套）
+-- ============================================================
+INSERT INTO `system_menu`
+  (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`, `icon`, `sort_order`, `is_visible`, `domain_type`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  ('admin_resource_tool', '获客工具', 'admin_resource', 2, '/resource/tool', 'resource/tool/index', 'tool:info:list', 'MagicStick', 8, 1, 'admin', 1, '获客工具管理', NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `menu_name` = VALUES(`menu_name`), `component` = VALUES(`component`), `permission_code` = VALUES(`permission_code`), `path` = VALUES(`path`);
+
+INSERT INTO `organ_permission`
+  (`permission_code`, `permission_name`, `parent_code`, `permission_type`, `path`, `method`, `sort_order`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  ('tool:info:list',   '工具列表', 'tool:info', 3, '/admin-api/tool/info/page', 'GET',    400, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:query',  '工具详情', 'tool:info', 3, '/admin-api/tool/info/*',    'GET',    401, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:create', '新增工具', 'tool:info', 3, '/admin-api/tool/info',      'POST',   402, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:update', '修改工具', 'tool:info', 3, '/admin-api/tool/info/*',    'PUT',    403, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:delete', '删除工具', 'tool:info', 3, '/admin-api/tool/info/*',    'DELETE', 404, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+
+-- ============================================================
+-- 六、lead 域：线索池菜单 + 只读权限（43_lead_domain.sql 配套）
+-- ============================================================
+INSERT INTO `system_menu`
+  (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`, `icon`, `sort_order`, `is_visible`, `domain_type`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  ('admin_channel_lead', '线索池', 'admin_channel', 2, '/channel/lead', 'channel/lead/index', 'lead:info:list', 'Aim', 5, 1, 'admin', 1, '访客线索池（分享追踪自动建档，只读）', NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `menu_name` = VALUES(`menu_name`), `component` = VALUES(`component`), `permission_code` = VALUES(`permission_code`), `path` = VALUES(`path`);
+
+INSERT INTO `organ_permission`
+  (`permission_code`, `permission_name`, `parent_code`, `permission_type`, `path`, `method`, `sort_order`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  ('lead:info:list',  '线索列表', 'lead:info', 3, '/admin-api/lead/info/page', 'GET', 410, 1, '访客线索池', NOW(), NOW(), 'system', 'system', 0),
+  ('lead:info:query', '线索详情', 'lead:info', 3, '/admin-api/lead/info/*',   'GET', 411, 1, '访客线索池', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

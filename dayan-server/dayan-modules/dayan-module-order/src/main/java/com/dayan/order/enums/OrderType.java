@@ -1,7 +1,7 @@
 package com.dayan.order.enums;
 
 /**
- * 订单类型常量（system_order_status_log.order_type 字段值）。
+ * 订单类型常量（order_status_change_record.order_type 字段值）。
  *
  * <p>与各表 order_type 字段值对齐：order_equity 隐含 1、order_scene=2、order_course=3、order_sojourn=4。
  */

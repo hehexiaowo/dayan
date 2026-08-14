@@ -53,8 +53,13 @@ export function getButler(butlerCode: string): Promise<ButlerInfo> {
   })
 }
 
-/** 新增管家：POST /admin-api/butler/info（返回 butlerCode） */
-export function createButler(data: Partial<ButlerInfo>): Promise<string> {
+/**
+ * 新增管家：POST /admin-api/butler/info（返回 butlerCode）。
+ * username/password 为创建时可选的后台账号开通字段（填 username 即同步开通 organ 账号）。
+ */
+export function createButler(
+  data: Partial<ButlerInfo> & { username?: string; password?: string }
+): Promise<string> {
   return request<string>({
     url: '/admin-api/butler/info',
     method: 'post',
@@ -79,6 +84,23 @@ export function deleteButler(butlerCode: string): Promise<void> {
   })
 }
 
+/**
+ * 开通管家后台账号：POST /admin-api/butler/info/{butlerCode}/account。
+ *
+ * 为管家创建 organ_account（可登录 admin）+ 员工档案（养老管家部门）+ 普通管家角色，
+ * 返回 accountCode；重复开通后端报错。密码留空使用系统默认密码。
+ */
+export function openButlerAccount(
+  butlerCode: string,
+  data: { username: string; password?: string }
+): Promise<string> {
+  return request<string>({
+    url: `/admin-api/butler/info/${butlerCode}/account`,
+    method: 'post',
+    data
+  })
+}
+
 // ==================== 管家子表（5 张，详情页 tab 用） ====================
 //
 // 主键规则：
@@ -86,7 +108,7 @@ export function deleteButler(butlerCode: string): Promise<void> {
 // - ClientRel/ServiceRecord/Rating：雪花 id（前端按 string 处理，防 JS Number 精度溢出）。
 // 列表统一用 GET /list?butlerCode=xxx 返回 List（非分页）；同时提供 page 供分页场景使用。
 
-// ---------------- 1. 管家账号（butler/account）----------------
+// ---------------- 1. 管家独立账号（butler/account，预留未来管家端登录）----------------
 
 /** 账号分页：GET /admin-api/butler/account/page */
 export function pageButlerAccounts(query: ButlerAccountQuery): Promise<PageResult<ButlerAccount>> {

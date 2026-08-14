@@ -1,8 +1,6 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
 import type {
-  ContentCategory,
-  ContentCategoryQuery,
   ContentMedia,
   ContentMediaQuery,
   ContentRecordRead,
@@ -13,52 +11,15 @@ import type {
 } from '@/types/content'
 
 /**
- * 内容子表接口封装（分类/媒体/阅读记录/分享记录）。
+ * 内容子表接口封装（媒体/阅读记录/分享记录）。
  *
  * 对应后端：
- * - ContentCategoryAdminController（/admin-api/content/category/*）
  * - ContentMediaAdminController（/admin-api/content/media/*）
  * - ContentRecordReadAdminController（/admin-api/content/record-read/*）
  * - ContentRecordShareAdminController（/admin-api/content/record-share/*）
  *
  * 注意：content 子表的 update 一律用 query `?id=` 传 id（非 path）。
  */
-
-// ==================== 内容分类 ====================
-
-export function pageContentCategories(query: ContentCategoryQuery): Promise<PageResult<ContentCategory>> {
-  return request<PageResult<ContentCategory>>({
-    url: '/admin-api/content/category/page',
-    method: 'get',
-    params: query
-  })
-}
-
-/** 分类全量列表（按名称排序，下拉/树用） */
-export function listContentCategories(query?: Partial<ContentCategoryQuery>): Promise<ContentCategory[]> {
-  return request<ContentCategory[]>({
-    url: '/admin-api/content/category/list',
-    method: 'get',
-    params: query
-  })
-}
-
-export function getContentCategory(id: number): Promise<ContentCategory> {
-  return request<ContentCategory>({ url: `/admin-api/content/category/${id}`, method: 'get' })
-}
-
-export function createContentCategory(data: Partial<ContentCategory>): Promise<number> {
-  return request<number>({ url: '/admin-api/content/category', method: 'post', data })
-}
-
-/** 修改分类：PUT /content/category?id=（id 走 query） */
-export function updateContentCategory(id: number, data: Partial<ContentCategory>): Promise<void> {
-  return request<void>({ url: '/admin-api/content/category', method: 'put', params: { id }, data })
-}
-
-export function deleteContentCategory(id: number): Promise<void> {
-  return request<void>({ url: `/admin-api/content/category/${id}`, method: 'delete' })
-}
 
 // ==================== 内容多媒体 ====================
 

@@ -26,6 +26,16 @@ import type { GoodsInfo } from '@/types/goods'
 import { formatDate, formatDateTime } from '@/utils/format'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { formatFileUrl } from '@/utils/file'
+import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+
+/** 商品分类选项（业务字典 goods_category） */
+const { options: categoryOptions } = useBusinessDictOptions('goods_category')
+
+/** 分类编码 → 分类名（未命中字典时原样展示编码） */
+function categoryName(code?: string): string {
+  if (!code) return '--'
+  return categoryOptions.value.find((o) => o.dictCode === code)?.dictName ?? code
+}
 
 const props = defineProps<{
   /** 商品编码（从详情页路由 prop 带入） */
@@ -185,7 +195,7 @@ defineExpose({ loadDetail })
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="审核状态">{{ auditStatusLabel(goodsInfo.auditStatus) }}</el-descriptions-item>
-        <el-descriptions-item label="分类编码">{{ goodsInfo.categoryCode ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="商品分类">{{ categoryName(goodsInfo.categoryCode) }}</el-descriptions-item>
         <el-descriptions-item label="品牌">{{ goodsInfo.brandName ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="价格单位">{{ goodsInfo.priceUnit ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="原价">{{ goodsInfo.originalPrice ?? '--' }}</el-descriptions-item>
@@ -253,8 +263,15 @@ defineExpose({ loadDetail })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="分类编码">
-              <el-input v-model="form.categoryCode" placeholder="分类编码" maxlength="50" />
+            <el-form-item label="商品分类">
+              <el-select v-model="form.categoryCode" placeholder="选择分类" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="o in categoryOptions"
+                  :key="o.dictCode"
+                  :label="o.dictName"
+                  :value="o.dictCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

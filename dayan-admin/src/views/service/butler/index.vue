@@ -56,7 +56,10 @@ const dialogType = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-const form = reactive<ButlerInfo>({
+/** 表单类型：ButlerInfo + 创建时可选的后台账号开通字段（编辑态忽略） */
+type ButlerForm = ButlerInfo & { username?: string; password?: string }
+
+const form = reactive<ButlerForm>({
   butlerCode: undefined,
   fullName: '',
   phone: '',
@@ -64,7 +67,9 @@ const form = reactive<ButlerInfo>({
   organCode: '',
   butlerLevel: undefined,
   status: 1,
-  remark: ''
+  remark: '',
+  username: '',
+  password: ''
 })
 
 const rules: FormRules<ButlerInfo> = {
@@ -84,7 +89,9 @@ function resetForm() {
     organCode: '',
     butlerLevel: undefined,
     status: 1,
-    remark: ''
+    remark: '',
+    username: '',
+    password: ''
   })
 }
 
@@ -136,7 +143,15 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialogType.value === 'create') {
-      await createButler(form)
+      // 未填用户名则不开通后台账号；空密码不下发（后端 @Size(min=6) 会拒绝空串）
+      const payload: ButlerForm = { ...form }
+      if (!payload.username) {
+        delete payload.username
+        delete payload.password
+      } else if (!payload.password) {
+        delete payload.password
+      }
+      await createButler(payload)
       ElMessage.success('新增成功')
     } else if (form.butlerCode) {
       await updateButler(form.butlerCode, form)
@@ -347,6 +362,28 @@ loadPage()
               <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="内部备注（可选）" />
             </el-form-item>
           </el-col>
+          <!-- 仅新增时可同步开通后台账号（编辑请到详情页「账号」tab 操作） -->
+          <template v-if="dialogType === 'create'">
+            <el-col :span="24">
+              <el-divider content-position="left">开通后台账号（可选）</el-divider>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="登录用户名">
+                <el-input v-model="form.username" placeholder="填写即开通 admin 后台账号" maxlength="50" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="初始密码">
+                <el-input
+                  v-model="form.password"
+                  type="password"
+                  show-password
+                  placeholder="留空使用系统默认密码"
+                  maxlength="64"
+                />
+              </el-form-item>
+            </el-col>
+          </template>
         </el-row>
       </el-form>
       <template #footer>

@@ -65,8 +65,12 @@ export interface SystemDictBusiness {
   dictCode: string
   dictName: string
   dictValue: string
+  /** 图标（内容分类等场景使用，可选） */
+  icon?: string
+  /** 扩展属性（JSON 字符串，如内容分类的 coverImage/isVisible，可选） */
+  extra?: string
   parentCode?: string
-  /** 所属业务域（如 park/scene/order） */
+  /** 所属业务域（如 park/scene/order/content） */
   domain?: string
   sortOrder?: number
   /** 状态：1启用 0禁用 */

@@ -10,12 +10,14 @@ import com.dayan.channel.vo.AuthLoginVO;
 import com.dayan.common.core.exception.AccountLockedException;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
+import com.dayan.common.log.auth.AuthLogRecorder;
 import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.common.security.AccountType;
 import com.dayan.common.security.StpKit;
 import com.dayan.common.security.password.PasswordService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +42,7 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
 
     private final ChannelAccountMapper accountMapper;
     private final PasswordService passwordService;
+    private final ObjectProvider<AuthLogRecorder> authLogRecorderProvider;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -53,6 +56,7 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
                 .eq(ChannelAccount::getEmail, dto.getUsername())
                 .last("LIMIT 1"));
         if (account == null) {
+            recordLogin(null, null, dto.getUsername(), false, "账号或密码错误");
             throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
         }
 
@@ -68,14 +72,17 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
 
         // 2. 校验账号状态
         if (account.getAccountStatus() != null && account.getAccountStatus() == 0) {
+            recordLogin(account.getAccountCode(), account.getRealName(), dto.getUsername(), false, "账号已被锁定");
             throw new AccountLockedException("账号已被锁定，请联系管理员");
         }
         if (account.getAccountStatus() != null && account.getAccountStatus() == 2) {
+            recordLogin(account.getAccountCode(), account.getRealName(), dto.getUsername(), false, "账号已被禁用");
             throw new BusinessException(ErrorCode.BUSINESS, "账号已被禁用");
         }
 
         // 3. BCrypt 校验密码
         if (!passwordService.matches(dto.getPassword(), account.getPassword())) {
+            recordLogin(account.getAccountCode(), account.getRealName(), dto.getUsername(), false, "账号或密码错误");
             throw new BusinessException(ErrorCode.BUSINESS, "账号或密码错误");
         }
 
@@ -96,6 +103,7 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
 
         log.info("Channel 登录成功: accountCode={}, channelCode={}, username={}",
                 account.getAccountCode(), account.getChannelCode(), account.getUsername());
+        recordLogin(account.getAccountCode(), account.getRealName(), account.getUsername(), true, null);
 
         return AuthLoginVO.builder()
                 .token(logic.getTokenValue())
@@ -110,7 +118,22 @@ public class ChannelAuthServiceImpl implements ChannelAuthService {
 
     @Override
     public void logout() {
+        AuthLogRecorder recorder = authLogRecorderProvider.getIfAvailable();
+        if (recorder != null) {
+            recorder.recordLogout(AccountType.CHANNEL.getLoginType(),
+                    ContextHolder.getAccountCode(), ContextHolder.getAccountName());
+        }
         StpKit.CHANNEL.logout();
+    }
+
+    /** 登录日志（成功/失败），经 SPI 落库到 system_log_channel；无实现时静默跳过 */
+    private void recordLogin(String accountCode, String accountName, String identity,
+                             boolean success, String failReason) {
+        AuthLogRecorder recorder = authLogRecorderProvider.getIfAvailable();
+        if (recorder != null) {
+            recorder.recordLogin(AccountType.CHANNEL.getLoginType(), accountCode, accountName,
+                    "password", identity, success, failReason);
+        }
     }
 
     @Override

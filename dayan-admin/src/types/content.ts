@@ -112,41 +112,6 @@ export interface ContentInfoQuery extends PageQuery {
   isRecommend?: number
 }
 
-// ==================== 内容分类 ====================
-
-/**
- * 内容分类实体（后端 ContentCategoryVO）。
- * categoryCode 后端生成；parentCode 支持树形。
- */
-export interface ContentCategory {
-  id?: number
-  categoryCode?: string
-  categoryName: string
-  parentCode?: string
-  categoryType?: number
-  icon?: string
-  coverImage?: string
-  description?: string
-  contentCount?: number
-  sortOrder?: number
-  /** 是否可见：1是 0否 */
-  isVisible?: number
-  /** 状态：1启用 0禁用 */
-  status?: number
-  children?: ContentCategory[]
-  createdAt?: string
-  updatedAt?: string
-}
-
-export interface ContentCategoryQuery extends PageQuery {
-  categoryCode?: string
-  categoryName?: string
-  parentCode?: string
-  categoryType?: number
-  status?: number
-  isVisible?: number
-}
-
 // ==================== 内容多媒体 ====================
 
 /** 媒体类型：1图片/2视频/3音频/4文件 */

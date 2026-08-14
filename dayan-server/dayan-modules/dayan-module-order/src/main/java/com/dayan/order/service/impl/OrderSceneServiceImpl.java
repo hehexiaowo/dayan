@@ -19,7 +19,7 @@ import com.dayan.order.enums.OrderEvent;
 import com.dayan.order.enums.OrderType;
 import com.dayan.order.mapper.OrderSceneMapper;
 import com.dayan.order.service.OrderSceneService;
-import com.dayan.order.service.OrderStatusLogHelper;
+import com.dayan.order.service.OrderStatusChangeRecordHelper;
 import com.dayan.order.vo.OrderSceneVO;
 import com.dayan.scene.service.SceneScheduleService;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  *   <li>{@link #cancel}         0→5 或 6→5 + cancelReason</li>
  * </ul>
  *
- * <p>每次 transition 成功后经 {@link OrderStatusLogHelper} 写一条 system_order_status_log。
+ * <p>每次 transition 成功后经 {@link OrderStatusChangeRecordHelper} 写一条 order_status_change_record。
  */
 @Slf4j
 @Service
@@ -62,7 +62,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
     private final OrderSceneMapper orderSceneMapper;
     private final StateMachineEngine stateMachineEngine;
     private final SequenceProvider sequenceProvider;
-    private final OrderStatusLogHelper statusLogHelper;
+    private final OrderStatusChangeRecordHelper changeRecordHelper;
     private final SceneScheduleService sceneScheduleService;
 
     // ====== 查询 ======
@@ -160,7 +160,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         entity.setOrderStatus(OrderEvent.STATUS_PENDING_PAY);
         orderSceneMapper.insert(entity);
 
-        statusLogHelper.writeLog(OrderType.SCENE, orderCode,
+        changeRecordHelper.writeRecord(OrderType.SCENE, orderCode,
                 OrderEvent.STATUS_PENDING_PAY, OrderEvent.STATUS_PENDING_PAY,
                 "订单创建",
                 dto.getOperatorCode(), dto.getOperatorName(), "admin",
@@ -193,7 +193,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         }
         orderSceneMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.SCENE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SCENE, order.getOrderCode(),
                 from, to, "支付成功",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "tradeNo=" + dto.getPayTradeNo());
@@ -228,7 +228,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         if (dto.getActualCount() != null) {
             logDetail += "，实际到场=" + dto.getActualCount() + "人";
         }
-        statusLogHelper.writeLog(OrderType.SCENE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SCENE, order.getOrderCode(),
                 from, to, "核销",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 logDetail);
@@ -249,7 +249,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         update.setOrderStatus(to);
         orderSceneMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.SCENE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SCENE, order.getOrderCode(),
                 from, to, "业务完结",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "场景订单完成");
@@ -270,7 +270,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         update.setOrderStatus(to);
         orderSceneMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.SCENE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SCENE, order.getOrderCode(),
                 from, to, "申请退款：" + dto.getRefundReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "场景订单申请退款");
@@ -292,7 +292,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
         update.setCancelReason(dto.getCancelReason());
         orderSceneMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.SCENE, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.SCENE, order.getOrderCode(),
                 from, to, "取消订单：" + dto.getCancelReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "场景订单取消");

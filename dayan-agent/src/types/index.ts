@@ -126,6 +126,8 @@ export interface Lead {
   leadStatus?: LeadStatus | number;
   sourceType?: number;
   sourceRef?: string;
+  /** 关联访客线索编码（lead_info.lead_code，线索池认领后回填） */
+  visitorLeadCode?: string;
   /** 访客令牌（匿名唯一标识） */
   visitorToken?: string;
   /** 访客来源（wechat/browser/unknown） */
@@ -165,6 +167,41 @@ export interface LeadTrace {
   bizCode?: string;
   bizTitle?: string;
   traceTime?: string;
+}
+
+/** 线索池项（GET /agent-api/leads/pool，字段对齐后端 lead 域 LeadInfoVO） */
+export interface LeadPoolItem {
+  /** 雪花ID（后端序列化为字符串） */
+  id: string;
+  /** 线索编码（VL 前缀） */
+  leadCode: string;
+  /** 访客令牌 */
+  visitorToken?: string;
+  /** 所属渠道编码 */
+  channelCode?: string;
+  /** 手机号（留资后回填） */
+  phone?: string;
+  /** 姓名/称呼 */
+  name?: string;
+  /** 微信昵称 */
+  wxNickname?: string;
+  /** 微信头像URL */
+  wxAvatar?: string;
+  /** 访客环境来源（wechat/browser/unknown） */
+  visitorSource?: string;
+  /** 来源类型（1=内容分享 2=工具分享 3=海报分享 4=直接访问） */
+  sourceType?: number;
+  /** 来源编码 */
+  sourceCode?: string;
+  /** 关联客户编码（留资建档后回填） */
+  clientCode?: string;
+  /** 最后互动时间 */
+  lastInteractTime?: string;
+  /** 最后互动类型（1=内容 2=工具 3=海报） */
+  lastInteractType?: TraceType | number;
+  /** 互动总次数 */
+  interactCount?: number;
+  createdAt?: string;
 }
 
 // ===== 学习中心 =====
@@ -356,6 +393,24 @@ export interface ContentArticle {
 export interface ContentCategoryOption {
   categoryCode: string;
   categoryName: string;
+}
+
+// ===== 获客工具 =====
+
+/** 获客工具（对齐后端 ToolInfoVO，GET /agent-api/tools） */
+export interface ToolInfo {
+  id?: number;
+  toolCode: string;
+  toolName: string;
+  toolType?: number;
+  toolDesc?: string;
+  icon?: string;
+  entryPath: string;
+  /** JSON 字符串，端上解析（如 {"color":"orange"}） */
+  config?: string;
+  visibleScope?: string;
+  sortOrder?: number;
+  status?: number;
 }
 
 // ===== 电子名片 =====

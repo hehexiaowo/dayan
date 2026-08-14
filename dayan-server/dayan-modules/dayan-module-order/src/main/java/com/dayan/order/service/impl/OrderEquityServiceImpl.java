@@ -19,7 +19,7 @@ import com.dayan.order.enums.OrderEvent;
 import com.dayan.order.enums.OrderType;
 import com.dayan.order.mapper.OrderEquityMapper;
 import com.dayan.order.service.OrderEquityService;
-import com.dayan.order.service.OrderStatusLogHelper;
+import com.dayan.order.service.OrderStatusChangeRecordHelper;
 import com.dayan.order.vo.OrderEquityVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
  *   <li>{@link #cancel}         0→5 或 6→5 + cancelReason</li>
  * </ul>
  *
- * <p>每次 transition 成功后经 {@link OrderStatusLogHelper} 写一条 system_order_status_log。
+ * <p>每次 transition 成功后经 {@link OrderStatusChangeRecordHelper} 写一条 order_status_change_record。
  * 本期不强校验 equity 域出库（跨域，仅维护订单侧状态）。
  */
 @Slf4j
@@ -67,7 +67,7 @@ public class OrderEquityServiceImpl implements OrderEquityService {
     private final OrderEquityMapper orderEquityMapper;
     private final StateMachineEngine stateMachineEngine;
     private final SequenceProvider sequenceProvider;
-    private final OrderStatusLogHelper statusLogHelper;
+    private final OrderStatusChangeRecordHelper changeRecordHelper;
 
     // ====== 查询 ======
 
@@ -166,7 +166,7 @@ public class OrderEquityServiceImpl implements OrderEquityService {
         // 写初始状态日志（0→0，记录创建）
         String operatorType = dto.getOperatorType() != null && !dto.getOperatorType().isEmpty()
                 ? dto.getOperatorType() : "admin";
-        statusLogHelper.writeLog(OrderType.EQUITY, orderCode,
+        changeRecordHelper.writeRecord(OrderType.EQUITY, orderCode,
                 OrderEvent.STATUS_PENDING_PAY, OrderEvent.STATUS_PENDING_PAY,
                 "订单创建",
                 dto.getOperatorCode(), dto.getOperatorName(), operatorType,
@@ -195,7 +195,7 @@ public class OrderEquityServiceImpl implements OrderEquityService {
         }
         orderEquityMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.EQUITY, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.EQUITY, order.getOrderCode(),
                 from, to, "支付成功",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "tradeNo=" + dto.getPayTradeNo());
@@ -233,7 +233,7 @@ public class OrderEquityServiceImpl implements OrderEquityService {
             update.setOrderStatus(to);
             orderEquityMapper.updateById(update);
 
-            statusLogHelper.writeLog(OrderType.EQUITY, order.getOrderCode(),
+            changeRecordHelper.writeRecord(OrderType.EQUITY, order.getOrderCode(),
                     from, to, "部分发放",
                     dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                     "本次=" + thisBatch + "，累计=" + newDeliver);
@@ -247,7 +247,7 @@ public class OrderEquityServiceImpl implements OrderEquityService {
             update.setOrderStatus(to);
             orderEquityMapper.updateById(update);
 
-            statusLogHelper.writeLog(OrderType.EQUITY, order.getOrderCode(),
+            changeRecordHelper.writeRecord(OrderType.EQUITY, order.getOrderCode(),
                     from, to, "全部发放完成",
                     dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                     "deliverCount=" + quantity);
@@ -269,7 +269,7 @@ public class OrderEquityServiceImpl implements OrderEquityService {
         update.setOrderStatus(to);
         orderEquityMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.EQUITY, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.EQUITY, order.getOrderCode(),
                 from, to, "业务完结",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "权益订单完成");
@@ -290,7 +290,7 @@ public class OrderEquityServiceImpl implements OrderEquityService {
         update.setOrderStatus(to);
         orderEquityMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.EQUITY, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.EQUITY, order.getOrderCode(),
                 from, to, "申请退款：" + dto.getRefundReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "权益订单申请退款");
@@ -312,7 +312,7 @@ public class OrderEquityServiceImpl implements OrderEquityService {
         update.setCancelReason(dto.getCancelReason());
         orderEquityMapper.updateById(update);
 
-        statusLogHelper.writeLog(OrderType.EQUITY, order.getOrderCode(),
+        changeRecordHelper.writeRecord(OrderType.EQUITY, order.getOrderCode(),
                 from, to, "取消订单：" + dto.getCancelReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "权益订单取消");

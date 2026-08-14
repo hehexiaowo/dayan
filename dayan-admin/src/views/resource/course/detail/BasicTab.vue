@@ -5,6 +5,10 @@ import { getCourse, updateCourse } from '@/api/course'
 import type { CourseInfo, CourseLecturer } from '@/types/course'
 import { COURSE_TYPE_OPTIONS } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
+import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+
+/** 课程分类选项（业务字典 course_category） */
+const { options: categoryOptions } = useBusinessDictOptions('course_category')
 
 const props = defineProps<{ courseCode: string; lecturers: CourseLecturer[] }>()
 const emit = defineEmits<{ (e: 'updated'): void }>()
@@ -108,8 +112,15 @@ onMounted(loadDetail)
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="分类编码">
-              <el-input v-model="form.categoryCode" placeholder="分类编码（可选）" />
+            <el-form-item label="课程分类">
+              <el-select v-model="form.categoryCode" placeholder="选择分类" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="o in categoryOptions"
+                  :key="o.dictCode"
+                  :label="o.dictName"
+                  :value="o.dictCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

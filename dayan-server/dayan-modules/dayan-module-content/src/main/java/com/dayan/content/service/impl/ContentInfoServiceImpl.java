@@ -8,7 +8,6 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.statemachine.StateMachineEngine;
-import com.dayan.content.dto.ContentCategoryQueryDTO;
 import com.dayan.content.dto.ContentInfoAuditDTO;
 import com.dayan.content.dto.ContentInfoCreateDTO;
 import com.dayan.content.dto.ContentInfoQueryDTO;
@@ -16,10 +15,10 @@ import com.dayan.content.dto.ContentInfoUpdateDTO;
 import com.dayan.content.entity.ContentInfo;
 import com.dayan.content.enums.ContentEvent;
 import com.dayan.content.mapper.ContentInfoMapper;
-import com.dayan.content.service.ContentCategoryService;
+import com.dayan.system.entity.SystemDictBusiness;
+import com.dayan.system.mapper.SystemDictBusinessMapper;
 import com.dayan.content.service.ContentInfoService;
 import com.dayan.content.vo.ContentCategoryOptionVO;
-import com.dayan.content.vo.ContentCategoryVO;
 import com.dayan.content.vo.ContentInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +60,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     private final ContentInfoMapper contentInfoMapper;
     private final SequenceProvider sequenceProvider;
     private final StateMachineEngine stateMachineEngine;
-    private final ContentCategoryService contentCategoryService;
+    private final SystemDictBusinessMapper dictBusinessMapper;
 
     @Override
     public PageResult<ContentInfoVO> page(ContentInfoQueryDTO query) {
@@ -273,13 +272,18 @@ public class ContentInfoServiceImpl implements ContentInfoService {
         if (usedCodes.isEmpty()) {
             return List.of();
         }
-        // 2. 查启用+可见的分类（list 已按 sortOrder/name 排序），过滤出有用到的
-        ContentCategoryQueryDTO catQuery = new ContentCategoryQueryDTO();
-        catQuery.setStatus(1);
-        catQuery.setIsVisible(1);
-        return contentCategoryService.list(catQuery).stream()
-                .filter(c -> usedCodes.contains(c.getCategoryCode()))
-                .map(c -> new ContentCategoryOptionVO(c.getCategoryCode(), c.getCategoryName()))
+        // 2. 查启用+可见的分类字典项（dict_type=content_category，按 sortOrder/name 排序），过滤出有用到的
+        List<SystemDictBusiness> dicts = dictBusinessMapper.selectList(
+                new LambdaQueryWrapper<SystemDictBusiness>()
+                        .eq(SystemDictBusiness::getDictType, "content_category")
+                        .eq(SystemDictBusiness::getStatus, 1)
+                        .apply("JSON_UNQUOTE(JSON_EXTRACT(`extra`, '$.isVisible')) = {0}", "1")
+                        .orderByAsc(SystemDictBusiness::getSortOrder)
+                        .orderByAsc(SystemDictBusiness::getDictName)
+                        .orderByAsc(SystemDictBusiness::getId));
+        return dicts.stream()
+                .filter(d -> usedCodes.contains(d.getDictCode()))
+                .map(d -> new ContentCategoryOptionVO(d.getDictCode(), d.getDictName()))
                 .toList();
     }
 
