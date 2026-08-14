@@ -24,6 +24,7 @@ import {
 import type { ParkInfo, ParkScore } from '@/types/park'
 import RegionSelect from '@/components/RegionSelect.vue'
 import FileUploader from '@/components/FileUploader/index.vue'
+import RichEditor from '@/components/RichEditor/index.vue'
 import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
@@ -667,7 +668,14 @@ defineExpose({ loadDetail, loadScore })
           </el-col>
           <el-col :span="24">
             <el-form-item label="基地简介">
-              <el-input v-model="form.baseDescription" type="textarea" :rows="3" placeholder="基地简介" />
+              <RichEditor
+                v-model="form.baseDescription"
+                module="park"
+                register-asset
+                :asset-park-code="props.parkCode"
+                asset-source-type="park_info"
+                :height="200"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">

@@ -6,6 +6,7 @@ import { useBusinessDictOptions } from '@/composables/useBusinessDict'
 import type { ContentInfo } from '@/types/content'
 import { CONTENT_TYPE_OPTIONS, SOURCE_TYPE_OPTIONS } from '@/types/content'
 import FileUploader from '@/components/FileUploader/index.vue'
+import RichEditor from '@/components/RichEditor/index.vue'
 
 const props = defineProps<{ contentCode: string }>()
 const emit = defineEmits<{ (e: 'updated'): void }>()
@@ -156,7 +157,7 @@ onMounted(() => {
           </el-col>
           <el-col :span="24">
             <el-form-item label="正文">
-              <el-input v-model="form.contentBody" type="textarea" :rows="6" placeholder="支持 HTML" />
+              <RichEditor v-model="form.contentBody" module="content" register-asset />
             </el-form-item>
           </el-col>
           <el-col :span="24">

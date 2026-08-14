@@ -28,6 +28,7 @@ import {
   networkTagsToList
 } from '@/types/park'
 import FileUploader from '@/components/FileUploader/index.vue'
+import RichEditor from '@/components/RichEditor/index.vue'
 import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
@@ -354,11 +355,13 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="正文内容">
-              <el-input
+              <RichEditor
                 v-model="form.content"
-                type="textarea"
-                :rows="6"
-                placeholder="支持 HTML 富文本，如 <p>段落内容</p>"
+                module="park"
+                register-asset
+                :asset-park-code="props.parkCode"
+                asset-source-type="display_block"
+                :asset-source-ref="form.blockType"
               />
             </el-form-item>
           </el-col>
