@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { Plus, VideoPlay, Document, Delete } from '@element-plus/icons-vue'
 import { uploadFile } from '@/api/file'
 import { formatFileUrl } from '@/utils/file'
+import AssetPicker from '@/components/AssetPicker/index.vue'
 
 defineOptions({ name: 'FileUploader' })
 
@@ -50,6 +51,19 @@ const emit = defineEmits<{
 }>()
 
 const uploading = ref(false)
+
+const pickerVisible = ref(false)
+
+/** 素材库选择回填：单选 set，多选 append（受 limit 截断） */
+function onPicked(keys: string[]) {
+  if (keys.length === 0) return
+  if (props.multiple) {
+    const merged = [...multiValue.value, ...keys].slice(0, props.limit)
+    emit('update:modelValue', merged)
+  } else {
+    emit('update:modelValue', keys[0])
+  }
+}
 
 const defaultAccept = computed(() => {
   switch (props.type) {
@@ -125,68 +139,88 @@ function fileName(key: string): string {
 </script>
 
 <template>
-  <!-- 单图 -->
-  <div v-if="type === 'image' && !multiple" class="uploader-single-image">
-    <div v-if="singleValue" class="image-preview">
-      <el-image :src="formatFileUrl(singleValue)" fit="cover" class="preview-img" :preview-src-list="[formatFileUrl(singleValue)]" />
-      <div v-if="!disabled" class="image-actions">
-        <label class="action-btn">替换
-          <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading" @change="handleUpload" />
-        </label>
-        <el-icon class="action-btn" @click="removeSingle"><Delete /></el-icon>
+  <div class="uploader-wrap">
+    <!-- 单图 -->
+    <div v-if="type === 'image' && !multiple" class="uploader-single-image">
+      <div v-if="singleValue" class="image-preview">
+        <el-image :src="formatFileUrl(singleValue)" fit="cover" class="preview-img" :preview-src-list="[formatFileUrl(singleValue)]" />
+        <div v-if="!disabled" class="image-actions">
+          <label class="action-btn">替换
+            <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading" @change="handleUpload" />
+          </label>
+          <el-icon class="action-btn" @click="removeSingle"><Delete /></el-icon>
+        </div>
       </div>
+      <label v-else class="upload-placeholder" :class="{ disabled }">
+        <el-icon><Plus /></el-icon>
+        <span>{{ uploading ? '上传中...' : '上传图片' }}</span>
+        <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
+      </label>
     </div>
-    <label v-else class="upload-placeholder" :class="{ disabled }">
-      <el-icon><Plus /></el-icon>
-      <span>{{ uploading ? '上传中...' : '上传图片' }}</span>
-      <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
-    </label>
-  </div>
 
-  <!-- 多图 -->
-  <div v-else-if="type === 'image' && multiple" class="uploader-multi-image">
-    <div v-for="(key, i) in multiValue" :key="key" class="image-preview">
-      <el-image :src="formatFileUrl(key)" fit="cover" class="preview-img" :preview-src-list="multiValue.map(formatFileUrl)" :initial-index="i" />
-      <div v-if="!disabled" class="image-actions">
-        <el-icon class="action-btn" @click="removeMulti(i)"><Delete /></el-icon>
+    <!-- 多图 -->
+    <div v-else-if="type === 'image' && multiple" class="uploader-multi-image">
+      <div v-for="(key, i) in multiValue" :key="key" class="image-preview">
+        <el-image :src="formatFileUrl(key)" fit="cover" class="preview-img" :preview-src-list="multiValue.map(formatFileUrl)" :initial-index="i" />
+        <div v-if="!disabled" class="image-actions">
+          <el-icon class="action-btn" @click="removeMulti(i)"><Delete /></el-icon>
+        </div>
       </div>
+      <label v-if="!disabled && multiValue.length < limit" class="upload-placeholder" :class="{ disabled }">
+        <el-icon><Plus /></el-icon>
+        <span>{{ uploading ? '上传中...' : '添加图片' }}</span>
+        <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
+      </label>
     </div>
-    <label v-if="!disabled && multiValue.length < limit" class="upload-placeholder" :class="{ disabled }">
-      <el-icon><Plus /></el-icon>
-      <span>{{ uploading ? '上传中...' : '添加图片' }}</span>
-      <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
-    </label>
-  </div>
 
-  <!-- 视频 -->
-  <div v-else-if="type === 'video'" class="uploader-media">
-    <div v-if="singleValue" class="media-item">
-      <el-icon class="media-icon"><VideoPlay /></el-icon>
-      <span class="media-name">{{ fileName(singleValue) }}</span>
-      <el-icon v-if="!disabled" class="action-btn" @click="removeSingle"><Delete /></el-icon>
+    <!-- 视频 -->
+    <div v-else-if="type === 'video'" class="uploader-media">
+      <div v-if="singleValue" class="media-item">
+        <el-icon class="media-icon"><VideoPlay /></el-icon>
+        <span class="media-name">{{ fileName(singleValue) }}</span>
+        <el-icon v-if="!disabled" class="action-btn" @click="removeSingle"><Delete /></el-icon>
+      </div>
+      <label v-else class="upload-btn" :class="{ disabled }">
+        <el-icon><Plus /></el-icon><span>{{ uploading ? '上传中...' : '上传视频' }}</span>
+        <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
+      </label>
     </div>
-    <label v-else class="upload-btn" :class="{ disabled }">
-      <el-icon><Plus /></el-icon><span>{{ uploading ? '上传中...' : '上传视频' }}</span>
-      <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
-    </label>
-  </div>
 
-  <!-- 文件 / VR / any -->
-  <div v-else class="uploader-media">
-    <div v-if="!multiple && singleValue" class="media-item">
-      <el-icon class="media-icon"><Document /></el-icon>
-      <span class="media-name">{{ fileName(singleValue) }}</span>
-      <el-icon v-if="!disabled" class="action-btn" @click="removeSingle"><Delete /></el-icon>
+    <!-- 文件 / VR / any -->
+    <div v-else class="uploader-media">
+      <div v-if="!multiple && singleValue" class="media-item">
+        <el-icon class="media-icon"><Document /></el-icon>
+        <span class="media-name">{{ fileName(singleValue) }}</span>
+        <el-icon v-if="!disabled" class="action-btn" @click="removeSingle"><Delete /></el-icon>
+      </div>
+      <div v-for="(key, i) in (multiple ? multiValue : [])" :key="key" class="media-item">
+        <el-icon class="media-icon"><Document /></el-icon>
+        <span class="media-name">{{ fileName(key) }}</span>
+        <el-icon v-if="!disabled" class="action-btn" @click="removeMulti(i)"><Delete /></el-icon>
+      </div>
+      <label v-if="!disabled && (!multiple || multiValue.length < limit)" class="upload-btn" :class="{ disabled }">
+        <el-icon><Plus /></el-icon><span>{{ uploading ? '上传中...' : '点击上传' }}</span>
+        <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
+      </label>
     </div>
-    <div v-for="(key, i) in (multiple ? multiValue : [])" :key="key" class="media-item">
-      <el-icon class="media-icon"><Document /></el-icon>
-      <span class="media-name">{{ fileName(key) }}</span>
-      <el-icon v-if="!disabled" class="action-btn" @click="removeMulti(i)"><Delete /></el-icon>
-    </div>
-    <label v-if="!disabled && (!multiple || multiValue.length < limit)" class="upload-btn" :class="{ disabled }">
-      <el-icon><Plus /></el-icon><span>{{ uploading ? '上传中...' : '点击上传' }}</span>
-      <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
-    </label>
+
+    <el-button
+      v-if="type === 'image' || type === 'video'"
+      link
+      type="primary"
+      size="small"
+      class="pick-btn"
+      @click="pickerVisible = true"
+    >从素材库选择</el-button>
+
+    <AssetPicker
+      v-model="pickerVisible"
+      :type="type === 'video' ? 'video' : 'image'"
+      :multiple="multiple"
+      :limit="limit"
+      :park-code="assetParkCode"
+      @select="onPicked"
+    />
   </div>
 </template>
 
@@ -213,4 +247,13 @@ function fileName(key: string): string {
 .media-icon { color: #409eff; }
 .media-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .upload-btn { display: inline-flex; align-items: center; gap: 4px; color: #409eff; font-size: 13px; }
+.uploader-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.pick-btn {
+  align-self: flex-start;
+}
 </style>
