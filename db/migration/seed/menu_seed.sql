@@ -45,6 +45,7 @@ VALUES
   ('admin_resource_scene', '场景管理', 'admin_resource', 2, '/resource/scene', 'resource/scene/index', 'scene:info:list', 'Place', 3, 1, 'admin', 1, '场景活动管理', NOW(), NOW(), 'system', 'system', 0),
   ('admin_resource_content', '内容素材', 'admin_resource', 2, '/resource/content', 'resource/content/index', 'content:info:list', 'Picture', 4, 1, 'admin', 1, '内容素材库', NOW(), NOW(), 'system', 'system', 0),
   ('admin_resource_course', '课程管理', 'admin_resource', 2, '/resource/course', 'resource/course/index', 'course:info:list', 'Reading', 5, 1, 'admin', 1, '课程管理', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_resource_asset', '素材库', 'admin_resource', 2, '/resource/asset', 'resource/asset/index', 'park:asset:list', 'PictureFilled', 6, 1, 'admin', 1, '全局素材库（含平台素材）', NOW(), NOW(), 'system', 'system', 0),
 
   -- ========== 权益管理子菜单 ==========
   ('admin_equity_batch', '批次管理', 'admin_equity', 2, '/equity/batch', 'equity/batch/index', 'equity:batch:list', 'Files', 1, 1, 'admin', 1, '权益批次管理', NOW(), NOW(), 'system', 'system', 0),
