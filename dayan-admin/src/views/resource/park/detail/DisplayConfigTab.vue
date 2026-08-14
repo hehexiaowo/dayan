@@ -4,88 +4,81 @@
       该机构未配置网络归属（networkTags），请先在「基本信息」Tab 中选择网络后再配置展示。
     </el-alert>
 
-    <template v-for="net in networks" :key="net.tag">
-      <div class="network-panel">
-        <div class="panel-header">
-          <el-tag :type="net.colorType" effect="dark" size="large">{{ net.label }}</el-tag>
-          <span class="panel-hint">配置该网络下详情页头图和列表缩略图</span>
-        </div>
-
-        <!-- 头图选择 -->
-        <div class="section">
-          <div class="section-title">
-            <span>详情页头图轮播</span>
-            <el-text type="info" size="small">点击图片选择/取消，已选 {{ configData[net.tag].banners.length }} 张</el-text>
-          </div>
-          <div v-if="images.length" class="image-grid">
-            <div
-              v-for="img in images"
-              :key="img.assetUrl"
-              class="image-cell"
-              :class="{ selected: bannerIndex(net.tag, img.assetUrl) >= 0 }"
-              @click="toggleBanner(net.tag, img.assetUrl)"
-            >
-              <el-image :src="formatFileUrl(img.assetUrl)" fit="cover" class="grid-image" :preview-src-list="[]" />
-              <div v-if="bannerIndex(net.tag, img.assetUrl) >= 0" class="order-badge">
-                {{ bannerIndex(net.tag, img.assetUrl) + 1 }}
-              </div>
-              <div class="image-check">
-                <el-icon v-if="bannerIndex(net.tag, img.assetUrl) >= 0"><Check /></el-icon>
-              </div>
-            </div>
-          </div>
-          <el-empty v-else description="暂无图片素材，请先在「素材库」上传图片" :image-size="60" />
-        </div>
-
-        <!-- 缩略图选择 -->
-        <div class="section">
-          <div class="section-title">
-            <span>列表卡片缩略图</span>
-            <el-text type="info" size="small">选择一张作为列表卡片展示图</el-text>
-          </div>
-          <div v-if="images.length" class="image-grid">
-            <div
-              v-for="img in images"
-              :key="'thumb-' + img.assetUrl"
-              class="image-cell thumb"
-              :class="{ selected: configData[net.tag].thumbnail === img.assetUrl }"
-              @click="configData[net.tag].thumbnail = configData[net.tag].thumbnail === img.assetUrl ? '' : (img.assetUrl ?? '')"
-            >
-              <el-image :src="formatFileUrl(img.assetUrl)" fit="cover" class="grid-image" :preview-src-list="[]" />
-              <div v-if="configData[net.tag].thumbnail === img.assetUrl" class="image-check">
-                <el-icon><Check /></el-icon>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <el-divider />
+    <div v-for="net in networks" :key="net.tag" class="net-card">
+      <div class="net-header">
+        <el-tag :type="net.colorType" effect="dark">{{ net.label }}</el-tag>
+        <span class="net-summary">
+          轮播 {{ configData[net.tag].banners.length }} 张 ·
+          {{ thumbOf(net.tag) ? `缩略图：第 ${configData[net.tag].banners.indexOf(thumbOf(net.tag)) + 1} 张` : '缩略图未设' }}
+        </span>
       </div>
-    </template>
 
-    <!-- 保存按钮 -->
+      <div class="row">
+        <span class="row-label">轮播图</span>
+        <div class="chosen-row">
+          <div
+            v-for="(key, i) in configData[net.tag].banners"
+            :key="net.tag + key"
+            class="chosen-cell"
+            :class="{ 'is-thumb': key === thumbOf(net.tag) }"
+            @click="setThumbnail(net.tag, key)"
+          >
+            <el-image :src="formatFileUrl(key)" fit="cover" class="chosen-img" :preview-src-list="[]" />
+            <span class="order-badge">{{ i + 1 }}</span>
+            <span v-if="key === thumbOf(net.tag)" class="thumb-badge">缩略图</span>
+            <div class="cell-ops" @click.stop>
+              <el-icon :class="{ disabled: i === 0 }" @click="moveBanner(net.tag, i, -1)"><ArrowLeft /></el-icon>
+              <el-icon :class="{ disabled: i === configData[net.tag].banners.length - 1 }" @click="moveBanner(net.tag, i, 1)"><ArrowRight /></el-icon>
+              <el-icon @click="removeBanner(net.tag, i)"><Delete /></el-icon>
+            </div>
+          </div>
+          <el-button :icon="Plus" plain @click="openPicker(net.tag)">从图片库选择</el-button>
+        </div>
+      </div>
+
+      <div class="row hint-row">
+        <span class="row-label">缩略图</span>
+        <span class="hint">点击上方任一轮播图设为缩略图；未手动指定时默认第一张。</span>
+      </div>
+    </div>
+
     <div v-if="networks.length" class="save-bar">
       <el-button type="primary" :loading="saving" @click="onSave">保存配置</el-button>
       <el-button @click="loadData">重置</el-button>
     </div>
+
+    <AssetPicker
+      v-model="pickerVisible"
+      type="image"
+      multiple
+      :limit="9"
+      :park-code="parkCode"
+      @select="onPicked"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * 机构详情页 - 网络展示 tab（轻量版）。
+ *
+ * 每业态 = 轮播图（已选横排：排序/删除/从图片库选择）+ 缩略图（点击轮播图点选，默认第一张）。
+ * 数据结构不变：park_info.xxxConfig 存 JSON {banners:[key...], thumbnail:"key"}；
+ * 选择弹窗复用 AssetPicker（机构素材库），组件不再全量加载机构图。
+ */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Check } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, Delete, Plus } from '@element-plus/icons-vue'
 import { getPark, updatePark } from '@/api/park'
-import { listAssets } from '@/api/park-asset'
 import { formatFileUrl } from '@/utils/file'
 import { NETWORK_TAG_OPTIONS } from '@/types/park'
-import type { ParkAsset, ParkInfo } from '@/types/park'
+import type { ParkInfo } from '@/types/park'
+import AssetPicker from '@/components/AssetPicker/index.vue'
 
 const props = defineProps<{ parkCode: string }>()
 
 const loading = ref(true)
 const saving = ref(false)
-const images = ref<ParkAsset[]>([])
 const parkInfo = ref<ParkInfo | null>(null)
 
 interface NetworkConfig {
@@ -93,14 +86,12 @@ interface NetworkConfig {
   thumbnail: string
 }
 
-/** 每个网络 tag 的配置数据 */
 const configData = reactive<Record<string, NetworkConfig>>({
   vital: { banners: [], thumbnail: '' },
   care: { banners: [], thumbnail: '' },
   sojourn: { banners: [], thumbnail: '' },
 })
 
-/** 机构所属网络列表（仅展示这些网络的配置面板） */
 const networks = computed(() => {
   const tags = parkInfo.value?.networkTags || []
   return NETWORK_TAG_OPTIONS.filter((o) => tags.includes(o.value)).map((o) => ({
@@ -110,31 +101,53 @@ const networks = computed(() => {
   }))
 })
 
-/** banner 在数组中的位置（-1 = 未选；assetUrl 缺失视为未选） */
-function bannerIndex(tag: string, assetUrl: string | undefined): number {
-  if (!assetUrl) return -1
-  return configData[tag].banners.indexOf(assetUrl)
+const pickerVisible = ref(false)
+const pickerTarget = ref('')
+
+function thumbOf(tag: string): string {
+  const cfg = configData[tag]
+  if (cfg.thumbnail && cfg.banners.includes(cfg.thumbnail)) return cfg.thumbnail
+  return cfg.banners[0] || ''
 }
 
-/** 点击图片：已选则取消，未选则追加到末尾 */
-function toggleBanner(tag: string, assetUrl: string | undefined) {
-  if (!assetUrl) return
-  const idx = bannerIndex(tag, assetUrl)
-  if (idx >= 0) {
-    configData[tag].banners.splice(idx, 1)
-  } else {
-    configData[tag].banners.push(assetUrl)
-  }
+function setThumbnail(tag: string, key: string) {
+  configData[tag].thumbnail = thumbOf(tag) === key ? '' : key
 }
 
-/** 从 JSON 字符串解析配置 */
+function openPicker(tag: string) {
+  pickerTarget.value = tag
+  pickerVisible.value = true
+}
+
+function onPicked(keys: string[]) {
+  const tag = pickerTarget.value
+  if (!tag || !keys.length) return
+  const cfg = configData[tag]
+  const merged = [...new Set([...cfg.banners, ...keys])]
+  cfg.banners = merged.slice(0, 12)
+  if (merged.length > cfg.banners.length) ElMessage.info('轮播图最多 12 张，超出部分已忽略')
+}
+
+function moveBanner(tag: string, index: number, dir: -1 | 1) {
+  const arr = configData[tag].banners
+  const target = index + dir
+  if (target < 0 || target >= arr.length) return
+  ;[arr[index], arr[target]] = [arr[target], arr[index]]
+}
+
+function removeBanner(tag: string, index: number) {
+  const cfg = configData[tag]
+  cfg.banners.splice(index, 1)
+  if (cfg.thumbnail && !cfg.banners.includes(cfg.thumbnail)) cfg.thumbnail = ''
+}
+
 function parseConfig(raw?: string): NetworkConfig {
   if (!raw) return { banners: [], thumbnail: '' }
   try {
     const parsed = JSON.parse(raw)
     return {
-      banners: Array.isArray(parsed.banners) ? parsed.banners : [],
-      thumbnail: parsed.thumbnail || '',
+      banners: Array.isArray(parsed.banners) ? parsed.banners.filter((k: unknown) => typeof k === 'string') : [],
+      thumbnail: typeof parsed.thumbnail === 'string' ? parsed.thumbnail : '',
     }
   } catch {
     return { banners: [], thumbnail: '' }
@@ -144,13 +157,8 @@ function parseConfig(raw?: string): NetworkConfig {
 async function loadData() {
   loading.value = true
   try {
-    const [park, assetList] = await Promise.all([
-      getPark(props.parkCode),
-      listAssets(props.parkCode, 1),
-    ])
+    const park = await getPark(props.parkCode)
     parkInfo.value = park
-    images.value = (assetList || []).filter((a) => a.status === 1)
-
     configData.vital = parseConfig(park.vitalConfig)
     configData.care = parseConfig(park.careConfig)
     configData.sojourn = parseConfig(park.sojournConfig)
@@ -167,9 +175,10 @@ async function onSave() {
     const data: Partial<ParkInfo> = {}
     for (const net of networks.value) {
       const cfg = configData[net.tag]
+      const thumbnail = thumbOf(net.tag)
       const json: Record<string, unknown> = {}
       if (cfg.banners.length) json.banners = cfg.banners
-      if (cfg.thumbnail) json.thumbnail = cfg.thumbnail
+      if (thumbnail) json.thumbnail = thumbnail
       const field = `${net.tag}Config` as keyof ParkInfo
       ;(data as Record<string, unknown>)[field] = Object.keys(json).length ? JSON.stringify(json) : ''
     }
@@ -185,98 +194,134 @@ async function onSave() {
 onMounted(loadData)
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .display-config-tab {
   padding: 16px;
 }
 
-.network-panel {
-  margin-bottom: 24px;
+.net-card {
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
 }
-.panel-header {
+
+.net-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
-.panel-hint {
+
+.net-summary {
   font-size: 13px;
   color: #909399;
 }
 
-.section {
-  margin-bottom: 20px;
-}
-.section-title {
+.row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  margin-bottom: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  margin-bottom: 6px;
 }
 
-.image-grid {
+.row-label {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 32px;
+  flex-shrink: 0;
+}
+
+.chosen-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
+  align-items: center;
 }
-.image-cell {
+
+.chosen-cell {
   position: relative;
-  width: 120px;
-  height: 90px;
+  width: 96px;
+  height: 64px;
   border-radius: 6px;
   overflow: hidden;
   cursor: pointer;
-  border: 3px solid transparent;
+  border: 2px solid transparent;
   transition: border-color 0.2s;
+
+  &:hover .cell-ops {
+    opacity: 1;
+  }
+  &.is-thumb {
+    border-color: var(--el-color-success);
+  }
 }
-.image-cell.selected {
-  border-color: var(--el-color-primary);
-}
-.image-cell.thumb.selected {
-  border-color: var(--el-color-success);
-}
-.grid-image {
+
+.chosen-img {
   width: 100%;
   height: 100%;
 }
+
 .order-badge {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  background: var(--el-color-primary);
+  top: 3px;
+  left: 3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-size: 12px;
-  font-weight: bold;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.image-check {
+
+.thumb-badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--el-color-primary);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-}
-.image-cell.thumb .image-check {
+  bottom: 3px;
+  left: 3px;
   background: var(--el-color-success);
+  color: #fff;
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.cell-ops {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 4px;
+  padding: 2px 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  .el-icon {
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+
+    &.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.hint-row .hint {
+  font-size: 12px;
+  color: #909399;
+  line-height: 32px;
 }
 
 .save-bar {
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--el-border-color);
 }
 </style>
