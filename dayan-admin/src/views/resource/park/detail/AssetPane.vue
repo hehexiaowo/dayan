@@ -9,6 +9,7 @@
 import { reactive, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
+import { useBusinessDictOptions } from '@/composables/useBusinessDict'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { formatFileUrl } from '@/utils/file'
 import {
@@ -27,7 +28,8 @@ import { SOURCE_TYPE_OPTIONS } from '@/types/park'
 import type { ParkAsset, ParkAssetQuery } from '@/types/park'
 
 const props = defineProps<{
-  parkCode: string
+  /** 机构编码（不传=全局模式：可跨机构/平台素材查询） */
+  parkCode?: string
   /** 素材类型：1=图片 2=视频 3=文件 4=VR */
   assetType: number
 }>()
@@ -55,9 +57,12 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
     remove: deleteAsset
   },
   {
-    initialQuery: { assetCategory: undefined, sourceType: undefined, isCover: undefined, status: undefined },
+    initialQuery: { parkCode: undefined, keyword: undefined, assetCategory: undefined, sourceType: undefined, isCover: undefined, status: undefined },
     idKey: 'id',
-    fixedParams: { parkCode: props.parkCode, assetType: props.assetType }
+    fixedParams: {
+      ...(props.parkCode ? { parkCode: props.parkCode } : {}),
+      assetType: props.assetType
+    }
   }
 )
 
@@ -98,6 +103,8 @@ const rules: FormRules<ParkAsset> = {
 
 const categoryOpts = computed(() => categoryOptionsByType(props.assetType))
 
+const { options: vrProviderOptions } = useBusinessDictOptions('vr_provider')
+
 function resetForm() {
   Object.assign(form, {
     id: undefined,
@@ -126,7 +133,7 @@ function resetForm() {
 function openCreate() {
   dialogMode.value = 'create'
   resetForm()
-  form.parkCode = props.parkCode
+  form.parkCode = props.parkCode ?? ''
   dialogVisible.value = true
 }
 
@@ -189,6 +196,12 @@ defineExpose({ loadPage })
 <template>
   <div class="asset-pane">
     <el-form :inline="true" :model="query" @submit.prevent>
+      <el-form-item v-if="!parkCode" label="机构编码">
+        <el-input v-model="query.parkCode" placeholder="空=全部（含平台素材）" clearable style="width: 170px" />
+      </el-form-item>
+      <el-form-item label="名称">
+        <el-input v-model="query.keyword" placeholder="名称/URL 关键字" clearable style="width: 170px" @keyup.enter="handleSearch" />
+      </el-form-item>
       <el-form-item label="分类">
         <el-select v-model="query.assetCategory" placeholder="全部" clearable style="width: 140px">
           <el-option v-for="o in categoryOpts" :key="o.value" :label="o.label" :value="o.value" />
@@ -323,6 +336,11 @@ defineExpose({ loadPage })
               />
             </el-form-item>
           </el-col>
+          <el-col v-if="!parkCode" :span="12">
+            <el-form-item label="归属机构">
+              <el-input v-model="form.parkCode" placeholder="机构编码（空=平台素材）" />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="名称">
               <el-input v-model="form.assetName" placeholder="文件名称" />
@@ -382,7 +400,14 @@ defineExpose({ loadPage })
           <template v-if="assetType === 4">
             <el-col :span="12">
               <el-form-item label="VR提供商">
-                <el-input v-model="form.vrProvider" placeholder="VR服务提供商" />
+                <el-select v-model="form.vrProvider" placeholder="请选择" clearable style="width: 100%">
+                  <el-option
+                    v-for="d in vrProviderOptions"
+                    :key="d.dictCode"
+                    :label="d.dictName"
+                    :value="d.dictCode"
+                  />
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="24">

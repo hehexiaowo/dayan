@@ -598,6 +598,8 @@ export interface ParkAsset {
 /** 素材分页查询参数 */
 export interface ParkAssetQuery extends PageQuery {
   parkCode?: string
+  /** 名称/URL 模糊搜索 */
+  keyword?: string
   assetType?: number
   assetCategory?: number
   isCover?: number
