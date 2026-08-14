@@ -73,6 +73,24 @@ public class GoodsSojournServiceImpl implements GoodsSojournService {
     }
 
     @Override
+    public GoodsSojournVO getEffectiveByCode(String skuCode) {
+        if (skuCode == null || skuCode.isEmpty()) {
+            return null;
+        }
+        LocalDate today = LocalDate.now();
+        GoodsSojourn entity = sojournMapper.selectList(new LambdaQueryWrapper<GoodsSojourn>()
+                .eq(GoodsSojourn::getSkuCode, skuCode)
+                .eq(GoodsSojourn::getStatus, 1)
+                .and(w -> w.isNull(GoodsSojourn::getEffectiveDate)
+                        .or().le(GoodsSojourn::getEffectiveDate, today))
+                .and(w -> w.isNull(GoodsSojourn::getExpireDate)
+                        .or().ge(GoodsSojourn::getExpireDate, today))
+                .last("LIMIT 1"))
+                .stream().findFirst().orElse(null);
+        return entity == null ? null : toVO(entity);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(GoodsSojournCreateDTO dto) {
         validateDayRange(dto.getMinDays(), dto.getMaxDays());

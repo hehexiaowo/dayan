@@ -79,6 +79,28 @@ public class ParkPricingServiceImpl implements ParkPricingService {
     }
 
     @Override
+    public ParkPricingVO getCurrentFee(String parkCode, Integer chargeType, String refType, String refCode) {
+        List<ParkPricing> list = pricingMapper.selectList(new LambdaQueryWrapper<ParkPricing>()
+                .eq(ParkPricing::getParkCode, parkCode)
+                .eq(ParkPricing::getChargeType, chargeType)
+                .eq(ParkPricing::getRefType, refType)
+                .eq(ParkPricing::getRefCode, refCode)
+                .eq(ParkPricing::getIsCurrent, IS_CURRENT_YES)
+                .eq(ParkPricing::getStatus, 1)
+                .orderByDesc(ParkPricing::getBillingCycle)
+                .orderByDesc(ParkPricing::getId));
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        // 优先月周期（cycle=1）：orderByDesc(billingCycle) 后 1 排最后，单独先找
+        ParkPricing monthly = list.stream()
+                .filter(p -> Integer.valueOf(1).equals(p.getBillingCycle()))
+                .findFirst().orElse(null);
+        ParkPricing picked = monthly != null ? monthly : list.get(0);
+        return toVO(picked);
+    }
+
+    @Override
     public ParkPricingVO getDetail(Long id) {
         return toVO(requirePricing(id));
     }

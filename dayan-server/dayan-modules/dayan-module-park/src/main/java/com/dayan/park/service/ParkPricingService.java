@@ -22,6 +22,12 @@ public interface ParkPricingService {
     /** 按费类列表（如"押金/房间/照护/餐费"维度查看） */
     List<ParkPricingVO> listByChargeType(String parkCode, Integer chargeType);
 
+    /**
+     * 取某维度当前生效定价（is_current=1）。
+     * 优先 billing_cycle=1（月）；无月价取任意周期中 id 最大一条。不存在返回 null。
+     */
+    ParkPricingVO getCurrentFee(String parkCode, Integer chargeType, String refType, String refCode);
+
     /** 详情 */
     ParkPricingVO getDetail(Long id);
 
