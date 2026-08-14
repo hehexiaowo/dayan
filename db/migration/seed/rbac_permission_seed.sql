@@ -11,7 +11,7 @@ SET NAMES utf8mb4;
 --   仅含 10 个 *:list 演示权限。本文件在此基础上补全 CRUD 动作权限。
 --   admin_seed.sql 的超管账号（is_admin=1）不受影响（返回通配权限）。
 --
--- 幂等：全部 INSERT ... ON DUPLICATE KEY UPDATE id=id，现有库可重复 source。
+-- 幂等：全部 INSERT ... ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`，现有库可重复 source。
 --   已存在的 :list 演示权限会被 UPDATE 覆盖为正式 remark/分类，权限码本身不变。
 --
 -- 权限码命名规范：{domain}:{resource}:{action}
@@ -102,7 +102,7 @@ VALUES
   ('park:display-block:create', '新增展示板块', 'park:display-block', 3, '/admin-api/park/display-block', 'POST',    272, 1, '机构展示板块', NOW(), NOW(), 'system', 'system', 0),
   ('park:display-block:update', '修改展示板块', 'park:display-block', 3, '/admin-api/park/display-block/*', 'PUT',    273, 1, '机构展示板块', NOW(), NOW(), 'system', 'system', 0),
   ('park:display-block:delete', '删除展示板块', 'park:display-block', 3, '/admin-api/park/display-block/*', 'DELETE', 274, 1, '机构展示板块', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
 -- 二、Scene 域（31 个权限码，info 含 6 个状态机动作）
@@ -149,7 +149,7 @@ VALUES
   ('scene:resource:create', '新增所需资源', 'scene:resource', 3, '/admin-api/scene/resource', 'POST',    342, 1, '场景所需资源', NOW(), NOW(), 'system', 'system', 0),
   ('scene:resource:update', '修改所需资源', 'scene:resource', 3, '/admin-api/scene/resource/*', 'PUT',    343, 1, '场景所需资源', NOW(), NOW(), 'system', 'system', 0),
   ('scene:resource:delete', '删除所需资源', 'scene:resource', 3, '/admin-api/scene/resource/*', 'DELETE', 344, 1, '场景所需资源', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
 -- 三、Service 域（46 个权限码，session 含 8 状态机动作 + arrange confirm + solution accept）
@@ -213,7 +213,7 @@ VALUES
   ('service:visit-record:create', '新增上门记录', 'service:visit-record', 3, '/admin-api/service/visit-record', 'POST',    472, 1, '上门记录', NOW(), NOW(), 'system', 'system', 0),
   ('service:visit-record:update', '修改上门记录', 'service:visit-record', 3, '/admin-api/service/visit-record/*', 'PUT',    473, 1, '上门记录', NOW(), NOW(), 'system', 'system', 0),
   ('service:visit-record:delete', '删除上门记录', 'service:visit-record', 3, '/admin-api/service/visit-record/*', 'DELETE', 474, 1, '上门记录', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
 -- 四、Channel 域（30 个权限码，含 reset/assign/save 特殊动作）
@@ -260,7 +260,7 @@ VALUES
   ('channel:openplatform:create', '新增开放平台', 'channel:openplatform', 3, '/admin-api/open-platforms', 'POST',    552, 1, '开放平台', NOW(), NOW(), 'system', 'system', 0),
   ('channel:openplatform:update', '修改开放平台', 'channel:openplatform', 3, '/admin-api/open-platforms/*', 'PUT',    553, 1, '开放平台', NOW(), NOW(), 'system', 'system', 0),
   ('channel:openplatform:delete', '删除开放平台', 'channel:openplatform', 3, '/admin-api/open-platforms/*', 'DELETE', 554, 1, '开放平台', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
 -- 五、Goods 域（26 个权限码，info 含 shelf 上下架）
@@ -296,7 +296,7 @@ VALUES
   ('goods:sojourn:create', '新增旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn', 'POST',    642, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
   ('goods:sojourn:update', '修改旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'PUT',    643, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
   ('goods:sojourn:delete', '删除旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'DELETE', 644, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
 -- 六、角色 ↔ 权限关联（授权给 ROLE_OPERATOR，demo 账号可用完整 CRUD）
@@ -500,4 +500,4 @@ VALUES
   ('ROLE_OPERATOR', 'goods:sojourn:create', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:sojourn:update', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'goods:sojourn:delete', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

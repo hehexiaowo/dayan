@@ -4,7 +4,7 @@ SET NAMES utf8mb4;
 --
 -- 补齐 channel:system 域所有 channel Controller 的权限码，让非超管角色
 -- 能执行完整操作（超管 is_admin=1 返 ["*"] 不受影响）。
--- 幂等：ON DUPLICATE KEY UPDATE id=id
+-- 幂等：ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`
 --
 -- 注：channel_permission 表实际无 remark 列（与任务简报 SQL 有差异），
 --     此处按运行库实际结构对齐（permission_code 唯一键）。
@@ -40,7 +40,7 @@ VALUES
   ('channel:role:assign',         '角色授权',   'channel:system', 3, '/channel-api/channel-roles/*/permissions',  'PUT',    125, 1, NOW(), NOW(), 'system', 'system', 0),
   -- 权限只读 channel:permission
   ('channel:permission:list', '权限列表', 'channel:system', 3, '/channel-api/channel-permissions/all', 'GET', 130, 1, NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== P9 增量3 追加：采购结算域权限码 ==========
 -- 5 节点（1 目录 + 4 子菜单）+ 11 接口码 = 16 条
@@ -75,13 +75,13 @@ VALUES
   ('channel:payment:list',    '支付单列表', 'channel:payment',     3, '/channel-api/finance-payments',   'GET',  41, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:payment:query',   '支付单详情', 'channel:payment',     3, '/channel-api/finance-payments/*', 'GET',  42, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:payment:create',  '创建支付',   'channel:payment',     3, '/channel-api/finance-payments',   'POST', 43, 1, NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== P9 增量4 追加：养老保典 + 客户平台 权限码 ==========
 -- 10 组权限码（含 9 个一级目录 + 各自 list/query，外加 contentConfig 3 条）= 31 条
 -- 覆盖任务1-3 Controller 的 @SaCheckPermission：
 --   代理人账号 / 客户线索 / 分享记录 / 内容 / 阅读记录 / 场景营销 / 客户账号 / 激活记录 / 服务记录 / 配置自管
--- 注：channel:agent / channel:client 若增量1 已 seed，ON DUPLICATE KEY UPDATE id=id 是空更新，保留原值。
+-- 注：channel:agent / channel:client 若增量1 已 seed，ON DUPLICATE KEY UPDATE `updated_at` = `updated_at` 是空更新，保留原值。
 INSERT INTO `channel_permission`
   (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
    `path`, `method`, `sort_order`, `status`,
@@ -127,7 +127,7 @@ VALUES
   ('channel:contentConfig', '配置自管', NULL, 1, NULL, NULL, 170, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:contentConfig:list', '查配置', 'channel:contentConfig', 3, '/channel-api/channel-configs/*', 'GET', 171, 1, NOW(), NOW(), 'system', 'system', 0),
   ('channel:contentConfig:save', '保存配置', 'channel:contentConfig', 3, '/channel-api/channel-configs/*', 'PUT', 172, 1, NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ==================== 增量5 开放平台（1 组 2 条）====================
 INSERT INTO `channel_permission` (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
@@ -136,4 +136,4 @@ INSERT INTO `channel_permission` (`permission_code`, `permission_name`, `parent_
 VALUES
 ('channel:openApp', '应用管理', NULL, 1, NULL, NULL, 180, 1, NOW(), NOW(), 'system', 'system', 0),
 ('channel:openApp:list', '应用配置查看', 'channel:openApp', 3, '/channel-api/open-platforms', 'GET', 181, 1, NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

@@ -1,4 +1,4 @@
--- 25_quota_model.sql
+-- 24_quota_model.sql
 -- 配额字段模型：goods_service_item_rel 加 quota_type + service_session 加配额快照字段
 --
 -- 背景：激活链路原先完全忽略 goods_service_item_rel.quantity，每个 service_item 只创建1个会话。

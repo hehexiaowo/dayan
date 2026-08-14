@@ -75,4 +75,5 @@ VALUES
   ('park_status', 'pending_audit', '待审核', '0', 1, 0, 1, 1, '机构状态-待审核', NOW(), NOW(), 'system', 'system', 0),
   ('park_status', 'online', '已上线', '1', 1, 1, 1, 0, '机构状态-已上线', NOW(), NOW(), 'system', 'system', 0),
   ('park_status', 'offline', '已下架', '2', 1, 2, 1, 0, '机构状态-已下架', NOW(), NOW(), 'system', 'system', 0),
-  ('park_status', 'suspended', '暂停营业', '3', 1, 3, 1, 0, '机构状态-暂停营业', NOW(), NOW(), 'system', 'system', 0);
+  ('park_status', 'suspended', '暂停营业', '3', 1, 3, 1, 0, '机构状态-暂停营业', NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

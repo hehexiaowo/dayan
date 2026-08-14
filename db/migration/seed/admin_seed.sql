@@ -14,7 +14,8 @@ INSERT INTO `organ_info`
    `legal_person`, `status`, `sort_order`, `description`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
   (1, 'OR00001', '大雁养老服务有限公司', '大雁养老', 1, '91110000MA00DAYAN01',
-   '管理员', 1, 0, '大雁养老服务权益平台运营方', NOW(), NOW(), 'system', 'system', 0);
+   '管理员', 1, 0, '大雁养老服务权益平台运营方', NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- 超级管理员账号：admin / admin123
 -- BCrypt 哈希值由 PasswordService.encode("admin123") 生成，strength=10
@@ -29,7 +30,8 @@ VALUES
    'bcrypt-self-contained',
    '超级管理员', 0, '13800000000', 'admin@dayanpeng.com',
    0, 1, 1, '系统预置超级管理员，不可删除',
-   NOW(), NOW(), 'system', 'system', 0);
+   NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- 超级管理员角色（系统预置，拥有全部权限）
 INSERT INTO `organ_role`
@@ -37,4 +39,5 @@ INSERT INTO `organ_role`
    `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
   (1, 'OR00001', 'ROLE_SUPER_ADMIN', '超级管理员', 1, '系统预置超级管理员，拥有全部权限', 1, 1, 0,
-   NOW(), NOW(), 'system', 'system', 0);
+   NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

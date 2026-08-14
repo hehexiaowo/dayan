@@ -2,9 +2,11 @@
 -- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
 SET NAMES utf8mb4;
 -- =====================================================================
--- menu_seed.sql  菜单种子数据（Admin 端核心菜单树）
--- P0 阶段初始化 Admin 端主要目录 + 系统管理菜单
--- Channel/Agent/Client 端菜单在各端前端开发时增量补充（domain_type 区分）
+-- menu_seed.sql  菜单种子数据（Admin 端核心菜单树，唯一全量来源）
+-- 历史增量（menu_rename/menu_restructure/menu_move_client_back）的最终形态
+-- 已折叠进本文件，归档于 db/archive/legacy_menu/，不再执行。
+-- 幂等：ON DUPLICATE KEY UPDATE menu_code = menu_code 为空操作守卫，
+-- 重复执行不报错、不覆盖后台「菜单管理」的人工修改。
 -- domain_type 取值：admin/channel/agent/client（区分四端可见性）
 -- 生成依据：docs/02 §3.1.11 system_menu
 -- =====================================================================
@@ -69,4 +71,5 @@ VALUES
   -- ========== 财务结算子菜单 ==========
   ('admin_finance_flow', '财务流水', 'admin_finance', 2, '/finance/flow', 'finance/flow/index', 'finance:flow:list', 'Money', 1, 1, 'admin', 1, '财务流水', NOW(), NOW(), 'system', 'system', 0),
   ('admin_finance_bill', '结算单据', 'admin_finance', 2, '/finance/bill', 'finance/bill/index', 'finance:bill:list', 'Tickets', 2, 1, 'admin', 1, '结算单管理', NOW(), NOW(), 'system', 'system', 0),
-  ('admin_finance_invoice', '发票管理', 'admin_finance', 2, '/finance/invoice', 'finance/invoice/index', 'finance:invoice:list', 'Document', 3, 1, 'admin', 1, '发票管理', NOW(), NOW(), 'system', 'system', 0);
+  ('admin_finance_invoice', '发票管理', 'admin_finance', 2, '/finance/invoice', 'finance/invoice/index', 'finance:invoice:list', 'Document', 3, 1, 'admin', 1, '发票管理', NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `menu_code` = `menu_code`;

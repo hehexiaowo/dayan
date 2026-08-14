@@ -1,3 +1,6 @@
+-- 强制连接字符集为 utf8mb4，避免 docker-entrypoint-initdb.d 按默认字符集读取
+-- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
+SET NAMES utf8mb4;
 -- migration 34: 学习中心内容表
 -- 代理人端学习中心，3 个分类：1=视频课程 2=图文课程 3=雁鸣中国
 -- 全局表（无 channel_code），所有代理人可见，需加入 dayan.tenant.ignore-tables

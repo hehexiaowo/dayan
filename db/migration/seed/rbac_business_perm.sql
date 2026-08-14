@@ -5,7 +5,7 @@ SET NAMES utf8mb4;
 -- rbac_permission_seed.sql 仅覆盖 park/scene/service/channel/goods 五域，
 -- order/equity/finance/butler 四域此前零播种，非超管角色全部 403。
 -- 本文件补齐四域全部按钮级权限码（含已有前端页面 + 后端有但前端暂缺的 controller）。
--- 幂等：ON DUPLICATE KEY UPDATE id=id。超管（is_admin=1）不受影响。
+-- 幂等：ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`。超管（is_admin=1）不受影响。
 -- =====================================================================
 
 -- ==================== order 域 ====================
@@ -42,7 +42,7 @@ VALUES
   ('order:sojourn:complete',    '旅居订单完成',   'order:sojourn',3, '/admin-api/order/sojourn/*/complete', 'POST',   134, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0),
   ('order:sojourn:apply-refund','旅居订单退款',   'order:sojourn',3, '/admin-api/order/sojourn/*/apply-refund','POST',135, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0),
   ('order:sojourn:cancel',      '旅居订单取消',   'order:sojourn',3, '/admin-api/order/sojourn/*/cancel',   'POST',   136, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ==================== equity 域 ====================
 INSERT INTO `organ_permission`
@@ -71,7 +71,7 @@ VALUES
   ('equity:use-person:list',    '权益使用人列表',   'equity:use-person', 3, '/admin-api/equity/use-person',  'GET',    230, 1, '权益使用人', NOW(), NOW(), 'system', 'system', 0),
   ('equity:use-person:query',   '权益使用人详情',   'equity:use-person', 3, '/admin-api/equity/use-person/*', 'GET',   231, 1, '权益使用人', NOW(), NOW(), 'system', 'system', 0),
   ('equity:use-person:set-default','设为默认使用人','equity:use-person', 3, '/admin-api/equity/use-person/set-default','PUT',232, 1, '权益使用人', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ==================== butler 域 ====================
 INSERT INTO `organ_permission`
@@ -95,7 +95,7 @@ VALUES
   ('butler:rating:create', '新增管家评分', 'butler:rating', 3, '/admin-api/butler/rating',        'POST',   331, 1, '管家评分', NOW(), NOW(), 'system', 'system', 0),
   ('butler:rating:update', '修改管家评分', 'butler:rating', 3, '/admin-api/butler/rating/*',      'PUT',    332, 1, '管家评分', NOW(), NOW(), 'system', 'system', 0),
   ('butler:rating:delete', '删除管家评分', 'butler:rating', 3, '/admin-api/butler/rating/*',      'DELETE', 333, 1, '管家评分', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ==================== finance 域 ====================
 INSERT INTO `organ_permission`
@@ -139,4 +139,4 @@ VALUES
   ('finance:payment:create','新增支付记录', 'finance:payment', 3, '/admin-api/finance/payment',    'POST',   462, 1, '支付记录', NOW(), NOW(), 'system', 'system', 0),
   ('finance:payment:mark-success','标记支付成功','finance:payment', 3, '/admin-api/finance/payment/mark-success','POST',463, 1, '支付记录', NOW(), NOW(), 'system', 'system', 0),
   ('finance:payment:mark-failed','标记支付失败','finance:payment', 3, '/admin-api/finance/payment/mark-failed','POST',464, 1, '支付记录', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

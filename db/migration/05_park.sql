@@ -1,3 +1,6 @@
+-- 强制连接字符集为 utf8mb4，避免 docker-entrypoint-initdb.d 按默认字符集读取
+-- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
+SET NAMES utf8mb4;
 -- =====================================================================
 -- 05_park.sql  养老机构域（park_）
 -- 域说明：养老机构核心资产——主信息、素材库、设施/服务/房型/照护/餐饮类型与费用、顾问、周边
@@ -99,22 +102,34 @@ CREATE TABLE `park_info` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='养老机构核心信息';
 
 -- ---------------------------------------------------------------------
--- 3.5.2 park_media_image 机构图片资源
+-- 3.5.2 park_asset 机构素材库（统一表，合并原 park_media_image/video/file/vr 四表）
+-- 历史：四张 media 表已合并为本表（见 db/archive/park_asset_merge.sql），
+-- 基础 DDL 直接建合并后的形态，不再创建旧表。
 -- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_media_image`;
-CREATE TABLE `park_media_image` (
+DROP TABLE IF EXISTS `park_asset`;
+CREATE TABLE `park_asset` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `image_url` VARCHAR(500) NOT NULL COMMENT '图片URL',
-  `image_name` VARCHAR(200) DEFAULT NULL COMMENT '图片名称',
-  `image_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '图片类型（1=外观, 2=大堂, 3=房间, 4=餐厅, 5=活动区, 6=花园, 7=医疗区, 8=户型, 9=文娱生活, 10=康养状况, 11=其他）',
-  `image_description` VARCHAR(500) DEFAULT NULL COMMENT '图片描述',
-  `width` INT(11) DEFAULT NULL COMMENT '图片宽度（像素）',
-  `height` INT(11) DEFAULT NULL COMMENT '图片高度（像素）',
-  `file_size` INT(11) DEFAULT NULL COMMENT '文件大小（KB）',
+  `park_code` VARCHAR(64) NOT NULL COMMENT '机构编码',
+  `asset_type` TINYINT NOT NULL COMMENT '素材类型（1=图片 2=视频 3=文件 4=VR）',
+  `asset_url` VARCHAR(500) NOT NULL COMMENT '文件 OSS key（存 key 非完整 URL）',
+  `asset_name` VARCHAR(200) DEFAULT NULL COMMENT '文件名称',
+  `asset_category` TINYINT DEFAULT NULL COMMENT '业务分类（图片:1=外观..11=其他 视频:1=宣传..3=活动 文件:1=资质..5=其他 VR:1=全景..3=视频VR）',
+  `description` VARCHAR(500) DEFAULT NULL COMMENT '描述',
+  `file_size` BIGINT DEFAULT NULL COMMENT '文件大小（字节）',
+  -- 类型专属列（nullable，按 asset_type 区分）
+  `width` INT DEFAULT NULL COMMENT '图片宽度px（图片专属）',
+  `height` INT DEFAULT NULL COMMENT '图片高度px（图片专属）',
+  `is_cover` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否封面（图片专属 0=否 1=是）',
+  `cover_url` VARCHAR(500) DEFAULT NULL COMMENT '封面图key（视频专属）',
+  `duration` INT DEFAULT NULL COMMENT '时长秒（视频专属）',
+  `file_format` VARCHAR(20) DEFAULT NULL COMMENT '文件格式（文件专属 pdf/doc/xls等）',
+  `vr_provider` VARCHAR(100) DEFAULT NULL COMMENT 'VR服务提供商（VR专属）',
+  `thumbnail_url` VARCHAR(500) DEFAULT NULL COMMENT '缩略图key（VR专属）',
+  -- 来源追踪（核心设计）
+  `source_type` VARCHAR(30) NOT NULL DEFAULT 'media_mgmt' COMMENT '来源（media_mgmt=素材库直传 room_type=房型 food_type=餐饮 facility_type=设施 service_type=服务 display_block=展示板块 adviser=顾问 park_info=机构信息）',
+  `source_ref_code` VARCHAR(64) DEFAULT NULL COMMENT '来源编码（media_mgmt 时为 NULL）',
   `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
-  `is_cover` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否封面（0=否, 1=是）',
-  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=隐藏, 1=显示）',
+  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=隐藏 1=显示）',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
@@ -122,88 +137,11 @@ CREATE TABLE `park_media_image` (
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
   `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
-  KEY `idx_park_code` (`park_code`),
-  KEY `idx_image_type` (`image_type`),
-  KEY `idx_sort_order` (`sort_order`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构图片资源';
-
--- ---------------------------------------------------------------------
--- 3.5.3 park_media_video 机构视频资源
--- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_media_video`;
-CREATE TABLE `park_media_video` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `video_url` VARCHAR(500) NOT NULL COMMENT '视频URL',
-  `cover_url` VARCHAR(500) DEFAULT NULL COMMENT '封面图URL',
-  `video_name` VARCHAR(200) DEFAULT NULL COMMENT '视频名称',
-  `video_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '视频类型（1=宣传视频, 2=环境展示, 3=活动记录）',
-  `video_description` VARCHAR(500) DEFAULT NULL COMMENT '视频描述',
-  `duration` INT(11) DEFAULT NULL COMMENT '时长（秒）',
-  `file_size` INT(11) DEFAULT NULL COMMENT '文件大小（KB）',
-  `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
-  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=隐藏, 1=显示）',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
-  `updater` VARCHAR(64) DEFAULT 'system' COMMENT '更新人',
-  `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
-  `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_park_code` (`park_code`),
-  KEY `idx_video_type` (`video_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构视频资源';
-
--- ---------------------------------------------------------------------
--- 3.5.4 park_media_file 机构文件资源
--- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_media_file`;
-CREATE TABLE `park_media_file` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `file_url` VARCHAR(500) NOT NULL COMMENT '文件URL',
-  `file_name` VARCHAR(200) NOT NULL COMMENT '文件名称',
-  `file_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '文件类型（1=资质文件, 2=合同文件, 3=宣传资料, 4=费用文档, 5=其他）',
-  `file_format` VARCHAR(20) NOT NULL COMMENT '文件格式（pdf/doc/xls等）',
-  `file_size` INT(11) DEFAULT NULL COMMENT '文件大小（KB）',
-  `file_description` VARCHAR(500) DEFAULT NULL COMMENT '文件描述',
-  `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
-  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=隐藏, 1=显示）',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
-  `updater` VARCHAR(64) DEFAULT 'system' COMMENT '更新人',
-  `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
-  `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_park_code` (`park_code`),
-  KEY `idx_file_type` (`file_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构文件资源';
-
--- ---------------------------------------------------------------------
--- 3.5.5 park_media_vr 机构VR资源
--- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS `park_media_vr`;
-CREATE TABLE `park_media_vr` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `park_code` VARCHAR(64) DEFAULT NULL COMMENT '机构编码',
-  `vr_url` VARCHAR(500) NOT NULL COMMENT 'VR全景链接',
-  `vr_provider` VARCHAR(100) DEFAULT NULL COMMENT 'VR服务提供商',
-  `vr_name` VARCHAR(200) DEFAULT NULL COMMENT 'VR资源名称',
-  `vr_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT 'VR类型（1=全景VR, 2=3D模型, 3=视频VR）',
-  `thumbnail_url` VARCHAR(500) DEFAULT NULL COMMENT '缩略图URL',
-  `vr_description` VARCHAR(500) DEFAULT NULL COMMENT 'VR描述',
-  `sort_order` INT(11) NOT NULL DEFAULT 0 COMMENT '排序号',
-  `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=隐藏, 1=显示）',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
-  `updater` VARCHAR(64) DEFAULT 'system' COMMENT '更新人',
-  `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
-  `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_park_code` (`park_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构VR资源';
+  KEY `idx_park_type` (`park_code`, `asset_type`, `sort_order`),
+  KEY `idx_source` (`source_type`, `source_ref_code`),
+  KEY `idx_asset_url` (`asset_url`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机构素材库（统一管理所有来源的图片/视频/文件/VR）';
 
 -- ---------------------------------------------------------------------
 -- 3.5.6 park_facility_type 机构配套设施类型

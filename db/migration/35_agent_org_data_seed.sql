@@ -1,3 +1,6 @@
+-- 强制连接字符集为 utf8mb4，避免 docker-entrypoint-initdb.d 按默认字符集读取
+-- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
+SET NAMES utf8mb4;
 -- 35_agent_org_data_seed.sql
 -- 补全演示代理人 AG91925238 的组织信息（公司/分公司/部门/职位/工号/执业证号）
 -- 渠道 CH00002 = 平安养老保险，组织信息应与渠道一致

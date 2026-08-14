@@ -1,5 +1,8 @@
+-- 强制连接字符集为 utf8mb4，避免 docker-entrypoint-initdb.d 按默认字符集读取
+-- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
+SET NAMES utf8mb4;
 -- =====================================================================
--- 24_equity_redesign_seed.sql  权益重构数据迁移种子
+-- 25_equity_redesign_seed.sql  权益重构数据迁移种子
 --
 -- 为 GD00003~GD00009 七个权益商品补全 goods_equity 配置 + goods_service_item_rel 关联。
 -- service_item 种子已在 19_service_item.sql 中创建（SI00001/SI00005/SI00007）。

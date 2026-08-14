@@ -23,7 +23,7 @@ VALUES
    'UserFilled', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
   ('channel_equity', '权益查询', NULL, 2, '/equity', 'equity/index', 'channel:equity:view',
    'Ticket', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== P9 增量2 追加：系统管理菜单组 ==========
 INSERT INTO system_menu
@@ -39,7 +39,7 @@ VALUES
  'User', 20, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_system_role', '角色管理', 'channel_system', 2, '/system/role', 'system/role/index', 'channel:role:list',
  'UserFilled', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== P9 增量3 追加：采购结算菜单组 ==========
 -- 注：channel_order_manage 与增量0 顶层 channel_order 是不同菜单（后者现属"其他业务"），
@@ -59,7 +59,7 @@ VALUES
  'Document', 30, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_cashier', '财务收银', 'channel_procurement', 2, '/cashier', 'cashier/index', 'channel:payment:list',
  'Wallet', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== P9 增量4 追加：养老保典 + 客户平台 ==========
 -- channel_agent / channel_client 由叶子（menu_type=2）扩为目录（menu_type=1），
@@ -122,7 +122,7 @@ VALUES
  'Document', 82, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL),
 ('channel_open_guide', '接入指南', 'channel_open', 2, '/open/guide', 'open/guide/index', NULL,
  'Guide', 83, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ==================== 调整：新建业务运营目录 + 权益综合迁移 + 删除订单查询 ====================
 -- 订单查询(channel_order)与采购结算的订单管理(channel_order_manage)功能重叠

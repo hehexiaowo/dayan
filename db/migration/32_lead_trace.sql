@@ -1,3 +1,6 @@
+-- 强制连接字符集为 utf8mb4，避免 docker-entrypoint-initdb.d 按默认字符集读取
+-- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
+SET NAMES utf8mb4;
 -- =====================================================================
 -- 32_lead_trace.sql  线索互动追踪
 -- 1) ALTER agent_lead — 加访客追踪列（visitor_token / 微信信息 / 互动统计）

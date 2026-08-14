@@ -1,5 +1,8 @@
 SET NAMES utf8mb4;
 -- =====================================================================
+-- ⚠️ 仅供本地开发/演示：包含明文演示账号 operator/op123。
+-- 本文件已被 99_seed.sh 排除，不会随全新初始化自动执行；
+-- 需要时手动 source。严禁在生产环境执行。
 -- rbac_demo_seed.sql  RBAC 数据权限演示种子
 --
 -- 演示一个"运营人员"角色（ROLE_OPERATOR）+ 账号 operator/op123，
@@ -7,7 +10,7 @@ SET NAMES utf8mb4;
 -- 用于端到端验证 /menus/mine 的 RBAC 过滤 + 祖先目录补全 + @SaCheckPermission 鉴权。
 --
 -- 依赖：admin_seed.sql 已插入 organ_info(OR00001) + 超管 organ_account(AC00001)。
--- 幂等：全部 INSERT ... ON DUPLICATE KEY UPDATE id=id，现有库可重复 source。
+-- 幂等：全部 INSERT ... ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`，现有库可重复 source。
 -- =====================================================================
 
 -- ========== 1. 运营人员账号 operator / op123（BCrypt strength=10） ==========
@@ -24,7 +27,7 @@ VALUES
    '运营演示账号', 0, '13800000001', 'operator@dayanpeng.com',
    0, 1, 0, 'RBAC 数据权限演示账号（密码 op123）',
    NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== 2. 运营人员角色 ROLE_OPERATOR ==========
 INSERT INTO `organ_role`
@@ -35,7 +38,7 @@ VALUES
   ('OR00001', 'ROLE_OPERATOR', '运营人员', 2, '业务运营角色：权益/订单/客户/商品/财务（不含系统与资源管理）',
    1, 1, 10,
    NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== 3. 账号 ↔ 角色 关联 ==========
 INSERT INTO `organ_account_role_rel`
@@ -44,7 +47,7 @@ INSERT INTO `organ_account_role_rel`
 VALUES
   ('AC00002', 'ROLE_OPERATOR', 'OR00001',
    NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== 4. 角色 ↔ 菜单 关联（17 条：5 父目录 + 12 叶子） ==========
 -- 必须包含父目录，否则前端 buildTree 无法重建侧边栏层级
@@ -76,7 +79,7 @@ VALUES
   -- 管家服务（目录 + 管家列表）
   ('ROLE_OPERATOR', 'admin_service',       'OR00001', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'admin_service_butler','OR00001', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ========== 5. 权限定义 + 角色 ↔ 权限 关联（鉴权链路闭环） ==========
 -- 不落 organ_permission 的话，DayanStpInterface 返回空权限集，@SaCheckPermission 全部拒绝。
@@ -95,7 +98,7 @@ VALUES
   ('finance:flow:list',     '财务流水列表', NULL, 1, 0, 1, '演示权限', NOW(), NOW(), 'system', 'system', 0),
   ('finance:bill:list',     '结算单列表',   NULL, 1, 0, 1, '演示权限', NOW(), NOW(), 'system', 'system', 0),
   ('butler:info:list',      '管家列表',     NULL, 1, 0, 1, '演示权限', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 INSERT INTO `organ_role_permission_ship`
   (`role_code`, `permission_code`,
@@ -110,4 +113,4 @@ VALUES
   ('ROLE_OPERATOR', 'finance:flow:list',    NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'finance:bill:list',    NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'butler:info:list',     NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

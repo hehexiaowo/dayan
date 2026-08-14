@@ -1,3 +1,6 @@
+-- 强制连接字符集为 utf8mb4，避免 docker-entrypoint-initdb.d 按默认字符集读取
+-- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
+SET NAMES utf8mb4;
 -- 36_widen_encrypted_id_card.sql
 -- 修复：equity_use_person.use_person_id_card 原 varchar(20) 按明文身份证长度建表，
 -- 但 EquityUsePersonServiceImpl.encryptIdCard 用 AES-256-GCM 加密后存储。

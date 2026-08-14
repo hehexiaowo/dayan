@@ -11,7 +11,7 @@ SET NAMES utf8mb4;
 --      播种，导致非超管角色（is_admin=0）无法被授予这些权限。
 --
 -- 幂等：system_menu 用 ON DUPLICATE KEY UPDATE；organ_permission 用
---   ON DUPLICATE KEY UPDATE id=id。现有库可重复 source。
+--   ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`。现有库可重复 source。
 --   超管账号（is_admin=1）走通配权限 "*"，不受影响。
 -- =====================================================================
 
@@ -62,4 +62,4 @@ VALUES
   ('organ:dept:create', '新增部门', 'organ:dept', 3, '/admin-api/departments',     'POST',   11, 1, '部门管理', NOW(), NOW(), 'system', 'system', 0),
   ('organ:dept:update', '修改部门', 'organ:dept', 3, '/admin-api/departments/*/*', 'PUT',    12, 1, '部门管理', NOW(), NOW(), 'system', 'system', 0),
   ('organ:dept:delete', '删除部门', 'organ:dept', 3, '/admin-api/departments/*/*', 'DELETE', 13, 1, '部门管理', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

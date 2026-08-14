@@ -1,3 +1,6 @@
+-- 强制连接字符集为 utf8mb4，避免 docker-entrypoint-initdb.d 按默认字符集读取
+-- 导致中文双重编码（Mojibake）。必须作为第一条语句执行。
+SET NAMES utf8mb4;
 -- migration 33: agent_lead 增加 last_trace_type（最后互动类型）
 -- 与 last_trace_time / trace_count 同为去规范化字段，供线索列表卡片直接展示，
 -- 避免列表查询时对 agent_lead_trace 做 N+1 关联。

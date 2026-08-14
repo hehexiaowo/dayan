@@ -43,5 +43,7 @@ VALUES
   -- system:config（配置 CRUD）
   ('system:config:create', '新增配置', 'system:config', 3, '/admin-api/configs',   'POST',   41, 1, '系统配置', NOW(), NOW(), 'system', 'system', 0),
   ('system:config:update', '修改配置', 'system:config', 3, '/admin-api/configs/*', 'PUT',    42, 1, '系统配置', NOW(), NOW(), 'system', 'system', 0),
-  ('system:config:delete', '删除配置', 'system:config', 3, '/admin-api/configs/*', 'DELETE', 43, 1, '系统配置', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+  ('system:config:delete', '删除配置', 'system:config', 3, '/admin-api/configs/*', 'DELETE', 43, 1, '系统配置', NOW(), NOW(), 'system', 'system', 0),
+  -- system:file（文件上传；preview 走 <img> 无凭证，key 不可猜测 + 内容白名单兜底，仅 upload 做按钮级权限）
+  ('system:file:upload', '上传文件', 'system:file', 3, '/admin-api/v1/files/upload', 'POST', 51, 1, '文件管理', NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

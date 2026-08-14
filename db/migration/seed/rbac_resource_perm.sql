@@ -60,7 +60,7 @@ VALUES
   ('content:record-share:create', '新增分享记录', 'content:record-share', 3, '/admin-api/content/record-share',      'POST',   142, 1, '分享记录', NOW(), NOW(), 'system', 'system', 0),
   ('content:record-share:update', '修改分享记录', 'content:record-share', 3, '/admin-api/content/record-share',      'PUT',    143, 1, '分享记录', NOW(), NOW(), 'system', 'system', 0),
   ('content:record-share:delete', '删除分享记录', 'content:record-share', 3, '/admin-api/content/record-share/*',    'DELETE', 144, 1, '分享记录', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
 -- 三、course 域权限（info / lecturer / record-learn）
@@ -88,7 +88,7 @@ VALUES
   ('course:record-learn:create', '新增学习记录', 'course:record-learn', 3, '/admin-api/course/record-learn',      'POST',   222, 1, '学习记录', NOW(), NOW(), 'system', 'system', 0),
   ('course:record-learn:update', '修改学习记录', 'course:record-learn', 3, '/admin-api/course/record-learn/*',    'PUT',    223, 1, '学习记录', NOW(), NOW(), 'system', 'system', 0),
   ('course:record-learn:delete', '删除学习记录', 'course:record-learn', 3, '/admin-api/course/record-learn/*',    'DELETE', 224, 1, '学习记录', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
 -- 四、supplier 域权限（info / contact / contract / evaluation / account / role / permission / open-platform）
@@ -141,4 +141,4 @@ VALUES
   ('supplier:open-platform:create', '新增开放平台', 'supplier:open-platform', 3, '/admin-api/supplier/open-platform',       'POST',   371, 1, '供应商开放平台', NOW(), NOW(), 'system', 'system', 0),
   ('supplier:open-platform:update', '修改开放平台', 'supplier:open-platform', 3, '/admin-api/supplier/open-platform',       'PUT',    372, 1, '供应商开放平台', NOW(), NOW(), 'system', 'system', 0),
   ('supplier:open-platform:delete', '删除开放平台', 'supplier:open-platform', 3, '/admin-api/supplier/open-platform/*',     'DELETE', 373, 1, '供应商开放平台', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
