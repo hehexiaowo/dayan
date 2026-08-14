@@ -13,6 +13,7 @@ import com.dayan.common.core.crypto.AesGcmUtil;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
+import com.dayan.common.security.secret.DayanSecrets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,14 +26,13 @@ import java.util.List;
  *
  * <p>密钥管理：
  * <ul>
- *   <li>加密密钥从配置 {@code dayan.aes.key} 读取；为空时回退到
- *       {@link AesGcmUtil#deriveKey(String)}("dayan-default-key") 派生（仅用于开发/测试环境）</li>
+ *   <li>加密密钥由 {@link com.dayan.common.security.secret.DayanSecrets#aesKeyHex()} 单点提供（配置项 {@code dayan.aes.key}，生产必须显式配置）</li>
  *   <li>create/update 时对明文 {@code appSecret} 执行 {@link AesGcmUtil#encrypt}</li>
  *   <li>查询时脱敏为 {@code ***}，明文不回传</li>
  * </ul>
  *
- * <p>注意：因 {@code aesKeyHex} 需由 {@code @Value} 在构造时派生，未使用
- * {@code @RequiredArgsConstructor}，改为显式构造器。
+ * <p>注意：AES 密钥由 {@link com.dayan.common.security.secret.DayanSecrets} 单点提供，
+ * 需显式构造器注入，未使用 {@code @RequiredArgsConstructor}。
  */
 @Slf4j
 @Service
@@ -40,9 +40,6 @@ public class ChannelOpenPlatformServiceImpl implements ChannelOpenPlatformServic
 
     /** appSecret 出参脱敏占位 */
     private static final String SECRET_MASK = "***";
-    /** 默认 AES 派生密钥（仅开发/测试回退用） */
-    private static final String DEFAULT_KEY_PASSWORD = "dayan-default-key";
-
     private final ChannelOpenPlatformMapper openPlatformMapper;
 
     /** AES 密钥 hex（由配置 dayan.aes.key 派生） */
@@ -50,14 +47,9 @@ public class ChannelOpenPlatformServiceImpl implements ChannelOpenPlatformServic
 
     public ChannelOpenPlatformServiceImpl(
             ChannelOpenPlatformMapper openPlatformMapper,
-            @Value("${dayan.aes.key:}") String configuredKey) {
+            DayanSecrets dayanSecrets) {
         this.openPlatformMapper = openPlatformMapper;
-        if (configuredKey == null || configuredKey.isBlank()) {
-            this.aesKeyHex = AesGcmUtil.deriveKey(DEFAULT_KEY_PASSWORD);
-            log.warn("未配置 dayan.aes.key，回退使用默认派生密钥（仅供开发/测试）");
-        } else {
-            this.aesKeyHex = AesGcmUtil.deriveKey(configuredKey);
-        }
+        this.aesKeyHex = dayanSecrets.aesKeyHex();
     }
 
     @Override

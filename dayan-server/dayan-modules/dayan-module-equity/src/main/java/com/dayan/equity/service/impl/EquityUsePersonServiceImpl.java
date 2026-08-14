@@ -17,6 +17,7 @@ import com.dayan.equity.mapper.EquityDepotMapper;
 import com.dayan.equity.mapper.EquityUsePersonMapper;
 import com.dayan.equity.service.EquityUsePersonService;
 import com.dayan.equity.vo.EquityUsePersonVO;
+import com.dayan.common.security.secret.DayanSecrets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,8 @@ import java.util.stream.Collectors;
  * <p>身份证加密：AES-256-GCM（每次 IV 随机，同明文密文不同）。
  * 唯一校验改为：查同 equity_code 下所有使用人解密后比对（使用人 ≤3，性能可接受）。
  *
- * <p>未使用 {@code @RequiredArgsConstructor}：因 AES 密钥需由 {@code @Value} 派生，改用显式构造器。
+ * <p>注意：AES 密钥由 {@link com.dayan.common.security.secret.DayanSecrets} 单点提供，
+ * 需显式构造器注入，未使用 {@code @RequiredArgsConstructor}。
  */
 @Slf4j
 @Service
@@ -39,8 +41,6 @@ public class EquityUsePersonServiceImpl implements EquityUsePersonService {
 
     /** 使用人人数兜底（depot 快照缺失时） */
     private static final int DEFAULT_PERSON_COUNT = 1;
-    private static final String DEFAULT_KEY_PASSWORD = "dayan-default-key";
-
     private final EquityUsePersonMapper usePersonMapper;
     private final EquityDepotMapper depotMapper;
     private final String aesKeyHex;
@@ -48,14 +48,10 @@ public class EquityUsePersonServiceImpl implements EquityUsePersonService {
     public EquityUsePersonServiceImpl(
             EquityUsePersonMapper usePersonMapper,
             EquityDepotMapper depotMapper,
-            @Value("${dayan.aes.key:}") String configuredKey) {
+            DayanSecrets dayanSecrets) {
         this.usePersonMapper = usePersonMapper;
         this.depotMapper = depotMapper;
-        if (configuredKey == null || configuredKey.isBlank()) {
-            this.aesKeyHex = AesGcmUtil.deriveKey(DEFAULT_KEY_PASSWORD);
-        } else {
-            this.aesKeyHex = AesGcmUtil.deriveKey(configuredKey);
-        }
+        this.aesKeyHex = dayanSecrets.aesKeyHex();
     }
 
     @Override

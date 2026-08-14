@@ -36,6 +36,7 @@ import com.dayan.goods.service.GoodsInfoService;
 import com.dayan.order.dto.EquityDeliverDTO;
 import com.dayan.order.service.OrderEquityService;
 import com.dayan.order.vo.OrderEquityVO;
+import com.dayan.common.security.secret.DayanSecrets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -70,7 +71,8 @@ import java.util.stream.Collectors;
  * 因 AES-GCM 每次 IV 随机导致同明文密文不同，身份证唯一校验改为：查同 equity_code 下所有使用人解密后比对
  * （使用人 ≤3，性能可接受）。
  *
- * <p>未使用 {@code @RequiredArgsConstructor}：因 AES 密钥需由 {@code @Value} 在构造时派生，改用显式构造器。
+ * <p>注意：AES 密钥由 {@link com.dayan.common.security.secret.DayanSecrets} 单点提供，
+ * 需显式构造器注入，未使用 {@code @RequiredArgsConstructor}。
  */
 @Slf4j
 @Service
@@ -97,8 +99,6 @@ public class EquityDepotServiceImpl implements EquityDepotService {
     private static final int BATCH_STATUS_PRODUCING = 1;
     private static final int BATCH_STATUS_COMPLETED = 2;
 
-    private static final String DEFAULT_KEY_PASSWORD = "dayan-default-key";
-
     private final EquityDepotMapper depotMapper;
     private final EquityActivateMapper activateMapper;
     private final EquityUsePersonMapper usePersonMapper;
@@ -123,7 +123,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             SequenceProvider sequenceProvider,
             StateMachineEngine stateMachineEngine,
             OrderEquityService orderEquityService,
-            @Value("${dayan.aes.key:}") String configuredKey) {
+            DayanSecrets dayanSecrets) {
         this.depotMapper = depotMapper;
         this.activateMapper = activateMapper;
         this.usePersonMapper = usePersonMapper;
@@ -134,12 +134,7 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         this.sequenceProvider = sequenceProvider;
         this.stateMachineEngine = stateMachineEngine;
         this.orderEquityService = orderEquityService;
-        if (configuredKey == null || configuredKey.isBlank()) {
-            this.aesKeyHex = AesGcmUtil.deriveKey(DEFAULT_KEY_PASSWORD);
-            log.warn("未配置 dayan.aes.key，回退使用默认派生密钥（仅供开发/测试）");
-        } else {
-            this.aesKeyHex = AesGcmUtil.deriveKey(configuredKey);
-        }
+        this.aesKeyHex = dayanSecrets.aesKeyHex();
     }
 
     // ====== 查询 ======

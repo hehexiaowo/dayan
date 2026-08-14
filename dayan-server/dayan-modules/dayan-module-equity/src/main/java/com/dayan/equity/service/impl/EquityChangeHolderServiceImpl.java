@@ -11,8 +11,8 @@ import com.dayan.equity.entity.EquityChangeHolder;
 import com.dayan.equity.mapper.EquityChangeHolderMapper;
 import com.dayan.equity.service.EquityChangeHolderService;
 import com.dayan.equity.vo.EquityChangeHolderVO;
+import com.dayan.common.security.secret.DayanSecrets;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,20 +27,14 @@ import java.util.stream.Collectors;
 @Service
 public class EquityChangeHolderServiceImpl implements EquityChangeHolderService {
 
-    private static final String DEFAULT_KEY_PASSWORD = "dayan-default-key";
-
     private final EquityChangeHolderMapper changeHolderMapper;
     private final String aesKeyHex;
 
     public EquityChangeHolderServiceImpl(
             EquityChangeHolderMapper changeHolderMapper,
-            @Value("${dayan.aes.key:}") String configuredKey) {
+            DayanSecrets dayanSecrets) {
         this.changeHolderMapper = changeHolderMapper;
-        if (configuredKey == null || configuredKey.isBlank()) {
-            this.aesKeyHex = AesGcmUtil.deriveKey(DEFAULT_KEY_PASSWORD);
-        } else {
-            this.aesKeyHex = AesGcmUtil.deriveKey(configuredKey);
-        }
+        this.aesKeyHex = dayanSecrets.aesKeyHex();
     }
 
     @Override

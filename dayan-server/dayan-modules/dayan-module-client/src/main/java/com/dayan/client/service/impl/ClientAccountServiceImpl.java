@@ -13,6 +13,7 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.security.password.PasswordService;
+import com.dayan.common.security.secret.DayanSecrets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,8 +29,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ClientAccountServiceImpl implements ClientAccountService {
 
-    /** 重置密码默认值 */
-    private static final String DEFAULT_RESET_PASSWORD = "dayan@123";
+    /** 重置密码默认值：由 DayanSecrets 单点配置（生产必须显式配置） */
+    private final DayanSecrets dayanSecrets;
 
     private final ClientAccountMapper accountMapper;
     private final PasswordService passwordService;
@@ -86,7 +87,7 @@ public class ClientAccountServiceImpl implements ClientAccountService {
         entity.setPhone(dto.getPhone());
         // BCrypt 哈希密码（未提供则使用默认密码）
         String rawPwd = (dto.getPassword() == null || dto.getPassword().isEmpty())
-                ? DEFAULT_RESET_PASSWORD : dto.getPassword();
+                ? dayanSecrets.getDefaultResetPassword() : dto.getPassword();
         entity.setPassword(passwordService.encode(rawPwd));
         entity.setSalt("bcrypt");
         entity.setOpenId(dto.getOpenId());
@@ -132,7 +133,7 @@ public class ClientAccountServiceImpl implements ClientAccountService {
         ClientAccount existing = selectByCode(clientCode);
         ClientAccount update = new ClientAccount();
         update.setId(existing.getId());
-        update.setPassword(passwordService.encode(DEFAULT_RESET_PASSWORD));
+        update.setPassword(passwordService.encode(dayanSecrets.getDefaultResetPassword()));
         accountMapper.updateById(update);
     }
 

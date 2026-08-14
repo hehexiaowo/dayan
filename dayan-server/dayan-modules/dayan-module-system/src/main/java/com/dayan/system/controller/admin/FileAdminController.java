@@ -1,5 +1,6 @@
 package com.dayan.system.controller.admin;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.dayan.common.core.exception.BusinessException;
@@ -24,8 +25,10 @@ import java.util.regex.Pattern;
 
 /**
  * 文件上传/预览 Controller（admin 端）。
- * - POST /v1/files/upload   上传，返回 key（存 DB）
- * - GET  /v1/files/preview/**  代理下载（同源零 CORS）
+ * - POST /v1/files/upload   上传，返回 key（存 DB）。按钮级权限 system:file:upload。
+ * - GET  /v1/files/preview/**  代理下载（同源零 CORS）。
+ *   该接口经 <img> 直接引用、请求不携带凭证，故不设登录校验；
+ *   安全性由「key 不可猜测 + 后缀/内容白名单 + 非白名单类型强制下载」保证。
  */
 @Tag(name = "文件管理")
 @RestController
@@ -53,6 +56,7 @@ public class FileAdminController {
             "application/pdf");
 
     @Operation(summary = "上传文件")
+    @SaCheckPermission("system:file:upload")
     @PostMapping("/upload")
     public R<FileUploadDTO> upload(@RequestParam("file") MultipartFile file,
                                    @RequestParam(value = "module", required = false) String module) {

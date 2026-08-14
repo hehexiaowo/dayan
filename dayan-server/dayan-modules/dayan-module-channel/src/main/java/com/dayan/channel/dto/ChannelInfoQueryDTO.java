@@ -15,4 +15,6 @@ public class ChannelInfoQueryDTO {
     private Integer channelType;
     private Integer status;
     private Integer auditStatus;
+    /** 按所属分销商筛选 */
+    private String distributorCode;
 }

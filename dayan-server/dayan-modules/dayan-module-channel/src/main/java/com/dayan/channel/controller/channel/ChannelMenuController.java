@@ -1,6 +1,7 @@
 package com.dayan.channel.controller.channel;
 
 import com.dayan.common.core.resp.R;
+import com.dayan.common.security.StpKit;
 import com.dayan.system.entity.SystemMenu;
 import com.dayan.system.service.SystemMenuService;
 import lombok.RequiredArgsConstructor;
@@ -41,5 +42,16 @@ public class ChannelMenuController {
     @GetMapping("/mine")
     public R<List<SystemMenu>> mine() {
         return R.ok(menuService.tree("channel"));
+    }
+
+    /**
+     * 当前账号按钮级权限码（前端 v-permission 指令消费）。
+     *
+     * <p>GET /channel-api/menus/mine/permissions
+     * 登录即可调用；走 ChannelStpInterface 按 channel 端角色解析。
+     */
+    @GetMapping("/mine/permissions")
+    public R<List<String>> myPermissions() {
+        return R.ok(StpKit.CHANNEL.getPermissionList());
     }
 }

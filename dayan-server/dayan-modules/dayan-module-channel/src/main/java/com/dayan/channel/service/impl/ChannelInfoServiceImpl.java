@@ -72,6 +72,9 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         if (query.getAuditStatus() != null) {
             wrapper.eq(ChannelInfo::getAuditStatus, query.getAuditStatus());
         }
+        if (query.getDistributorCode() != null && !query.getDistributorCode().isEmpty()) {
+            wrapper.eq(ChannelInfo::getDistributorCode, query.getDistributorCode());
+        }
         return channelInfoMapper.selectList(wrapper).stream()
                 .sorted(Comparator
                         .comparingInt((ChannelInfo c) -> c.getSortOrder() == null ? 0 : c.getSortOrder())

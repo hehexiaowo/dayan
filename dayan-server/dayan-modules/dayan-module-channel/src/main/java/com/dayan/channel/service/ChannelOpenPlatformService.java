@@ -10,7 +10,7 @@ import com.dayan.common.core.resp.PageResult;
  * 渠道开放平台配置服务。
  *
  * <p>{@code app_secret} 使用 AES-256-GCM 加密存储，密钥来源配置 {@code dayan.aes.key}，
- * 未配置时回退到 {@code AesGcmUtil.deriveKey("dayan-default-key")}。查询出参脱敏为 {@code ***}。
+ * 密钥由 {@link com.dayan.common.security.secret.DayanSecrets} 单点管理（生产必须显式配置 dayan.aes.key）。查询出参脱敏为 {@code ***}。
  */
 public interface ChannelOpenPlatformService {
 

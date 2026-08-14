@@ -6,6 +6,7 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.security.password.PasswordService;
+import com.dayan.common.security.secret.DayanSecrets;
 import com.dayan.organ.entity.OrganAccount;
 import com.dayan.organ.entity.OrganAccountRoleRel;
 import com.dayan.organ.entity.OrganInfo;
@@ -35,8 +36,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrganAccountService {
 
-    /** 重置密码默认值 */
-    private static final String DEFAULT_RESET_PASSWORD = "dayan@123";
+    /** 重置密码默认值：由 DayanSecrets 单点配置（生产必须显式配置） */
+    private final DayanSecrets dayanSecrets;
 
     private final OrganAccountMapper accountMapper;
     private final PasswordService passwordService;
@@ -100,7 +101,7 @@ public class OrganAccountService {
         // 生成 accountCode
         account.setAccountCode(generateAccountCode());
         // BCrypt 哈希密码
-        String rawPwd = account.getPassword() == null ? DEFAULT_RESET_PASSWORD : account.getPassword();
+        String rawPwd = account.getPassword() == null ? dayanSecrets.getDefaultResetPassword() : account.getPassword();
         account.setPassword(passwordService.encode(rawPwd));
         account.setSalt("bcrypt");
         if (account.getAccountStatus() == null) account.setAccountStatus(1);
@@ -127,7 +128,7 @@ public class OrganAccountService {
         OrganAccount existing = selectByCode(accountCode);
         OrganAccount update = new OrganAccount();
         update.setId(existing.getId());
-        update.setPassword(passwordService.encode(DEFAULT_RESET_PASSWORD));
+        update.setPassword(passwordService.encode(dayanSecrets.getDefaultResetPassword()));
         accountMapper.updateById(update);
     }
 

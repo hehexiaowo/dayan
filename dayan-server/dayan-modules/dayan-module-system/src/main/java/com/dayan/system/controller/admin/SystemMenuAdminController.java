@@ -40,6 +40,12 @@ public class SystemMenuAdminController {
         return R.ok(menuService.treeByRole(domainType, isAdmin, accountCode));
     }
 
+    @Operation(summary = "当前账号按钮级权限码（前端 v-permission 指令消费；超管返回 [\"*\"]）")
+    @GetMapping("/mine/permissions")
+    public R<List<String>> myPermissions() {
+        return R.ok(StpKit.ADMIN.getPermissionList());
+    }
+
     @Operation(summary = "菜单树")
     @SaCheckPermission("system:menu:list")
     @GetMapping("/tree")

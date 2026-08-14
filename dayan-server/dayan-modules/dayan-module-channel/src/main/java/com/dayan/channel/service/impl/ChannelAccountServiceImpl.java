@@ -14,6 +14,7 @@ import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.common.security.password.PasswordService;
+import com.dayan.common.security.secret.DayanSecrets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,8 +34,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChannelAccountServiceImpl implements ChannelAccountService {
 
-    /** 重置密码默认值 */
-    private static final String DEFAULT_RESET_PASSWORD = "dayan@123";
+    /** 重置密码默认值：由 DayanSecrets 单点配置（生产必须显式配置） */
+    private final DayanSecrets dayanSecrets;
 
     private final ChannelAccountMapper accountMapper;
     private final PasswordService passwordService;
@@ -86,7 +87,7 @@ public class ChannelAccountServiceImpl implements ChannelAccountService {
         entity.setAccountCode(generateAccountCode());
         entity.setUsername(dto.getUsername());
         String rawPwd = (dto.getPassword() == null || dto.getPassword().isEmpty())
-                ? DEFAULT_RESET_PASSWORD : dto.getPassword();
+                ? dayanSecrets.getDefaultResetPassword() : dto.getPassword();
         entity.setPassword(passwordService.encode(rawPwd));
         entity.setSalt("bcrypt");
         entity.setRealName(dto.getRealName());
@@ -130,7 +131,7 @@ public class ChannelAccountServiceImpl implements ChannelAccountService {
         ChannelAccount existing = selectByCode(accountCode);
         ChannelAccount update = new ChannelAccount();
         update.setId(existing.getId());
-        update.setPassword(passwordService.encode(DEFAULT_RESET_PASSWORD));
+        update.setPassword(passwordService.encode(dayanSecrets.getDefaultResetPassword()));
         accountMapper.updateById(update);
         log.info("重置渠道账号密码: accountCode={}", accountCode);
     }
