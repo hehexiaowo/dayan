@@ -135,9 +135,14 @@ public class ParkAssetServiceImpl implements ParkAssetService {
         String srcType = sourceType == null ? "media_mgmt" : sourceType;
         // 幂等查询：同 parkCode + assetUrl + sourceType + sourceRefCode 已存在则返回已存 id
         LambdaQueryWrapper<ParkAsset> wrapper = new LambdaQueryWrapper<ParkAsset>()
-                .eq(ParkAsset::getParkCode, parkCode)
                 .eq(ParkAsset::getAssetUrl, assetUrl)
                 .eq(ParkAsset::getSourceType, srcType);
+        // parkCode 为空 = 平台素材（park_asset.park_code NULL）
+        if (parkCode == null || parkCode.isEmpty()) {
+            wrapper.isNull(ParkAsset::getParkCode);
+        } else {
+            wrapper.eq(ParkAsset::getParkCode, parkCode);
+        }
         if (sourceRefCode != null && !sourceRefCode.isEmpty()) {
             wrapper.eq(ParkAsset::getSourceRefCode, sourceRefCode);
         } else {
@@ -186,6 +191,10 @@ public class ParkAssetServiceImpl implements ParkAssetService {
         }
         if (query.getSourceType() != null && !query.getSourceType().isEmpty()) {
             wrapper.eq(ParkAsset::getSourceType, query.getSourceType());
+        }
+        if (query.getKeyword() != null && !query.getKeyword().isEmpty()) {
+            wrapper.and(w -> w.like(ParkAsset::getAssetName, query.getKeyword())
+                    .or().like(ParkAsset::getAssetUrl, query.getKeyword()));
         }
         if (query.getStatus() != null) {
             wrapper.eq(ParkAsset::getStatus, query.getStatus());

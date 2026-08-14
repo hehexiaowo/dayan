@@ -11,6 +11,8 @@ public class ParkAssetQueryDTO {
     private Long current = 1L;
     private Long size = 20L;
     private String parkCode;
+    /** 名称/URL 模糊搜索 */
+    private String keyword;
     /** 素材类型（1=图片 2=视频 3=文件 4=VR） */
     private Integer assetType;
     /** 业务分类 */
