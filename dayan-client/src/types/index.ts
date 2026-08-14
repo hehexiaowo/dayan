@@ -187,12 +187,28 @@ export interface ClientProfileUpdatePayload {
   address?: string;
 }
 
-/** 轮播 Banner */
+/**
+ * 轮播 Banner（来源：已发布置顶内容）
+ * 后端 /contents/banners 返回 ContentInfoVO，调用方需把 coverImage（OSS key）
+ * 经 formatFileUrl（@/utils/file）转 URL 后映射到 imageUrl。
+ */
 export interface Banner {
   bannerId: number;
   title: string;
   imageUrl: string;
   linkUrl?: string;
+}
+
+/**
+ * 推荐内容卡片（对齐后端 ContentInfoVO 摘要字段）
+ * coverImage 为 OSS key，展示需经 formatFileUrl（@/utils/file）拼 URL。
+ */
+export interface ContentCard {
+  contentCode: string;
+  title: string;
+  coverImage?: string;
+  summary?: string;
+  contentType?: number;
 }
 
 // ============ 权益使用人（管理/复用） ============
