@@ -210,6 +210,7 @@ function fileName(key: string): string {
       type="primary"
       size="small"
       class="pick-btn"
+      :disabled="disabled"
       @click="pickerVisible = true"
     >从素材库选择</el-button>
 

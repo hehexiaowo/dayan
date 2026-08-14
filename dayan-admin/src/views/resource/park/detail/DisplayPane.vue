@@ -2,7 +2,9 @@
 /**
  * 机构详情页 - 展示板块 tab。
  *
- * 单表 CRUD：useCrud（idKey:'id', fixedParams:{parkCode}）。
+ * useCrud 仅做分页查询（idKey:'id', fixedParams:{parkCode}）；增删改由本组件直调 API：
+ * 提交载荷 networkTags 为逗号分隔串（ParkDisplayBlockPayload），与响应 VO 的数组形态不同，
+ * 不能复用 useCrud 的 Partial<ParkDisplayBlock> handler 签名。
  * 搜索：blockType + status。
  *
  * 核心场景：一个机构 = N 个展示板块（品牌介绍/缴费方式/居住环境/文娱生活 等）。
@@ -41,10 +43,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
   number
 >(
   {
-    page: pageDisplayBlocks,
-    create: createDisplayBlock,
-    update: (id, data) => updateDisplayBlock(id, data),
-    remove: deleteDisplayBlock
+    page: pageDisplayBlocks
   },
   {
     initialQuery: { blockType: '', status: undefined },
@@ -118,7 +117,7 @@ function openEdit(row: ParkDisplayBlock) {
   form.content = row.content || ''
   form.sortOrder = row.sortOrder ?? 0
   form.status = row.status ?? 1
-  form.networkTags = row.networkTags || ''
+  form.networkTags = Array.isArray(row.networkTags) ? row.networkTags.join(',') : (row.networkTags || '')
   networkTagsArr.value = networkTagsToList(row.networkTags)
   // 解析 JSON 数组
   imagesArr.value = parseJsonArr(row.images)

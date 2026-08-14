@@ -63,6 +63,9 @@ dayan:
     secret-key: ${MINIO_SECRET_KEY:dayan12345}
     bucket: ${MINIO_BUCKET:dayan-public}
     max-size: 10485760
+    # 富文本内嵌资源公网基地址（富文本图片/视频完整 URL 生成用）。
+    # 必须配置为 C 端/小程序可访问的公网地址（如 https://files.example.com），留空回退 MinIO endpoint 直链（通常仅内网可用）。
+    public-base-url: ${MINIO_PUBLIC_BASE_URL:}
 
 springdoc:
   swagger-ui:

@@ -53,6 +53,25 @@ class HtmlSanitizerTest {
     @Test
     void 链接强制noopener() {
         String out = HtmlSanitizer.clean("<a href=\"https://a.com\">x</a>");
-        assertThat(out).contains("rel=\"noopener\"");
+        assertThat(out).contains("rel=\"noopener\"").contains("target=\"_blank\"");
+    }
+
+    @Test
+    void 保留相对URL的图片() {
+        String out = HtmlSanitizer.clean("<img src=\"/admin-api/v1/files/preview/goods/a/2026/08/08/x.jpg\" alt=\"旧图\">");
+        assertThat(out).contains("/admin-api/v1/files/preview/goods/a/2026/08/08/x.jpg");
+    }
+
+    @Test
+    void 保留相对URL的链接() {
+        String out = HtmlSanitizer.clean("<a href=\"/admin-api/v1/files/preview/goods/a/2026/08/08/x.jpg\">下载</a>");
+        assertThat(out).contains("href=\"/admin-api/v1/files/preview/goods/a/2026/08/08/x.jpg\"");
+    }
+
+    @Test
+    void 相对URL放行不影响危险协议拦截() {
+        String out = HtmlSanitizer.clean(
+                "<img src=\"data:image/svg+xml;base64,AAAA\"><a href=\"javascript:alert(1)\">x</a><img src=\"/ok/x.jpg\">");
+        assertThat(out).doesNotContain("data:").doesNotContain("javascript:").contains("/ok/x.jpg");
     }
 }

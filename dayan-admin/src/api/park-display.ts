@@ -1,6 +1,6 @@
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
-import type { ParkDisplayBlock, ParkDisplayBlockQuery } from '@/types/park'
+import type { ParkDisplayBlock, ParkDisplayBlockPayload, ParkDisplayBlockQuery } from '@/types/park'
 
 /**
  * 机构展示板块（ParkDisplayBlock）接口封装。
@@ -40,7 +40,7 @@ export function getDisplayBlock(id: number): Promise<ParkDisplayBlock> {
 }
 
 /** 新增展示板块：POST /admin-api/park/display-block（返回新 id） */
-export function createDisplayBlock(data: Partial<ParkDisplayBlock>): Promise<number> {
+export function createDisplayBlock(data: ParkDisplayBlockPayload): Promise<number> {
   return request<number>({
     url: '/admin-api/park/display-block',
     method: 'post',
@@ -49,7 +49,7 @@ export function createDisplayBlock(data: Partial<ParkDisplayBlock>): Promise<num
 }
 
 /** 修改展示板块：PUT /admin-api/park/display-block/{id} */
-export function updateDisplayBlock(id: number, data: Partial<ParkDisplayBlock>): Promise<void> {
+export function updateDisplayBlock(id: number, data: ParkDisplayBlockPayload): Promise<void> {
   return request<void>({
     url: `/admin-api/park/display-block/${id}`,
     method: 'put',

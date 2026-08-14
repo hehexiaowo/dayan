@@ -1002,9 +1002,9 @@ export const NETWORK_TYPE_OPTIONS = [
 export const networkTypeLabel = (v?: string) =>
   NETWORK_TYPE_OPTIONS.find((o) => o.value === v)?.label ?? (v || '--')
 
-/** 逗号分隔业态串 → string[]（空串→[]） */
-export const networkTagsToList = (s?: string): string[] =>
-  (s || '').split(',').map((t) => t.trim()).filter(Boolean)
+/** 业态标签 → string[]（后端 VO 返回数组；兼容历史逗号串） */
+export const networkTagsToList = (s?: string | string[]): string[] =>
+  Array.isArray(s) ? s.filter(Boolean) : (s || '').split(',').map((t) => t.trim()).filter(Boolean)
 
 /** 机构展示板块实体 */
 export interface ParkDisplayBlock {
@@ -1022,8 +1022,8 @@ export interface ParkDisplayBlock {
   imageDescriptions?: string
   sortOrder?: number
   status?: number
-  /** 适用业态（逗号分隔 vital/care/sojourn），空=全部 */
-  networkTags?: string
+  /** 适用业态（后端 VO 返回 JSON 数组，元素 vital/care/sojourn），空=全部 */
+  networkTags?: string[]
   createdAt?: string
 }
 
@@ -1032,4 +1032,13 @@ export interface ParkDisplayBlockQuery extends PageQuery {
   parkCode?: string
   blockType?: string
   status?: number
+}
+
+/**
+ * 展示板块提交载荷：networkTags 为逗号分隔串（后端 Create/Update DTO 为 String），
+ * 区别于响应 VO 的数组形态（ParkDisplayBlock.networkTags: string[]）。
+ */
+export type ParkDisplayBlockPayload = Partial<Omit<ParkDisplayBlock, 'networkTags'>> & {
+  /** 适用业态（逗号分隔 vital/care/sojourn），空串=全部 */
+  networkTags?: string
 }

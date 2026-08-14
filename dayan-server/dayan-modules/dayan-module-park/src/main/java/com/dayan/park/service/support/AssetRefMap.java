@@ -21,6 +21,8 @@ public final class AssetRefMap {
 
     public static final List<RefCheck> CHECKS = List.of(
             new RefCheck("park_info", "brand_logo", "机构-品牌Logo", Match.EXACT),
+            new RefCheck("park_info", "base_description", "机构-基地简介内嵌图", Match.HTML_LIKE),
+            new RefCheck("park_info", "specialty_description", "机构-特色简介内嵌图", Match.HTML_LIKE),
             new RefCheck("park_facility_type", "cover_image", "设施-封面图", Match.EXACT),
             new RefCheck("park_facility_type", "images", "设施-图片集", Match.JSON_LIKE),
             new RefCheck("park_service_type", "cover_image", "服务项目-图片", Match.EXACT),
@@ -42,7 +44,8 @@ public final class AssetRefMap {
             new RefCheck("course_info", "video_url", "课程-视频", Match.EXACT),
             new RefCheck("content_info", "cover_image", "内容-封面图", Match.EXACT),
             new RefCheck("content_info", "content_body", "内容-正文内嵌图", Match.HTML_LIKE),
-            new RefCheck("content_media", "media_url", "内容-媒体资源", Match.EXACT));
+            new RefCheck("content_media", "media_url", "内容-媒体资源", Match.EXACT),
+            new RefCheck("content_media", "thumbnail_url", "内容-媒体缩略图", Match.EXACT));
 
     private AssetRefMap() {}
 }
