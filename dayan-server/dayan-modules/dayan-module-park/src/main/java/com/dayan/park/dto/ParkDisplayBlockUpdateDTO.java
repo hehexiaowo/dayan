@@ -1,5 +1,6 @@
 package com.dayan.park.dto;
 
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
@@ -16,4 +17,8 @@ public class ParkDisplayBlockUpdateDTO {
     private String imageDescriptions;
     private Integer sortOrder;
     private Integer status;
+
+    /** 适用业态（逗号分隔 vital/care/sojourn），空=全部 */
+    @Size(max = 64, message = "业态串过长")
+    private String networkTags;
 }

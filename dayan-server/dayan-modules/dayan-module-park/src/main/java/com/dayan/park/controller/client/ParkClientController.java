@@ -1,5 +1,8 @@
 package com.dayan.park.controller.client;
 
+import com.dayan.common.core.enums.NetworkType;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.R;
 import com.dayan.park.dto.RegionQueryDTO;
 import com.dayan.park.service.ParkAgentQueryService;
@@ -14,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -74,11 +78,15 @@ public class ParkClientController {
 
     /**
      * 机构完整详情（主表 + 全部子实体聚合，供详情页 Tab 展示）。
-     * GET /client-api/park/{parkCode}/full
+     * GET /client-api/park/{parkCode}/full?network=vital
      */
-    @Operation(summary = "机构完整详情（聚合）")
+    @Operation(summary = "机构完整详情（聚合，可按业态过滤板块）")
     @GetMapping("/{parkCode}/full")
-    public R<ParkFullDetailVO> fullDetail(@PathVariable String parkCode) {
-        return R.ok(parkAgentQueryService.getFullDetail(parkCode));
+    public R<ParkFullDetailVO> fullDetail(@PathVariable String parkCode,
+            @RequestParam(value = "network", required = false) String network) {
+        if (network != null && !network.isBlank() && NetworkType.of(network) == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "非法业态参数: " + network);
+        }
+        return R.ok(parkAgentQueryService.getFullDetail(parkCode, network));
     }
 }

@@ -2,6 +2,7 @@ package com.dayan.park.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.dayan.common.core.enums.NetworkType;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
@@ -17,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,6 +72,7 @@ public class ParkDisplayBlockServiceImpl implements ParkDisplayBlockService {
         entity.setImageDescriptions(dto.getImageDescriptions());
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
         entity.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
+        entity.setNetworkTags(NetworkType.normalizeTags(dto.getNetworkTags()));
         displayBlockMapper.insert(entity);
         log.info("创建展示板块成功: parkCode={}, blockType={}, id={}",
                 dto.getParkCode(), dto.getBlockType(), entity.getId());
@@ -87,6 +91,7 @@ public class ParkDisplayBlockServiceImpl implements ParkDisplayBlockService {
         if (dto.getImageDescriptions() != null) update.setImageDescriptions(dto.getImageDescriptions());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
+        if (dto.getNetworkTags() != null) update.setNetworkTags(NetworkType.normalizeTags(dto.getNetworkTags()));
         displayBlockMapper.updateById(update);
         log.info("更新展示板块成功: id={}", id);
     }
@@ -136,6 +141,9 @@ public class ParkDisplayBlockServiceImpl implements ParkDisplayBlockService {
         vo.setImageDescriptions(entity.getImageDescriptions());
         vo.setSortOrder(entity.getSortOrder());
         vo.setStatus(entity.getStatus());
+        vo.setNetworkTags(entity.getNetworkTags() == null || entity.getNetworkTags().isEmpty()
+                ? Collections.emptyList()
+                : Arrays.asList(entity.getNetworkTags().split(",")));
         vo.setCreatedAt(entity.getCreatedAt());
         return vo;
     }

@@ -80,7 +80,10 @@ public class AgentLead extends BaseEntity {
     /** 意向等级（1=低, 2=中, 3=高） */
     private Integer intentionLevel;
 
-    /** 关注养老类型（旅居/活力长居/照护，逗号分隔） */
+    /**
+     * 关注养老类型（旅居/活力长居/照护，逗号分隔）
+     * @deprecated 业态统一走 NetworkType（network_tags），本字段仅存量数据沿用，勿在新代码使用
+     */
     private String interestType;
 
     /** 关注区域 */

@@ -50,6 +50,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Agent 端机构查询服务实现。
@@ -173,6 +174,11 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
 
     @Override
     public ParkFullDetailVO getFullDetail(String parkCode) {
+        return getFullDetail(parkCode, null);
+    }
+
+    @Override
+    public ParkFullDetailVO getFullDetail(String parkCode, String network) {
         // 1. 查主表（仅已发布+已上线+未删除）
         ParkInfo park = parkInfoMapper.selectOne(new LambdaQueryWrapper<ParkInfo>()
                 .eq(ParkInfo::getParkCode, parkCode)
@@ -228,9 +234,23 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
                 parkPeripheryMapper.selectList(activeWrapper(parkCode, ParkPeriphery::getParkCode, ParkPeriphery::getStatus)),
                 ParkPeripheryVO::new));
 
-        vo.setDisplayBlocks(copyList(
-                parkDisplayBlockMapper.selectList(activeWrapper(parkCode, ParkDisplayBlock::getParkCode, ParkDisplayBlock::getStatus)),
-                ParkDisplayBlockVO::new));
+        // 展示板块：VO 携带 networkTags（List 形态），network 有值时过滤（空 tags=全部业态）
+        List<ParkDisplayBlock> blockEntities = parkDisplayBlockMapper.selectList(
+                activeWrapper(parkCode, ParkDisplayBlock::getParkCode, ParkDisplayBlock::getStatus));
+        List<ParkDisplayBlockVO> blockVOs = blockEntities.stream().map(b -> {
+            ParkDisplayBlockVO v = new ParkDisplayBlockVO();
+            BeanUtils.copyProperties(b, v);
+            v.setNetworkTags(b.getNetworkTags() == null || b.getNetworkTags().isEmpty()
+                    ? java.util.Collections.emptyList()
+                    : java.util.Arrays.asList(b.getNetworkTags().split(",")));
+            return v;
+        }).collect(Collectors.toList());
+        if (network != null && !network.isBlank()) {
+            blockVOs = blockVOs.stream()
+                    .filter(b -> b.getNetworkTags().isEmpty() || b.getNetworkTags().contains(network))
+                    .collect(Collectors.toList());
+        }
+        vo.setDisplayBlocks(blockVOs);
 
         // 4. 评分（单条，无 status 字段，只按 parkCode 查）
         ParkScore score = parkScoreMapper.selectOne(new LambdaQueryWrapper<ParkScore>()

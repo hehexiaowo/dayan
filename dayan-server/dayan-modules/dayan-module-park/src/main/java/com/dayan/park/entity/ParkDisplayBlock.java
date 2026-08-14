@@ -42,4 +42,7 @@ public class ParkDisplayBlock extends BaseEntity {
 
     /** 状态（0=隐藏, 1=显示） */
     private Integer status;
+
+    /** 适用业态（逗号分隔 vital/care/sojourn），空=全部 */
+    private String networkTags;
 }

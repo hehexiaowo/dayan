@@ -54,4 +54,11 @@ public interface ParkAgentQueryService {
      * @throws com.dayan.common.core.exception.BusinessException 机构不存在或未发布
      */
     ParkFullDetailVO getFullDetail(String parkCode);
+
+    /**
+     * 机构完整详情（带业态过滤）。
+     * @param network 业态 code（vital/care/sojourn），null/空=不过滤；
+     *                 板块 network_tags 为空=属于全部业态
+     */
+    ParkFullDetailVO getFullDetail(String parkCode, String network);
 }

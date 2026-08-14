@@ -19,5 +19,8 @@ public class ParkDisplayBlockVO {
     private String imageDescriptions;
     private Integer sortOrder;
     private Integer status;
+
+    /** 适用业态（空列表=全部业态） */
+    private java.util.List<String> networkTags;
     private LocalDateTime createdAt;
 }
