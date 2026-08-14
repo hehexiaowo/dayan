@@ -139,6 +139,13 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- jsoup（HTML 净化，富文本入库前过滤 XSS） -->
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>1.17.2</version>
+            </dependency>
+
             <!-- Knife4j -->
             <dependency>
                 <groupId>com.github.xiaoymin</groupId>

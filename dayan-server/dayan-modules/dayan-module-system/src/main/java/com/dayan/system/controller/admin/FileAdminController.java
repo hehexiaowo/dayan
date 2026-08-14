@@ -3,6 +3,7 @@ package com.dayan.system.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
+import com.dayan.common.core.event.FileUploadedEvent;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.R;
@@ -15,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,12 +41,15 @@ public class FileAdminController {
 
     private final StorageService storageService;
     private final StorageProperties storageProperties;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** 允许的文件后缀白名单 */
     private static final Set<String> ALLOWED_EXT = Set.of(
             "jpg", "jpeg", "png", "gif", "webp",
             "mp4", "webm",
-            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt");
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt",
+            // VR/3D 素材（krpano 包 / 3D 模型）
+            "zip", "obj", "glb", "gltf");
 
     /** 合法 key 字符集（字母/数字/_-/. /），防止日志注入与异常输入 */
     private static final Pattern KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9_/\\-.]+$");
@@ -59,7 +64,12 @@ public class FileAdminController {
     @SaCheckPermission("system:file:upload")
     @PostMapping("/upload")
     public R<FileUploadDTO> upload(@RequestParam("file") MultipartFile file,
-                                   @RequestParam(value = "module", required = false) String module) {
+                                   @RequestParam(value = "module", required = false) String module,
+                                   @RequestParam(value = "assetRegister", required = false, defaultValue = "false") boolean assetRegister,
+                                   @RequestParam(value = "assetParkCode", required = false) String assetParkCode,
+                                   @RequestParam(value = "assetType", required = false) Integer assetType,
+                                   @RequestParam(value = "assetSourceType", required = false) String assetSourceType,
+                                   @RequestParam(value = "assetSourceRef", required = false) String assetSourceRef) {
         if (file.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "文件不能为空");
         }
@@ -92,6 +102,19 @@ public class FileAdminController {
             dto.setUrl("/admin-api/v1/files/preview/" + key);
             dto.setOriginalName(originalName);
             dto.setSize(size);
+            dto.setAbsoluteUrl(buildAbsoluteUrl(key));
+            FileUploadedEvent event = new FileUploadedEvent();
+            event.setKey(key);
+            event.setOriginalName(originalName);
+            event.setSize(size);
+            event.setContentType(file.getContentType());
+            event.setModule(mod);
+            event.setAssetRegister(assetRegister);
+            event.setAssetParkCode(assetParkCode);
+            event.setAssetType(assetType);
+            event.setAssetSourceType(assetSourceType);
+            event.setAssetSourceRef(assetSourceRef);
+            eventPublisher.publishEvent(event);
             return R.ok(dto);
         } catch (Exception e) {
             log.error("文件上传失败", e);
@@ -130,5 +153,14 @@ public class FileAdminController {
             log.error("文件预览失败 key={}", key, e);
             response.setStatus(500);
         }
+    }
+
+    /** 富文本内嵌资源完整 URL：优先 public-base-url，未配置回退 MinIO 公开桶直链 */
+    private String buildAbsoluteUrl(String key) {
+        String base = storageProperties.getPublicBaseUrl();
+        if (base != null && !base.isBlank()) {
+            return (base.endsWith("/") ? base : base + "/") + key;
+        }
+        return storageProperties.getEndpoint() + "/" + storageProperties.getBucket() + "/" + key;
     }
 }

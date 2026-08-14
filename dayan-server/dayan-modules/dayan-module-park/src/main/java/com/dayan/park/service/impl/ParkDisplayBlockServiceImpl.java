@@ -7,6 +7,7 @@ import com.dayan.common.core.enums.NetworkType;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
+import com.dayan.common.core.util.HtmlSanitizer;
 import com.dayan.park.dto.ParkDisplayBlockCreateDTO;
 import com.dayan.park.dto.ParkDisplayBlockQueryDTO;
 import com.dayan.park.dto.ParkDisplayBlockUpdateDTO;
@@ -68,7 +69,7 @@ public class ParkDisplayBlockServiceImpl implements ParkDisplayBlockService {
         entity.setParkCode(dto.getParkCode());
         entity.setBlockType(dto.getBlockType());
         entity.setBlockTitle(dto.getBlockTitle());
-        entity.setContent(dto.getContent());
+        entity.setContent(HtmlSanitizer.clean(dto.getContent()));
         entity.setImages(dto.getImages());
         entity.setImageDescriptions(dto.getImageDescriptions());
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
@@ -87,7 +88,7 @@ public class ParkDisplayBlockServiceImpl implements ParkDisplayBlockService {
         ParkDisplayBlock update = new ParkDisplayBlock();
         update.setId(existing.getId());
         if (dto.getBlockTitle() != null) update.setBlockTitle(dto.getBlockTitle());
-        if (dto.getContent() != null) update.setContent(dto.getContent());
+        if (dto.getContent() != null) update.setContent(HtmlSanitizer.clean(dto.getContent()));
         if (dto.getImages() != null) update.setImages(dto.getImages());
         if (dto.getImageDescriptions() != null) update.setImageDescriptions(dto.getImageDescriptions());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
