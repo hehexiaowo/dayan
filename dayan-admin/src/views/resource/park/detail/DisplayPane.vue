@@ -370,6 +370,7 @@ defineExpose({ loadPage })
                 multiple
                 :limit="9"
                 module="park"
+                register-asset
                 :asset-park-code="props.parkCode"
                 asset-source-type="display_block"
                 :asset-source-ref="form.blockType"

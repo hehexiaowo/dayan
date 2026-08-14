@@ -6,7 +6,6 @@ import type { ParkAsset, ParkAssetQuery } from '@/types/park'
  * 机构素材库 API（后端 /admin-api/park/asset）。
  *
  * 统一管理所有来源的图片/视频/文件/VR。
- * registerAsset 供 FileUploader 组件在其他 tab 上传后自动幂等注册。
  */
 
 /** 素材分页查询 */
@@ -37,12 +36,4 @@ export function updateAsset(id: number, data: Partial<ParkAsset>): Promise<void>
 /** 删除素材 */
 export function deleteAsset(id: number): Promise<void> {
   return request<void>({ url: `/admin-api/park/asset/${id}`, method: 'delete' })
-}
-
-/**
- * 幂等注册素材（其他业务 tab 上传后自动注册）。
- * 同 (parkCode, assetUrl, sourceType, sourceRefCode) 已存在则返回已存 id。
- */
-export function registerAsset(data: Partial<ParkAsset>): Promise<number> {
-  return request<number>({ url: '/admin-api/park/asset/register', method: 'post', data })
 }

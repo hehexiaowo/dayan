@@ -471,7 +471,7 @@ defineExpose({ loadDetail, loadScore })
         <el-row :gutter="16">
           <el-col :span="24">
             <el-form-item label="品牌Logo">
-              <FileUploader v-model="form.brandLogo" type="image" module="park" :asset-park-code="props.parkCode" asset-source-type="park_info" :asset-source-ref="props.parkCode" />
+              <FileUploader v-model="form.brandLogo" type="image" module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="park_info" :asset-source-ref="props.parkCode" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

@@ -317,6 +317,7 @@ defineExpose({ loadPage })
                 v-model="form.assetUrl"
                 :type="uploaderType"
                 module="park"
+                register-asset
                 :asset-park-code="parkCode"
                 asset-source-type="media_mgmt"
               />

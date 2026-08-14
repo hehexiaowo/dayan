@@ -333,17 +333,17 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <FileUploader v-model="form.coverImage" type="image" module="goods" />
+              <FileUploader v-model="form.coverImage" type="image" module="goods" register-asset />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="图集">
-              <FileUploader v-model="imageUrlsModel" type="image" multiple module="goods" />
+              <FileUploader v-model="imageUrlsModel" type="image" multiple module="goods" register-asset />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="视频">
-              <FileUploader v-model="form.videoUrl" type="video" module="goods" />
+              <FileUploader v-model="form.videoUrl" type="video" module="goods" register-asset />
             </el-form-item>
           </el-col>
           <el-col :span="8">

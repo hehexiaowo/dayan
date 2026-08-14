@@ -262,7 +262,7 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="头像">
-              <FileUploader v-model="form.adviserImage" type="image" module="park" :asset-park-code="props.parkCode" asset-source-type="adviser" :asset-source-ref="form.adviserName" />
+              <FileUploader v-model="form.adviserImage" type="image" module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="adviser" :asset-source-ref="form.adviserName" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
