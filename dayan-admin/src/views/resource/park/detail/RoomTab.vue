@@ -529,7 +529,7 @@ defineExpose({ loadPage })
     >
       <el-table-column type="expand">
         <template #default="{ row }">
-          <div class="price-block" v-loading="priceLoadingMap.get(row.roomTypeCode)">
+          <div v-loading="priceLoadingMap.get(row.roomTypeCode)" class="price-block">
             <div class="price-toolbar">
               <span class="price-title">价格记录（{{ row.roomTypeName }}）</span>
               <el-button

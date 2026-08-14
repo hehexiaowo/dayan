@@ -121,11 +121,11 @@ const tabs = [
 </script>
 
 <template>
-  <div class="scene-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="scene-detail">
     <!-- 顶部：返回 + 主实体摘要 -->
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="scene-summary" v-if="sceneInfo">
+      <div v-if="sceneInfo" class="scene-summary">
         <span class="title">{{ sceneInfo.sceneName }}</span>
         <el-tag size="small" class="ml-8">{{ sceneInfo.sceneCode }}</el-tag>
         <el-tag size="small" type="info" class="ml-8">
@@ -142,7 +142,7 @@ const tabs = [
         >
           {{ auditStatusLabel(sceneInfo.auditStatus) }}
         </el-tag>
-        <span class="meta" v-if="sceneInfo.salePrice != null || sceneInfo.isFree === 1">
+        <span v-if="sceneInfo.salePrice != null || sceneInfo.isFree === 1" class="meta">
           · {{ priceLabel(sceneInfo) }}
         </span>
       </div>

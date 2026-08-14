@@ -4,7 +4,7 @@ import { ElMessage, type FormInstance } from 'element-plus'
 import { getContent, updateContent } from '@/api/content'
 import { listContentCategories } from '@/api/content-sub'
 import type { ContentInfo, ContentCategory } from '@/types/content'
-import { ContentType, CONTENT_TYPE_OPTIONS, SOURCE_TYPE_OPTIONS } from '@/types/content'
+import { CONTENT_TYPE_OPTIONS, SOURCE_TYPE_OPTIONS } from '@/types/content'
 import FileUploader from '@/components/FileUploader/index.vue'
 
 const props = defineProps<{ contentCode: string }>()
@@ -35,7 +35,7 @@ async function loadCategories() {
 const dialogVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
-const form = reactive<ContentInfo>({})
+const form = reactive({} as ContentInfo)
 
 function openEdit() {
   if (!detail.value) return

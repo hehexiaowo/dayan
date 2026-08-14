@@ -78,7 +78,8 @@ onMounted(() => {
         <template #empty><el-empty description="暂无数据" /></template>
       </el-table>
       <div class="pagination-wrap">
-        <el-pagination :current-page="query.current" :page-size="query.size" :total="total"
+        <el-pagination
+:current-page="query.current" :page-size="query.size" :total="total"
           :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" background
           @current-change="handlePageChange" @size-change="handleSizeChange" />
       </div>

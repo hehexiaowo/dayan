@@ -77,11 +77,11 @@ const tabs = computed(() => {
 </script>
 
 <template>
-  <div class="goods-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="goods-detail">
     <!-- 顶部：返回 + 主实体摘要 -->
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="goods-summary" v-if="goodsInfo">
+      <div v-if="goodsInfo" class="goods-summary">
         <span class="title">{{ goodsInfo.goodsName }}</span>
         <el-tag size="small" class="ml-8">{{ goodsInfo.goodsCode }}</el-tag>
         <el-tag size="small" type="info" class="ml-8">

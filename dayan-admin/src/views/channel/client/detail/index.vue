@@ -80,11 +80,11 @@ const tabs = [
 </script>
 
 <template>
-  <div class="client-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="client-detail">
     <!-- 顶部：返回 + 主实体摘要 -->
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="client-summary" v-if="clientInfo">
+      <div v-if="clientInfo" class="client-summary">
         <span class="title">{{ clientInfo.fullName }}</span>
         <el-tag size="small" class="ml-8">{{ clientInfo.clientCode }}</el-tag>
         <el-tag size="small" :type="clientLevelTagType(clientInfo.clientLevel)" class="ml-8">
@@ -98,11 +98,11 @@ const tabs = [
         >
           {{ clientStatusLabel(clientInfo.status) }}
         </el-tag>
-        <span class="meta" v-if="clientInfo.phone">
+        <span v-if="clientInfo.phone" class="meta">
           {{ clientInfo.phone }}
         </span>
-        <span class="meta" v-if="clientInfo.age != null"> · {{ clientInfo.age }}岁</span>
-        <span class="meta" v-if="clientInfo.gender != null"> · {{ genderText(clientInfo.gender) }}</span>
+        <span v-if="clientInfo.age != null" class="meta"> · {{ clientInfo.age }}岁</span>
+        <span v-if="clientInfo.gender != null" class="meta"> · {{ genderText(clientInfo.gender) }}</span>
       </div>
       <div v-else-if="!detailLoading" class="client-summary">
         <span class="title">未找到客户（clientCode={{ clientCode }}）</span>

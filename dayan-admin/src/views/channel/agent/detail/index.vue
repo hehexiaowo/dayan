@@ -77,11 +77,11 @@ const tabs = [
 </script>
 
 <template>
-  <div class="agent-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="agent-detail">
     <!-- 顶部：返回 + 主实体摘要 -->
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="agent-summary" v-if="agentInfo">
+      <div v-if="agentInfo" class="agent-summary">
         <span class="title">{{ agentInfo.fullName }}</span>
         <el-tag size="small" class="ml-8">{{ agentInfo.agentCode }}</el-tag>
         <el-tag size="small" :type="agentLevelTagType(agentInfo.agentLevel)" class="ml-8">
@@ -95,11 +95,11 @@ const tabs = [
         >
           {{ agentStatusLabel(agentInfo.status) }}
         </el-tag>
-        <span class="meta" v-if="agentInfo.phone">
+        <span v-if="agentInfo.phone" class="meta">
           {{ agentInfo.phone }}
         </span>
-        <span class="meta" v-if="agentInfo.companyName"> · {{ agentInfo.companyName }}</span>
-        <span class="meta" v-if="agentInfo.gender != null">
+        <span v-if="agentInfo.companyName" class="meta"> · {{ agentInfo.companyName }}</span>
+        <span v-if="agentInfo.gender != null" class="meta">
           · {{ genderText(agentInfo.gender) }}
         </span>
       </div>

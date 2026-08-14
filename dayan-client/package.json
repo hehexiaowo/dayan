@@ -13,7 +13,6 @@
     "@dcloudio/uni-components": "3.0.0-alpha-5020320260803001",
     "@dcloudio/uni-h5": "3.0.0-alpha-5020320260803001",
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5020320260803001",
-    "@types/leaflet": "^1.9.22",
     "echarts": "^6.1.0",
     "leaflet": "1.9",
     "pinia": "^2.1.7",
@@ -30,6 +29,7 @@
     "@vue/runtime-core": "^3.4.0",
     "sass": "^1.69.0",
     "typescript": "^5.4.0",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "@types/leaflet": "^1.9.22"
   }
 }

@@ -142,7 +142,7 @@ function fileName(key: string): string {
       <el-image :src="formatFileUrl(singleValue)" fit="cover" class="preview-img" :preview-src-list="[formatFileUrl(singleValue)]" />
       <div v-if="!disabled" class="image-actions">
         <label class="action-btn">替换
-          <input type="file" :accept="acceptVal" class="hidden-input" @change="handleUpload" :disabled="uploading" />
+          <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading" @change="handleUpload" />
         </label>
         <el-icon class="action-btn" @click="removeSingle"><Delete /></el-icon>
       </div>
@@ -150,7 +150,7 @@ function fileName(key: string): string {
     <label v-else class="upload-placeholder" :class="{ disabled }">
       <el-icon><Plus /></el-icon>
       <span>{{ uploading ? '上传中...' : '上传图片' }}</span>
-      <input type="file" :accept="acceptVal" class="hidden-input" @change="handleUpload" :disabled="uploading || disabled" />
+      <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
     </label>
   </div>
 
@@ -165,7 +165,7 @@ function fileName(key: string): string {
     <label v-if="!disabled && multiValue.length < limit" class="upload-placeholder" :class="{ disabled }">
       <el-icon><Plus /></el-icon>
       <span>{{ uploading ? '上传中...' : '添加图片' }}</span>
-      <input type="file" :accept="acceptVal" class="hidden-input" @change="handleUpload" :disabled="uploading || disabled" />
+      <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
     </label>
   </div>
 
@@ -178,7 +178,7 @@ function fileName(key: string): string {
     </div>
     <label v-else class="upload-btn" :class="{ disabled }">
       <el-icon><Plus /></el-icon><span>{{ uploading ? '上传中...' : '上传视频' }}</span>
-      <input type="file" :accept="acceptVal" class="hidden-input" @change="handleUpload" :disabled="uploading || disabled" />
+      <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
     </label>
   </div>
 
@@ -196,7 +196,7 @@ function fileName(key: string): string {
     </div>
     <label v-if="!disabled && (!multiple || multiValue.length < limit)" class="upload-btn" :class="{ disabled }">
       <el-icon><Plus /></el-icon><span>{{ uploading ? '上传中...' : '点击上传' }}</span>
-      <input type="file" :accept="acceptVal" class="hidden-input" @change="handleUpload" :disabled="uploading || disabled" />
+      <input type="file" :accept="acceptVal" class="hidden-input" :disabled="uploading || disabled" @change="handleUpload" />
     </label>
   </div>
 </template>

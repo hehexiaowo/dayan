@@ -63,10 +63,10 @@ const tabs = [
 </script>
 
 <template>
-  <div class="supplier-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="supplier-detail">
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="supplier-summary" v-if="supplierInfo">
+      <div v-if="supplierInfo" class="supplier-summary">
         <span class="title">{{ supplierInfo.fullName }}</span>
         <el-tag size="small" class="ml-8">{{ supplierInfo.supplierCode }}</el-tag>
         <el-tag size="small" type="info" class="ml-8">

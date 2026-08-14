@@ -218,7 +218,7 @@ async function handleAssignSubmit() {
 /** 取消会话（cancel: 0|1|4→6）：收集关闭原因。 */
 async function handleCancelSession(row: ServiceSession) {
   if (!row.sessionCode) return
-  let closeReason = ''
+  let closeReason: string
   try {
     const { value } = await ElMessageBox.prompt('请输入取消原因（可选）', '取消会话', {
       confirmButtonText: '确定',

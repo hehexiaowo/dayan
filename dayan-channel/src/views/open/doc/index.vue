@@ -16,7 +16,7 @@ const selectedApi = computed(() => findApi(selectedApiId.value))
 <template>
   <div class="api-doc-page">
     <div class="api-doc-sidebar">
-      <ApiCatalog :groups="groups" v-model="selectedApiId" />
+      <ApiCatalog v-model="selectedApiId" :groups="groups" />
     </div>
     <div class="api-doc-main">
       <ApiDetail :api="selectedApi" />

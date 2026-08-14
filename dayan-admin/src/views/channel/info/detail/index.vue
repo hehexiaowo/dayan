@@ -96,11 +96,11 @@ const tabs = [
 </script>
 
 <template>
-  <div class="channel-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="channel-detail">
     <!-- 顶部：返回 + 主实体摘要 -->
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="channel-summary" v-if="channelInfo">
+      <div v-if="channelInfo" class="channel-summary">
         <span class="title">{{ channelInfo.fullName }}</span>
         <el-tag size="small" class="ml-8">{{ channelInfo.channelCode }}</el-tag>
         <el-tag size="small" type="info" class="ml-8">
@@ -112,10 +112,10 @@ const tabs = [
         <el-tag size="small" :type="auditStatusTagType(channelInfo.auditStatus)" effect="light" class="ml-8">
           {{ auditStatusText(channelInfo.auditStatus) }}
         </el-tag>
-        <span class="meta" v-if="channelInfo.contactPerson">
+        <span v-if="channelInfo.contactPerson" class="meta">
           · {{ channelInfo.contactPerson }}
         </span>
-        <span class="meta" v-if="channelInfo.contactPhone">
+        <span v-if="channelInfo.contactPhone" class="meta">
           · {{ channelInfo.contactPhone }}
         </span>
       </div>

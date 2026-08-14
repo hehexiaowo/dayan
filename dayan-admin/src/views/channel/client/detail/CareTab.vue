@@ -133,7 +133,7 @@ watch(
   () => form.butlerCode,
   (code) => {
     const b = butlerOptions.value.find((x) => x.butlerCode === code)
-    if (b) form.butlerFullName = b.butlerName || ''
+    if (b) form.butlerFullName = b.fullName || ''
   }
 )
 
@@ -290,7 +290,7 @@ defineExpose({ loadPage })
                 <el-option
                   v-for="b in butlerOptions"
                   :key="b.butlerCode"
-                  :label="b.butlerName || b.butlerCode"
+                  :label="b.fullName || b.butlerCode"
                   :value="b.butlerCode!"
                 />
               </el-select>

@@ -69,7 +69,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="page-container" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="page-container">
     <el-page-header @back="goBack">
       <template #content>
         <span class="header-title">{{ info?.courseName ?? '课程详情' }}</span>

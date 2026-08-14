@@ -134,6 +134,8 @@ export interface ChannelInfoQuery {
   status?: ChannelStatus
   /** 审核状态：0待审 1通过 2驳回 */
   auditStatus?: ChannelAuditStatus
+  /** 按所属分销商筛选 */
+  distributorCode?: string
 }
 
 /**

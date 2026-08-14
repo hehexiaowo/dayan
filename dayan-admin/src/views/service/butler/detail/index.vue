@@ -73,11 +73,11 @@ const tabs = [
 </script>
 
 <template>
-  <div class="butler-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="butler-detail">
     <!-- 顶部：返回 + 主实体摘要 -->
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="butler-summary" v-if="butlerInfo">
+      <div v-if="butlerInfo" class="butler-summary">
         <span class="title">{{ butlerInfo.fullName }}</span>
         <el-tag size="small" class="ml-8">{{ butlerInfo.butlerCode }}</el-tag>
         <el-tag size="small" :type="butlerLevelTagType(butlerInfo.butlerLevel)" class="ml-8">
@@ -91,7 +91,7 @@ const tabs = [
         >
           {{ butlerStatusLabel(butlerInfo.status) }}
         </el-tag>
-        <span class="meta" v-if="butlerInfo.phone">{{ butlerInfo.phone }}</span>
+        <span v-if="butlerInfo.phone" class="meta">{{ butlerInfo.phone }}</span>
       </div>
       <div v-else-if="!detailLoading" class="butler-summary">
         <span class="title">未找到管家（butlerCode={{ butlerCode }}）</span>

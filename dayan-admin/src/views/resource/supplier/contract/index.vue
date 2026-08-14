@@ -245,7 +245,7 @@ async function handleTransition(row: SupplierContract, t: TransitionTarget) {
   const payload: Partial<SupplierContract> = { status: t.target }
   if (t.needRemark) {
     // 用 prompt 收集 auditRemark（驳回/作废/终止等需要说明）
-    let remark = ''
+    let remark: string
     try {
       const res = await ElMessageBox.prompt(
         `请输入审核备注（${t.label}）`,

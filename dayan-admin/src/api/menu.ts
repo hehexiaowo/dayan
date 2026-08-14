@@ -40,6 +40,18 @@ export function getMyMenuTree(domainType?: DomainType): Promise<Menu[]> {
   })
 }
 
+/**
+ * 当前账号按钮级权限码：GET /admin-api/menus/mine/permissions
+ *
+ * 供 v-permission 指令消费。超管返回 ['*']（通配，指令侧视为放行一切）。
+ */
+export function getMyPermissions(): Promise<string[]> {
+  return request<string[]>({
+    url: '/admin-api/menus/mine/permissions',
+    method: 'get'
+  })
+}
+
 /** 新增菜单：POST /admin-api/menus */
 export function createMenu(data: Menu): Promise<string> {
   return request<string>({

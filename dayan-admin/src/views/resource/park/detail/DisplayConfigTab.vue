@@ -1,5 +1,5 @@
 <template>
-  <div class="display-config-tab" v-loading="loading">
+  <div v-loading="loading" class="display-config-tab">
     <el-alert v-if="!networks.length" type="warning" :closable="false" show-icon>
       该机构未配置网络归属（networkTags），请先在「基本信息」Tab 中选择网络后再配置展示。
     </el-alert>
@@ -17,7 +17,7 @@
             <span>详情页头图轮播</span>
             <el-text type="info" size="small">点击图片选择/取消，已选 {{ configData[net.tag].banners.length }} 张</el-text>
           </div>
-          <div class="image-grid" v-if="images.length">
+          <div v-if="images.length" class="image-grid">
             <div
               v-for="img in images"
               :key="img.assetUrl"
@@ -43,13 +43,13 @@
             <span>列表卡片缩略图</span>
             <el-text type="info" size="small">选择一张作为列表卡片展示图</el-text>
           </div>
-          <div class="image-grid" v-if="images.length">
+          <div v-if="images.length" class="image-grid">
             <div
               v-for="img in images"
               :key="'thumb-' + img.assetUrl"
               class="image-cell thumb"
               :class="{ selected: configData[net.tag].thumbnail === img.assetUrl }"
-              @click="configData[net.tag].thumbnail = configData[net.tag].thumbnail === img.assetUrl ? '' : img.assetUrl"
+              @click="configData[net.tag].thumbnail = configData[net.tag].thumbnail === img.assetUrl ? '' : (img.assetUrl ?? '')"
             >
               <el-image :src="formatFileUrl(img.assetUrl)" fit="cover" class="grid-image" :preview-src-list="[]" />
               <div v-if="configData[net.tag].thumbnail === img.assetUrl" class="image-check">
@@ -64,7 +64,7 @@
     </template>
 
     <!-- 保存按钮 -->
-    <div class="save-bar" v-if="networks.length">
+    <div v-if="networks.length" class="save-bar">
       <el-button type="primary" :loading="saving" @click="onSave">保存配置</el-button>
       <el-button @click="loadData">重置</el-button>
     </div>
@@ -110,13 +110,15 @@ const networks = computed(() => {
   }))
 })
 
-/** banner 在数组中的位置（-1 = 未选） */
-function bannerIndex(tag: string, assetUrl: string): number {
+/** banner 在数组中的位置（-1 = 未选；assetUrl 缺失视为未选） */
+function bannerIndex(tag: string, assetUrl: string | undefined): number {
+  if (!assetUrl) return -1
   return configData[tag].banners.indexOf(assetUrl)
 }
 
 /** 点击图片：已选则取消，未选则追加到末尾 */
-function toggleBanner(tag: string, assetUrl: string) {
+function toggleBanner(tag: string, assetUrl: string | undefined) {
+  if (!assetUrl) return
   const idx = bannerIndex(tag, assetUrl)
   if (idx >= 0) {
     configData[tag].banners.splice(idx, 1)
@@ -152,7 +154,7 @@ async function loadData() {
     configData.vital = parseConfig(park.vitalConfig)
     configData.care = parseConfig(park.careConfig)
     configData.sojourn = parseConfig(park.sojournConfig)
-  } catch (e) {
+  } catch {
     ElMessage.error('加载数据失败')
   } finally {
     loading.value = false
@@ -169,11 +171,11 @@ async function onSave() {
       if (cfg.banners.length) json.banners = cfg.banners
       if (cfg.thumbnail) json.thumbnail = cfg.thumbnail
       const field = `${net.tag}Config` as keyof ParkInfo
-      data[field] = Object.keys(json).length ? JSON.stringify(json) : '' as any
+      ;(data as Record<string, unknown>)[field] = Object.keys(json).length ? JSON.stringify(json) : ''
     }
     await updatePark(props.parkCode, data)
     ElMessage.success('展示配置已保存')
-  } catch (e) {
+  } catch {
     ElMessage.error('保存失败')
   } finally {
     saving.value = false

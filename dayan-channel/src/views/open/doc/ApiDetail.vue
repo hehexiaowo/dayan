@@ -45,13 +45,13 @@ async function copyPath() {
     </div>
 
     <!-- 描述 -->
-    <div class="api-desc" v-if="api.summary || api.description">
+    <div v-if="api.summary || api.description" class="api-desc">
       <p v-if="api.summary"><strong>{{ api.summary }}</strong></p>
       <p v-if="api.description" class="desc-text">{{ api.description }}</p>
     </div>
 
     <!-- 请求头表 -->
-    <div class="api-section" v-if="api.headers && api.headers.length">
+    <div v-if="api.headers && api.headers.length" class="api-section">
       <h3>请求头</h3>
       <el-table :data="api.headers" border stripe size="small">
         <el-table-column prop="name" label="名称" min-width="140" />
@@ -66,7 +66,7 @@ async function copyPath() {
     </div>
 
     <!-- 请求参数表 -->
-    <div class="api-section" v-if="api.params && api.params.length">
+    <div v-if="api.params && api.params.length" class="api-section">
       <h3>请求参数</h3>
       <el-table :data="api.params" border stripe size="small">
         <el-table-column prop="name" label="名称" min-width="140" />

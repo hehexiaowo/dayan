@@ -15,11 +15,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getGoodsEquity, saveGoodsEquity, deleteGoodsEquity } from '@/api/goods-equity'
 import { listServiceItems } from '@/api/service-item'
-import {
-  ITEM_CATEGORY_OPTIONS,
-  ITEM_SUBTYPE_OPTIONS,
-  QUOTA_TYPE_OPTIONS
-} from '@/types/service-item'
+import { ITEM_CATEGORY_OPTIONS, QUOTA_TYPE_OPTIONS } from '@/types/service-item'
 import type { GoodsEquitySaveDTO } from '@/types/goods-equity'
 import type { ServiceItem } from '@/types/service-item'
 
@@ -101,11 +97,6 @@ function removeRelRow(index: number) {
   relRows.value.splice(index, 1)
 }
 
-function getServiceItemName(itemCode: string): string {
-  const item = serviceItemOptions.value.find(i => i.itemCode === itemCode)
-  return item?.itemName || itemCode
-}
-
 async function handleSave() {
   // 校验：rel 行不能有空 itemCode
   for (const row of relRows.value) {
@@ -159,7 +150,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="equity-config-tab" v-loading="loading">
+  <div v-loading="loading" class="equity-config-tab">
     <!-- 上半部：1:1 配置表单 -->
     <el-card shadow="never" class="config-card">
       <template #header>

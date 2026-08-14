@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
-import { getMyMenuTree } from '@/api/menu'
+import { getMyMenuTree, getMyPermissions } from '@/api/menu'
 import type { Menu } from '@/types/menu'
 import { buildAsyncRoutes } from '@/router/dynamic'
 
@@ -31,11 +31,13 @@ export const usePermissionStore = defineStore('permission', () => {
   const menus = ref<Menu[]>([])
   /** 由菜单生成的动态路由（挂到布局 / 下） */
   const dynamicRoutes = ref<RouteRecordRaw[]>([])
+  /** 当前账号按钮级权限码集合（超管为 ['*'] 通配） */
+  const permCodes = ref<string[]>([])
   /** 是否已完成首次加载 */
   const loaded = ref(false)
 
   /**
-   * 拉取当前端菜单树并生成动态路由。
+   * 拉取当前端菜单树并生成动态路由，同时拉取按钮级权限码供 v-permission 使用。
    *
    * 仅加载一次（loaded 标记），登出时调用 reset 后可重新加载。
    * 后端 /channel-api/menus/mine 写死 domainType=channel，无需前端传参。
@@ -43,25 +45,39 @@ export const usePermissionStore = defineStore('permission', () => {
    */
   async function loadMenus() {
     if (loaded.value) return dynamicRoutes.value
-    const tree = await getMyMenuTree()
+    const [tree, perms] = await Promise.all([getMyMenuTree(), getMyPermissions()])
     menus.value = filterVisibleMenus(tree)
+    permCodes.value = perms
     dynamicRoutes.value = buildAsyncRoutes(tree)
     loaded.value = true
     return dynamicRoutes.value
+  }
+
+  /**
+   * 是否拥有指定权限码（v-permission 指令的唯一判定入口）。
+   * 超管 '*' 通配放行；支持传入数组（任一命中即放行）。
+   */
+  function hasPerm(code: string | string[]): boolean {
+    const codes = Array.isArray(code) ? code : [code]
+    if (permCodes.value.includes('*')) return true
+    return codes.some((c) => permCodes.value.includes(c))
   }
 
   /** 重置（登出时调用） */
   function reset() {
     menus.value = []
     dynamicRoutes.value = []
+    permCodes.value = []
     loaded.value = false
   }
 
   return {
     menus,
     dynamicRoutes,
+    permCodes,
     loaded,
     loadMenus,
+    hasPerm,
     reset
   }
 })

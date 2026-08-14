@@ -48,7 +48,7 @@ router.beforeEach(async (to, _from, next) => {
       // 等内部字段，导致 router 复用未更新前的匹配结果，深链接刷新仍命中 404。
       next({ path: to.fullPath, replace: true })
       return
-    } catch (e) {
+    } catch {
       // 菜单拉取失败（如后端未启动 / token 失效）：清登录态并跳登录
       userStore.reset()
       permissionStore.reset()

@@ -34,10 +34,7 @@ import {
   skuStatusTagType
 } from '@/types/goods'
 import type { GoodsSojourn, GoodsSojournQuery } from '@/types/goods'
-import type { ParkInfo } from '@/types/park'
-import type { ParkRoomType } from '@/types/park-room'
-import type { ParkCareType } from '@/types/park-care'
-import type { ParkFoodType } from '@/types/park-food'
+import type { ParkInfo, ParkRoomType, ParkCareType, ParkFoodType } from '@/types/park'
 import { formatDateTime, formatDate } from '@/utils/format'
 
 const props = defineProps<{

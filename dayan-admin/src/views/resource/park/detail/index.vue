@@ -71,24 +71,24 @@ const tabs = [
 </script>
 
 <template>
-  <div class="park-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="park-detail">
     <!-- 顶部：返回 + 主实体摘要 -->
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="park-summary" v-if="parkInfo">
+      <div v-if="parkInfo" class="park-summary">
         <span class="title">{{ parkInfo.fullName }}</span>
         <el-tag size="small" class="ml-8">{{ parkInfo.parkCode }}</el-tag>
         <el-tag size="small" type="info" class="ml-8">
           {{ operateStatusText(parkInfo.operateStatus) }}
         </el-tag>
-        <span class="meta" v-if="parkInfo.city || parkInfo.district">
+        <span v-if="parkInfo.city || parkInfo.district" class="meta">
           {{ parkInfo.province }}{{ parkInfo.city }}{{ parkInfo.district }}
         </span>
-        <el-divider direction="vertical" v-if="parkInfo.totalBeds != null || parkInfo.minPriceDisplay != null" />
-        <span class="meta" v-if="parkInfo.totalBeds != null">
+        <el-divider v-if="parkInfo.totalBeds != null || parkInfo.minPriceDisplay != null" direction="vertical" />
+        <span v-if="parkInfo.totalBeds != null" class="meta">
           床位 {{ parkInfo.availableBeds ?? '--' }}/{{ parkInfo.totalBeds }}
         </span>
-        <span class="meta highlight" v-if="parkInfo.minPriceDisplay != null">
+        <span v-if="parkInfo.minPriceDisplay != null" class="meta highlight">
           ¥{{ parkInfo.minPriceDisplay }}{{ parkInfo.maxPriceDisplay ? `~${parkInfo.maxPriceDisplay}` : '' }}<template v-if="parkInfo.priceUnit"> {{ parkInfo.priceUnit }}</template>
         </span>
       </div>

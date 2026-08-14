@@ -156,7 +156,8 @@ function regenNonce() {
 <template>
   <div class="api-tester">
     <h3>接口测试</h3>
-    <el-alert type="warning" :closable="false" show-icon
+    <el-alert
+type="warning" :closable="false" show-icon
       title="接口建设中，此面板仅展示请求构造，不发送真实请求" />
 
     <!-- 环境与凭证 -->
@@ -171,7 +172,7 @@ function regenNonce() {
         <label>AppKey</label>
         <el-input v-model="appKey" style="width: 200px" />
       </div>
-      <div class="form-item" v-if="needsAuth">
+      <div v-if="needsAuth" class="form-item">
         <el-button text @click="regenNonce">重新生成时间戳/Nonce</el-button>
       </div>
     </div>
@@ -181,7 +182,7 @@ function regenNonce() {
       <p class="section-title">路径参数</p>
       <div v-for="p in pathParams" :key="p.name" class="param-row">
         <code class="param-name">{{ p.name }}</code>
-        <span class="param-required" v-if="p.required">*</span>
+        <span v-if="p.required" class="param-required">*</span>
         <el-input v-model="paramValues[p.name]" :placeholder="p.description" style="flex: 1" />
       </div>
     </div>
@@ -191,7 +192,7 @@ function regenNonce() {
       <el-tab-pane v-if="queryParams.length" label="Query 参数">
         <div v-for="p in queryParams" :key="p.name" class="param-row">
           <code class="param-name">{{ p.name }}</code>
-          <span class="param-required" v-if="p.required">*</span>
+          <span v-if="p.required" class="param-required">*</span>
           <el-input v-model="paramValues[p.name]" :placeholder="p.description" style="flex: 1" />
         </div>
         <div v-for="(c, i) in customQuerys" :key="'cq' + i" class="param-row">
@@ -205,7 +206,7 @@ function regenNonce() {
       <el-tab-pane v-if="headerParams.length" label="请求头">
         <div v-for="p in headerParams" :key="p.name" class="param-row">
           <code class="param-name">{{ p.name }}</code>
-          <span class="param-required" v-if="p.required">*</span>
+          <span v-if="p.required" class="param-required">*</span>
           <el-input v-model="paramValues[p.name]" :placeholder="p.description" style="flex: 1" />
         </div>
         <div v-for="(c, i) in customHeaders" :key="'ch' + i" class="param-row">
@@ -219,7 +220,7 @@ function regenNonce() {
       <el-tab-pane v-if="bodyParams.length" label="Body">
         <div v-for="p in bodyParams" :key="p.name" class="param-row">
           <code class="param-name">{{ p.name }}</code>
-          <span class="param-required" v-if="p.required">*</span>
+          <span v-if="p.required" class="param-required">*</span>
           <el-input v-model="paramValues[p.name]" :placeholder="p.description" style="flex: 1" />
         </div>
       </el-tab-pane>

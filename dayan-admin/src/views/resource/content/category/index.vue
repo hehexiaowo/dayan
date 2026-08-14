@@ -59,7 +59,7 @@ const form = reactive<ContentCategory>({
   status: 1
 })
 
-const rules: FormRules<ContentCategory> = {
+const rules: FormRules = {
   categoryName: [{ required: true, message: '请输入分类名称', trigger: 'blur' }]
 }
 

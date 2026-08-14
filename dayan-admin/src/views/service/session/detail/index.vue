@@ -103,11 +103,11 @@ const tabs = [
 </script>
 
 <template>
-  <div class="session-detail" v-loading="detailLoading">
+  <div v-loading="detailLoading" class="session-detail">
     <!-- 顶部：返回 + 主实体摘要 -->
     <div class="detail-header">
       <el-button :icon="'ArrowLeft'" @click="goBack">返回列表</el-button>
-      <div class="session-summary" v-if="sessionInfo">
+      <div v-if="sessionInfo" class="session-summary">
         <span class="title">{{ sessionInfo.serviceTitle || '服务会话' }}</span>
         <el-tag size="small" class="ml-8">{{ sessionInfo.sessionCode }}</el-tag>
         <el-tag size="small" type="info" class="ml-8">
@@ -116,8 +116,8 @@ const tabs = [
         <el-tag size="small" :type="sessionStatusTagType(sessionInfo.sessionStatus)" class="ml-8">
           {{ sessionStatusLabel(sessionInfo.sessionStatus) }}
         </el-tag>
-        <span class="meta" v-if="sessionInfo.clientCode"> · 客户：{{ sessionInfo.clientCode }}</span>
-        <span class="meta" v-if="sessionInfo.butlerFullName || sessionInfo.butlerCode">
+        <span v-if="sessionInfo.clientCode" class="meta"> · 客户：{{ sessionInfo.clientCode }}</span>
+        <span v-if="sessionInfo.butlerFullName || sessionInfo.butlerCode" class="meta">
           · 管家：{{ sessionInfo.butlerFullName || sessionInfo.butlerCode }}
         </span>
       </div>

@@ -409,7 +409,7 @@ defineExpose({ loadPage })
     >
       <el-table-column type="expand">
         <template #default="{ row }">
-          <div class="price-block" v-loading="priceLoadingMap.get(row.careTypeCode)">
+          <div v-loading="priceLoadingMap.get(row.careTypeCode)" class="price-block">
             <div class="price-toolbar">
               <span class="price-title">价格记录（{{ row.careTypeName }}）</span>
               <el-button type="primary" size="small" :icon="'Plus'" @click="openCreatePrice(row.careTypeCode, row.careTypeName)">

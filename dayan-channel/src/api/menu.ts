@@ -19,3 +19,15 @@ export function getMyMenuTree(): Promise<Menu[]> {
     method: 'get'
   })
 }
+
+/**
+ * 当前账号按钮级权限码：GET /channel-api/menus/mine/permissions
+ *
+ * 供 v-permission 指令消费。超管返回 ['*']（通配，指令侧视为放行一切）。
+ */
+export function getMyPermissions(): Promise<string[]> {
+  return request<string[]>({
+    url: '/channel-api/menus/mine/permissions',
+    method: 'get'
+  })
+}

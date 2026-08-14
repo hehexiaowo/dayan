@@ -236,7 +236,7 @@ defineExpose({ loadList })
                 <el-option
                   v-for="c in clientOptions"
                   :key="c.clientCode"
-                  :label="c.clientName || c.clientCode"
+                  :label="c.fullName || c.clientCode"
                   :value="c.clientCode!"
                 />
               </el-select>

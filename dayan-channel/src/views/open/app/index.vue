@@ -39,7 +39,7 @@ onMounted(() => loadData())
 
 <template>
   <div class="page-container">
-    <el-card shadow="never" v-loading="loading">
+    <el-card v-loading="loading" shadow="never">
       <template #header>
         <div class="card-header">
           <span>应用管理</span>

@@ -63,7 +63,7 @@ function defaultForm(): SystemConfig {
     configValue: '',
     valueType: 'string',
     env: 'all',
-    scope: 'global',
+    scope: 'system',
     organCode: null,
     userCode: null,
     configName: '',

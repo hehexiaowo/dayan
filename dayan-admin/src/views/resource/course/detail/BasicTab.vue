@@ -24,7 +24,7 @@ async function loadDetail() {
 const dialogVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
-const form = reactive<CourseInfo>({})
+const form = reactive({} as CourseInfo)
 
 function openEdit() {
   if (!detail.value) return
