@@ -28,6 +28,7 @@ import {
 } from '@/api/park-pricing'
 import { BILLING_CYCLE_OPTIONS, billingCycleLabel, CARE_LEVEL_OPTIONS, careLevelLabel } from '@/types/park'
 import type { ParkCareType, ParkCareTypeQuery, ParkPricing } from '@/types/park'
+import PricingReviseDialog from './PricingReviseDialog.vue'
 
 const props = defineProps<{
   parkCode: string
@@ -364,6 +365,25 @@ async function handleDeletePrice(row: ParkPricing, careTypeCode: string) {
   refreshCurrentPrice(careTypeCode)
 }
 
+// ---------- 调价弹窗（版本化 revise：立即/预约生效） ----------
+const reviseVisible = ref(false)
+const reviseTarget = ref<{ id?: number; salePrice?: number; refName?: string; planName?: string } | undefined>(undefined)
+/** 调价后需刷新的展开行上下文 */
+const reviseContext = reactive({ careTypeCode: '' })
+
+function openRevise(row: { id?: number; salePrice?: number; refName?: string; planName?: string }, careTypeCode: string) {
+  reviseTarget.value = row
+  reviseContext.careTypeCode = careTypeCode
+  reviseVisible.value = true
+}
+
+/** 调价成功后重载该展开行价格 + 同步主表"当前价"列 */
+async function handleReviseRevived() {
+  if (!reviseContext.careTypeCode) return
+  await loadPrices({ careTypeCode: reviseContext.careTypeCode } as ParkCareType)
+  refreshCurrentPrice(reviseContext.careTypeCode)
+}
+
 // ---------- 辅助渲染 ----------
 function statusLabel(v?: number): string {
   return v === 1 ? '启用' : '停售'
@@ -449,10 +469,11 @@ defineExpose({ loadPage })
               <el-table-column prop="createdAt" label="创建时间" width="110" align="center">
                 <template #default="{ row: p }">{{ formatDate(p.createdAt) }}</template>
               </el-table-column>
-              <el-table-column label="操作" width="140" fixed="right">
+              <el-table-column label="操作" width="180" fixed="right">
                 <template #default="{ row: p }">
                   <el-button link type="primary" size="small" @click="openEditPrice(p, row.careTypeCode)">编辑</el-button>
                   <el-button link type="danger" size="small" @click="handleDeletePrice(p, row.careTypeCode)">删除</el-button>
+                  <el-button link type="warning" size="small" @click="openRevise(p, row.careTypeCode)">调价</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -706,6 +727,9 @@ defineExpose({ loadPage })
         <el-button type="primary" :loading="priceSubmitLoading" @click="handlePriceSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 调价弹窗（版本化：立即/预约生效） -->
+    <PricingReviseDialog v-model="reviseVisible" :pricing="reviseTarget" @revived="handleReviseRevived" />
   </div>
 </template>
 

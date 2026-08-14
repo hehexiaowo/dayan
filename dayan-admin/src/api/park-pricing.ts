@@ -74,3 +74,8 @@ export function deletePricing(id: number): Promise<void> {
     method: 'delete'
   })
 }
+
+/** 调价（版本化：立即/预约生效）。POST /admin-api/park/pricing/{id}/revise */
+export function revisePricing(id: number, data: { salePrice: number; originalPrice?: number; discountRate?: number; effectiveDate: string; priceChangeReason?: string }): Promise<number> {
+  return request<number>({ url: `/admin-api/park/pricing/${id}/revise`, method: 'post', data })
+}
