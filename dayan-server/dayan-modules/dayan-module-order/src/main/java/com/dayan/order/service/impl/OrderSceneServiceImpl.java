@@ -18,6 +18,7 @@ import com.dayan.order.entity.OrderScene;
 import com.dayan.order.enums.OrderEvent;
 import com.dayan.order.enums.OrderType;
 import com.dayan.order.mapper.OrderSceneMapper;
+import com.dayan.order.service.OrderPriceResolver;
 import com.dayan.order.service.OrderSceneService;
 import com.dayan.order.service.OrderStatusChangeRecordHelper;
 import com.dayan.order.vo.OrderSceneVO;
@@ -63,6 +64,7 @@ public class OrderSceneServiceImpl implements OrderSceneService {
     private final StateMachineEngine stateMachineEngine;
     private final SequenceProvider sequenceProvider;
     private final OrderStatusChangeRecordHelper changeRecordHelper;
+    private final OrderPriceResolver orderPriceResolver;
     private final SceneScheduleService sceneScheduleService;
 
     // ====== 查询 ======
@@ -105,7 +107,9 @@ public class OrderSceneServiceImpl implements OrderSceneService {
     @Transactional(rollbackFor = Exception.class)
     public String create(CreateOrderSceneDTO dto) {
         // 金额校验：total = unit_price * participant_count；pay = total - discount - coupon
-        BigDecimal unitPrice = dto.getUnitPrice();
+        // 服务端权威单价（E2）：strict 偏差拒单 / warn 按权威价入账 / off 采信客户端
+        java.math.BigDecimal authorityUnit = orderPriceResolver.resolveSceneUnitPrice(dto);
+        BigDecimal unitPrice = authorityUnit != null ? authorityUnit : dto.getUnitPrice();
         int participantCount = dto.getParticipantCount();
         BigDecimal totalAmount = unitPrice.multiply(BigDecimal.valueOf(participantCount));
         BigDecimal discount = dto.getDiscountAmount() == null ? BigDecimal.ZERO : dto.getDiscountAmount();
