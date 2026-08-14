@@ -87,12 +87,11 @@ public class ParkPricingServiceImpl implements ParkPricingService {
                 .eq(ParkPricing::getRefCode, refCode)
                 .eq(ParkPricing::getIsCurrent, IS_CURRENT_YES)
                 .eq(ParkPricing::getStatus, 1)
-                .orderByDesc(ParkPricing::getBillingCycle)
                 .orderByDesc(ParkPricing::getId));
         if (list == null || list.isEmpty()) {
             return null;
         }
-        // 优先月周期（cycle=1）：orderByDesc(billingCycle) 后 1 排最后，单独先找
+        // 优先月周期（cycle=1）：内存中 filter 单独先找；无月价取 id 最大一条（最新配置）
         ParkPricing monthly = list.stream()
                 .filter(p -> Integer.valueOf(1).equals(p.getBillingCycle()))
                 .findFirst().orElse(null);

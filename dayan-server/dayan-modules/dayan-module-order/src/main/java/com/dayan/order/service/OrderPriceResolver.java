@@ -10,7 +10,8 @@ import java.math.BigDecimal;
  *
  * 三态见 PriceCheckMode（dayan.order.price-check，默认 strict）。
  * strict：有权威项偏差、或 roomFee/unitPrice 无权威价 → 抛 PARAM_ERROR。
- * warn：偏差/缺失记日志；resolve* 返回权威金额（无权威项为 null，由调用方回退客户端值）。
+ * warn：偏差/缺失记日志；resolve* 返回权威金额：无权威定价的必选项在 strict 下已拒单；
+ * 可选项（照护/餐饮）缺关联编码时权威为 0（该费用项按并入账，防止无依据收费）。
  */
 public interface OrderPriceResolver {
 
