@@ -29,6 +29,12 @@ public interface ContentInfoService {
     ContentInfoVO getDetail(String contentCode);
 
     /**
+     * 按 code 查详情（null 安全：不存在返回 null，不抛异常）。
+     * 供 client 端先判存在、再校验已发布口径（contentStatus=2）。
+     */
+    ContentInfoVO getDetailByCode(String contentCode);
+
+    /**
      * 新增内容，返回生成的 contentCode（初始 contentStatus=0 草稿）。
      */
     String create(ContentInfoCreateDTO dto);

@@ -108,6 +108,14 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     }
 
     @Override
+    public ContentInfoVO getDetailByCode(String contentCode) {
+        ContentInfo entity = contentInfoMapper.selectOne(new LambdaQueryWrapper<ContentInfo>()
+                .eq(ContentInfo::getContentCode, contentCode)
+                .last("LIMIT 1"));
+        return entity == null ? null : toVO(entity);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(ContentInfoCreateDTO dto) {
         // title 全表唯一校验
@@ -357,6 +365,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
         vo.setSourceType(entity.getSourceType());
         vo.setSourceUrl(entity.getSourceUrl());
         vo.setTags(entity.getTags());
+        vo.setNetworkTags(entity.getNetworkTags());
         vo.setIsTop(entity.getIsTop());
         vo.setIsRecommend(entity.getIsRecommend());
         vo.setIsComment(entity.getIsComment());
