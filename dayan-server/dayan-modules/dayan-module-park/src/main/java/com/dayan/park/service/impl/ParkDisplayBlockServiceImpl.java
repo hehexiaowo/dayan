@@ -1,6 +1,7 @@
 package com.dayan.park.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dayan.common.core.enums.NetworkType;
 import com.dayan.common.core.exception.BusinessException;
@@ -91,7 +92,17 @@ public class ParkDisplayBlockServiceImpl implements ParkDisplayBlockService {
         if (dto.getImageDescriptions() != null) update.setImageDescriptions(dto.getImageDescriptions());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
-        if (dto.getNetworkTags() != null) update.setNetworkTags(NetworkType.normalizeTags(dto.getNetworkTags()));
+        if (dto.getNetworkTags() != null) {
+            String normalized = NetworkType.normalizeTags(dto.getNetworkTags());
+            if (normalized == null) {
+                // 空串=恢复全部业态：updateById 的 NOT_NULL 策略会忽略 null 字段，需显式 set NULL
+                displayBlockMapper.update(null, new LambdaUpdateWrapper<ParkDisplayBlock>()
+                        .eq(ParkDisplayBlock::getId, id)
+                        .set(ParkDisplayBlock::getNetworkTags, null));
+            } else {
+                update.setNetworkTags(normalized);
+            }
+        }
         displayBlockMapper.updateById(update);
         log.info("更新展示板块成功: id={}", id);
     }
