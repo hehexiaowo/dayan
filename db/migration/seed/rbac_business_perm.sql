@@ -68,9 +68,9 @@ VALUES
   ('equity:activate:query',     '权益激活记录详情', 'equity:activate', 3, '/admin-api/equity/activate/*',     'GET',    221, 1, '权益激活', NOW(), NOW(), 'system', 'system', 0),
   ('equity:change-holder:list', '换持有人记录列表', 'equity:change-holder', 3, '/admin-api/equity/change-holder','GET',225, 1, '换持有人', NOW(), NOW(), 'system', 'system', 0),
   ('equity:change-holder:query','换持有人记录详情', 'equity:change-holder', 3, '/admin-api/equity/change-holder/*','GET',226, 1, '换持有人', NOW(), NOW(), 'system', 'system', 0),
-  ('equity:use-person:list',    '权益使用人列表',   'equity:use-person', 3, '/admin-api/equity/use-person',  'GET',    230, 1, '权益使用人', NOW(), NOW(), 'system', 'system', 0),
-  ('equity:use-person:query',   '权益使用人详情',   'equity:use-person', 3, '/admin-api/equity/use-person/*', 'GET',   231, 1, '权益使用人', NOW(), NOW(), 'system', 'system', 0),
-  ('equity:use-person:set-default','设为默认使用人','equity:use-person', 3, '/admin-api/equity/use-person/set-default','PUT',232, 1, '权益使用人', NOW(), NOW(), 'system', 'system', 0)
+  ('equity:use-person:list',    '权益人员列表',     'equity:use-person', 3, '/admin-api/equity/use-person',  'GET',    230, 1, '权益人员', NOW(), NOW(), 'system', 'system', 0),
+  ('equity:use-person:query',   '权益人员详情',     'equity:use-person', 3, '/admin-api/equity/use-person/*', 'GET',   231, 1, '权益人员', NOW(), NOW(), 'system', 'system', 0),
+  ('equity:use-person:set-default','设为默认权益人员','equity:use-person', 3, '/admin-api/equity/use-person/set-default','PUT',232, 1, '权益人员', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ==================== butler 域 ====================

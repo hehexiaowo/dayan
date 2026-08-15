@@ -35,7 +35,7 @@ INSERT INTO `system_menu`
 VALUES
   ('admin_equity_activate',     '权益激活',   'admin_equity', 2, '/equity/activate',     'equity/activate/index',     'equity:activate:list',      'CircleCheck', 3, 1, 0, 1, 'admin', 1, '权益激活记录（自动生成，只读）', NOW(), NOW(), 'system', 'system', 0),
   ('admin_equity_change_holder','换持有人',   'admin_equity', 2, '/equity/change-holder','equity/changeHolder/index', 'equity:change-holder:list', 'Switch', 4, 1, 0, 1, 'admin', 1, '换持有人记录（自动生成，只读）', NOW(), NOW(), 'system', 'system', 0),
-  ('admin_equity_use_person',   '权益使用人', 'admin_equity', 2, '/equity/use-person',   'equity/usePerson/index',    'equity:use-person:list',    'User', 5, 1, 0, 1, 'admin', 1, '权益使用人管理', NOW(), NOW(), 'system', 'system', 0)
+  ('admin_equity_use_person',   '权益人员',   'admin_equity', 2, '/equity/use-person',   'equity/usePerson/index',    'equity:use-person:list',    'User', 5, 1, 0, 1, 'admin', 1, '权益人员管理', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `menu_name` = VALUES(`menu_name`), `component` = VALUES(`component`), `permission_code` = VALUES(`permission_code`), `path` = VALUES(`path`), `parent_code` = VALUES(`parent_code`);
 
 -- ============================================================

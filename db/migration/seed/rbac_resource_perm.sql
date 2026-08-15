@@ -159,12 +159,12 @@ VALUES
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
--- 六、lead 域：线索池菜单 + 只读权限（43_lead_domain.sql 配套）
+-- 六、lead 域：线索记录菜单 + 只读权限（43_lead_domain.sql 配套；原名线索池，59 迁移更名）
 -- ============================================================
 INSERT INTO `system_menu`
   (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`, `icon`, `sort_order`, `is_visible`, `domain_type`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
-  ('admin_channel_lead', '线索池', 'admin_channel', 2, '/channel/lead', 'channel/lead/index', 'lead:info:list', 'Aim', 5, 1, 'admin', 1, '访客线索池（分享追踪自动建档，只读）', NOW(), NOW(), 'system', 'system', 0)
+  ('admin_channel_lead', '线索记录', 'admin_channel', 2, '/channel/lead', 'channel/lead/index', 'lead:info:list', 'Aim', 5, 1, 'admin', 1, '访客线索记录（分享追踪自动建档，只读）', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `menu_name` = VALUES(`menu_name`), `component` = VALUES(`component`), `permission_code` = VALUES(`permission_code`), `path` = VALUES(`path`);
 
 INSERT INTO `organ_permission`

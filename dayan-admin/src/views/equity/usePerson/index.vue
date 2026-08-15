@@ -15,7 +15,7 @@ import { Gender, GENDER_OPTIONS } from '@/types/client'
 import { formatDate, formatDateTime, formatOption } from '@/utils/format'
 
 /**
- * 权益使用人管理页（CRUD + 设为默认）。
+ * 权益人员管理页（CRUD + 设为默认，菜单原名「权益使用人」）。
  *
  * - 搜索 + 表格 + 分页 + 新增/编辑/删除弹窗；
  * - id 为雪花ID，后端序列化为字符串，前端统一按 string 处理（避免精度丢失）；
@@ -264,8 +264,8 @@ loadPage()
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>权益使用人列表</span>
-          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增使用人</el-button>
+          <span>权益人员列表</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增权益人员</el-button>
         </div>
       </template>
 
