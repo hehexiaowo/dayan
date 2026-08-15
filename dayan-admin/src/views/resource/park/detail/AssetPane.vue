@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /**
- * 素材仓库面板（锁定模式传 refType1+refCode / 全局模式不传）：图片/视频/文档/VR 四类素材管理，复用本组件。
+ * 素材仓库面板（锁定模式传 refType1+refCode / 全局模式不传）：图片/视频/文档/VR 统一清单。
  *
- * 单表 CRUD：useCrud（idKey:'id', fixedParams:{refType1, refCode, assetType}）。
- * 通过 assetType prop 区分图片(1)/视频(2)/文件(3)/VR(4)，复用同一组件。
+ * 媒体类型不做 tab 拆分：作为「素材类型」筛选条件 + 清单列展示，新增时在表单中选择类型，
+ * 类型专属字段（图片宽高/视频时长/文件格式/VR 提供商）随所选类型条件渲染。
+ * 单表 CRUD：useCrud（idKey:'id', fixedParams:{refType1, refCode}）。
  * storageType 区分本地 OSS（上传得 key）与外链（手填完整 http(s) URL）；
  * refType1/refType2/refCode 为冗余分类三元组（业务维度/细分分类/关联编码），
  * 真实引用关系由各业务表持有，删除受引用保护。
- * 分类两级关联（字典 asset_ref_type1/asset_ref_type2）：类型1 为业务维度，
- * 类型2 按 parent_code 挂到所属类型1（父级为空=跨维度通用），
- * 表单/筛选的类型2 选项随类型1 级联。
+ * 分类两级关联（字典 asset_ref_type1/asset_ref_type2）：类型2 按 parent_code 挂到
+ * 所属类型1（父级为空=跨维度通用），表单/筛选的类型2 选项随类型1 级联分组。
  */
 import { reactive, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -24,8 +24,10 @@ import {
   deleteAsset
 } from '@/api/system-asset'
 import {
+  ASSET_TYPE_OPTIONS,
   STORAGE_TYPE_OPTIONS,
   REF_TYPE1_OPTIONS,
+  assetTypeLabel,
   refType1Label,
   refType2Label,
   storageTypeLabel,
@@ -39,13 +41,11 @@ const props = defineProps<{
   refType1?: string
   /** 关联编码（锁定模式传业务实体编码） */
   refCode?: string
-  /** 素材类型：1=图片 2=视频 3=文件 4=VR */
-  assetType: number
 }>()
 
-/** FileUploader type 映射 */
+/** FileUploader type 映射（按表单所选素材类型） */
 const uploaderType = computed(() => {
-  switch (props.assetType) {
+  switch (form.assetType) {
     case 1: return 'image' as const
     case 2: return 'video' as const
     case 3: return 'file' as const
@@ -69,12 +69,11 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
     remove: deleteAsset
   },
   {
-    initialQuery: { keyword: undefined, refType1: undefined, refType2: undefined, refCode: undefined, storageType: undefined, isCover: undefined, status: undefined },
+    initialQuery: { keyword: undefined, assetType: undefined, refType1: undefined, refType2: undefined, refCode: undefined, storageType: undefined, status: undefined },
     idKey: 'id',
     fixedParams: {
       ...(props.refType1 ? { refType1: props.refType1 } : {}),
-      ...(props.refCode ? { refCode: props.refCode } : {}),
-      assetType: props.assetType
+      ...(props.refCode ? { refCode: props.refCode } : {})
     }
   }
 )
@@ -150,6 +149,17 @@ function onRefType1Change() {
   }
 }
 
+/** 切换素材类型时清空类型专属字段，避免脏数据误提交 */
+function onAssetTypeChange() {
+  form.width = undefined
+  form.height = undefined
+  form.coverUrl = ''
+  form.duration = undefined
+  form.fileFormat = ''
+  form.vrProvider = ''
+  form.thumbnailUrl = ''
+}
+
 // ---------- 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
@@ -158,7 +168,7 @@ const formRef = ref<FormInstance>()
 
 const form = reactive<SystemAsset>({
   id: undefined,
-  assetType: props.assetType,
+  assetType: undefined,
   refType1: 'platform',
   refType2: undefined,
   refCode: '',
@@ -169,7 +179,6 @@ const form = reactive<SystemAsset>({
   fileSize: undefined,
   width: undefined,
   height: undefined,
-  isCover: 0,
   coverUrl: '',
   duration: undefined,
   fileFormat: '',
@@ -180,6 +189,7 @@ const form = reactive<SystemAsset>({
 })
 
 const rules: FormRules<SystemAsset> = {
+  assetType: [{ required: true, message: '请选择素材类型', trigger: 'change' }],
   assetUrl: [{
     required: true,
     validator: (_rule, value: string, callback) => {
@@ -205,7 +215,7 @@ const rules: FormRules<SystemAsset> = {
 function resetForm() {
   Object.assign(form, {
     id: undefined,
-    assetType: props.assetType,
+    assetType: undefined,
     refType1: 'platform',
     refType2: undefined,
     refCode: '',
@@ -216,7 +226,6 @@ function resetForm() {
     fileSize: undefined,
     width: undefined,
     height: undefined,
-    isCover: 0,
     coverUrl: '',
     duration: undefined,
     fileFormat: '',
@@ -290,6 +299,14 @@ function statusLabel(v?: number): string {
 function statusTagType(v?: number): 'success' | 'info' {
   return v === 1 ? 'success' : 'info'
 }
+function mediaTagType(v?: number): 'primary' | 'success' | 'warning' | 'info' {
+  switch (v) {
+    case 1: return 'primary'
+    case 2: return 'success'
+    case 3: return 'warning'
+    default: return 'info'
+  }
+}
 function formatDate(s?: string): string {
   if (!s) return '--'
   return s.length >= 10 ? s.slice(0, 10) : s
@@ -300,6 +317,11 @@ defineExpose({ loadPage })
 <template>
   <div class="asset-pane">
     <el-form :inline="true" :model="query" @submit.prevent>
+      <el-form-item label="素材类型">
+        <el-select v-model="query.assetType" placeholder="全部" clearable style="width: 110px">
+          <el-option v-for="o in ASSET_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+      </el-form-item>
       <el-form-item v-if="!refType1" label="类型1">
         <el-select v-model="query.refType1" placeholder="全部" clearable style="width: 130px" @change="onQueryRefType1Change">
           <el-option v-for="o in refType1Items" :key="o.value" :label="o.label" :value="o.value" />
@@ -323,12 +345,6 @@ defineExpose({ loadPage })
           <el-option v-for="o in STORAGE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </el-form-item>
-      <el-form-item v-if="assetType === 1" label="封面">
-        <el-select v-model="query.isCover" placeholder="全部" clearable style="width: 110px">
-          <el-option label="封面" :value="1" />
-          <el-option label="非封面" :value="0" />
-        </el-select>
-      </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="query.status" placeholder="全部" clearable style="width: 110px">
           <el-option label="显示" :value="1" />
@@ -342,12 +358,12 @@ defineExpose({ loadPage })
     </el-form>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
-      <!-- 图片预览 -->
-      <el-table-column v-if="assetType === 1 || assetType === 4" label="预览" min-width="100" align="center">
+      <!-- 预览：图片/VR 缩略图；视频/文档无预览 -->
+      <el-table-column label="预览" min-width="96" align="center">
         <template #default="{ row }">
           <el-image
-            v-if="row.assetUrl"
-            :src="formatFileUrl(assetType === 4 ? (row.thumbnailUrl || row.assetUrl) : row.assetUrl)"
+            v-if="(row.assetType === 1 || row.assetType === 4) && row.assetUrl"
+            :src="formatFileUrl(row.assetType === 4 ? (row.thumbnailUrl || row.assetUrl) : row.assetUrl)"
             :preview-src-list="[formatFileUrl(row.assetUrl)]"
             preview-teleported
             fit="cover"
@@ -356,21 +372,12 @@ defineExpose({ loadPage })
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <!-- 视频 -->
-      <el-table-column v-else-if="assetType === 2" label="视频" min-width="150">
-        <template #default="{ row }">
-          <span v-if="row.assetName" class="video-name">{{ row.assetName }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <!-- 文件 -->
-      <el-table-column v-else label="文件" min-width="150">
-        <template #default="{ row }">
-          <span v-if="row.assetName" class="file-name">{{ row.assetName }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
 
+      <el-table-column label="素材类型" width="90" align="center">
+        <template #default="{ row }">
+          <el-tag size="small" :type="mediaTagType(row.assetType)">{{ assetTypeLabel(row.assetType) }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="assetName" label="名称" min-width="150" show-overflow-tooltip />
       <el-table-column v-if="!refType1" label="类型1" width="100" align="center">
         <template #default="{ row }">
@@ -392,7 +399,7 @@ defineExpose({ loadPage })
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column v-if="assetType === 1" label="尺寸" width="110" align="center">
+      <el-table-column label="尺寸" width="110" align="center">
         <template #default="{ row }">
           <span v-if="row.width || row.height">{{ row.width }}×{{ row.height }}</span>
           <span v-else>--</span>
@@ -400,12 +407,6 @@ defineExpose({ loadPage })
       </el-table-column>
       <el-table-column prop="fileSize" label="大小" width="100" align="right">
         <template #default="{ row }">{{ fileSizeLabel(row.fileSize) }}</template>
-      </el-table-column>
-      <el-table-column v-if="assetType === 1" label="封面" width="70" align="center">
-        <template #default="{ row }">
-          <el-tag v-if="row.isCover === 1" type="warning" size="small">封面</el-tag>
-          <span v-else>—</span>
-        </template>
       </el-table-column>
       <el-table-column prop="sortOrder" label="排序" width="70" align="center" />
       <el-table-column prop="status" label="状态" width="85" align="center">
@@ -445,7 +446,14 @@ defineExpose({ loadPage })
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
-          <el-col :span="24">
+          <el-col :span="12">
+            <el-form-item label="素材类型" prop="assetType">
+              <el-select v-model="form.assetType" :disabled="dialogMode === 'edit'" placeholder="请选择" style="width: 100%" @change="onAssetTypeChange">
+                <el-option v-for="o in ASSET_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="存储方式" prop="storageType">
               <el-radio-group v-model="form.storageType" :disabled="dialogMode === 'edit'" @change="onStorageTypeChange">
                 <el-radio :value="1">本地上传（OSS）</el-radio>
@@ -495,7 +503,7 @@ defineExpose({ loadPage })
           </el-col>
 
           <!-- 图片专属 -->
-          <template v-if="assetType === 1">
+          <template v-if="form.assetType === 1">
             <el-col :span="12">
               <el-form-item label="宽度(px)">
                 <el-input-number v-model="form.width" :min="0" controls-position="right" style="width: 100%" />
@@ -506,15 +514,10 @@ defineExpose({ loadPage })
                 <el-input-number v-model="form.height" :min="0" controls-position="right" style="width: 100%" />
               </el-form-item>
             </el-col>
-            <el-col :span="12">
-              <el-form-item label="是否封面">
-                <el-switch v-model="form.isCover" :active-value="1" :inactive-value="0" />
-              </el-form-item>
-            </el-col>
           </template>
 
           <!-- 视频专属 -->
-          <template v-if="assetType === 2">
+          <template v-if="form.assetType === 2">
             <el-col :span="24">
               <el-form-item label="封面图">
                 <FileUploader v-model="form.coverUrl" type="image" module="system" />
@@ -528,7 +531,7 @@ defineExpose({ loadPage })
           </template>
 
           <!-- 文件专属 -->
-          <template v-if="assetType === 3">
+          <template v-if="form.assetType === 3">
             <el-col :span="12">
               <el-form-item label="文件格式">
                 <el-input v-model="form.fileFormat" placeholder="如 pdf/doc/xls" />
@@ -537,7 +540,7 @@ defineExpose({ loadPage })
           </template>
 
           <!-- VR 专属 -->
-          <template v-if="assetType === 4">
+          <template v-if="form.assetType === 4">
             <el-col :span="12">
               <el-form-item label="VR提供商">
                 <el-select v-model="form.vrProvider" placeholder="请选择" clearable style="width: 100%">
