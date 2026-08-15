@@ -6,6 +6,7 @@
 import { computed, ref, watch } from 'vue'
 import { VideoPlay } from '@element-plus/icons-vue'
 import { pageAssets } from '@/api/system-asset'
+import { useDictOptions } from '@/composables/useDict'
 import { REF_TYPE1_OPTIONS } from '@/types/asset'
 import { formatFileUrl } from '@/utils/file'
 import type { SystemAsset } from '@/types/asset'
@@ -38,6 +39,15 @@ const visible = computed({
 })
 
 const assetType = computed(() => (props.type === 'video' ? 2 : 1))
+
+/** 类型1 选项：字典 asset_ref_type1 驱动，字典为空时回退内置常量 */
+const { options: refType1DictOptions } = useDictOptions('asset_ref_type1')
+const refType1Items = computed(() => {
+  if (refType1DictOptions.value.length) {
+    return refType1DictOptions.value.map((d) => ({ label: d.dictName, value: d.dictCode }))
+  }
+  return REF_TYPE1_OPTIONS.map((o) => ({ label: o.label, value: o.value }))
+})
 const loading = ref(false)
 const records = ref<SystemAsset[]>([])
 const total = ref(0)
@@ -111,7 +121,7 @@ function onConfirm() {
       </el-form-item>
       <el-form-item v-if="!refType1" label="类型1">
         <el-select v-model="query.refType1" placeholder="全部" clearable style="width: 120px" @change="((query.current = 1), load())">
-          <el-option v-for="o in REF_TYPE1_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          <el-option v-for="o in refType1Items" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </el-form-item>
       <el-form-item v-if="!refCode" label="关联编码">

@@ -16,6 +16,8 @@ import { DICT_TYPE_OPTIONS, type SystemDict } from '@/types/dict'
  * - 左侧字典类型从后端 listDictTypes() 动态加载（根治硬编码脱节）；
  * - 右侧展示该类型全部字典项（含禁用，管理用），支持新增/编辑/删除；
  * - 业务语义类型以「业务域」标注所属域（通用字典留空）；
+ * - 两级关联分类：二级条目以「父级编码」挂到一级编码（可跨类型，
+ *   如 asset_ref_type2.room_type → asset_ref_type1.park；父级为空=顶级/通用）；
  * - 切换类型显式 loadData（不再 watch+click 双触发）。
  */
 
@@ -194,6 +196,9 @@ onMounted(() => {
                 <span v-else class="text-muted">通用</span>
               </template>
             </el-table-column>
+            <el-table-column prop="parentCode" label="父级编码" width="110" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.parentCode || '—' }}</template>
+            </el-table-column>
             <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
             <el-table-column label="状态" width="90" align="center">
               <template #default="{ row }">
@@ -253,6 +258,11 @@ onMounted(() => {
           <el-col :span="12">
             <el-form-item label="业务域">
               <el-input v-model="form.domain" placeholder="如 park/content（通用字典留空）" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="父级编码">
+              <el-input v-model="form.parentCode" placeholder="二级分类填对应一级编码，顶级留空" clearable />
             </el-form-item>
           </el-col>
           <el-col :span="12">

@@ -7,6 +7,9 @@
  * storageType 区分本地 OSS（上传得 key）与外链（手填完整 http(s) URL）；
  * refType1/refType2/refCode 为冗余分类三元组（业务维度/细分分类/关联编码），
  * 真实引用关系由各业务表持有，删除受引用保护。
+ * 分类两级关联（字典 asset_ref_type1/asset_ref_type2）：类型1 为业务维度，
+ * 类型2 按 parent_code 挂到所属类型1（父级为空=跨维度通用），
+ * 表单/筛选的类型2 选项随类型1 级联。
  */
 import { reactive, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -77,9 +80,43 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 
 loadPage()
 
-// ---------- 字典 ----------
+// ---------- 字典（两级关联）----------
+const { options: refType1DictOptions } = useDictOptions('asset_ref_type1')
 const { options: refType2Options } = useDictOptions('asset_ref_type2')
 const { options: vrProviderOptions } = useDictOptions('vr_provider')
+
+/** 类型1 选项：字典 asset_ref_type1 驱动，字典为空时回退内置常量 */
+const refType1Items = computed(() => {
+  if (refType1DictOptions.value.length) {
+    return refType1DictOptions.value.map((d) => ({ label: d.dictName, value: d.dictCode }))
+  }
+  return REF_TYPE1_OPTIONS.map((o) => ({ label: o.label, value: o.value }))
+})
+
+/** 类型2 选项级联：父级匹配所选类型1，或父级为空（跨维度通用） */
+function cascadeType2(type1?: string) {
+  return refType2Options.value.filter(
+    (d) => !d.parentCode || !type1 || d.parentCode === type1
+  )
+}
+/** 表单类型2 级联选项 */
+const formType2Options = computed(() => cascadeType2(form.refType1))
+/** 筛选类型2 级联选项 */
+const queryType2Options = computed(() => cascadeType2(query.refType1))
+
+/** 类型1 label（字典优先，回退常量） */
+function type1Label(v?: string): string {
+  const fromDict = refType1DictOptions.value.find((d) => d.dictCode === v)
+  if (fromDict) return fromDict.dictName
+  return refType1Label(v)
+}
+
+/** 切换类型1 时，若当前类型2 不属于新维度（且非通用）则清空 */
+function onRefType1Change() {
+  if (form.refType2 && !formType2Options.value.some((d) => d.dictCode === form.refType2)) {
+    form.refType2 = undefined
+  }
+}
 
 // ---------- 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -233,7 +270,7 @@ defineExpose({ loadPage })
     <el-form :inline="true" :model="query" @submit.prevent>
       <el-form-item v-if="!refType1" label="类型1">
         <el-select v-model="query.refType1" placeholder="全部" clearable style="width: 130px">
-          <el-option v-for="o in REF_TYPE1_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          <el-option v-for="o in refType1Items" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </el-form-item>
       <el-form-item v-if="!refCode" label="关联编码">
@@ -243,8 +280,8 @@ defineExpose({ loadPage })
         <el-input v-model="query.keyword" placeholder="名称/URL 关键字" clearable style="width: 160px" @keyup.enter="handleSearch" />
       </el-form-item>
       <el-form-item label="类型2">
-        <el-select v-model="query.refType2" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="d in refType2Options" :key="d.dictCode" :label="d.dictName" :value="d.dictCode" />
+        <el-select v-model="query.refType2" placeholder="全部（随类型1 级联）" clearable style="width: 140px">
+          <el-option v-for="d in queryType2Options" :key="d.dictCode" :label="d.dictName" :value="d.dictCode" />
         </el-select>
       </el-form-item>
       <el-form-item label="存储">
@@ -304,7 +341,7 @@ defineExpose({ loadPage })
       <el-table-column v-if="!refType1" label="类型1" width="100" align="center">
         <template #default="{ row }">
           <el-tag size="small" :type="row.refType1 === 'park' ? 'success' : 'info'">
-            {{ refType1Label(row.refType1) }}
+            {{ type1Label(row.refType1) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -400,15 +437,15 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="类型1">
-              <el-select v-model="form.refType1" :disabled="!!refType1" style="width: 100%">
-                <el-option v-for="o in REF_TYPE1_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              <el-select v-model="form.refType1" :disabled="!!refType1" style="width: 100%" @change="onRefType1Change">
+                <el-option v-for="o in refType1Items" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="类型2">
-              <el-select v-model="form.refType2" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="d in refType2Options" :key="d.dictCode" :label="d.dictName" :value="d.dictCode" />
+              <el-select v-model="form.refType2" placeholder="请选择（随类型1 级联）" clearable style="width: 100%">
+                <el-option v-for="d in formType2Options" :key="d.dictCode" :label="d.parentCode ? d.dictName : `${d.dictName}（通用）`" :value="d.dictCode" />
               </el-select>
             </el-form-item>
           </el-col>
