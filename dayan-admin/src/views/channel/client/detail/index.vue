@@ -70,12 +70,12 @@ function genderText(v?: number): string {
 
 const tabs = [
   { name: 'basic', label: '基本信息' },
-  { name: 'account', label: '账号' },
+  { name: 'account', label: '账号管理' },
   { name: 'family', label: '家庭成员' },
   { name: 'address', label: '收货地址' },
   { name: 'health', label: '健康档案' },
   { name: 'care', label: '照护需求' },
-  { name: 'favorite', label: '收藏' }
+  { name: 'favorite', label: '收藏记录' }
 ] as const
 </script>
 

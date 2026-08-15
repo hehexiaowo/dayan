@@ -12,7 +12,7 @@
  *
  * 子表主键混合模式（本域最大坑）：
  * - AgentAccount：业务主键 agentCode（1:1）。
- * - AgentClientRel/AgentPerformance/AgentShareRecord/AgentFavorite：雪花 id（前端 string）。
+ * - AgentClientRel/AgentShareRecord/AgentFavorite：雪花 id（前端 string；业绩域管理入口已下线）。
  */
 
 import type { PageQuery } from '@/types/common'
@@ -206,7 +206,6 @@ export interface AgentInfoQuery extends PageQuery {
 //   一代理人一账号（1:1），同 agentCode 仅允许一条。
 // - AgentClientRel：雪花 id（前端 string 防精度溢出）。无 update，bind/unbind/delete。
 //   unbind 路径用 id（Long）。
-// - AgentPerformance：雪花 id（前端 string）。只增不改不删；create 返回 Void。
 // - AgentShareRecord：雪花 id（前端 string）。只增不改不删；create 返回 shareCode string。
 // - AgentFavorite：雪花 id（前端 string）。幂等 add（重复返回既有 id）；remove 路径用 id。
 //   无 update。
@@ -296,60 +295,6 @@ export interface AgentClientRelQuery extends PageQuery {
   status?: number
 }
 
-/**
- * 代理人业绩（AgentPerformance，主键雪花 id string）。
- *
- * 只增不改不删：create 返回 Void；周期唯一（agentCode+periodType+periodValue，重复抛错）。
- */
-export interface AgentPerformance {
-  /** 雪花 id（前端 string 防精度溢出） */
-  id?: string
-  /** 代理人编码 */
-  agentCode: string
-  /** 所属渠道编码 */
-  channelCode?: string
-  /** 周期类型：1日 2周 3月 4季 5年 */
-  periodType?: number
-  /** 周期值（如 202608 表示 2026年8月） */
-  periodValue?: string
-  /** 权益赠送次数 */
-  equityGrantCount?: number
-  /** 权益赠送金额 */
-  equityGrantAmount?: number
-  /** 场景订单次数 */
-  sceneOrderCount?: number
-  /** 场景订单金额 */
-  sceneOrderAmount?: number
-  /** 课程订单次数 */
-  courseOrderCount?: number
-  /** 课程订单金额 */
-  courseOrderAmount?: number
-  createdAt?: string
-}
-
-/**
- * 代理人业绩汇总（AgentPerformanceSummary）。
- *
- * GET /admin-api/agent-performances/summary/{agentCode} 返回此 VO。
- */
-export interface AgentPerformanceSummary {
-  /** 代理人编码 */
-  agentCode?: string
-  /** 权益赠送总次数 */
-  totalEquityGrantCount?: number
-  /** 权益赠送总金额 */
-  totalEquityGrantAmount?: number
-  /** 场景订单总次数 */
-  totalSceneOrderCount?: number
-  /** 场景订单总金额 */
-  totalSceneOrderAmount?: number
-  /** 课程订单总次数 */
-  totalCourseOrderCount?: number
-  /** 课程订单总金额 */
-  totalCourseOrderAmount?: number
-  /** 业绩记录总数 */
-  recordCount?: number
-}
 
 /**
  * 代理人分享记录（AgentShareRecord，主键雪花 id string）。

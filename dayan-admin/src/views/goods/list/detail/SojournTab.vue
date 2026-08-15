@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 商品详情页 - 旅游短居配置 tab（goodsType=4 时显示）。
+ * 商品详情页 - 权益配置 tab（goodsType=4 旅游短居商品，原「旅游短居配置」）。
  *
  * 分页模式：useCrud（主键 id 自增 number，传 idKey:'id'，fixedParams:{goodsCode}）。
  *
@@ -42,7 +42,7 @@ const props = defineProps<{
   goodsCode: string
 }>()
 
-// ---------- 旅游短居配置列表（useCrud，主键 id 自增 number） ----------
+// ---------- 权益配置列表（useCrud，主键 id 自增 number） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
   useCrud<GoodsSojourn, GoodsSojournQuery, number>(
     {
@@ -108,19 +108,6 @@ async function loadSubTypes(parkCode: string) {
   }
 }
 
-/** 切换机构时重载子类型并清空已选（编辑回填时仅重载不清空） */
-watch(
-  () => form.parkCode,
-  (code) => {
-    if (!suppressSubWatch.value) {
-      form.roomTypeCode = ''
-      form.careTypeCode = ''
-      form.foodTypeCode = ''
-    }
-    loadSubTypes(code || '')
-  }
-)
-
 onMounted(loadParks)
 
 // ---------- 新增/编辑弹窗 ----------
@@ -157,6 +144,21 @@ const rules: FormRules<GoodsSojourn> = {
   parkCode: [{ required: true, message: '请输入园区编码', trigger: 'blur' }],
   roomTypeCode: [{ required: true, message: '请输入房型编码', trigger: 'blur' }]
 }
+
+/** 切换机构时重载子类型并清空已选（编辑回填时仅重载不清空）。
+ *  必须声明在 form 之后：watch 注册时会立即执行 getter 取初值，
+ *  放在 form 声明之前会触发 TDZ ReferenceError 导致整个 tab 挂载失败。 */
+watch(
+  () => form.parkCode,
+  (code) => {
+    if (!suppressSubWatch.value) {
+      form.roomTypeCode = ''
+      form.careTypeCode = ''
+      form.foodTypeCode = ''
+    }
+    loadSubTypes(code || '')
+  }
+)
 
 function resetForm() {
   Object.assign(form, {
@@ -249,7 +251,7 @@ async function handleSubmit() {
 
 async function handleDeleteRow(row: GoodsSojourn) {
   if (!row.id) return
-  await ElMessageBox.confirm('确定删除该旅游短居配置记录？', '提示', {
+  await ElMessageBox.confirm('确定删除该权益配置记录？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
@@ -295,7 +297,7 @@ async function handleDeleteRow(row: GoodsSojourn) {
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增旅游短居配置</el-button>
+        <el-button :icon="'Plus'" @click="openCreate">新增权益配置</el-button>
       </el-form-item>
     </el-form>
 
@@ -354,7 +356,7 @@ async function handleDeleteRow(row: GoodsSojourn) {
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增旅游短居配置' : '编辑旅游短居配置'"
+      :title="dialogMode === 'create' ? '新增权益配置' : '编辑权益配置'"
       width="820px"
       :close-on-click-modal="false"
     >

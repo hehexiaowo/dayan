@@ -10,9 +10,8 @@
  * - 基本信息：AgentInfo 主表字段编辑
  * - 账号：AgentAccount（1:1 强约束，主键 agentCode，开通/编辑/重置密码/删除）
  * - 绑定客户：AgentClientRel（by-agent list + bind/unbind，无 update）
- * - 业绩：AgentPerformance（by-agent list + summary 汇总 + 新增，只增不改不删）
  * - 分享记录：AgentShareRecord（by-agent list + 新增，只增不改不删）
- * - 收藏：AgentFavorite（by-agent list + 幂等 add/remove，无 update）
+ * - 收藏记录：AgentFavorite（by-agent list + 幂等 add/remove，无 update；业绩 tab 已下线）
  *
  * 懒加载：所有 el-tab-pane 带 lazy 属性，未访问的 tab 不渲染内容（但标签常驻可见）。
  */
@@ -30,7 +29,6 @@ import type { AgentInfo } from '@/types/agent'
 import BasicTab from './BasicTab.vue'
 import AccountTab from './AccountTab.vue'
 import ClientTab from './ClientTab.vue'
-import PerformanceTab from './PerformanceTab.vue'
 import ShareTab from './ShareTab.vue'
 import FavoriteTab from './FavoriteTab.vue'
 
@@ -68,11 +66,10 @@ function genderText(v?: number): string {
 
 const tabs = [
   { name: 'basic', label: '基本信息' },
-  { name: 'account', label: '账号' },
+  { name: 'account', label: '账号管理' },
   { name: 'client', label: '绑定客户' },
-  { name: 'performance', label: '业绩' },
   { name: 'share', label: '分享记录' },
-  { name: 'favorite', label: '收藏' }
+  { name: 'favorite', label: '收藏记录' }
 ] as const
 </script>
 
@@ -120,7 +117,6 @@ const tabs = [
           :channel-code="agentInfo?.channelCode"
         />
         <ClientTab v-else-if="t.name === 'client'" :agent-code="agentCode" />
-        <PerformanceTab v-else-if="t.name === 'performance'" :agent-code="agentCode" />
         <ShareTab v-else-if="t.name === 'share'" :agent-code="agentCode" />
         <FavoriteTab v-else-if="t.name === 'favorite'" :agent-code="agentCode" />
       </el-tab-pane>

@@ -13,10 +13,12 @@ import com.dayan.goods.dto.GoodsInfoShelfDTO;
 import com.dayan.goods.dto.GoodsInfoUpdateDTO;
 import com.dayan.goods.entity.GoodsInfo;
 import com.dayan.goods.entity.GoodsCourse;
+import com.dayan.goods.entity.GoodsEquity;
 import com.dayan.goods.entity.GoodsScene;
 import com.dayan.goods.entity.GoodsSojourn;
 import com.dayan.goods.mapper.GoodsInfoMapper;
 import com.dayan.goods.mapper.GoodsCourseMapper;
+import com.dayan.goods.mapper.GoodsEquityMapper;
 import com.dayan.goods.mapper.GoodsSceneMapper;
 import com.dayan.goods.mapper.GoodsSojournMapper;
 import com.dayan.goods.service.GoodsInfoService;
@@ -35,8 +37,8 @@ import java.util.stream.Collectors;
  * <p>编码规则：{@code "GD" + format(%05d, sequenceProvider.next("code:seq:GD:0"))}。
  * 平台共享表（AUTO_INCREMENT + DayanTenantHandler 忽略），主键为 id，业务键为 goodsCode。
  *
- * <p>商品类型 goodsType（1权益/2场景/3课程/4旅游短居）创建后不可变更；
- * 删除时按类型校验对应 SKU 子表无关联记录。
+ * <p>商品类型 goodsType（1权益/2场景/3课程/4旅游短居）变更需 4 张 SKU 子表全部为空
+ * （类型决定关联子表）；删除时按类型校验对应 SKU 子表无关联记录。
  */
 @Slf4j
 @Service
@@ -63,6 +65,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
     private final GoodsSceneMapper sceneMapper;
     private final GoodsCourseMapper courseMapper;
     private final GoodsSojournMapper sojournMapper;
+    private final GoodsEquityMapper equityMapper;
     private final SequenceProvider sequenceProvider;
 
     @Override
@@ -131,6 +134,28 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
         GoodsInfo existing = requireGoods(goodsCode);
         GoodsInfo update = new GoodsInfo();
         update.setId(existing.getId());
+
+        // 商品类型变更：类型决定关联的 SKU 子表，仅在 4 张子表全部为空时放行，
+        // 已建任何 SKU 配置则拒绝（否则旧子表数据成为孤儿、详情页 tab 错乱）
+        if (dto.getGoodsType() != null && !dto.getGoodsType().equals(existing.getGoodsType())) {
+            if (dto.getGoodsType() < 1 || dto.getGoodsType() > 4) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "goodsType 仅支持 1权益/2场景/3课程/4旅游短居");
+            }
+            long skuCount = equityMapper.selectCount(new LambdaQueryWrapper<GoodsEquity>()
+                            .eq(GoodsEquity::getGoodsCode, goodsCode))
+                    + sceneMapper.selectCount(new LambdaQueryWrapper<GoodsScene>()
+                            .eq(GoodsScene::getGoodsCode, goodsCode))
+                    + courseMapper.selectCount(new LambdaQueryWrapper<GoodsCourse>()
+                            .eq(GoodsCourse::getGoodsCode, goodsCode))
+                    + sojournMapper.selectCount(new LambdaQueryWrapper<GoodsSojourn>()
+                            .eq(GoodsSojourn::getGoodsCode, goodsCode));
+            if (skuCount > 0) {
+                throw new BusinessException(ErrorCode.BUSINESS,
+                        "商品已存在 SKU 配置（共 " + skuCount + " 条），不能修改商品类型；请先清空对应配置");
+            }
+            update.setGoodsType(dto.getGoodsType());
+            log.info("商品类型变更: goodsCode={}, {} -> {}", goodsCode, existing.getGoodsType(), dto.getGoodsType());
+        }
 
         if (dto.getGoodsName() != null) update.setGoodsName(dto.getGoodsName());
         if (dto.getGoodsShortName() != null) update.setGoodsShortName(dto.getGoodsShortName());

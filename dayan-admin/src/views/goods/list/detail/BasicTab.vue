@@ -6,7 +6,7 @@
  * 修改主表（提交 updateGoods）。
  *
  * 字段约束：
- * - goodsType 创建后不可改（UpdateDTO 无此字段），编辑表单 disabled。
+ * - goodsType 可改：后端约束 4 张 SKU 子表全空才放行（类型决定关联子表），非空时报错。
  * - salesCount / viewCount / collectCount / createdAt 只读展示（统计字段）。
  * - goodsStatus 由 shelf 接口控制（列表页上下架按钮），编辑表单不含该字段；
  *   auditStatus / isHot / isNew / isRecommend 用 el-select / el-switch。
@@ -126,7 +126,7 @@ function openEdit() {
     goodsCode: g.goodsCode,
     goodsName: g.goodsName ?? '',
     goodsShortName: g.goodsShortName ?? '',
-    // goodsType 创建后不可改，编辑表单只读展示（disabled），但仍回填用于提交时占位
+    // goodsType 可改（后端约束 SKU 全空才生效），回填当前值
     goodsType: g.goodsType ?? GoodsType.EQUITY,
     categoryCode: g.categoryCode ?? '',
     brandName: g.brandName ?? '',
@@ -251,8 +251,8 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="12">
             <el-form-item label="商品类型">
-              <!-- goodsType 创建后不可改（UpdateDTO 无此字段），编辑时 disabled -->
-              <el-select v-model="form.goodsType" placeholder="商品类型" style="width: 100%" disabled>
+              <!-- 类型决定 SKU 子表：已建任何 SKU 配置时后端拒绝变更并报错提示 -->
+              <el-select v-model="form.goodsType" placeholder="商品类型" style="width: 100%">
                 <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>

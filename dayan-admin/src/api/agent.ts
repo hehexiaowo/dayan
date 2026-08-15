@@ -6,8 +6,6 @@ import type {
   AgentAccount,
   AgentAccountQuery,
   AgentClientRel,
-  AgentPerformance,
-  AgentPerformanceSummary,
   AgentShareRecord,
   AgentFavorite
 } from '@/types/agent'
@@ -71,7 +69,6 @@ export function deleteAgent(agentCode: string): Promise<void> {
 // - Account：业务主键 agentCode（非 id）。get/update/delete/reset-password 都用 agentCode。
 //   一代理人一账号（1:1）。
 // - ClientRel：雪花 id string。无 update；bind(POST) / unbind(PUT /{id}/unbind)。
-// - Performance：雪花 id string。只增不改不删；create 返回 Void。
 // - ShareRecord：雪花 id string。只增不改不删；create 返回 shareCode string。
 // - Favorite：雪花 id string。幂等 add；remove 路径用 id。无 update。
 //
@@ -177,40 +174,8 @@ export function unbindAgentClient(id: string): Promise<void> {
   })
 }
 
-// ---------------- 3. 代理人业绩（agent-performances）----------------
-
-/** 代理人业绩列表（全量，按 agentCode 过滤）：GET /admin-api/agent-performances/by-agent/{agentCode} */
-export function listAgentPerformancesByAgent(agentCode: string): Promise<AgentPerformance[]> {
-  return request<AgentPerformance[]>({
-    url: `/admin-api/agent-performances/by-agent/${agentCode}`,
-    method: 'get'
-  })
-}
-
-/**
- * 代理人业绩汇总：GET /admin-api/agent-performances/summary/{agentCode}。
- * 返回汇总 SummaryVO。
- */
-export function getAgentPerformanceSummary(agentCode: string): Promise<AgentPerformanceSummary> {
-  return request<AgentPerformanceSummary>({
-    url: `/admin-api/agent-performances/summary/${agentCode}`,
-    method: 'get'
-  })
-}
-
-/**
- * 新增业绩：POST /admin-api/agent-performances（返回 Void，非 id）。
- * 周期唯一（agentCode+periodType+periodValue），重复抛"该周期业绩已存在"。
- */
-export function createAgentPerformance(data: Partial<AgentPerformance>): Promise<void> {
-  return request<void>({
-    url: '/admin-api/agent-performances',
-    method: 'post',
-    data
-  })
-}
-
-// ---------------- 4. 代理人分享记录（agent-share-records）----------------
+// ---------------- 3. 代理人分享记录（agent-share-records）----------------
+// 业绩（agent-performances）管理入口已下线（2026-08 队伍管理详情页移除业绩 tab）
 
 /** 代理人分享记录列表（全量，按 agentCode 过滤）：GET /admin-api/agent-share-records/by-agent/{agentCode} */
 export function listAgentShareRecordsByAgent(agentCode: string): Promise<AgentShareRecord[]> {

@@ -8,8 +8,8 @@
  *
  * tab 划分（1 主表 + 3 RBAC 子表 + 配置 tab 内分 3 子区）：
  * - 基本信息：ChannelInfo 主表字段编辑（复用主列表页编辑表单字段集）
- * - 账户：ChannelAccount（分页 + 重置密码，业务键 accountCode 路径）
- * - 角色：ChannelRole（分页 + CRUD，业务键 roleCode 路径；权限分配端点本次不实现）
+ * - 账号管理：ChannelAccount（分页 + 重置密码，业务键 accountCode 路径）
+ * - 角色管理：ChannelRole（分页 + CRUD，业务键 roleCode 路径；权限分配端点本次不实现）
  * - 开放平台：ChannelOpenPlatform（分页 + CRUD，**id 路径非编码**；appSecret 脱敏）
  * - 分发配置：ChannelConfig content/scene/goods 三类（list+save 全量覆盖，可编辑表格 + 整体保存）
  *
@@ -88,8 +88,8 @@ function auditStatusTagType(v?: number): 'info' | 'success' | 'danger' {
 
 const tabs = [
   { name: 'basic', label: '基本信息' },
-  { name: 'account', label: '账户' },
-  { name: 'role', label: '角色' },
+  { name: 'account', label: '账号管理' },
+  { name: 'role', label: '角色管理' },
   { name: 'platform', label: '开放平台' },
   { name: 'config', label: '分发配置' }
 ] as const
