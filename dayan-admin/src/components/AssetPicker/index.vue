@@ -6,6 +6,7 @@
 import { computed, ref, watch } from 'vue'
 import { VideoPlay } from '@element-plus/icons-vue'
 import { pageAssets } from '@/api/system-asset'
+import { REF_TYPE1_OPTIONS } from '@/types/asset'
 import { formatFileUrl } from '@/utils/file'
 import type { SystemAsset } from '@/types/asset'
 
@@ -18,8 +19,10 @@ const props = withDefaults(
     type?: 'image' | 'video'
     multiple?: boolean
     limit?: number
-    /** 可选：限定机构 */
-    parkCode?: string
+    /** 可选：限定类型1（业务维度，如 park） */
+    refType1?: string
+    /** 可选：限定关联编码（业务实体编码，如机构编码） */
+    refCode?: string
   }>(),
   { type: 'image', multiple: false, limit: 9 }
 )
@@ -38,7 +41,7 @@ const assetType = computed(() => (props.type === 'video' ? 2 : 1))
 const loading = ref(false)
 const records = ref<SystemAsset[]>([])
 const total = ref(0)
-const query = ref({ current: 1, size: 12, keyword: '', parkCode: props.parkCode || undefined })
+const query = ref({ current: 1, size: 12, keyword: '', refType1: props.refType1 || undefined, refCode: props.refCode || undefined })
 const selected = ref<string[]>([])
 
 async function load() {
@@ -106,8 +109,13 @@ function onConfirm() {
           @keyup.enter="((query.current = 1), load())"
         />
       </el-form-item>
-      <el-form-item v-if="!parkCode" label="机构编码">
-        <el-input v-model="query.parkCode" placeholder="空=全部（含平台）" clearable style="width: 150px" @keyup.enter="((query.current = 1), load())" />
+      <el-form-item v-if="!refType1" label="类型1">
+        <el-select v-model="query.refType1" placeholder="全部" clearable style="width: 120px" @change="((query.current = 1), load())">
+          <el-option v-for="o in REF_TYPE1_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="!refCode" label="关联编码">
+        <el-input v-model="query.refCode" placeholder="空=全部" clearable style="width: 150px" @keyup.enter="((query.current = 1), load())" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="'Search'" @click="((query.current = 1), load())">查询</el-button>

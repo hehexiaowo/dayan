@@ -3,10 +3,13 @@ import { request } from '@/utils/request'
 /** 素材登记上下文：随上传一并提交，服务端同事务登记素材仓库 */
 export interface AssetUploadContext {
   registerAsset?: boolean
-  assetParkCode?: string
+  /** 类型1：业务维度（park/platform/goods/content/course/scene，空=platform） */
+  assetRefType1?: string
+  /** 关联编码：业务实体编码（如机构编码/商品编码，空=无关联） */
+  assetRefCode?: string
   assetType?: number
-  assetSourceType?: string
-  assetSourceRef?: string
+  /** 类型2：细分分类（如 room_type/display_block，空=media_mgmt） */
+  assetRefType2?: string
 }
 
 /** 文件上传返回结构 */
@@ -25,10 +28,10 @@ export function uploadFile(file: File, module?: string, assetCtx?: AssetUploadCo
   formData.append('file', file)
   if (module) formData.append('module', module)
   if (assetCtx?.registerAsset) formData.append('assetRegister', 'true')
-  if (assetCtx?.assetParkCode) formData.append('assetParkCode', assetCtx.assetParkCode)
+  if (assetCtx?.assetRefType1) formData.append('assetRefType1', assetCtx.assetRefType1)
+  if (assetCtx?.assetRefCode) formData.append('assetRefCode', assetCtx.assetRefCode)
   if (assetCtx?.assetType) formData.append('assetType', String(assetCtx.assetType))
-  if (assetCtx?.assetSourceType) formData.append('assetSourceType', assetCtx.assetSourceType)
-  if (assetCtx?.assetSourceRef) formData.append('assetSourceRef', assetCtx.assetSourceRef)
+  if (assetCtx?.assetRefType2) formData.append('assetRefType2', assetCtx.assetRefType2)
   return request<FileUploadDTO>({
     url: '/admin-api/v1/files/upload',
     method: 'post',

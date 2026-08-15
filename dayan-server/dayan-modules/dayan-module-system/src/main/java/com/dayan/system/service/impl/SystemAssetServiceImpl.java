@@ -36,6 +36,11 @@ public class SystemAssetServiceImpl implements SystemAssetService {
     /** 存储方式：外部链接 */
     private static final int STORAGE_EXTERNAL = 2;
 
+    /** 类型1 默认值：平台素材 */
+    private static final String REF_TYPE1_DEFAULT = "platform";
+    /** 类型2 默认值：素材仓库直录 */
+    private static final String REF_TYPE2_DEFAULT = "media_mgmt";
+
     private final SystemAssetMapper assetMapper;
 
     /** 引用校验用原生查询（跨表 count，不建 XML） */
@@ -51,9 +56,8 @@ public class SystemAssetServiceImpl implements SystemAssetService {
     }
 
     @Override
-    public List<SystemAssetVO> listByPark(String parkCode) {
-        return assetMapper.selectList(new LambdaQueryWrapper<SystemAsset>()
-                .eq(SystemAsset::getParkCode, parkCode)
+    public List<SystemAssetVO> listByRef(String refType1, String refCode) {
+        return assetMapper.selectList(refWrapper(refType1, refCode)
                 .orderByAsc(SystemAsset::getAssetType)
                 .orderByAsc(SystemAsset::getSortOrder)
                 .orderByAsc(SystemAsset::getId))
@@ -61,9 +65,8 @@ public class SystemAssetServiceImpl implements SystemAssetService {
     }
 
     @Override
-    public List<SystemAssetVO> listByParkAndType(String parkCode, Integer assetType) {
-        return assetMapper.selectList(new LambdaQueryWrapper<SystemAsset>()
-                .eq(SystemAsset::getParkCode, parkCode)
+    public List<SystemAssetVO> listByRefAndType(String refType1, String refCode, Integer assetType) {
+        return assetMapper.selectList(refWrapper(refType1, refCode)
                 .eq(SystemAsset::getAssetType, assetType)
                 .orderByAsc(SystemAsset::getSortOrder)
                 .orderByAsc(SystemAsset::getId))
@@ -81,12 +84,13 @@ public class SystemAssetServiceImpl implements SystemAssetService {
         int storageType = dto.getStorageType() == null ? STORAGE_OSS : dto.getStorageType();
         validateExternalUrl(storageType, dto.getAssetUrl());
         SystemAsset entity = new SystemAsset();
-        entity.setParkCode(blankToNull(dto.getParkCode()));
         entity.setAssetType(dto.getAssetType());
+        entity.setRefType1(defaultString(dto.getRefType1(), REF_TYPE1_DEFAULT));
+        entity.setRefType2(defaultString(dto.getRefType2(), REF_TYPE2_DEFAULT));
+        entity.setRefCode(blankToNull(dto.getRefCode()));
         entity.setStorageType(storageType);
         entity.setAssetUrl(dto.getAssetUrl());
         entity.setAssetName(dto.getAssetName());
-        entity.setAssetCategory(dto.getAssetCategory());
         entity.setDescription(dto.getDescription());
         entity.setFileSize(dto.getFileSize());
         entity.setWidth(dto.getWidth());
@@ -97,13 +101,11 @@ public class SystemAssetServiceImpl implements SystemAssetService {
         entity.setFileFormat(dto.getFileFormat());
         entity.setVrProvider(dto.getVrProvider());
         entity.setThumbnailUrl(dto.getThumbnailUrl());
-        entity.setSourceType(dto.getSourceType() == null ? "media_mgmt" : dto.getSourceType());
-        entity.setSourceRefCode(blankToNull(dto.getSourceRefCode()));
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
         entity.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
         assetMapper.insert(entity);
-        log.info("创建素材成功: parkCode={}, assetType={}, storageType={}, id={}",
-                entity.getParkCode(), dto.getAssetType(), storageType, entity.getId());
+        log.info("创建素材成功: refType1={}, refCode={}, assetType={}, storageType={}, id={}",
+                entity.getRefType1(), entity.getRefCode(), dto.getAssetType(), storageType, entity.getId());
         return entity.getId();
     }
 
@@ -113,10 +115,12 @@ public class SystemAssetServiceImpl implements SystemAssetService {
         SystemAsset existing = requireAsset(id);
         SystemAsset update = new SystemAsset();
         update.setId(existing.getId());
+        if (dto.getRefType1() != null) update.setRefType1(blankToNull(dto.getRefType1()));
+        if (dto.getRefType2() != null) update.setRefType2(blankToNull(dto.getRefType2()));
+        if (dto.getRefCode() != null) update.setRefCode(blankToNull(dto.getRefCode()));
         if (dto.getStorageType() != null) update.setStorageType(dto.getStorageType());
         if (dto.getAssetUrl() != null) update.setAssetUrl(dto.getAssetUrl());
         if (dto.getAssetName() != null) update.setAssetName(dto.getAssetName());
-        if (dto.getAssetCategory() != null) update.setAssetCategory(dto.getAssetCategory());
         if (dto.getDescription() != null) update.setDescription(dto.getDescription());
         if (dto.getFileSize() != null) update.setFileSize(dto.getFileSize());
         if (dto.getWidth() != null) update.setWidth(dto.getWidth());
@@ -127,8 +131,6 @@ public class SystemAssetServiceImpl implements SystemAssetService {
         if (dto.getFileFormat() != null) update.setFileFormat(dto.getFileFormat());
         if (dto.getVrProvider() != null) update.setVrProvider(dto.getVrProvider());
         if (dto.getThumbnailUrl() != null) update.setThumbnailUrl(dto.getThumbnailUrl());
-        if (dto.getSourceType() != null) update.setSourceType(dto.getSourceType());
-        if (dto.getSourceRefCode() != null) update.setSourceRefCode(dto.getSourceRefCode());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
         // 存储方式与地址可能分别更新，按合并后的终态校验外链格式；
@@ -180,24 +182,20 @@ public class SystemAssetServiceImpl implements SystemAssetService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long registerIfAbsent(String parkCode, Integer assetType, String assetUrl,
-                                  String sourceType, String sourceRefCode,
-                                  String assetName, Long fileSize) {
-        String srcType = sourceType == null ? "media_mgmt" : sourceType;
-        // 幂等查询：同 parkCode + assetUrl + sourceType + sourceRefCode 已存在则返回已存 id
+    public Long registerIfAbsent(String refType1, String refCode, Integer assetType, String assetUrl,
+                                  String refType2, String assetName, Long fileSize) {
+        String type1 = defaultString(refType1, REF_TYPE1_DEFAULT);
+        String type2 = defaultString(refType2, REF_TYPE2_DEFAULT);
+        String code = blankToNull(refCode);
+        // 幂等查询：同 assetUrl + refType1 + refCode + refType2 已存在则返回已存 id
         LambdaQueryWrapper<SystemAsset> wrapper = new LambdaQueryWrapper<SystemAsset>()
                 .eq(SystemAsset::getAssetUrl, assetUrl)
-                .eq(SystemAsset::getSourceType, srcType);
-        // parkCode 为空 = 平台素材（system_asset.park_code NULL）
-        if (parkCode == null || parkCode.isEmpty()) {
-            wrapper.isNull(SystemAsset::getParkCode);
+                .eq(SystemAsset::getRefType1, type1)
+                .eq(SystemAsset::getRefType2, type2);
+        if (code == null) {
+            wrapper.isNull(SystemAsset::getRefCode);
         } else {
-            wrapper.eq(SystemAsset::getParkCode, parkCode);
-        }
-        if (sourceRefCode != null && !sourceRefCode.isEmpty()) {
-            wrapper.eq(SystemAsset::getSourceRefCode, sourceRefCode);
-        } else {
-            wrapper.isNull(SystemAsset::getSourceRefCode);
+            wrapper.eq(SystemAsset::getRefCode, code);
         }
         wrapper.last("LIMIT 1");
         SystemAsset existing = assetMapper.selectOne(wrapper);
@@ -206,20 +204,20 @@ public class SystemAssetServiceImpl implements SystemAssetService {
         }
         // 不存在则创建（上传登记固定为本地 OSS）
         SystemAsset entity = new SystemAsset();
-        entity.setParkCode(parkCode);
+        entity.setRefType1(type1);
+        entity.setRefCode(code);
         entity.setAssetType(assetType);
+        entity.setRefType2(type2);
         entity.setStorageType(STORAGE_OSS);
         entity.setAssetUrl(assetUrl);
         entity.setAssetName(assetName);
         entity.setFileSize(fileSize);
-        entity.setSourceType(srcType);
-        entity.setSourceRefCode((sourceRefCode != null && sourceRefCode.isEmpty()) ? null : sourceRefCode);
         entity.setIsCover(0);
         entity.setSortOrder(0);
         entity.setStatus(1);
         assetMapper.insert(entity);
-        log.info("注册素材成功: parkCode={}, assetType={}, sourceType={}, sourceRefCode={}, id={}",
-                parkCode, assetType, srcType, sourceRefCode, entity.getId());
+        log.info("登记素材成功: refType1={}, refCode={}, refType2={}, assetType={}, id={}",
+                type1, code, type2, assetType, entity.getId());
         return entity.getId();
     }
 
@@ -244,27 +242,42 @@ public class SystemAssetServiceImpl implements SystemAssetService {
         return (s == null || s.isBlank()) ? null : s;
     }
 
+    private String defaultString(String s, String def) {
+        return (s == null || s.isBlank()) ? def : s;
+    }
+
+    /** 分类三元组公共查询条件（refType1 必填语义，refCode 可空=该维度全部） */
+    private LambdaQueryWrapper<SystemAsset> refWrapper(String refType1, String refCode) {
+        LambdaQueryWrapper<SystemAsset> wrapper = new LambdaQueryWrapper<SystemAsset>()
+                .eq(SystemAsset::getRefType1, defaultString(refType1, REF_TYPE1_DEFAULT));
+        String code = blankToNull(refCode);
+        if (code != null) {
+            wrapper.eq(SystemAsset::getRefCode, code);
+        }
+        return wrapper;
+    }
+
     private LambdaQueryWrapper<SystemAsset> buildWrapper(SystemAssetQueryDTO query) {
         LambdaQueryWrapper<SystemAsset> wrapper = new LambdaQueryWrapper<SystemAsset>()
                 .orderByAsc(SystemAsset::getSortOrder)
                 .orderByAsc(SystemAsset::getId);
-        if (query.getParkCode() != null && !query.getParkCode().isEmpty()) {
-            wrapper.eq(SystemAsset::getParkCode, query.getParkCode());
-        }
         if (query.getAssetType() != null) {
             wrapper.eq(SystemAsset::getAssetType, query.getAssetType());
+        }
+        if (query.getRefType1() != null && !query.getRefType1().isEmpty()) {
+            wrapper.eq(SystemAsset::getRefType1, query.getRefType1());
+        }
+        if (query.getRefType2() != null && !query.getRefType2().isEmpty()) {
+            wrapper.eq(SystemAsset::getRefType2, query.getRefType2());
+        }
+        if (query.getRefCode() != null && !query.getRefCode().isEmpty()) {
+            wrapper.eq(SystemAsset::getRefCode, query.getRefCode());
         }
         if (query.getStorageType() != null) {
             wrapper.eq(SystemAsset::getStorageType, query.getStorageType());
         }
-        if (query.getAssetCategory() != null) {
-            wrapper.eq(SystemAsset::getAssetCategory, query.getAssetCategory());
-        }
         if (query.getIsCover() != null) {
             wrapper.eq(SystemAsset::getIsCover, query.getIsCover());
-        }
-        if (query.getSourceType() != null && !query.getSourceType().isEmpty()) {
-            wrapper.eq(SystemAsset::getSourceType, query.getSourceType());
         }
         if (query.getKeyword() != null && !query.getKeyword().isEmpty()) {
             String kw = query.getKeyword()
@@ -289,12 +302,13 @@ public class SystemAssetServiceImpl implements SystemAssetService {
     private SystemAssetVO toVO(SystemAsset entity) {
         SystemAssetVO vo = new SystemAssetVO();
         vo.setId(entity.getId());
-        vo.setParkCode(entity.getParkCode());
         vo.setAssetType(entity.getAssetType());
+        vo.setRefType1(entity.getRefType1());
+        vo.setRefType2(entity.getRefType2());
+        vo.setRefCode(entity.getRefCode());
         vo.setStorageType(entity.getStorageType());
         vo.setAssetUrl(entity.getAssetUrl());
         vo.setAssetName(entity.getAssetName());
-        vo.setAssetCategory(entity.getAssetCategory());
         vo.setDescription(entity.getDescription());
         vo.setFileSize(entity.getFileSize());
         vo.setWidth(entity.getWidth());
@@ -305,8 +319,6 @@ public class SystemAssetServiceImpl implements SystemAssetService {
         vo.setFileFormat(entity.getFileFormat());
         vo.setVrProvider(entity.getVrProvider());
         vo.setThumbnailUrl(entity.getThumbnailUrl());
-        vo.setSourceType(entity.getSourceType());
-        vo.setSourceRefCode(entity.getSourceRefCode());
         vo.setSortOrder(entity.getSortOrder());
         vo.setStatus(entity.getStatus());
         vo.setCreatedAt(entity.getCreatedAt());

@@ -30,12 +30,12 @@ const props = withDefaults(defineProps<{
   module?: string
   /** 素材登记：传 registerAsset 即在上传时由服务端同事务登记素材仓库 */
   registerAsset?: boolean
-  /** 归属机构（空=平台素材） */
-  assetParkCode?: string
-  /** 来源类型（如 room_type / facility / media_mgmt） */
-  assetSourceType?: string
-  /** 来源编码（如房型 code） */
-  assetSourceRef?: string
+  /** 类型1：业务维度（park/platform/goods/content/course/scene，空=platform） */
+  assetRefType1?: string
+  /** 关联编码：业务实体编码（如机构编码/商品编码，空=无关联） */
+  assetRefCode?: string
+  /** 类型2：细分分类（如 room_type/display_block，空=media_mgmt） */
+  assetRefType2?: string
 }>(), {
   type: 'any',
   multiple: false,
@@ -103,10 +103,10 @@ async function handleUpload(e: Event) {
   try {
     const res = await uploadFile(file, props.module, {
       registerAsset: props.registerAsset,
-      assetParkCode: props.assetParkCode,
+      assetRefType1: props.assetRefType1,
+      assetRefCode: props.assetRefCode,
       assetType: FILE_TYPE_TO_ASSET_TYPE[props.type],
-      assetSourceType: props.assetSourceType,
-      assetSourceRef: props.assetSourceRef
+      assetRefType2: props.assetRefType2
     })
     if (props.multiple) {
       const arr = [...multiValue.value, res.key]
@@ -219,7 +219,8 @@ function fileName(key: string): string {
       :type="type === 'video' ? 'video' : 'image'"
       :multiple="multiple"
       :limit="limit"
-      :park-code="assetParkCode"
+      :ref-type1="assetRefType1"
+      :ref-code="assetRefCode"
       @select="onPicked"
     />
   </div>

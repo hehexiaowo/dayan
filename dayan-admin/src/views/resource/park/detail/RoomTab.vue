@@ -784,22 +784,22 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="封面图">
-              <FileUploader v-model="typeForm.coverImage" type="image" module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="room_type" :asset-source-ref="typeForm.roomTypeCode" />
+              <FileUploader v-model="typeForm.coverImage" type="image" module="park" register-asset asset-ref-type1="park" :asset-ref-code="props.parkCode" asset-ref-type2="room_type" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="设计图">
-              <FileUploader v-model="typeForm.designImage" type="image" module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="room_type" :asset-source-ref="typeForm.roomTypeCode" />
+              <FileUploader v-model="typeForm.designImage" type="image" module="park" register-asset asset-ref-type1="park" :asset-ref-code="props.parkCode" asset-ref-type2="room_type" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="图片列表(JSON)">
-              <FileUploader v-model="imagesModel" type="image" multiple module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="room_type" :asset-source-ref="typeForm.roomTypeCode" />
+              <FileUploader v-model="imagesModel" type="image" multiple module="park" register-asset asset-ref-type1="park" :asset-ref-code="props.parkCode" asset-ref-type2="room_type" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="附加图片(JSON)">
-              <FileUploader v-model="additionalImagesModel" type="image" multiple module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="room_type" :asset-source-ref="typeForm.roomTypeCode" />
+              <FileUploader v-model="additionalImagesModel" type="image" multiple module="park" register-asset asset-ref-type1="park" :asset-ref-code="props.parkCode" asset-ref-type2="room_type" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

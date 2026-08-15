@@ -377,9 +377,9 @@ defineExpose({ loadPage })
                 v-model="form.content"
                 module="park"
                 register-asset
-                :asset-park-code="props.parkCode"
-                asset-source-type="display_block"
-                :asset-source-ref="form.blockType"
+                asset-ref-type1="park"
+                :asset-ref-code="props.parkCode"
+                asset-ref-type2="display_block"
               />
             </el-form-item>
           </el-col>
@@ -392,9 +392,9 @@ defineExpose({ loadPage })
                 :limit="9"
                 module="park"
                 register-asset
-                :asset-park-code="props.parkCode"
-                asset-source-type="display_block"
-                :asset-source-ref="form.blockType"
+                asset-ref-type1="park"
+                :asset-ref-code="props.parkCode"
+                asset-ref-type2="display_block"
                 @update:model-value="onImagesChange"
               />
             </el-form-item>

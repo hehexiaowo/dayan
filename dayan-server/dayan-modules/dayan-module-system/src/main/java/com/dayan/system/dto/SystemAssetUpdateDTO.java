@@ -9,6 +9,18 @@ import lombok.Data;
 @Data
 public class SystemAssetUpdateDTO {
 
+    /** 类型1：业务维度（park/platform/goods/content/course/scene） */
+    @Size(max = 64)
+    private String refType1;
+
+    /** 类型2：细分分类（字典 asset_ref_type2） */
+    @Size(max = 64)
+    private String refType2;
+
+    /** 关联编码：业务实体编码（平台素材为空） */
+    @Size(max = 64)
+    private String refCode;
+
     /** 存储方式（1=本地OSS 2=外链） */
     private Integer storageType;
 
@@ -17,8 +29,6 @@ public class SystemAssetUpdateDTO {
 
     @Size(max = 200)
     private String assetName;
-
-    private Integer assetCategory;
 
     @Size(max = 500)
     private String description;
@@ -44,10 +54,6 @@ public class SystemAssetUpdateDTO {
     private String vrProvider;
     @Size(max = 500)
     private String thumbnailUrl;
-
-    // ===== 来源追踪（允许更新来源编码，如新增后补填 code）=====
-    private String sourceType;
-    private String sourceRefCode;
 
     private Integer sortOrder;
     private Integer status;

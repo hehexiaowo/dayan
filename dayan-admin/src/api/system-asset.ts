@@ -13,11 +13,6 @@ export function pageAssets(query: SystemAssetQuery): Promise<PageResult<SystemAs
   return request<PageResult<SystemAsset>>({ url: '/admin-api/system/asset/page', method: 'get', params: query })
 }
 
-/** 按机构编码查询全部素材（可选按类型过滤） */
-export function listAssets(parkCode: string, assetType?: number): Promise<SystemAsset[]> {
-  return request<SystemAsset[]>({ url: '/admin-api/system/asset/list', method: 'get', params: { parkCode, assetType } })
-}
-
 /** 素材详情 */
 export function getAsset(id: number): Promise<SystemAsset> {
   return request<SystemAsset>({ url: `/admin-api/system/asset/${id}`, method: 'get' })

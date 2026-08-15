@@ -274,7 +274,7 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <FileUploader v-model="form.coverImage" type="image" module="scene" register-asset />
+              <FileUploader v-model="form.coverImage" type="image" module="scene" register-asset asset-ref-type1="scene" :asset-ref-code="props.sceneCode" asset-ref-type2="scene" />
             </el-form-item>
           </el-col>
           <el-col :span="8">

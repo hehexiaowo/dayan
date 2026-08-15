@@ -25,12 +25,12 @@ public class FileUploadedEvent {
 
     /** 是否登记素材仓库 */
     private boolean assetRegister;
-    /** 归属机构编码（空=平台素材） */
-    private String assetParkCode;
+    /** 类型1：业务维度（park机构/platform平台/goods商品/content内容等，空=platform） */
+    private String assetRefType1;
+    /** 关联编码：业务实体编码（如机构编码/商品编码，空=无关联） */
+    private String assetRefCode;
     /** 素材类型（1图/2视频/3文件/4VR，缺省按 contentType 推断） */
     private Integer assetType;
-    /** 来源类型（如 room_type/display_block） */
-    private String assetSourceType;
-    /** 来源编码 */
-    private String assetSourceRef;
+    /** 类型2：细分分类（如 room_type房型/display_block展示板块，空=media_mgmt） */
+    private String assetRefType2;
 }

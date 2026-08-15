@@ -202,8 +202,14 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         vo.setParkInfo(infoVO);
 
         // 3. 子实体（条件：park_code + status=1 + deleted=0，deleted 由 @TableLogic 自动过滤）
+        // 素材按通用分类三元组过滤：类型1=park + 关联编码=机构编码
         vo.setAssets(copyList(
-                systemAssetMapper.selectList(activeWrapper(parkCode, SystemAsset::getParkCode, SystemAsset::getStatus)),
+                systemAssetMapper.selectList(new LambdaQueryWrapper<SystemAsset>()
+                        .eq(SystemAsset::getRefType1, "park")
+                        .eq(SystemAsset::getRefCode, parkCode)
+                        .eq(SystemAsset::getStatus, 1)
+                        .orderByAsc(SystemAsset::getSortOrder)
+                        .orderByAsc(SystemAsset::getId)),
                 SystemAssetVO::new));
 
         vo.setRoomTypes(copyList(

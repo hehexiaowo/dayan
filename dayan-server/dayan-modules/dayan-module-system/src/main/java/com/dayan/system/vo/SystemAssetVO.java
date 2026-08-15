@@ -11,13 +11,17 @@ import java.time.LocalDateTime;
 public class SystemAssetVO {
 
     private Long id;
-    private String parkCode;
     private Integer assetType;
+    /** 类型1：业务维度（park/platform/goods/content/course/scene） */
+    private String refType1;
+    /** 类型2：细分分类（字典 asset_ref_type2） */
+    private String refType2;
+    /** 关联编码：业务实体编码（平台素材为空） */
+    private String refCode;
     /** 存储方式（1=本地OSS 2=外链） */
     private Integer storageType;
     private String assetUrl;
     private String assetName;
-    private Integer assetCategory;
     private String description;
     private Long fileSize;
 
@@ -36,10 +40,6 @@ public class SystemAssetVO {
     // VR 专属
     private String vrProvider;
     private String thumbnailUrl;
-
-    // 来源追踪
-    private String sourceType;
-    private String sourceRefCode;
 
     private Integer sortOrder;
     private Integer status;

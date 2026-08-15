@@ -23,9 +23,9 @@ const props = withDefaults(
     module?: string
     /** 素材登记上下文（同 FileUploader） */
     registerAsset?: boolean
-    assetParkCode?: string
-    assetSourceType?: string
-    assetSourceRef?: string
+    assetRefType1?: string
+    assetRefCode?: string
+    assetRefType2?: string
   }>(),
   {
     modelValue: '',
@@ -50,10 +50,10 @@ const editorConfig: Partial<IEditorConfig> = {
       async customUpload(file: File, insertFn: (url: string, alt?: string, href?: string) => void) {
         const res = await uploadFile(file, props.module, {
           registerAsset: props.registerAsset,
-          assetParkCode: props.assetParkCode,
+          assetRefType1: props.assetRefType1,
+          assetRefCode: props.assetRefCode,
           assetType: 1,
-          assetSourceType: props.assetSourceType,
-          assetSourceRef: props.assetSourceRef
+          assetRefType2: props.assetRefType2
         })
         insertFn(res.absoluteUrl || res.url, res.originalName, '')
       }
@@ -62,10 +62,10 @@ const editorConfig: Partial<IEditorConfig> = {
       async customUpload(file: File, insertFn: (url: string, poster?: string) => void) {
         const res = await uploadFile(file, props.module, {
           registerAsset: props.registerAsset,
-          assetParkCode: props.assetParkCode,
+          assetRefType1: props.assetRefType1,
+          assetRefCode: props.assetRefCode,
           assetType: 2,
-          assetSourceType: props.assetSourceType,
-          assetSourceRef: props.assetSourceRef
+          assetRefType2: props.assetRefType2
         })
         insertFn(res.absoluteUrl || res.url)
       }

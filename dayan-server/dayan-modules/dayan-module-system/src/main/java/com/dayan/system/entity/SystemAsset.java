@@ -10,8 +10,8 @@ import lombok.EqualsAndHashCode;
 /**
  * 表 system_asset 对应实体——系统素材仓库。
  *
- * 统一管理整个系统的文件与外链资源（本地 OSS 对象或外部存储链接），
- * 通过 source_type + source_ref_code 追踪来源，供各业务模块统一调配。
+ * 全系统文件/地址登记中心（不绑定单一业务）：只存地址与冗余分类（类型1/类型2/关联编码），
+ * 真实引用关系由各业务表持有（删除保护按 AssetRefMap 反查业务表）。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -22,11 +22,17 @@ public class SystemAsset extends BaseEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 归属机构编码（NULL=平台素材） */
-    private String parkCode;
-
     /** 素材类型（1=图片 2=视频 3=文件 4=VR） */
     private Integer assetType;
+
+    /** 类型1：业务维度（park机构/platform平台/goods商品/content内容/course课程/scene场景） */
+    private String refType1;
+
+    /** 类型2：细分分类（字典 asset_ref_type2，如 room_type房型/display_block展示板块） */
+    private String refType2;
+
+    /** 关联编码：业务实体编码（如机构编码/商品编码；平台素材为空） */
+    private String refCode;
 
     /** 存储方式（1=本地OSS 2=外链） */
     private Integer storageType;
@@ -36,9 +42,6 @@ public class SystemAsset extends BaseEntity {
 
     /** 文件名称 */
     private String assetName;
-
-    /** 业务分类（图片:1-11 视频:1-3 文件:1-5 VR:1-3） */
-    private Integer assetCategory;
 
     /** 描述 */
     private String description;
@@ -69,12 +72,6 @@ public class SystemAsset extends BaseEntity {
 
     /** 缩略图key（VR专属） */
     private String thumbnailUrl;
-
-    /** 来源（media_mgmt/room_type/food_type/facility_type/service_type/display_block/adviser/park_info） */
-    private String sourceType;
-
-    /** 来源编码（media_mgmt 时为 NULL） */
-    private String sourceRefCode;
 
     /** 排序号 */
     private Integer sortOrder;

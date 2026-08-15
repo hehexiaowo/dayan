@@ -66,10 +66,10 @@ public class FileAdminController {
     public R<FileUploadDTO> upload(@RequestParam("file") MultipartFile file,
                                    @RequestParam(value = "module", required = false) String module,
                                    @RequestParam(value = "assetRegister", required = false, defaultValue = "false") boolean assetRegister,
-                                   @RequestParam(value = "assetParkCode", required = false) String assetParkCode,
+                                   @RequestParam(value = "assetRefType1", required = false) String assetRefType1,
+                                   @RequestParam(value = "assetRefCode", required = false) String assetRefCode,
                                    @RequestParam(value = "assetType", required = false) Integer assetType,
-                                   @RequestParam(value = "assetSourceType", required = false) String assetSourceType,
-                                   @RequestParam(value = "assetSourceRef", required = false) String assetSourceRef) {
+                                   @RequestParam(value = "assetRefType2", required = false) String assetRefType2) {
         if (file.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "文件不能为空");
         }
@@ -110,10 +110,10 @@ public class FileAdminController {
             event.setContentType(file.getContentType());
             event.setModule(mod);
             event.setAssetRegister(assetRegister);
-            event.setAssetParkCode(assetParkCode);
+            event.setAssetRefType1(assetRefType1);
+            event.setAssetRefCode(assetRefCode);
             event.setAssetType(assetType);
-            event.setAssetSourceType(assetSourceType);
-            event.setAssetSourceRef(assetSourceRef);
+            event.setAssetRefType2(assetRefType2);
             eventPublisher.publishEvent(event);
             return R.ok(dto);
         } catch (BusinessException e) {

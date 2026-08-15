@@ -10,20 +10,23 @@ import java.util.List;
 
 /**
  * 系统素材仓库（system_asset）服务接口。
+ *
+ * <p>素材仓库是全系统文件/地址登记中心：只存地址与冗余分类（类型1/类型2/关联编码），
+ * 真实引用关系由各业务表持有（删除保护按 AssetRefMap 反查业务表）。
  */
 public interface SystemAssetService {
 
     PageResult<SystemAssetVO> page(SystemAssetQueryDTO query);
 
     /**
-     * 按机构编码查询全部素材。
+     * 按分类三元组查询全部素材（如 refType1=park + refCode=机构编码）。
      */
-    List<SystemAssetVO> listByPark(String parkCode);
+    List<SystemAssetVO> listByRef(String refType1, String refCode);
 
     /**
-     * 按机构编码 + 素材类型查询。
+     * 按分类三元组 + 素材类型查询。
      */
-    List<SystemAssetVO> listByParkAndType(String parkCode, Integer assetType);
+    List<SystemAssetVO> listByRefAndType(String refType1, String refCode, Integer assetType);
 
     SystemAssetVO getDetail(Long id);
 
@@ -34,19 +37,18 @@ public interface SystemAssetService {
     void delete(Long id);
 
     /**
-     * 幂等注册：同 (parkCode, assetUrl, sourceType, sourceRefCode) 已存在则返回已存 id，否则创建。
+     * 幂等登记：同 (assetUrl, refType1, refCode, refType2) 已存在则返回已存 id，否则创建。
      * 供各业务模块上传后自动登记素材仓库（storage_type 固定 1=本地OSS）。
      *
-     * @param parkCode      机构编码（空=平台素材）
-     * @param assetType     素材类型（1图片 2视频 3文件 4VR）
-     * @param assetUrl      文件 key
-     * @param sourceType    来源类型
-     * @param sourceRefCode 来源编码（可为 null）
-     * @param assetName     文件名（可为 null）
-     * @param fileSize      文件大小字节（可为 null）
+     * @param refType1  类型1：业务维度（空=platform）
+     * @param refCode   关联编码：业务实体编码（空=无关联）
+     * @param assetType 素材类型（1图片 2视频 3文件 4VR）
+     * @param assetUrl  文件 key
+     * @param refType2  类型2：细分分类（空=media_mgmt）
+     * @param assetName 文件名（可为 null）
+     * @param fileSize  文件大小字节（可为 null）
      * @return 素材 id（已存或新建）
      */
-    Long registerIfAbsent(String parkCode, Integer assetType, String assetUrl,
-                          String sourceType, String sourceRefCode,
-                          String assetName, Long fileSize);
+    Long registerIfAbsent(String refType1, String refCode, Integer assetType, String assetUrl,
+                          String refType2, String assetName, Long fileSize);
 }

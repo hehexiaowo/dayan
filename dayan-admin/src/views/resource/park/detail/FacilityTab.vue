@@ -663,12 +663,12 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <FileUploader v-model="form.coverImage" type="image" module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="facility_type" :asset-source-ref="form.facilityTypeCode" />
+              <FileUploader v-model="form.coverImage" type="image" module="park" register-asset asset-ref-type1="park" :asset-ref-code="props.parkCode" asset-ref-type2="facility_type" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="图片(JSON)">
-              <FileUploader v-model="imagesModel" type="image" multiple module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="facility_type" :asset-source-ref="form.facilityTypeCode" />
+              <FileUploader v-model="imagesModel" type="image" multiple module="park" register-asset asset-ref-type1="park" :asset-ref-code="props.parkCode" asset-ref-type2="facility_type" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

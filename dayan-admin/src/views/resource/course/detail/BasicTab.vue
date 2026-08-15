@@ -160,7 +160,7 @@ onMounted(loadDetail)
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <FileUploader v-model="form.coverImage" type="image" module="course" register-asset />
+              <FileUploader v-model="form.coverImage" type="image" module="course" register-asset asset-ref-type1="course" :asset-ref-code="props.courseCode" asset-ref-type2="course" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

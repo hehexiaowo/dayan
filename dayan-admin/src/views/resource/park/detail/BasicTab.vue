@@ -484,7 +484,7 @@ defineExpose({ loadDetail, loadScore })
         <el-row :gutter="16">
           <el-col :span="24">
             <el-form-item label="品牌Logo">
-              <FileUploader v-model="form.brandLogo" type="image" module="park" register-asset :asset-park-code="props.parkCode" asset-source-type="park_info" :asset-source-ref="props.parkCode" />
+              <FileUploader v-model="form.brandLogo" type="image" module="park" register-asset asset-ref-type1="park" :asset-ref-code="props.parkCode" asset-ref-type2="park_info" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -684,8 +684,9 @@ defineExpose({ loadDetail, loadScore })
                 v-model="form.baseDescription"
                 module="park"
                 register-asset
-                :asset-park-code="props.parkCode"
-                asset-source-type="park_info"
+                asset-ref-type1="park"
+                :asset-ref-code="props.parkCode"
+                asset-ref-type2="park_info"
                 :height="200"
               />
             </el-form-item>

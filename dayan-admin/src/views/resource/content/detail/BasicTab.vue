@@ -166,7 +166,7 @@ onMounted(() => {
           </el-col>
           <el-col :span="24">
             <el-form-item label="封面图">
-              <FileUploader v-model="form.coverImage" type="image" module="content" register-asset />
+              <FileUploader v-model="form.coverImage" type="image" module="content" register-asset asset-ref-type1="content" :asset-ref-code="props.contentCode" asset-ref-type2="content" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -180,6 +180,9 @@ onMounted(() => {
                 v-model="form.contentBody"
                 module="content"
                 register-asset
+                asset-ref-type1="content"
+                :asset-ref-code="props.contentCode"
+                asset-ref-type2="content"
                 placeholder="正文支持图文混排，插图自动上传并登记素材仓库"
               />
             </el-form-item>

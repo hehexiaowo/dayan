@@ -52,7 +52,8 @@
       type="image"
       multiple
       :limit="9"
-      :park-code="parkCode"
+      ref-type1="park"
+      :ref-code="parkCode"
       @select="onPicked"
     />
   </div>

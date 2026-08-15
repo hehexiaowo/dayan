@@ -10,17 +10,25 @@ import lombok.Data;
  *
  * storageType 区分本地 OSS 对象（assetUrl=OSS key）与外部链接（assetUrl=完整 http(s) URL）。
  * assetType 区分图片/视频/文件/VR，类型专属字段按需填写。
- * sourceType + sourceRefCode 追踪来源，默认 media_mgmt（素材仓库直录）。
+ * refType1/refType2/refCode 为冗余分类三元组（业务维度/细分分类/关联编码）。
  */
 @Data
 public class SystemAssetCreateDTO {
 
-    /** 归属机构编码（空=平台素材） */
-    @Size(max = 64)
-    private String parkCode;
-
     @NotNull(message = "素材类型不能为空")
     private Integer assetType;
+
+    /** 类型1：业务维度（park/platform/goods/content/course/scene，默认 platform） */
+    @Size(max = 64)
+    private String refType1;
+
+    /** 类型2：细分分类（字典 asset_ref_type2，默认 media_mgmt） */
+    @Size(max = 64)
+    private String refType2;
+
+    /** 关联编码：业务实体编码（机构编码/商品编码等；平台素材为空） */
+    @Size(max = 64)
+    private String refCode;
 
     /** 存储方式（1=本地OSS 2=外链），默认 1 */
     private Integer storageType;
@@ -32,9 +40,6 @@ public class SystemAssetCreateDTO {
 
     @Size(max = 200)
     private String assetName;
-
-    /** 业务分类 */
-    private Integer assetCategory;
 
     @Size(max = 500)
     private String description;
@@ -61,12 +66,6 @@ public class SystemAssetCreateDTO {
     private String vrProvider;
     @Size(max = 500)
     private String thumbnailUrl;
-
-    // ===== 来源追踪 =====
-    /** 来源（默认 media_mgmt） */
-    private String sourceType;
-    /** 来源编码（media_mgmt 时为 NULL） */
-    private String sourceRefCode;
 
     private Integer sortOrder;
     private Integer status;

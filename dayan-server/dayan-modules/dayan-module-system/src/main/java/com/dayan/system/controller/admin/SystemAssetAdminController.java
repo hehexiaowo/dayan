@@ -37,15 +37,16 @@ public class SystemAssetAdminController {
         return R.ok(assetService.page(query));
     }
 
-    @Operation(summary = "按机构编码查询全部素材")
+    @Operation(summary = "按分类三元组查询全部素材（refType1 默认 platform，refCode 空=该维度全部）")
     @SaCheckPermission("system:asset:list")
     @GetMapping("/list")
-    public R<List<SystemAssetVO>> list(@RequestParam String parkCode,
+    public R<List<SystemAssetVO>> list(@RequestParam(value = "refType1", required = false) String refType1,
+                                     @RequestParam(value = "refCode", required = false) String refCode,
                                      @RequestParam(value = "assetType", required = false) Integer assetType) {
         if (assetType != null) {
-            return R.ok(assetService.listByParkAndType(parkCode, assetType));
+            return R.ok(assetService.listByRefAndType(refType1, refCode, assetType));
         }
-        return R.ok(assetService.listByPark(parkCode));
+        return R.ok(assetService.listByRef(refType1, refCode));
     }
 
     @Operation(summary = "素材详情")
@@ -83,8 +84,7 @@ public class SystemAssetAdminController {
     @PostMapping("/register")
     public R<Long> register(@RequestBody @Valid SystemAssetCreateDTO dto) {
         return R.ok(assetService.registerIfAbsent(
-                dto.getParkCode(), dto.getAssetType(), dto.getAssetUrl(),
-                dto.getSourceType(), dto.getSourceRefCode(),
-                dto.getAssetName(), dto.getFileSize()));
+                dto.getRefType1(), dto.getRefCode(), dto.getAssetType(), dto.getAssetUrl(),
+                dto.getRefType2(), dto.getAssetName(), dto.getFileSize()));
     }
 }
