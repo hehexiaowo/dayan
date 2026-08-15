@@ -12,6 +12,7 @@
         />
         <text v-if="keyword" class="search-clear" @click="clearKeyword">×</text>
         <view class="btn-search dy-clickable" @click="onSearch">搜索</view>
+        <view class="btn-ai dy-clickable" @click="goAiGenerate">AI 创作</view>
       </view>
       <scroll-view v-if="categories.length" scroll-x class="category-bar" :show-scrollbar="false">
         <view class="cat-pill dy-clickable" :class="{ active: !activeCategory }" @click="switchCategory('')">全部</view>
@@ -287,6 +288,10 @@ function goDetail(contentCode: string) {
   uni.navigateTo({ url: `/pages/acquisition/content/detail?code=${contentCode}` });
 }
 
+function goAiGenerate() {
+  uni.navigateTo({ url: '/pages/acquisition/ai-generate/index' })
+}
+
 /** ====== 内容解析工具（图集/文件 content_body 存 JSON） ====== */
 
 /** 图集缩略图：取 content_body JSON 前 3 张 */
@@ -425,6 +430,7 @@ onPullDownRefresh(async () => {
   padding: 0 32rpx;
   border-radius: $radius-md;
 }
+.btn-ai { background: #9b59b6; color: #fff; border-radius: 12rpx; padding: 0 24rpx; display: flex; align-items: center; font-size: 26rpx; margin-left: 12rpx; }
 
 /* 分类导航 */
 .category-bar {

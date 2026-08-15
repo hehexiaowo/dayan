@@ -50,6 +50,11 @@
 
     <!-- 菜单卡片 -->
     <view class="menu-card">
+      <view class="menu-item dy-clickable" @click="goMyContents">
+        <DyIconBlock text="创" color="blue" size="sm" shape="circle" />
+        <text class="menu-label">我的内容</text>
+        <text class="menu-arrow">›</text>
+      </view>
       <view class="menu-item dy-clickable" @click="onTodo('订单记录')">
         <DyIconBlock text="单" color="blue" size="sm" shape="circle" />
         <text class="menu-label">订单记录</text>
@@ -156,6 +161,9 @@ function goLearning() {
 }
 function goAbout() {
   uni.navigateTo({ url: '/pages/profile/about' });
+}
+function goMyContents() {
+  uni.navigateTo({ url: '/pages/acquisition/content/mine' })
 }
 function onTodo(name: string) {
   uni.showToast({ title: `${name}（开发中）`, icon: 'none' });
