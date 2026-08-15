@@ -56,7 +56,7 @@ public class AgentAiContentController {
 
     @Operation(summary = "编辑我的内容")
     @PutMapping("/contents/{id}")
-    public R<Void> update(@PathVariable Long id, @RequestBody AgentContentUpdateDTO dto) {
+    public R<Void> update(@PathVariable Long id, @RequestBody @Valid AgentContentUpdateDTO dto) {
         agentContentService.update(id, dto);
         return R.ok();
     }
