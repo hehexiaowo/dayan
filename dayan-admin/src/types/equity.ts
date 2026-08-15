@@ -477,7 +477,7 @@ export interface EquityUsePerson {
   usePersonPhone?: string
   /** 使用人身份证号（明文） */
   usePersonIdCard?: string
-  /** 与持有人关系 */
+  /** 与持有人关系（字典code：self/spouse/parent/parent_in_law/child/other） */
   relationWithHolder?: string
   /** 健康状况简述 */
   healthStatus?: string
@@ -489,6 +489,22 @@ export interface EquityUsePerson {
   remark?: string
   /** 创建时间 */
   createdAt?: string
+}
+
+/** 与持有人关系字典（system_dict: relation_with_holder，存 code 显示 label） */
+export const RELATION_WITH_HOLDER_OPTIONS = [
+  { value: 'self', label: '本人' },
+  { value: 'spouse', label: '配偶' },
+  { value: 'parent', label: '父母（含公婆/岳父母）' },
+  { value: 'parent_in_law', label: '公婆/岳父母' },
+  { value: 'child', label: '子女' },
+  { value: 'other', label: '其他' },
+] as const
+
+/** 关系 code → 中文标签（未知值原样返回，兼容存量自由文本） */
+export function relationLabel(v?: string | null): string {
+  if (!v) return '--'
+  return RELATION_WITH_HOLDER_OPTIONS.find(o => o.value === v)?.label ?? v
 }
 
 /**

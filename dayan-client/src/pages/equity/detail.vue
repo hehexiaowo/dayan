@@ -62,11 +62,20 @@
           :class="{ disabled: item.remaining <= 0 }"
         >
           <view class="item-info">
-            <text class="item-name">{{ item.itemName }}</text>
+            <view class="item-head">
+              <text class="item-name">{{ item.itemName }}</text>
+              <view v-if="rightTags(item).length" class="right-tags">
+                <text v-for="t in rightTags(item)" :key="t" class="right-tag" :class="tagClass(t)">{{ t }}</text>
+              </view>
+            </view>
             <view class="item-quota">
               <text class="quota-text">
-                剩余 <text class="quota-num" :class="{ zero: item.remaining <= 0 }">{{ item.remaining }}</text> / {{ item.quantity }} {{ item.quotaType === 1 ? '次' : '次/年' }}
+                剩余 <text class="quota-num" :class="{ zero: item.remaining <= 0 }">{{ item.remaining }}</text> / {{ item.quantity }} {{ item.quotaType === 1 ? '次/权益期' : '次/年' }}
               </text>
+            </view>
+            <!-- 随心住类使用规则摘要 -->
+            <view v-if="item.usageRule" class="usage-brief">
+              <text v-if="usageBrief(item)" class="usage-text">{{ usageBrief(item) }}</text>
             </view>
           </view>
           <button
@@ -114,6 +123,8 @@ const statusClass = computed(() => {
 });
 
 const validText = computed(() => {
+  // 终身权益（validityType=2）expireTime 为空，须先于 validDays 判断
+  if (equity.value?.validityType === 2) return '终身有效';
   if (equity.value?.expireTime) {
     const d = new Date(equity.value.expireTime);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -125,6 +136,41 @@ const validText = computed(() => {
 const placeholderCount = computed(() =>
   persons.value.filter((p) => !p.usePersonName || p.usePersonName.startsWith('待填写')).length,
 );
+
+/** 权益内容标签（保证/优先/优惠/折扣/随心住规则） */
+function rightTags(item: ClientServiceItem): string[] {
+  const tags: string[] = [];
+  if (item.admissionGuaranteed === 1) tags.push('保证入住');
+  if (item.admissionPriority === 1) tags.push('优先入住');
+  if (item.admissionDiscount === 1) {
+    tags.push(item.discountRate ? `优惠${item.discountRate / 10}折` : '优惠入住');
+  }
+  if (item.usageRule) tags.push('随心住');
+  return tags;
+}
+
+function tagClass(tag: string): string {
+  if (tag === '保证入住') return 'tg-red';
+  if (tag === '优先入住') return 'tg-orange';
+  if (tag.startsWith('优惠')) return 'tg-green';
+  return 'tg-blue';
+}
+
+/** 随心住使用规则一行摘要 */
+function usageBrief(item: ClientServiceItem): string {
+  const u = item.usageRule;
+  if (!u) return '';
+  const parts: string[] = [];
+  if (u.maxDaysPerUse || u.maxNightsPerUse) {
+    parts.push(`每次${u.maxDaysPerUse || u.maxNightsPerUse + 1}天${u.maxNightsPerUse || 0}晚`);
+  }
+  if (u.maxRoomsPerUse) parts.push(`${u.maxRoomsPerUse}间房`);
+  if (u.maxGuestsPerUse) parts.push(`每间可住${u.maxGuestsPerUse}人`);
+  if (u.advanceBookDays) parts.push(`提前${u.advanceBookDays}天预订`);
+  if (u.depositAmount) parts.push(`预定金${u.depositAmount}元`);
+  if (u.blackoutType === 'spring_festival' && u.blackoutDays) parts.push(`春节${u.blackoutDays}天不可住`);
+  return parts.join(' · ');
+}
 
 async function loadAll() {
   loading.value = true;
@@ -290,10 +336,43 @@ onLoad((q) => {
   flex: 1;
   overflow: hidden;
 }
+.item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
 .item-name {
   font-size: 30rpx;
   color: $text-primary;
   font-weight: 500;
+  display: block;
+  flex-shrink: 0;
+}
+.right-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8rpx;
+  overflow: hidden;
+}
+.right-tag {
+  font-size: 20rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+  line-height: 32rpx;
+}
+.tg-red { color: #fa5151; background: rgba(250, 81, 81, 0.1); }
+.tg-orange { color: #ff8f1f; background: rgba(255, 143, 31, 0.12); }
+.tg-green { color: #07c160; background: rgba(7, 193, 96, 0.1); }
+.tg-blue { color: #10aeff; background: rgba(16, 174, 255, 0.1); }
+.usage-brief {
+  margin-top: 6rpx;
+}
+.usage-text {
+  font-size: 22rpx;
+  color: $text-secondary;
+  line-height: 1.5;
   display: block;
 }
 .item-quota {

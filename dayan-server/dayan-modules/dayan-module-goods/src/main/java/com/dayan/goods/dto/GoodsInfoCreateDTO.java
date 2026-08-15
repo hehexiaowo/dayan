@@ -52,4 +52,7 @@ public class GoodsInfoCreateDTO {
     private Integer isRecommend;
     private Integer sortOrder;
     private String remark;
+
+    /** 页面展示配置JSON：{"banners":["key"],"thumbnail":"key"} */
+    private String displayConfig;
 }

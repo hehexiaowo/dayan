@@ -8,6 +8,7 @@ import com.dayan.goods.vo.GoodsEquityVO;
 import com.dayan.service.event.ServiceSessionFinishedEvent;
 import com.dayan.service.event.ServiceSessionStartedEvent;
 import com.dayan.service.mapper.ServiceSessionMapper;
+import com.dayan.service.util.QuotaYears;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
@@ -79,9 +80,13 @@ public class EquityUsageEventListener {
      * <p>设计说明：
      * <ul>
      *   <li>查权益的 goodsCode → 查 rel 配置（每个 service_item 的 quantity + quotaType）</li>
-     *   <li>对每个 rel，按 equity+item 聚合统计已完成消费次数（年度只数当年）</li>
-     *   <li>所有 rel 的消费次数都 ≥ quantity → 全部用尽 → {@code complete}（3→4）</li>
-     *   <li>否则 → {@code end_service}（3→2 恢复激活），还有剩余配额</li>
+     *   <li>自动完成（complete 3→4）仅由「终身配额」决定：所有终身 rel 用尽才完成。
+     *     年度配额（quota_type=2）按激活周年重置，本周年用尽不代表权益终结
+     *     （如终身权益旅居6次/年，第1年用满6次，第2年仍可用）——存在任一年度 rel
+     *     或按人配额（share_mode=0，按人用尽不代表整卡终结）时，永远走 end_service 恢复激活，
+     *     权益终结由过期任务/人工作废驱动。</li>
+     *   <li>年度消费按「权益周年序号」统计（anchor=激活时间，QuotaYears.benefitYear），
+     *     修复一年期卡跨自然年配额翻倍的问题。</li>
      * </ul>
      *
      * <p>注意：COMPLETE 只允许 3→4，END_SERVICE 只允许 3→2，两者互斥（都要求 from=3），
@@ -106,40 +111,52 @@ public class EquityUsageEventListener {
                 return;
             }
 
-            // 按每个 rel 聚合统计：是否所有项目的配额都已用尽
-            int currentYear = LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear();
-            boolean allExhausted = true;
+            // 按人配额（share_mode=0）：单人不代表整卡，永远恢复激活，不自动完成
+            boolean perPerson = depot.getShareMode() != null && depot.getShareMode() == 0;
+
+            // 按每个 rel 聚合统计：所有「终身」配额是否都已用尽（年度配额会重置，不参与完成判定）
+            LocalDate anchor = depot.getActivateTime() != null ? depot.getActivateTime().toLocalDate() : null;
+            int benefitYear = QuotaYears.benefitYear(anchor, LocalDate.now(ZoneId.of("Asia/Shanghai")));
+            boolean hasAnnual = false;
+            boolean hasLifetime = false;
+            boolean allLifetimeExhausted = true;
             for (GoodsEquityVO.ServiceItemRelVO rel : rels) {
                 int quantity = rel.getQuantity() != null ? rel.getQuantity() : 1;
                 int quotaType = rel.getQuotaType() != null ? rel.getQuotaType() : 2;
-                int consumed;
                 if (quotaType == 1) {
                     // 终身配额：统计全部已完成消费
-                    consumed = serviceSessionMapper.countConsumedSessions(equityCode, rel.getItemCode());
+                    hasLifetime = true;
+                    int consumed = serviceSessionMapper.countConsumedSessions(equityCode, rel.getItemCode());
+                    if (consumed < quantity) {
+                        allLifetimeExhausted = false;
+                        log.debug("终身配额未用尽: equityCode={}, itemCode={}, consumed={}, quantity={}",
+                                equityCode, rel.getItemCode(), consumed, quantity);
+                    }
                 } else {
-                    // 年度配额：只统计当年消费
-                    consumed = serviceSessionMapper.countConsumedSessionsAnnual(
-                            equityCode, rel.getItemCode(), currentYear);
-                }
-                if (consumed < quantity) {
-                    allExhausted = false;
-                    log.debug("配额未用尽: equityCode={}, itemCode={}, consumed={}, quantity={}, quotaType={}",
-                            equityCode, rel.getItemCode(), consumed, quantity, quotaType);
-                    break;
+                    // 年度配额：按激活周年统计（仅用于日志观察，不参与完成判定）
+                    hasAnnual = true;
+                    int consumedAnnual = serviceSessionMapper.countConsumedSessionsAnnual(
+                            equityCode, rel.getItemCode(), benefitYear);
+                    if (consumedAnnual < quantity) {
+                        log.debug("年度配额未用尽: equityCode={}, itemCode={}, benefitYear={}, consumed={}, quantity={}",
+                                equityCode, rel.getItemCode(), benefitYear, consumedAnnual, quantity);
+                    }
                 }
             }
 
-            if (allExhausted) {
-                // 配额全部用尽 → complete(3→4)。权益可能已在2（被前一次finish回退），先 start_service 拉到3
+            boolean shouldComplete = !perPerson && hasLifetime && allLifetimeExhausted && !hasAnnual;
+            if (shouldComplete) {
+                // 所有终身配额用尽且无年度/按人配额 → complete(3→4)。
+                // 权益可能已在2（被前一次finish回退），先 start_service 拉到3
                 ensureInUse(equityCode, depot);
                 Integer to = equityDepotService.transition(equityCode, EquityEvent.COMPLETE);
-                log.info("所有服务项目配额用尽，权益自动完成: sessionCode={}, equityCode={}, --complete-->{}",
+                log.info("所有终身配额用尽，权益自动完成: sessionCode={}, equityCode={}, --complete-->{}",
                         event.getSessionCode(), equityCode, to);
             } else {
-                // 配额剩余 → end_service(3→2 恢复激活)。权益可能已在2，transition 失败属正常（幂等）
+                // 仍有可重置/未用尽的配额 → end_service(3→2 恢复激活)。权益可能已在2，transition 失败属正常（幂等）
                 ensureInUse(equityCode, depot);
                 Integer to = equityDepotService.transition(equityCode, EquityEvent.END_SERVICE);
-                log.info("服务完成联动权益（配额剩余）: sessionCode={}, equityCode={}, --end_service-->{}",
+                log.info("服务完成联动权益（配额剩余或可重置）: sessionCode={}, equityCode={}, --end_service-->{}",
                         event.getSessionCode(), equityCode, to);
             }
         } catch (Exception e) {

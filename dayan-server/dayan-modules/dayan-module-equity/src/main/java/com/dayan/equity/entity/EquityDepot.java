@@ -33,6 +33,15 @@ public class EquityDepot extends BaseEntity {
     /** 使用人人数快照（入库时从 goods_equity 冻结） */
     private Integer personCount;
 
+    /** 权益期限类型快照（1=固定天数,2=终身；入库时从 goods_equity 冻结） */
+    private Integer validityType;
+
+    /** 权益人构成规则快照JSON（入库时从 goods_equity 冻结，激活建人按此校验） */
+    private String holderRule;
+
+    /** 配额归属快照（0=按人独立,1=共享池；入库时从 goods_equity 冻结） */
+    private Integer shareMode;
+
     /** 激活后有效天数快照（入库时从 goods_equity 冻结） */
     private Integer validDays;
 

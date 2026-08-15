@@ -29,6 +29,9 @@ public class ServiceSession extends BaseEntity {
     /** 服务项目编码（权益激活按 service_item 创建会话时标记） */
     private String itemCode;
 
+    /** 本次服务的权益人ID（equity_use_person.id；按人配额与审计用） */
+    private Long usePersonId;
+
     /** 客户编码 */
     private String clientCode;
 
@@ -92,7 +95,7 @@ public class ServiceSession extends BaseEntity {
     /** 配额周期（1=终身,2=年度） */
     private Integer quotaType;
 
-    /** 年度配额当前已重置年份（仅 quota_type=2 使用） */
+    /** 权益周年序号（quota_type=2 时记录消费发生在激活后第几个权益年，1起；由激活时间推算） */
     private Integer quotaResetYear;
 
     /** 是否满意 */

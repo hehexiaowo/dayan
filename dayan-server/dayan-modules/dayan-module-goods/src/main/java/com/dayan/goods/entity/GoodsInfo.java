@@ -104,4 +104,7 @@ public class GoodsInfo extends BaseEntity {
 
     /** 备注 */
     private String remark;
+
+    /** 页面展示配置JSON：{"banners":["key"],"thumbnail":"key"}；thumbnail空=默认第一张/回退cover_image */
+    private String displayConfig;
 }

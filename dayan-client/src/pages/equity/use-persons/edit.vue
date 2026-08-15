@@ -26,7 +26,12 @@
 
       <view class="form-item">
         <text class="label">与持卡人关系</text>
-        <input v-model="form.relationWithHolder" class="input" placeholder="如：父亲、母亲、本人" placeholder-class="ph" />
+        <picker :range="relationLabels" :value="relationIndex" @change="onRelationChange">
+          <view class="picker-display">
+            <text :class="{ 'ph-text': relationIndex < 0 }">{{ relationIndex >= 0 ? relationLabels[relationIndex] : '请选择（按权益构成校验席位）' }}</text>
+            <text class="picker-arrow">›</text>
+          </view>
+        </picker>
       </view>
 
       <view class="form-item">
@@ -67,6 +72,7 @@ import {
   suggestUsePersons,
 } from '@/api/equity';
 import type { EquityUsePerson, EquityUsePersonCreate } from '@/types';
+import { RELATION_OPTIONS, relationLabel } from '@/types';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 
 const equityCode = ref('');
@@ -76,6 +82,21 @@ const submitting = ref(false);
 
 const genderLabels = ['男', '女'];
 const genderIndex = ref(-1);
+
+const relationLabels = RELATION_OPTIONS.map((o) => o.label);
+const relationIndex = ref(-1);
+
+function onRelationChange(e: any) {
+  relationIndex.value = Number(e.detail.value);
+  form.relationWithHolder = RELATION_OPTIONS[relationIndex.value].value;
+}
+
+/** 按字典code回填关系选择器（存量自由文本不在字典内时不预选） */
+function setRelationByCode(code?: string) {
+  const i = RELATION_OPTIONS.findIndex((o) => o.value === code);
+  relationIndex.value = i;
+  form.relationWithHolder = i >= 0 ? RELATION_OPTIONS[i].value : '';
+}
 
 const form = reactive({
   usePersonName: '',
@@ -102,7 +123,7 @@ async function loadExisting() {
     if (p) {
       form.usePersonName = p.usePersonName || '';
       form.usePersonGender = p.usePersonGender;
-      form.relationWithHolder = p.relationWithHolder || '';
+      setRelationByCode(p.relationWithHolder);
       form.usePersonPhone = p.usePersonPhone || '';
       form.isDefaultHolder = p.isDefaultHolder ?? 0;
       if (p.usePersonGender) genderIndex.value = p.usePersonGender - 1;
@@ -123,7 +144,7 @@ async function openSuggest() {
       return;
     }
     const names = list.map((p) => {
-      const rel = p.relationWithHolder ? `（${p.relationWithHolder}）` : '';
+      const rel = p.relationWithHolder ? `（${relationLabel(p.relationWithHolder)}）` : '';
       return p.usePersonName + rel;
     });
     uni.showActionSheet({
@@ -132,7 +153,7 @@ async function openSuggest() {
         const p = list[res.tapIndex];
         form.usePersonName = p.usePersonName || '';
         form.usePersonGender = p.usePersonGender;
-        form.relationWithHolder = p.relationWithHolder || '';
+        setRelationByCode(p.relationWithHolder);
         form.usePersonPhone = p.usePersonPhone || '';
         if (p.usePersonGender) genderIndex.value = p.usePersonGender - 1;
       },

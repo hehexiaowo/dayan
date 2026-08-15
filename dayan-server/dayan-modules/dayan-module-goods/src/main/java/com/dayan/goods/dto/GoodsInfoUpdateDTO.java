@@ -41,4 +41,7 @@ public class GoodsInfoUpdateDTO {
     private Integer sortOrder;
     private Integer auditStatus;
     private String remark;
+
+    /** 页面展示配置JSON：{"banners":["key"],"thumbnail":"key"} */
+    private String displayConfig;
 }

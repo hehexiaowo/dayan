@@ -13,17 +13,20 @@ import type { ServiceItem, ServiceItemQuery } from '@/types/service-item'
 import {
   ItemCategory,
   ITEM_CATEGORY_OPTIONS,
-  ITEM_SUBTYPE_OPTIONS
+  ITEM_SUBTYPE_OPTIONS,
+  networkScopeSummary
 } from '@/types/service-item'
 import { COMMON_STATUS_OPTIONS } from '@/types/common'
 import { formatMoney } from '@/utils/format'
+import NetworkScopeSelector from '@/components/NetworkScopeSelector.vue'
 
 /**
  * 服务项目管理页（标准 CRUD）。
  *
  * - 搜索 + 表格 + 分页 + 新增/编辑弹窗；
  * - itemCode 服务端生成，新增表单不含；
- * - 项目大类切换时动态显示字段（安排权益显示 subtype+network，费用权益显示 covered_items）。
+ * - 项目大类切换时动态显示字段（安排权益显示 subtype，费用权益显示 covered_items）；
+ * - 服务网络：通用选择器（全部/自选机构，可精确到房型——随心住类需要）。
  */
 
 const {
@@ -60,7 +63,7 @@ const defaultForm = (): ServiceItem => ({
   itemSubtype: undefined,
   itemValue: undefined,
   costBearing: 0,
-  serviceNetwork: '',
+  networkScope: null,
   coveredItems: '',
   validDays: 365,
   maxUseCount: 1,
@@ -210,6 +213,12 @@ loadPage()
         <el-table-column label="子类" width="100">
           <template #default="{ row }">{{ subtypeLabel(row.itemSubtype) }}</template>
         </el-table-column>
+        <el-table-column label="服务网络" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-tag v-if="networkScopeSummary(row.networkScope) === '全部机构'" size="small" type="info">全部机构</el-tag>
+            <el-tag v-else size="small" type="success">{{ networkScopeSummary(row.networkScope) }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="面值/单价" width="120" align="right">
           <template #default="{ row }">{{ formatMoney(row.itemValue) }}</template>
         </el-table-column>
@@ -293,6 +302,7 @@ loadPage()
                   :value="opt.value"
                 />
               </el-select>
+              <div class="field-hint">服务网络按子类业态圈定（旅游短居/活力长居/照护长居）</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -301,15 +311,12 @@ loadPage()
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row v-if="form.itemCategory === ItemCategory.ARRANGEMENT" :gutter="16">
+        <!-- 服务网络（两大类通用）：全部=业态全部在营机构；自选可精确到机构房型 -->
+        <el-row :gutter="16">
           <el-col :span="24">
             <el-form-item label="服务网络">
-              <el-input
-                v-model="form.serviceNetwork"
-                type="textarea"
-                :rows="2"
-                placeholder='JSON数组格式，如 ["*", "旅游短居*", "PARK001"]'
-              />
+              <NetworkScopeSelector v-model="form.networkScope" title="配置服务网络范围" />
+              <div class="field-hint">随心住类可精确到机构的房型；其他安排权益可自选机构范围</div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -327,16 +334,6 @@ loadPage()
           </el-col>
         </el-row>
         <el-row v-if="form.itemCategory === ItemCategory.COST" :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="服务网络">
-              <el-input
-                v-model="form.serviceNetwork"
-                type="textarea"
-                :rows="2"
-                placeholder='JSON数组，如 ["PARK001", "PARK002"]'
-              />
-            </el-form-item>
-          </el-col>
           <el-col :span="12">
             <el-form-item label="有效天数">
               <el-input-number v-model="form.validDays" :min="0" :max="99999" style="width: 100%" />
@@ -394,5 +391,10 @@ loadPage()
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+.field-hint {
+  font-size: 12px;
+  color: #999;
+  line-height: 1.4;
 }
 </style>

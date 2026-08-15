@@ -84,4 +84,25 @@ public interface ServiceSessionService {
      * @return 剩余可用次数（>0 可用，<=0 已用尽）
      */
     int getRemainingQuota(String equityCode, String itemCode, int quotaType, int maxQuota);
+
+    /**
+     * 检查权益下某服务项目的配额剩余（完整版：激活周年锚点 + 按人配额）。
+     *
+     * <p>年度配额（quotaType=2）按「激活周年」统计：quota_reset_year 记录的是
+     * 消费发生在激活后第几个权益年（1起），跨周年天然重置，修复一年期卡跨自然年
+     * 配额翻倍的问题。anchor 为空时退化为自然年（兼容无激活时间的旧数据）。
+     *
+     * <p>usePersonId 非空时按权益人独立统计（goods_equity.share_mode=0 按人配额）；
+     * 为空时统计全权益共享池。
+     *
+     * @param equityCode  权益编码
+     * @param itemCode    服务项目编码
+     * @param quotaType   配额周期（1=终身, 2=年度）
+     * @param maxQuota    配额上限（从 rel.quantity 快照）
+     * @param anchorDate  激活日期（周年锚点，null=退化自然年）
+     * @param usePersonId 权益人ID（null=共享池口径）
+     * @return 剩余可用次数（>0 可用，<=0 已用尽）
+     */
+    int getRemainingQuota(String equityCode, String itemCode, int quotaType, int maxQuota,
+                          java.time.LocalDate anchorDate, Long usePersonId);
 }

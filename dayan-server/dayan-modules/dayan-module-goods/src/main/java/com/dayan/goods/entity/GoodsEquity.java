@@ -21,8 +21,17 @@ public class GoodsEquity extends BaseEntity {
     /** 商品编码（1:1关联goods_info.goods_code） */
     private String goodsCode;
 
-    /** 使用人人数（1=个人版,2=双人版,3+家庭版） */
+    /** 使用人人数（1=个人版,2=双人版,3+家庭版；= holderRule 构成之和） */
     private Integer personCount;
+
+    /** 权益期限类型（1=固定天数（validDays生效），2=终身） */
+    private Integer validityType;
+
+    /** 权益人构成规则JSON（HolderRule：self/spouse/parent/designateAtActivation） */
+    private String holderRule;
+
+    /** 配额归属（0=按人独立配额，1=权益人共享池） */
+    private Integer shareMode;
 
     /** 激活后有效天数 */
     private Integer validDays;
@@ -30,7 +39,7 @@ public class GoodsEquity extends BaseEntity {
     /** 库存有效期天数（未激活时） */
     private Integer shelfLifeDays;
 
-    /** 是否可转让（0否1是） */
+    /** 可转让次数（0=不可转让，1/2/3=可转让N次） */
     private Integer maxTransferable;
 
     /** 权益配置说明 */

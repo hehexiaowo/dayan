@@ -21,7 +21,8 @@ public class ServiceItemCreateDTO {
 
     private Integer costBearing;
 
-    private String serviceNetwork;
+    /** 服务网络范围（结构化；null=业态全部机构，custom=自选可精确到房型） */
+    private com.dayan.goods.model.NetworkScope networkScope;
 
     private String coveredItems;
 

@@ -11,6 +11,7 @@ import {
   setDefaultEquityUsePerson
 } from '@/api/equity'
 import type { EquityUsePerson, EquityUsePersonQuery } from '@/types/equity'
+import { RELATION_WITH_HOLDER_OPTIONS, relationLabel } from '@/types/equity'
 import { Gender, GENDER_OPTIONS } from '@/types/client'
 import { formatDate, formatDateTime, formatOption } from '@/utils/format'
 
@@ -282,7 +283,9 @@ loadPage()
         </el-table-column>
         <el-table-column prop="usePersonPhone" label="手机号" min-width="120" show-overflow-tooltip />
         <el-table-column prop="usePersonIdCard" label="身份证号" min-width="170" show-overflow-tooltip />
-        <el-table-column prop="relationWithHolder" label="与持有人关系" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="relationWithHolder" label="与持有人关系" min-width="140" align="center">
+          <template #default="{ row }">{{ relationLabel(row.relationWithHolder) }}</template>
+        </el-table-column>
         <el-table-column prop="isDefaultHolder" label="默认权益人" width="110" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.isDefaultHolder === 1" type="success" size="small">默认</el-tag>
@@ -393,7 +396,10 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="与持有人关系">
-              <el-input v-model="form.relationWithHolder" placeholder="如：本人 / 配偶 / 父母 / 子女" maxlength="20" />
+              <el-select v-model="form.relationWithHolder" placeholder="选择与持有人的关系" style="width: 100%">
+                <el-option v-for="o in RELATION_WITH_HOLDER_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+              <div class="form-hint">按权益的权益人构成规则校验席位（配偶≤1、父母≤4、本人唯一）</div>
             </el-form-item>
           </el-col>
           <el-col v-if="dialogType === 'create'" :span="12">
@@ -439,7 +445,7 @@ loadPage()
         <el-descriptions-item label="出生日期">{{ formatDate(detail.usePersonBirthday) }}</el-descriptions-item>
         <el-descriptions-item label="手机号">{{ detail.usePersonPhone || '--' }}</el-descriptions-item>
         <el-descriptions-item label="身份证号" :span="2">{{ detail.usePersonIdCard || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="与持有人关系">{{ detail.relationWithHolder || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="与持有人关系">{{ relationLabel(detail.relationWithHolder) }}</el-descriptions-item>
         <el-descriptions-item label="默认权益人">{{ defaultHolderLabel(detail.isDefaultHolder) }}</el-descriptions-item>
         <el-descriptions-item label="健康状况" :span="2">{{ detail.healthStatus || '--' }}</el-descriptions-item>
         <el-descriptions-item label="照护需求" :span="2">{{ detail.careNeed || '--' }}</el-descriptions-item>
@@ -476,5 +482,11 @@ loadPage()
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #999;
+  line-height: 1.4;
 }
 </style>

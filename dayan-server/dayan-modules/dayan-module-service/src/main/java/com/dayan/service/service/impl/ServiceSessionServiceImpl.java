@@ -38,6 +38,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+
+import com.dayan.service.util.QuotaYears;
 import java.util.stream.Collectors;
 
 /**
@@ -132,13 +134,18 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         entity.setTouchCount(0);
         // 配额语义：每次履约 = 1 个 session = 1 次服务消费。
         // max_use_count 固定 1（本行仅代表 1 次履约），总配额靠 equity+item 聚合统计（见 checkQuotaAvailable）。
-        // quota_type 从 DTO 快照（年度/终身），quota_reset_year 仅年度配额用（标记消费年份）。
+        // quota_type 从 DTO 快照（年度/终身）；quota_reset_year 仅年度配额用，记录消费发生的
+        // 权益周年序号（由激活时间推算，调用方传入；未传则退化为自然年，兼容旧调用）。
         entity.setMaxUseCount(1);
         entity.setUsedCount(0);
         int quotaType = dto.getQuotaType() != null ? dto.getQuotaType() : 2;
         entity.setQuotaType(quotaType);
         entity.setQuotaResetYear(quotaType == 2
-                ? LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear() : null);
+                ? (dto.getQuotaYear() != null ? dto.getQuotaYear()
+                    : LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear())
+                : null);
+        // 结构化记录本次服务的权益人（按人配额统计 + 审计，替代旧 remark 拼接）
+        entity.setUsePersonId(dto.getUsePersonId());
         // 初始状态：待分配 + normal
         entity.setSessionStatus(ServiceSessionEvent.STATUS_PENDING_ASSIGN);
         entity.setSubStatus(ServiceSessionEvent.SUB_NORMAL);
@@ -363,14 +370,23 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
 
     @Override
     public int getRemainingQuota(String equityCode, String itemCode, int quotaType, int maxQuota) {
+        // 兼容旧调用：无周年锚点（自然年口径）、共享池口径
+        return getRemainingQuota(equityCode, itemCode, quotaType, maxQuota, null, null);
+    }
+
+    @Override
+    public int getRemainingQuota(String equityCode, String itemCode, int quotaType, int maxQuota,
+                                 LocalDate anchorDate, Long usePersonId) {
         int consumed;
         if (quotaType == 1) {
             // 终身配额：统计全部已完成消费
-            consumed = sessionMapper.countConsumedSessions(equityCode, itemCode);
+            consumed = sessionMapper.countConsumedSessionsByPerson(equityCode, itemCode, usePersonId);
         } else {
-            // 年度配额：只统计当年消费（quota_reset_year = 当前年）
-            int currentYear = LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear();
-            consumed = sessionMapper.countConsumedSessionsAnnual(equityCode, itemCode, currentYear);
+            // 年度配额：按权益周年统计（激活日为锚点，跨周年自动重置；anchor 空=退化自然年）
+            LocalDate today = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+            int benefitYear = QuotaYears.benefitYear(anchorDate, today);
+            consumed = sessionMapper.countConsumedSessionsAnnualByPerson(
+                    equityCode, itemCode, benefitYear, usePersonId);
         }
         return maxQuota - consumed;
     }

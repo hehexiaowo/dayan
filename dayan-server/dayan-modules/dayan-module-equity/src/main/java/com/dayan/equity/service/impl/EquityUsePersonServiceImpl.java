@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -90,7 +91,10 @@ public class EquityUsePersonServiceImpl implements EquityUsePersonService {
                     "单权益使用人已达上限 " + maxPersons + " 人");
         }
 
-        // 2. 身份证唯一校验（解密比对）
+        // 2. 关系合法性 + 构成规则校验（holder_rule：配偶≤1、父母≤4、本人唯一）
+        validateRelationAgainstRule(dto.getEquityCode(), dto.getRelationWithHolder(), null);
+
+        // 3. 身份证唯一校验（解密比对）
         if (dto.getUsePersonIdCard() != null && !dto.getUsePersonIdCard().isEmpty()) {
             checkIdCardUnique(dto.getEquityCode(), dto.getUsePersonIdCard(), null);
         }
@@ -133,7 +137,11 @@ public class EquityUsePersonServiceImpl implements EquityUsePersonService {
         if (dto.getUsePersonBirthday() != null) update.setUsePersonBirthday(dto.getUsePersonBirthday());
         if (dto.getUsePersonAge() != null) update.setUsePersonAge(dto.getUsePersonAge());
         if (dto.getUsePersonPhone() != null) update.setUsePersonPhone(dto.getUsePersonPhone());
-        if (dto.getRelationWithHolder() != null) update.setRelationWithHolder(dto.getRelationWithHolder());
+        if (dto.getRelationWithHolder() != null) {
+            // 关系变更时校验构成规则（排除自身计数）
+            validateRelationAgainstRule(existing.getEquityCode(), dto.getRelationWithHolder(), id);
+            update.setRelationWithHolder(dto.getRelationWithHolder());
+        }
         if (dto.getHealthStatus() != null) update.setHealthStatus(dto.getHealthStatus());
         if (dto.getCareNeed() != null) update.setCareNeed(dto.getCareNeed());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
@@ -185,6 +193,80 @@ public class EquityUsePersonServiceImpl implements EquityUsePersonService {
             return depot.getPersonCount();
         }
         return DEFAULT_PERSON_COUNT;
+    }
+
+    /** 合法的与持有人关系字典code（system_dict: relation_with_holder） */
+    private static final Set<String> VALID_RELATIONS =
+            Set.of("self", "spouse", "parent", "parent_in_law", "child", "other");
+
+    /**
+     * 权益人关系校验：
+     * ① 必须是字典合法值；② 有 holder_rule 快照时按构成规则校验席位——
+     * 本人唯一、配偶 ≤ 规则配偶席位、父母（含公婆/岳父母）合计 ≤ 规则父母席位。
+     * 无规则快照（旧数据）时仅做字典值校验。
+     *
+     * @param equityCode    权益编码
+     * @param relation      待写入的关系code
+     * @param excludePersonId 更新场景排除自身（null=新增场景）
+     */
+    private void validateRelationAgainstRule(String equityCode, String relation, Long excludePersonId) {
+        if (relation == null || !VALID_RELATIONS.contains(relation)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    "与持有人关系不合法: " + relation + "（须为 self/spouse/parent/parent_in_law/child/other）");
+        }
+        EquityDepot depot = depotMapper.selectOne(new LambdaQueryWrapper<EquityDepot>()
+                .eq(EquityDepot::getEquityCode, equityCode)
+                .last("LIMIT 1"));
+        if (depot == null) {
+            return;
+        }
+        com.dayan.goods.model.HolderRule rule = com.dayan.goods.model.RightsJson.read(
+                depot.getHolderRule(), com.dayan.goods.model.HolderRule.class);
+        if (rule == null) {
+            return;
+        }
+
+        List<EquityUsePerson> all = usePersonMapper.selectList(new LambdaQueryWrapper<EquityUsePerson>()
+                .eq(EquityUsePerson::getEquityCode, equityCode));
+        long spouseCount = 0;
+        long parentCount = 0;
+        boolean selfExists = false;
+        for (EquityUsePerson p : all) {
+            if (excludePersonId != null && excludePersonId.equals(p.getId())) {
+                continue;
+            }
+            String rel = p.getRelationWithHolder();
+            if ("self".equals(rel)) {
+                selfExists = true;
+            } else if ("spouse".equals(rel)) {
+                spouseCount++;
+            } else if ("parent".equals(rel) || "parent_in_law".equals(rel)) {
+                parentCount++;
+            }
+        }
+
+        switch (relation) {
+            case "self" -> {
+                if (selfExists) {
+                    throw new BusinessException(ErrorCode.BUSINESS, "该权益已有本人（默认权益人），不能再添加");
+                }
+            }
+            case "spouse" -> {
+                int spouseLimit = rule.getSpouse() == null ? 0 : rule.getSpouse();
+                if (spouseCount + 1 > spouseLimit) {
+                    throw new BusinessException(ErrorCode.BUSINESS,
+                            "该权益的构成不含配偶席位或配偶已存在（上限 " + spouseLimit + " 人）");
+                }
+            }
+            case "parent", "parent_in_law" -> {
+                int parentLimit = rule.getParent() == null ? 0 : rule.getParent();
+                if (parentCount + 1 > parentLimit) {
+                    throw new BusinessException(ErrorCode.BUSINESS,
+                            "该权益的父母席位已满（上限 " + parentLimit + " 人，含公婆/岳父母）");
+                }
+            }
+            default -> { /* child/other 不受构成席位约束，仅受总人数上限约束 */ }
+        }
     }
 
     private EquityUsePerson requireUsePerson(Long id) {

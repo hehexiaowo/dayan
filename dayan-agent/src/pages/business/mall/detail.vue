@@ -6,11 +6,18 @@
     </template>
 
     <template v-else-if="product">
-      <!-- 商品图片 -->
-      <view class="hero">
+      <!-- 商品图片：展示配置轮播图优先，未配置时回退封面图 -->
+      <view v-if="banners.length > 1" class="hero">
+        <swiper class="hero-swiper" :indicator-dots="true" :circular="true" indicator-active-color="#10aeff">
+          <swiper-item v-for="key in banners" :key="key">
+            <image :src="formatFileUrl(key)" mode="aspectFill" class="hero-img" />
+          </swiper-item>
+        </swiper>
+      </view>
+      <view v-else class="hero">
         <image
-          v-if="formatFileUrl(product.coverImage)"
-          :src="formatFileUrl(product.coverImage)"
+          v-if="heroImage"
+          :src="formatFileUrl(heroImage)"
           mode="aspectFill"
           class="hero-img"
         />
@@ -35,10 +42,75 @@
         </view>
       </view>
 
+      <!-- 权益内容（结构化：构成/期限/共享/转让 + 服务项目次数/入住权/随心住规则/网络范围） -->
+      <view v-if="product.equity" class="equity-card">
+        <text class="desc-title">权益内容</text>
+        <view class="equity-overview">
+          <view class="ov-item">
+            <text class="ov-label">权益人</text>
+            <text class="ov-val">{{ holderText(product.equity) }}（{{ product.equity.personCount || 1 }}人）</text>
+          </view>
+          <view class="ov-item">
+            <text class="ov-label">权益期限</text>
+            <text class="ov-val">{{ validityText(product.equity) }}</text>
+          </view>
+          <view class="ov-item">
+            <text class="ov-label">次数口径</text>
+            <text class="ov-val">{{ product.equity.shareMode === 0 ? '按人独立配额' : '权益人共享' }}</text>
+          </view>
+          <view class="ov-item">
+            <text class="ov-label">转让</text>
+            <text class="ov-val">{{ transferText }}</text>
+          </view>
+        </view>
+
+        <view
+          v-for="it in product.equity.serviceItems || []"
+          :key="it.itemCode"
+          class="svc-item"
+        >
+          <view class="svc-head">
+            <text class="svc-name">{{ it.itemName || it.itemCode }}</text>
+            <text class="svc-quota">{{ it.quantity }}{{ it.quotaType === 1 ? '次/权益期' : '次/年' }}</text>
+          </view>
+          <view v-if="rightTags(it).length || it.usageRule" class="svc-tags">
+            <text v-for="t in rightTags(it)" :key="t" class="svc-tag">{{ t }}</text>
+            <text v-if="it.usageRule" class="svc-tag tg-blue">随心住</text>
+          </view>
+          <text v-if="usageBrief(it)" class="svc-rule">{{ usageBrief(it) }}</text>
+          <text class="svc-net">服务网络：{{ networkText(it) }}</text>
+        </view>
+      </view>
+
       <!-- 商品描述 -->
       <view v-if="product.goodsDescription || product.summary" class="desc-card">
         <text class="desc-title">商品详情</text>
         <text class="desc-content">{{ product.goodsDescription || product.summary }}</text>
+      </view>
+
+      <!-- 结构化展示板块（产品介绍/权益详解/服务流程/常见问题/购买须知，来自 admin 页面配置） -->
+      <view
+        v-for="(block, bi) in displayBlocks"
+        :key="block.id || bi"
+        class="desc-card block-card"
+      >
+        <text class="desc-title">{{ blockTitleOf(block) }}</text>
+        <rich-text v-if="block.content" :nodes="block.content" class="block-rich" />
+        <view v-if="blockImages(block).length" class="block-images">
+          <view
+            v-for="(img, ii) in blockImages(block)"
+            :key="ii"
+            class="block-image-item"
+          >
+            <image
+              :src="formatFileUrl(img)"
+              mode="widthFix"
+              class="block-img"
+              @click="previewImages(block, ii)"
+            />
+            <text v-if="blockDesc(block, ii)" class="block-img-desc">{{ blockDesc(block, ii) }}</text>
+          </view>
+        </view>
       </view>
     </template>
 
@@ -90,7 +162,8 @@ import { onLoad } from '@dcloudio/uni-app';
 import { getGoodsDetail } from '@/api/goods';
 import { createOrderEquity } from '@/api/order';
 import { formatFileUrl } from '@/utils/file';
-import type { GoodsProduct } from '@/types';
+import { holderText, validityText, rightTags, usageBrief, networkText, blockTitleOf, parseImagesArr, parseDisplayConfig } from '@/types';
+import type { GoodsProduct, GoodsDisplayBlock } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
@@ -99,6 +172,35 @@ const loading = ref(true);
 const quantity = ref(1);
 const submitting = ref(false);
 const goodsCode = ref('');
+
+/** 展示配置轮播图（无 banners 时不启用轮播） */
+const banners = computed(() => parseDisplayConfig(product.value?.displayConfig).banners);
+/** hero 单图：banners 单张或未配置时回退封面图 */
+const heroImage = computed(() => {
+  const cfg = parseDisplayConfig(product.value?.displayConfig);
+  if (cfg.banners.length === 1) return cfg.banners[0];
+  return product.value?.coverImage || '';
+});
+/** 详情页展示板块（后端仅返回显示态、按 sortOrder 升序） */
+const displayBlocks = computed(() => product.value?.displayBlocks || []);
+
+function blockImages(block: GoodsDisplayBlock): string[] {
+  return parseImagesArr(block.images);
+}
+function blockDesc(block: GoodsDisplayBlock, index: number): string {
+  const descs = parseImagesArr(block.imageDescriptions);
+  return descs[index] || '';
+}
+function previewImages(block: GoodsDisplayBlock, index: number) {
+  const urls = blockImages(block).map((k) => formatFileUrl(k));
+  if (!urls.length) return;
+  uni.previewImage({ urls, current: urls[index] || urls[0] });
+}
+
+const transferText = computed(() => {
+  const mt = product.value?.equity?.maxTransferable ?? 0;
+  return mt > 0 ? `可转让${mt}次` : '不可转让';
+});
 
 const canIncrease = computed(() => {
   if (!product.value) return false;
@@ -211,6 +313,10 @@ onLoad((query) => {
   height: 500rpx;
   background: $bg-card;
 }
+.hero-swiper {
+  width: 100%;
+  height: 100%;
+}
 .hero-img {
   width: 100%;
   height: 100%;
@@ -295,6 +401,117 @@ onLoad((query) => {
   color: $text-regular;
   line-height: 1.8;
   white-space: pre-wrap;
+}
+
+/* 结构化展示板块 */
+.block-card {
+  margin-top: $spacing-sm;
+}
+.block-rich {
+  display: block;
+  margin-top: $spacing-sm;
+  font-size: 26rpx;
+  color: $text-regular;
+  line-height: 1.8;
+}
+.block-images {
+  margin-top: $spacing-sm;
+}
+.block-image-item {
+  margin-bottom: $spacing-sm;
+}
+.block-img {
+  width: 100%;
+  border-radius: $radius-sm;
+}
+.block-img-desc {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: $text-secondary;
+  text-align: center;
+}
+
+/* 权益内容 */
+.equity-card {
+  background: $bg-card;
+  padding: $spacing-lg $spacing-md;
+  margin-bottom: $spacing-sm;
+}
+.equity-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx 32rpx;
+  margin-bottom: $spacing-md;
+}
+.ov-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.ov-label {
+  font-size: 24rpx;
+  color: $text-secondary;
+}
+.ov-val {
+  font-size: 24rpx;
+  color: $text-primary;
+  font-weight: 500;
+}
+.svc-item {
+  padding: $spacing-sm 0;
+  border-top: 2rpx solid $border-light;
+}
+.svc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.svc-name {
+  font-size: 28rpx;
+  color: $text-primary;
+  font-weight: 500;
+  flex: 1;
+}
+.svc-quota {
+  font-size: 26rpx;
+  color: $brand-primary;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+.svc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 10rpx;
+}
+.svc-tag {
+  font-size: 20rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+  line-height: 32rpx;
+  color: #07c160;
+  background: rgba(7, 193, 96, 0.1);
+
+  &.tg-blue {
+    color: #10aeff;
+    background: rgba(16, 174, 255, 0.1);
+  }
+}
+/* 入住权首标签着色（保证红/优先橙由行内顺序决定，统一绿色系外再区分太细，保持简洁） */
+.svc-rule {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: $text-secondary;
+  line-height: 1.6;
+}
+.svc-net {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: $text-placeholder;
 }
 
 /* 底部固定栏 */

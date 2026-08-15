@@ -140,6 +140,8 @@ export interface GoodsInfo {
   auditStatus?: number
   /** 备注 */
   remark?: string
+  /** 页面展示配置 JSON：{"banners":["key"],"thumbnail":"key"}；thumbnail 空=默认第一张/回退 coverImage */
+  displayConfig?: string
   createdAt?: string
   updatedAt?: string
 }

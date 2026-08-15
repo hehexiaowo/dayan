@@ -32,15 +32,30 @@ public interface ServiceSessionMapper extends BaseMapper<ServiceSession> {
                               @Param("itemCode") String itemCode);
 
     /**
-     * 统计某权益某服务项目的年度已消费次数（只数已完成且当年的 session）。
+     * 统计某权益某服务项目的终身已消费次数（按权益人，共享池口径传 usePersonId=null）。
      *
-     * <p>年度配额（quota_type=2）用此方法：只统计 quota_reset_year = 指定年份的消费。
-     * 跨年后年度重置任务会把旧年的 quota_reset_year 推进到今年，旧消费不再计入今年配额。
+     * <p>goods_equity.share_mode=0（按人独立配额）时用此方法按 use_person_id 过滤。
+     */
+    @Select("<script>SELECT COUNT(*) FROM service_session " +
+            "WHERE equity_code = #{equityCode} AND item_code = #{itemCode} " +
+            "AND used_count = 1 AND deleted = 0 " +
+            "AND session_status = 6 " +
+            "<if test='usePersonId != null'>AND use_person_id = #{usePersonId}</if></script>")
+    int countConsumedSessionsByPerson(@Param("equityCode") String equityCode,
+                                      @Param("itemCode") String itemCode,
+                                      @Param("usePersonId") Long usePersonId);
+
+    /**
+     * 统计某权益某服务项目的年度已消费次数（只数已完成且当权益周年的 session）。
+     *
+     * <p>年度配额（quota_type=2）用此方法：只统计 quota_reset_year = 指定权益周年序号的消费。
+     * 周年序号按激活时间推算（QuotaYears.benefitYear），跨周年旧消费不再计入新周年，
+     * 查询层天然重置、无需改数据。
      *
      * @param equityCode 权益编码
      * @param itemCode   服务项目编码
-     * @param year       统计年份
-     * @return 该年度已消费次数
+     * @param year       权益周年序号（1 起；旧数据为自然年年份，由 anchor 退化口径匹配）
+     * @return 该权益周年已消费次数
      */
     @Select("SELECT COUNT(*) FROM service_session " +
             "WHERE equity_code = #{equityCode} AND item_code = #{itemCode} " +
@@ -51,6 +66,23 @@ public interface ServiceSessionMapper extends BaseMapper<ServiceSession> {
     int countConsumedSessionsAnnual(@Param("equityCode") String equityCode,
                                     @Param("itemCode") String itemCode,
                                     @Param("year") int year);
+
+    /**
+     * 统计某权益某服务项目某权益周年的已消费次数（按权益人，共享池口径传 usePersonId=null）。
+     *
+     * <p>年度配额（quota_type=2）按激活周年重置：year 为权益周年序号
+     * （QuotaYears.benefitYear 计算，1 起），跨周年旧消费不再计入新周年。
+     */
+    @Select("<script>SELECT COUNT(*) FROM service_session " +
+            "WHERE equity_code = #{equityCode} AND item_code = #{itemCode} " +
+            "AND used_count = 1 AND deleted = 0 " +
+            "AND session_status = 6 " +
+            "AND quota_type = 2 AND quota_reset_year = #{year} " +
+            "<if test='usePersonId != null'>AND use_person_id = #{usePersonId}</if></script>")
+    int countConsumedSessionsAnnualByPerson(@Param("equityCode") String equityCode,
+                                            @Param("itemCode") String itemCode,
+                                            @Param("year") int year,
+                                            @Param("usePersonId") Long usePersonId);
 
     /**
      * 年度配额重置（当前实现为空操作保留，详见 javadoc）。

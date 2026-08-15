@@ -30,6 +30,7 @@ import EquityConfigTab from './EquityConfigTab.vue'
 import SceneTab from './SceneTab.vue'
 import CourseTab from './CourseTab.vue'
 import SojournTab from './SojournTab.vue'
+import GoodsPageConfigTab from './GoodsPageConfigTab.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,7 +59,7 @@ function goBack() {
 }
 
 /**
- * 动态 tab 列表：基本信息始终在，SKU tab 按 goodsType 二选一。
+ * 动态 tab 列表：基本信息 + SKU 子表 tab（按 goodsType 二选一）+ 页面配置（全类型通用）。
  *
  * 必须等 goodsInfo 加载完（拿到 goodsType）才追加 SKU tab，否则会渲染空 tab。
  */
@@ -72,7 +73,8 @@ const tabs = computed(() => {
   }
   const goodsType = goodsInfo.value?.goodsType
   const skuTab = goodsType != null ? skuTabMap[goodsType] : null
-  return skuTab ? [...base, skuTab] : base
+  const pageConfigTab = { name: 'page-config', label: '页面配置' }
+  return skuTab ? [...base, skuTab, pageConfigTab] : [...base, pageConfigTab]
 })
 </script>
 
@@ -110,6 +112,7 @@ const tabs = computed(() => {
         <SceneTab v-else-if="t.name === 'scene'" :goods-code="goodsCode" />
         <CourseTab v-else-if="t.name === 'course'" :goods-code="goodsCode" />
         <SojournTab v-else-if="t.name === 'sojourn'" :goods-code="goodsCode" />
+        <GoodsPageConfigTab v-else-if="t.name === 'page-config'" :goods-code="goodsCode" />
       </el-tab-pane>
     </el-tabs>
   </div>

@@ -27,8 +27,26 @@ public class GoodsServiceItemRel extends BaseEntity {
     /** 数量 */
     private Integer quantity;
 
-    /** 配额周期（1=终身总量,2=年度配额） */
+    /** 配额周期（1=终身总量,2=年度配额（按激活周年重置）） */
     private Integer quotaType;
+
+    /** 服务网络范围JSON（NetworkScope：NULL=业态全部机构；{mode:custom,parkCodes}=自选） */
+    private String networkScope;
+
+    /** 保证入住权（0=无，1=有；长居/照护） */
+    private Integer admissionGuaranteed;
+
+    /** 优先入住权（0=无，1=有） */
+    private Integer admissionPriority;
+
+    /** 优惠入住权/旅居优惠权（0=无，1=有） */
+    private Integer admissionDiscount;
+
+    /** 优惠折扣率（90.00=门市价9折；NULL=按协议未定） */
+    private java.math.BigDecimal discountRate;
+
+    /** 单次使用规则JSON（UsageRule：晚数/间数/人数/预订/预定金/取消政策/黑名单） */
+    private String usageRule;
 
     /** 排序号 */
     private Integer sortOrder;

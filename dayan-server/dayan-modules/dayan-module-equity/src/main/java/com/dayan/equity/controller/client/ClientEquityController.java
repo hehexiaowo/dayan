@@ -25,8 +25,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.dayan.service.util.QuotaYears;
 
 /**
  * 权益域 - client 端接口（持卡人视角）。
@@ -81,29 +85,65 @@ public class ClientEquityController {
     }
 
     /**
-     * 权益下可用的服务项目 + 配额剩余次数。
+     * 权益下可用的服务项目 + 配额剩余次数（含结构化权益内容）。
      *
-     * <p>返回每个 service_item 的名称、配额上限、已消费次数、剩余次数。
-     * 持卡人发起服务请求时可据此展示哪些项目还能用、还能用几次。
+     * <p>返回每个 service_item 的名称、配额上限、已消费次数、剩余次数，
+     * 以及入住权（保证/优先/优惠）、折扣率、单次使用规则——持卡人端可据此
+     * 结构化展示权益卡内容，不再依赖商品描述文本。
+     *
+     * <p>配额口径：年度配额按激活周年重置（anchor=activateTime）；
+     * share_mode=0（按人独立配额）时按 usePersonId 参数统计
+     * （不传则取默认权益人），share_mode=1 为共享池。
      */
-    @Operation(summary = "权益可用服务项目 + 配额剩余")
+    @Operation(summary = "权益可用服务项目 + 配额剩余 + 权益内容")
     @GetMapping("/{equityCode}/service-items")
-    public R<List<ClientServiceItemVO>> serviceItems(@PathVariable String equityCode) {
+    public R<List<ClientServiceItemVO>> serviceItems(
+            @PathVariable String equityCode,
+            @RequestParam(required = false) Long usePersonId) {
         EquityDepot depot = checkOwnership(equityCode);
         List<GoodsEquityVO.ServiceItemRelVO> rels = goodsEquityService.listRelsByGoodsCode(depot.getGoodsCode());
         if (rels == null || rels.isEmpty()) {
             return R.ok(List.of());
         }
+        LocalDate anchor = depot.getActivateTime() != null ? depot.getActivateTime().toLocalDate() : null;
+        Long quotaPersonId = resolveQuotaPersonId(depot, usePersonId);
         List<ClientServiceItemVO> result = new ArrayList<>();
         for (GoodsEquityVO.ServiceItemRelVO rel : rels) {
             int quantity = rel.getQuantity() != null ? rel.getQuantity() : 1;
             int quotaType = rel.getQuotaType() != null ? rel.getQuotaType() : 2;
-            int remaining = serviceSessionService.getRemainingQuota(equityCode, rel.getItemCode(), quotaType, quantity);
+            int remaining = serviceSessionService.getRemainingQuota(
+                    equityCode, rel.getItemCode(), quotaType, quantity, anchor, quotaPersonId);
             result.add(new ClientServiceItemVO(
                     rel.getItemCode(), rel.getItemName(), rel.getItemCategory(),
-                    rel.getItemSubtype(), quantity, quotaType, quantity - remaining, remaining));
+                    rel.getItemSubtype(), quantity, quotaType, quantity - remaining, remaining,
+                    nz(rel.getAdmissionGuaranteed()), nz(rel.getAdmissionPriority()), nz(rel.getAdmissionDiscount()),
+                    rel.getDiscountRate(), rel.getUsageRule(), rel.getNetworkScope()));
         }
         return R.ok(result);
+    }
+
+    /** 按人配额口径下解析统计的权益人：优先请求参数，缺省取默认权益人 */
+    private Long resolveQuotaPersonId(EquityDepot depot, Long usePersonId) {
+        boolean perPerson = depot.getShareMode() != null && depot.getShareMode() == 0;
+        if (!perPerson) {
+            return null; // 共享池口径
+        }
+        if (usePersonId != null) {
+            return usePersonId;
+        }
+        List<EquityUsePersonVO> persons = equityUsePersonService.listByEquity(depot.getEquityCode());
+        if (persons != null) {
+            for (EquityUsePersonVO p : persons) {
+                if (p.getIsDefaultHolder() != null && p.getIsDefaultHolder() == 1) {
+                    return p.getId();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static int nz(Integer v) {
+        return v == null ? 0 : v;
     }
 
     /**
@@ -136,16 +176,9 @@ public class ClientEquityController {
                     "该权益不包含此服务项目: " + dto.getItemCode());
         }
 
-        // 3. 配额校验
+        // 3. 配额校验（年度按激活周年；share_mode=0 按人独立配额）
         int quantity = targetRel.getQuantity() != null ? targetRel.getQuantity() : 1;
         int quotaType = targetRel.getQuotaType() != null ? targetRel.getQuotaType() : 2;
-        int remaining = serviceSessionService.getRemainingQuota(
-                dto.getEquityCode(), dto.getItemCode(), quotaType, quantity);
-        if (remaining <= 0) {
-            throw new com.dayan.common.core.exception.BusinessException(
-                    com.dayan.common.core.exception.ErrorCode.BUSINESS,
-                    "服务项目配额已用尽: " + targetRel.getItemName());
-        }
 
         // 4. 校验使用人归属该权益（防伪造 usePersonId）
         Long usePersonIdVal;
@@ -172,12 +205,28 @@ public class ClientEquityController {
                     com.dayan.common.core.exception.ErrorCode.BUSINESS, "权益人不属于当前权益");
         }
 
+        LocalDate anchor = depot.getActivateTime() != null ? depot.getActivateTime().toLocalDate() : null;
+        Long quotaPersonId = (depot.getShareMode() != null && depot.getShareMode() == 0)
+                ? usePersonIdVal : null;
+        int remaining = serviceSessionService.getRemainingQuota(
+                dto.getEquityCode(), dto.getItemCode(), quotaType, quantity, anchor, quotaPersonId);
+        if (remaining <= 0) {
+            throw new com.dayan.common.core.exception.BusinessException(
+                    com.dayan.common.core.exception.ErrorCode.BUSINESS,
+                    "服务项目配额已用尽: " + targetRel.getItemName());
+        }
+
         // 5. 构造 session DTO 创建
+        Integer quotaYear = anchor != null && quotaType == 2
+                ? QuotaYears.benefitYear(anchor, LocalDate.now(ZoneId.of("Asia/Shanghai")))
+                : null;
         ServiceSessionCreateDTO sessionDTO = new ServiceSessionCreateDTO();
         sessionDTO.setEquityCode(dto.getEquityCode());
         sessionDTO.setItemCode(dto.getItemCode());
+        sessionDTO.setUsePersonId(usePersonIdVal);
         sessionDTO.setClientCode(clientCode);
         sessionDTO.setQuotaType(quotaType);
+        sessionDTO.setQuotaYear(quotaYear);
         sessionDTO.setServiceTitle(targetRel.getItemName() + " - " + usePersonName);
         sessionDTO.setServiceDescription(dto.getDemandDesc());
         sessionDTO.setSourceType(2); // 2=客户主动
@@ -239,7 +288,7 @@ public class ClientEquityController {
         return depot;
     }
 
-    /** 客户端服务项目 VO（含配额剩余） */
+    /** 客户端服务项目 VO（含配额剩余 + 结构化权益内容） */
     @lombok.Data
     @lombok.AllArgsConstructor
     public static class ClientServiceItemVO {
@@ -253,11 +302,23 @@ public class ClientEquityController {
         private Integer itemSubtype;
         /** 配额上限 */
         private Integer quantity;
-        /** 配额周期（1=终身,2=年度） */
+        /** 配额周期（1=终身,2=年度（按激活周年重置）） */
         private Integer quotaType;
         /** 已消费次数 */
         private Integer consumed;
         /** 剩余次数 */
         private Integer remaining;
+        /** 保证入住权（0=无,1=有；长居/照护） */
+        private Integer admissionGuaranteed;
+        /** 优先入住权（0=无,1=有） */
+        private Integer admissionPriority;
+        /** 优惠入住权/旅居优惠权（0=无,1=有） */
+        private Integer admissionDiscount;
+        /** 优惠折扣率（90.00=门市价9折；null=按协议未定） */
+        private java.math.BigDecimal discountRate;
+        /** 单次使用规则（随心住类：晚数/间数/人数/预订/预定金/取消政策/黑名单） */
+        private com.dayan.goods.model.UsageRule usageRule;
+        /** 服务网络范围（null=业态全部机构；custom=自选范围） */
+        private com.dayan.goods.model.NetworkScope networkScope;
     }
 }

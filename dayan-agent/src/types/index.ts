@@ -341,7 +341,96 @@ export interface EquityStats {
 
 // ===== 商城商品 =====
 
-/** 商城权益商品（对齐后端 GoodsInfoVO 展示子集） */
+/** 权益人构成规则（对齐后端 HolderRule） */
+export interface AgentHolderRule {
+  self: number;
+  spouse: number;
+  parent: number;
+  designateAtActivation?: boolean;
+}
+
+/** 取消退预定金政策档位 */
+export interface AgentRefundRule {
+  beforeHours: number;
+  refundRate: number;
+}
+
+/** 单次使用规则（随心住类） */
+export interface AgentUsageRule {
+  maxDaysPerUse?: number;
+  maxNightsPerUse?: number;
+  maxRoomsPerUse?: number;
+  maxGuestsPerUse?: number;
+  requireBeneficiaryCheckIn?: boolean;
+  advanceBookDays?: number;
+  depositAmount?: number;
+  refundPolicy?: AgentRefundRule[];
+  blackoutType?: string;
+  blackoutDays?: number;
+}
+
+/** 服务网络范围（null=业态全部机构） */
+export interface AgentNetworkScope {
+  mode: 'all' | 'custom';
+  parks?: { parkCode: string; roomTypeCodes?: string[] }[];
+}
+
+/** 服务项目权益内容（对齐后端 GoodsEquityVO.ServiceItemRelVO） */
+export interface AgentServiceItemRel {
+  itemCode: string;
+  itemName?: string;
+  itemSubtype?: number;
+  quantity: number;
+  /** 1=权益期内总量 2=每年（按激活周年） */
+  quotaType?: number;
+  admissionGuaranteed?: number;
+  admissionPriority?: number;
+  admissionDiscount?: number;
+  /** 90=门市价9折 */
+  discountRate?: number | null;
+  usageRule?: AgentUsageRule | null;
+  networkScope?: AgentNetworkScope | null;
+}
+
+/** 商品权益配置（对齐后端 GoodsEquityVO） */
+export interface AgentEquityConfig {
+  personCount?: number;
+  /** 1=固定天数 2=终身 */
+  validityType?: number;
+  /** 0=按人独立配额 1=共享池 */
+  shareMode?: number;
+  validDays?: number;
+  /** 可转让次数（0=不可） */
+  maxTransferable?: number;
+  holderRule?: AgentHolderRule | null;
+  serviceItems?: AgentServiceItemRel[];
+}
+
+/** 商品展示板块（对齐后端 GoodsDisplayBlockVO，goods_display_block） */
+export interface GoodsDisplayBlock {
+  id?: number;
+  goodsCode?: string;
+  /** 板块类型（product_intro/rights_detail/service_flow/faq/purchase_terms/custom） */
+  blockType: string;
+  /** 板块标题（详情页 tab 名） */
+  blockTitle?: string;
+  /** 富文本内容（HTML） */
+  content?: string;
+  /** 图片key列表（JSON数组字符串） */
+  images?: string;
+  /** 图片描述列表（JSON数组字符串，与 images 一一对应） */
+  imageDescriptions?: string;
+  sortOrder?: number;
+  status?: number;
+}
+
+/** 页面展示配置（goods_info.display_config JSON：banners/thumbnail） */
+export interface GoodsDisplayConfig {
+  banners: string[];
+  thumbnail: string;
+}
+
+/** 商城权益商品（对齐后端 AgentGoodsVO：基础信息 + 权益配置） */
 export interface GoodsProduct {
   goodsCode: string;
   goodsName: string;
@@ -357,6 +446,128 @@ export interface GoodsProduct {
   stock?: number;
   salesCount?: number;
   goodsStatus?: number;
+  /** 权益配置（null=未配置） */
+  equity?: AgentEquityConfig | null;
+  /** 页面展示配置（JSON字符串：{"banners":[...],"thumbnail":"..."}；空=回退封面图） */
+  displayConfig?: string;
+  /** 详情页展示板块（仅显示态，按 sortOrder 升序；列表接口不携带） */
+  displayBlocks?: GoodsDisplayBlock[];
+}
+
+// ===== 权益内容展示工具 =====
+
+/** 服务项目简称（按子类）：旅游短居→旅居 / 活力长居→长居 / 照护长居→照护 */
+export function itemShortName(item: AgentServiceItemRel): string {
+  if (item.itemSubtype === 2) return '长居';
+  if (item.itemSubtype === 3) return '照护';
+  if (item.itemSubtype === 1) return '旅居';
+  return item.itemName || '服务';
+}
+
+/** 次数与周期文案：如 "旅居6次/年" / "长居3次/权益期" */
+export function quotaText(item: AgentServiceItemRel): string {
+  const unit = item.quotaType === 1 ? '次/权益期' : '次/年';
+  return `${itemShortName(item)}${item.quantity}${unit}`;
+}
+
+/** 入住权标签列表：保证入住 / 优先入住 / 优惠(9折) */
+export function rightTags(item: AgentServiceItemRel): string[] {
+  const tags: string[] = [];
+  if (item.admissionGuaranteed === 1) tags.push('保证入住');
+  if (item.admissionPriority === 1) tags.push('优先入住');
+  if (item.admissionDiscount === 1) {
+    tags.push(item.discountRate ? `优惠${item.discountRate / 10}折` : '优惠入住');
+  }
+  return tags;
+}
+
+/** 权益人构成文案：如 "本人+配偶+父母2席" / "本人" */
+export function holderText(equity: AgentEquityConfig): string {
+  const rule = equity.holderRule;
+  if (!rule) return `${equity.personCount ?? 1}人`;
+  const parts = ['本人'];
+  if (rule.spouse === 1) parts.push('配偶');
+  if (rule.parent > 0) parts.push(`父母${rule.parent}席`);
+  return parts.join('+');
+}
+
+/** 期限文案：终身有效 / 365天 */
+export function validityText(equity: AgentEquityConfig): string {
+  return equity.validityType === 2 ? '终身有效' : `${equity.validDays ?? 365}天`;
+}
+
+/** 网络范围摘要：全部机构 / N家机构·M个房型 */
+export function networkText(item: AgentServiceItemRel): string {
+  const scope = item.networkScope;
+  if (!scope || scope.mode !== 'custom' || !scope.parks?.length) return '业态全部机构';
+  const rooms = scope.parks.reduce((s, p) => s + (p.roomTypeCodes?.length || 0), 0);
+  const base = `${scope.parks.length}家机构`;
+  return rooms > 0 ? `${base}·${rooms}个房型` : base;
+}
+
+/** 随心住使用规则一行摘要 */
+export function usageBrief(item: AgentServiceItemRel): string {
+  const u = item.usageRule;
+  if (!u) return '';
+  const parts: string[] = [];
+  if (u.maxDaysPerUse) parts.push(`每次${u.maxDaysPerUse}天${u.maxNightsPerUse || 0}晚`);
+  if (u.maxRoomsPerUse) parts.push(`${u.maxRoomsPerUse}间房`);
+  if (u.maxGuestsPerUse) parts.push(`每间可住${u.maxGuestsPerUse}人`);
+  if (u.advanceBookDays) parts.push(`提前${u.advanceBookDays}天预订`);
+  if (u.depositAmount) parts.push(`预定金${u.depositAmount}元`);
+  if (u.blackoutType === 'spring_festival' && u.blackoutDays) parts.push(`春节${u.blackoutDays}天不可住`);
+  if (u.requireBeneficiaryCheckIn) parts.push('本人到场');
+  return parts.join(' · ');
+}
+
+// ===== 页面展示板块工具 =====
+
+/** 板块类型选项（与 admin GOODS_DISPLAY_BLOCK_TYPE_OPTIONS 一致） */
+export const GOODS_BLOCK_TYPE_OPTIONS: { label: string; value: string }[] = [
+  { label: '产品介绍', value: 'product_intro' },
+  { label: '权益详解', value: 'rights_detail' },
+  { label: '服务流程', value: 'service_flow' },
+  { label: '常见问题', value: 'faq' },
+  { label: '购买须知', value: 'purchase_terms' },
+  { label: '自定义', value: 'custom' }
+];
+
+/** 板块标题：未自定义标题时按类型映射默认名 */
+export function blockTitleOf(block: GoodsDisplayBlock): string {
+  if (block.blockTitle) return block.blockTitle;
+  const hit = GOODS_BLOCK_TYPE_OPTIONS.find((o) => o.value === block.blockType);
+  return hit ? hit.label : (block.blockType || '详情');
+}
+
+/** 解析 JSON 数组字符串 → string[]（容错非数组） */
+export function parseImagesArr(s?: string): string[] {
+  if (!s) return [];
+  try {
+    const arr = JSON.parse(s);
+    return Array.isArray(arr) ? arr.map(String).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** 解析展示配置 JSON 字符串 → {banners, thumbnail}（容错） */
+export function parseDisplayConfig(raw?: string): GoodsDisplayConfig {
+  if (!raw) return { banners: [], thumbnail: '' };
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      banners: Array.isArray(parsed.banners) ? parsed.banners.map(String).filter(Boolean) : [],
+      thumbnail: parsed.thumbnail ? String(parsed.thumbnail) : ''
+    };
+  } catch {
+    return { banners: [], thumbnail: '' };
+  }
+}
+
+/** 富文本去标签纯文本（板块正文摘要用） */
+export function stripHtml(html?: string): string {
+  if (!html) return '';
+  return html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
 }
 
 // ===== 内容文章 =====

@@ -20,6 +20,10 @@ public class EquityDepotVO {
     private String goodsCode;
     /** 使用人人数快照 */
     private Integer personCount;
+    /** 权益期限类型快照（1=固定天数,2=终身；终身权益 expireTime 为 null=长期有效） */
+    private Integer validityType;
+    /** 配额归属快照（0=按人独立配额,1=权益人共享池） */
+    private Integer shareMode;
     /** 激活后有效天数快照 */
     private Integer validDays;
     private String batchCode;

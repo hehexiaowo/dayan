@@ -226,8 +226,11 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             entity.setEquityCode(equityCode);
             entity.setEquityNo(equityCode); // equity_no = equity_code
             entity.setGoodsCode(batch.getGoodsCode());
-            // 入库快照：从 goods_equity 冻结 personCount + validDays
+            // 入库快照：从 goods_equity 冻结 personCount/validityType/holderRule/shareMode/validDays
             entity.setPersonCount(goodsEquity.getPersonCount() != null ? goodsEquity.getPersonCount() : 1);
+            entity.setValidityType(goodsEquity.getValidityType() != null ? goodsEquity.getValidityType() : 1);
+            entity.setHolderRule(goodsEquity.getHolderRule());
+            entity.setShareMode(goodsEquity.getShareMode() != null ? goodsEquity.getShareMode() : 1);
             entity.setValidDays(goodsEquity.getValidDays() != null ? goodsEquity.getValidDays() : 365);
             entity.setBatchCode(batch.getBatchCode());
             entity.setCostPrice(goodsInfo.getCostPrice() != null ? goodsInfo.getCostPrice() : java.math.BigDecimal.ZERO);
@@ -368,10 +371,13 @@ public class EquityDepotServiceImpl implements EquityDepotService {
             throw new BusinessException(ErrorCode.BUSINESS, "权益未出库或已激活（当前状态=" + from + "）");
         }
 
-        // validDays 从 depot 自身入库快照取（不再跨表查 template）
+        // 期限从 depot 自身入库快照取：终身权益（validityType=2）无过期时间，固定天数按 validDays
         LocalDateTime now = LocalDateTime.now();
+        Integer validityType = depot.getValidityType() != null ? depot.getValidityType() : 1;
         Integer validDays = depot.getValidDays();
-        LocalDateTime expireTime = (validDays != null && validDays > 0) ? now.plusDays(validDays) : null;
+        LocalDateTime expireTime = validityType == 2
+                ? null
+                : (validDays != null && validDays > 0) ? now.plusDays(validDays) : null;
 
         // 状态机 1→2
         int to = stateMachineEngine.transition(EquityEvent.DOMAIN, from, EquityEvent.ACTIVATE);
@@ -407,29 +413,12 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         // 3. 联动批次：activated_count += 1
         batchService.incrementStat(depot.getBatchCode(), "activated_count", 1);
 
-        // 4. 自动建使用人：按 depot.personCount 快照创建（第1个=本人，其余占位"待填写-N"）
+        // 4. 自动建使用人：按 depot.personCount 快照创建（第1个=本人，其余按 holder_rule 构成建占位席位）
         // 仅当当前无任何使用人时（避免重复激活场景重复创建）
         Long existCount = usePersonMapper.selectCount(new LambdaQueryWrapper<EquityUsePerson>()
                 .eq(EquityUsePerson::getEquityCode, depot.getEquityCode()));
         if (existCount == null || existCount == 0) {
-            int personCount = depot.getPersonCount() != null ? depot.getPersonCount() : 1;
-            for (int i = 0; i < personCount; i++) {
-                EquityUsePerson person = new EquityUsePerson();
-                person.setEquityCode(depot.getEquityCode());
-                if (i == 0) {
-                    // 第一个使用人=激活人本人
-                    person.setClientCode(dto.getClientCode());
-                    person.setUsePersonName(dto.getClientFullName());
-                    person.setRelationWithHolder("本人");
-                    person.setIsDefaultHolder(1);
-                } else {
-                    // 其余占位使用人，待后续填写
-                    person.setUsePersonName("待填写-" + (i + 1));
-                    person.setRelationWithHolder("其他");
-                    person.setIsDefaultHolder(0);
-                }
-                usePersonMapper.insert(person);
-            }
+            createDefaultUsePersons(depot, dto);
         }
 
         // 权益激活后不再自动创建服务会话——改由持卡人在 client 端主动发起服务请求时创建。
@@ -438,6 +427,64 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         log.info("权益激活成功: equityCode={}, clientCode={}, activateRecordCode={}",
                 depot.getEquityCode(), dto.getClientCode(), activateRecordCode);
         return activateRecordCode;
+    }
+
+    /**
+     * 激活时按构成规则建初始权益人：第1个=激活人本人（默认权益人），
+     * 之后按 holder_rule 建「待填写」占位席位（配偶席位/父母席位，关系预置）。
+     *
+     * <p>豪华N人版的父母席位须激活时指定人选（designateAtActivation），
+     * 占位行由持卡人在「权益人管理」中补全真实信息（校验见 EquityUsePersonServiceImpl）。
+     * 无 holder_rule 快照的旧权益退化为原逻辑：本人 + N 个「其他」占位。
+     */
+    private void createDefaultUsePersons(EquityDepot depot, ActivateDTO dto) {
+        com.dayan.goods.model.HolderRule rule =
+                com.dayan.goods.model.RightsJson.read(depot.getHolderRule(), com.dayan.goods.model.HolderRule.class);
+
+        // 第一个使用人=激活人本人
+        EquityUsePerson self = new EquityUsePerson();
+        self.setEquityCode(depot.getEquityCode());
+        self.setClientCode(dto.getClientCode());
+        self.setUsePersonName(dto.getClientFullName());
+        self.setRelationWithHolder("self");
+        self.setIsDefaultHolder(1);
+        usePersonMapper.insert(self);
+
+        if (rule == null) {
+            // 旧数据无构成规则：剩余席位按「其他」占位
+            int personCount = depot.getPersonCount() != null ? depot.getPersonCount() : 1;
+            for (int i = 1; i < personCount; i++) {
+                EquityUsePerson person = new EquityUsePerson();
+                person.setEquityCode(depot.getEquityCode());
+                person.setUsePersonName("待填写-" + (i + 1));
+                person.setRelationWithHolder("other");
+                person.setIsDefaultHolder(0);
+                usePersonMapper.insert(person);
+            }
+            return;
+        }
+
+        // 配偶席位（0/1）
+        int spouse = rule.getSpouse() == null ? 0 : rule.getSpouse();
+        for (int i = 0; i < spouse; i++) {
+            EquityUsePerson person = new EquityUsePerson();
+            person.setEquityCode(depot.getEquityCode());
+            person.setUsePersonName("待填写-配偶");
+            person.setRelationWithHolder("spouse");
+            person.setIsDefaultHolder(0);
+            usePersonMapper.insert(person);
+        }
+
+        // 父母席位（0~4，含公婆/岳父母，人选在权益人管理中补全/指定）
+        int parent = rule.getParent() == null ? 0 : rule.getParent();
+        for (int i = 0; i < parent; i++) {
+            EquityUsePerson person = new EquityUsePerson();
+            person.setEquityCode(depot.getEquityCode());
+            person.setUsePersonName("待填写-父母" + (i + 1));
+            person.setRelationWithHolder("parent");
+            person.setIsDefaultHolder(0);
+            usePersonMapper.insert(person);
+        }
     }
 
     // ====== 核心链路：作废（void） ======
@@ -858,6 +905,8 @@ public class EquityDepotServiceImpl implements EquityDepotService {
         vo.setEquityNo(entity.getEquityNo());
         vo.setGoodsCode(entity.getGoodsCode());
         vo.setPersonCount(entity.getPersonCount());
+        vo.setValidityType(entity.getValidityType());
+        vo.setShareMode(entity.getShareMode());
         vo.setValidDays(entity.getValidDays());
         vo.setBatchCode(entity.getBatchCode());
         vo.setCostPrice(entity.getCostPrice());

@@ -54,8 +54,8 @@
         >
           <view class="product-image">
             <image
-              v-if="formatFileUrl(product.coverImage)"
-              :src="formatFileUrl(product.coverImage)"
+              v-if="cardImage(product)"
+              :src="formatFileUrl(cardImage(product)!)"
               mode="aspectFill"
               class="cover-img"
             />
@@ -65,6 +65,16 @@
           </view>
           <view class="product-info">
             <text class="product-name">{{ product.goodsName }}</text>
+            <!-- 权益内容摘要（次数 + 人数/期限徽标） -->
+            <view v-if="product.equity" class="equity-brief">
+              <view v-if="quotaLines(product).length" class="quota-tags">
+                <text v-for="q in quotaLines(product)" :key="q" class="quota-tag">{{ q }}</text>
+              </view>
+              <view class="equity-meta">
+                <text class="meta-chip">{{ holderText(product.equity) }}</text>
+                <text class="meta-chip">{{ validityText(product.equity) }}</text>
+              </view>
+            </view>
             <view class="product-bottom">
               <text class="product-price">¥{{ formatPrice(product.salePrice) }}</text>
               <view class="product-tag">权益</view>
@@ -81,6 +91,7 @@ import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { getGoodsList } from '@/api/goods';
 import { formatFileUrl } from '@/utils/file';
+import { holderText, validityText, quotaText, parseDisplayConfig } from '@/types';
 import type { GoodsProduct } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -89,6 +100,17 @@ const keyword = ref('');
 const products = ref<GoodsProduct[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
+
+/** 列表卡片图：展示配置缩略图优先，未配置回退封面图 */
+function cardImage(product: GoodsProduct): string | undefined {
+  const cfg = parseDisplayConfig(product.displayConfig);
+  return cfg.thumbnail || product.coverImage || '';
+}
+
+/** 权益次数摘要行：每项服务 "旅居6次/年" 等 */
+function quotaLines(product: GoodsProduct): string[] {
+  return (product.equity?.serviceItems || []).slice(0, 3).map((it) => quotaText(it));
+}
 
 const filtered = computed(() => {
   if (!keyword.value.trim()) return products.value;
@@ -239,6 +261,38 @@ onShow(() => {
   align-items: center;
   justify-content: space-between;
   margin-top: $spacing-sm;
+}
+
+/* 权益摘要 */
+.equity-brief {
+  margin-top: $spacing-xs;
+}
+.quota-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+.quota-tag {
+  font-size: 20rpx;
+  color: $brand-primary;
+  background: $brand-primary-light;
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+  line-height: 30rpx;
+}
+.equity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 8rpx;
+}
+.meta-chip {
+  font-size: 20rpx;
+  color: $text-secondary;
+  background: $bg-page;
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+  line-height: 30rpx;
 }
 .product-price {
   font-size: 32rpx;

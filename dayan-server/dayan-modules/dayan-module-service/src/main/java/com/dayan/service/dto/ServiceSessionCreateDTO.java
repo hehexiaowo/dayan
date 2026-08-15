@@ -49,4 +49,10 @@ public class ServiceSessionCreateDTO {
 
     /** 配额周期（1=终身,2=年度，默认2） */
     private Integer quotaType;
+
+    /** 权益周年序号（quotaType=2 时落 quota_reset_year；null=按自然年兼容旧调用） */
+    private Integer quotaYear;
+
+    /** 本次服务的权益人ID（equity_use_person.id；按人配额与审计用） */
+    private Long usePersonId;
 }

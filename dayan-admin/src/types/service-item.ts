@@ -1,4 +1,9 @@
 import type { PageQuery, PageResult } from '@/types/common'
+import type { NetworkScope } from '@/types/goods-equity'
+import { networkScopeSummary } from '@/types/goods-equity'
+
+export { networkScopeSummary }
+export type { NetworkScope }
 
 /** 项目大类 */
 export enum ItemCategory {
@@ -26,13 +31,13 @@ export const ITEM_SUBTYPE_OPTIONS = [
 
 /** 配额周期 */
 export enum QuotaType {
-  LIFETIME = 1, // 终身总量
-  ANNUAL = 2,   // 年度配额
+  LIFETIME = 1, // 权益期内总量
+  ANNUAL = 2,   // 年度配额（按激活周年重置）
 }
 
 export const QUOTA_TYPE_OPTIONS = [
-  { label: '年度配额', value: QuotaType.ANNUAL, tagType: 'primary' as const },
-  { label: '终身总量', value: QuotaType.LIFETIME, tagType: 'info' as const },
+  { label: '每年（按激活周年）', value: QuotaType.ANNUAL, tagType: 'primary' as const },
+  { label: '权益期内总量', value: QuotaType.LIFETIME, tagType: 'info' as const },
 ]
 
 export interface ServiceItem {
@@ -43,7 +48,8 @@ export interface ServiceItem {
   itemSubtype?: number
   itemValue?: number
   costBearing?: number
-  serviceNetwork?: string
+  /** 服务网络范围（结构化；null=业态全部机构，custom=自选可精确到房型） */
+  networkScope?: NetworkScope | null
   coveredItems?: string
   validDays?: number
   maxUseCount?: number

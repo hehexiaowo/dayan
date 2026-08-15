@@ -73,6 +73,10 @@ export interface Equity {
   skuName?: string;
   equityStatus: EquityStatus;
   personCount?: number;
+  /** 权益期限类型（1=固定天数,2=终身；终身时 expireTime 为空） */
+  validityType?: number;
+  /** 配额归属（0=按人独立配额,1=权益人共享池） */
+  shareMode?: number;
   validDays?: number;
   clientCode?: string;
   channelCode?: string;
@@ -92,6 +96,7 @@ export interface EquityUsePerson {
   usePersonGender?: number;
   usePersonAge?: number;
   usePersonPhone?: string;
+  /** 与持有人关系字典code（self/spouse/parent/parent_in_law/child/other） */
   relationWithHolder?: string;
   healthStatus?: string;
   careNeed?: string;
@@ -99,10 +104,60 @@ export interface EquityUsePerson {
   remark?: string;
 }
 
+/** 与持有人关系字典（relation_with_holder，存 code 显示 label） */
+export const RELATION_OPTIONS: { value: string; label: string }[] = [
+  { value: 'self', label: '本人' },
+  { value: 'spouse', label: '配偶' },
+  { value: 'parent', label: '父母' },
+  { value: 'parent_in_law', label: '公婆/岳父母' },
+  { value: 'child', label: '子女' },
+  { value: 'other', label: '其他' },
+];
+
+/** 关系 code → 中文标签（未知值原样返回，兼容存量数据） */
+export function relationLabel(v?: string | null): string {
+  if (!v) return '—';
+  return RELATION_OPTIONS.find((o) => o.value === v)?.label ?? v;
+}
+
 /** 配额周期 */
 export type QuotaType = 1 | 2;
 
-/** 客户端服务项目（含配额剩余，对齐 ClientServiceItemVO） */
+/** 取消退预定金政策档位 */
+export interface RefundRule {
+  /** 距入住小时数门槛（如 72/48/24） */
+  beforeHours: number;
+  /** 退还比例（0~100） */
+  refundRate: number;
+}
+
+/** 单次使用规则（随心住类：晚数/间数/人数/预订/预定金/取消政策/黑名单） */
+export interface UsageRule {
+  maxDaysPerUse?: number;
+  maxNightsPerUse?: number;
+  maxRoomsPerUse?: number;
+  maxGuestsPerUse?: number;
+  requireBeneficiaryCheckIn?: boolean;
+  advanceBookDays?: number;
+  depositAmount?: number;
+  refundPolicy?: RefundRule[];
+  blackoutType?: string;
+  blackoutDays?: number;
+}
+
+/** 单个机构的服务范围（roomTypeCodes 空=整馆全部房型） */
+export interface ParkScope {
+  parkCode: string;
+  roomTypeCodes?: string[];
+}
+
+/** 服务网络范围（null=业态全部机构；custom=自选范围） */
+export interface NetworkScope {
+  mode: 'all' | 'custom';
+  parks?: ParkScope[];
+}
+
+/** 客户端服务项目（含配额剩余 + 结构化权益内容，对齐 ClientServiceItemVO） */
 export interface ClientServiceItem {
   itemCode: string;
   itemName: string;
@@ -112,6 +167,18 @@ export interface ClientServiceItem {
   quotaType: QuotaType;
   consumed: number;
   remaining: number;
+  /** 保证入住权（0=无,1=有；长居/照护） */
+  admissionGuaranteed?: number;
+  /** 优先入住权（0=无,1=有） */
+  admissionPriority?: number;
+  /** 优惠入住权/旅居优惠权（0=无,1=有） */
+  admissionDiscount?: number;
+  /** 优惠折扣率（90=门市价9折；null=按协议未定） */
+  discountRate?: number | null;
+  /** 单次使用规则（随心住类） */
+  usageRule?: UsageRule | null;
+  /** 服务网络范围（null=业态全部机构） */
+  networkScope?: NetworkScope | null;
 }
 
 /** 发起服务请求入参 */

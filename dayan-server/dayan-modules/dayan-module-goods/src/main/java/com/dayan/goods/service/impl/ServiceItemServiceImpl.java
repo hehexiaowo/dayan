@@ -73,7 +73,8 @@ public class ServiceItemServiceImpl implements ServiceItemService {
         entity.setItemSubtype(dto.getItemSubtype());
         entity.setItemValue(dto.getItemValue());
         entity.setCostBearing(dto.getCostBearing() != null ? dto.getCostBearing() : 0);
-        entity.setServiceNetwork(dto.getServiceNetwork());
+        // 网络范围：结构化落 service_network JSON（all/空 → NULL=业态全部机构）
+        entity.setServiceNetwork(toNetworkJson(dto.getNetworkScope()));
         entity.setCoveredItems(dto.getCoveredItems());
         entity.setValidDays(dto.getValidDays() != null ? dto.getValidDays() : 365);
         entity.setMaxUseCount(dto.getMaxUseCount() != null ? dto.getMaxUseCount() : 1);
@@ -93,7 +94,10 @@ public class ServiceItemServiceImpl implements ServiceItemService {
         if (dto.getItemSubtype() != null) entity.setItemSubtype(dto.getItemSubtype());
         if (dto.getItemValue() != null) entity.setItemValue(dto.getItemValue());
         if (dto.getCostBearing() != null) entity.setCostBearing(dto.getCostBearing());
-        if (dto.getServiceNetwork() != null) entity.setServiceNetwork(dto.getServiceNetwork());
+        if (dto.getNetworkScope() != null) {
+            // 传 all/空 parks = 恢复业态全部（存 NULL），custom = 自选范围
+            entity.setServiceNetwork(toNetworkJson(dto.getNetworkScope()));
+        }
         if (dto.getCoveredItems() != null) entity.setCoveredItems(dto.getCoveredItems());
         if (dto.getValidDays() != null) entity.setValidDays(dto.getValidDays());
         if (dto.getMaxUseCount() != null) entity.setMaxUseCount(dto.getMaxUseCount());
@@ -137,7 +141,8 @@ public class ServiceItemServiceImpl implements ServiceItemService {
         vo.setItemSubtype(entity.getItemSubtype());
         vo.setItemValue(entity.getItemValue());
         vo.setCostBearing(entity.getCostBearing());
-        vo.setServiceNetwork(entity.getServiceNetwork());
+        // 兼容旧数组格式（通配符/机构码）统一解析为结构化范围
+        vo.setNetworkScope(com.dayan.goods.model.RightsJson.readNetwork(entity.getServiceNetwork()));
         vo.setCoveredItems(entity.getCoveredItems());
         vo.setValidDays(entity.getValidDays());
         vo.setMaxUseCount(entity.getMaxUseCount());
@@ -147,5 +152,13 @@ public class ServiceItemServiceImpl implements ServiceItemService {
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         return vo;
+    }
+
+    /** 结构化范围 → service_network JSON：非 custom（全部）落 NULL */
+    private String toNetworkJson(com.dayan.goods.model.NetworkScope scope) {
+        if (scope == null || !scope.isCustom()) {
+            return null;
+        }
+        return com.dayan.goods.model.RightsJson.write(scope);
     }
 }

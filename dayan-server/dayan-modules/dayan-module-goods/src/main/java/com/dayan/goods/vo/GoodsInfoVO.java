@@ -40,5 +40,6 @@ public class GoodsInfoVO {
     private Integer goodsStatus;
     private Integer auditStatus;
     private String remark;
+    private String displayConfig;
     private LocalDateTime createdAt;
 }

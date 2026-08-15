@@ -122,6 +122,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
         entity.setGoodsStatus(DEFAULT_GOODS_STATUS);
         entity.setAuditStatus(DEFAULT_AUDIT_STATUS);
         entity.setRemark(dto.getRemark());
+        entity.setDisplayConfig(dto.getDisplayConfig());
 
         goodsInfoMapper.insert(entity);
         log.info("创建商品成功: goodsCode={}, goodsType={}", goodsCode, dto.getGoodsType());
@@ -179,6 +180,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getAuditStatus() != null) update.setAuditStatus(dto.getAuditStatus());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
+        if (dto.getDisplayConfig() != null) update.setDisplayConfig(dto.getDisplayConfig());
 
         goodsInfoMapper.updateById(update);
         log.info("更新商品成功: goodsCode={}", goodsCode);
@@ -310,6 +312,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
         vo.setGoodsStatus(entity.getGoodsStatus());
         vo.setAuditStatus(entity.getAuditStatus());
         vo.setRemark(entity.getRemark());
+        vo.setDisplayConfig(entity.getDisplayConfig());
         vo.setCreatedAt(entity.getCreatedAt());
         return vo;
     }

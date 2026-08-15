@@ -32,7 +32,7 @@
             <text v-if="p.isDefaultHolder === 1" class="default-badge">默认</text>
           </view>
           <view class="meta-row">
-            <text v-if="p.relationWithHolder" class="meta">{{ p.relationWithHolder }}</text>
+            <text v-if="p.relationWithHolder" class="meta">{{ relationLabel(p.relationWithHolder) }}</text>
             <text v-if="p.usePersonPhone" class="meta">{{ p.usePersonPhone }}</text>
           </view>
         </view>
@@ -53,6 +53,7 @@ import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getUsePersons, deleteUsePerson, setDefaultUsePerson } from '@/api/equity';
 import type { EquityUsePerson } from '@/types';
+import { relationLabel } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
