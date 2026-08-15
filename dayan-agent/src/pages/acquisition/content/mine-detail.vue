@@ -66,8 +66,11 @@ function startEdit() {
   editing.value = true
 }
 
-/** 图文正文纯文本 → 段落 HTML（保存时转换） */
+/** 图文正文保存：已是 HTML（含标签）直接存原文；纯文本按换行转段落 */
 function toParagraphHtml(text: string): string {
+  if (/<[a-zA-Z/][^>]*>/.test(text)) {
+    return text
+  }
   return text
     .split(/\n+/)
     .map((p) => p.trim())
