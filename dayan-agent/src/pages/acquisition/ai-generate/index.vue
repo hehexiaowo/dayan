@@ -403,16 +403,23 @@ async function doGenerateStream() {
   try {
     await postSseStream('/agent-api/ai/generate/stream', buildPayload(), {
       onEvent: (name, data) => {
+        // 单事件解析失败仅跳过该事件，不中断后续流处理
+        let parsed: any
+        try {
+          parsed = JSON.parse(data)
+        } catch {
+          return
+        }
         if (name === 'stage') {
-          stageText.value = (JSON.parse(data) as { message: string }).message
+          stageText.value = parsed.message
         } else if (name === 'delta') {
-          streamText.value += (JSON.parse(data) as { text: string }).text
+          streamText.value += parsed.text
           streamScrollTop.value += 9999
         } else if (name === 'done') {
-          result.value = JSON.parse(data)
+          result.value = parsed
           streamText.value = ''
         } else if (name === 'error') {
-          uni.showToast({ title: (JSON.parse(data) as { message: string }).message || '生成失败', icon: 'none' })
+          uni.showToast({ title: parsed.message || '生成失败', icon: 'none' })
         }
       }
     })

@@ -24,16 +24,23 @@ export async function postSseStream(url: string, body: Record<string, unknown>, 
     const { done, value } = await reader.read()
     if (done) break
     buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
-    let eventName = ''
-    for (const line of lines) {
-      if (line.startsWith('event:')) {
-        eventName = line.slice(6).trim()
-      } else if (line.startsWith('data:')) {
-        const data = line.slice(5).trim()
-        if (data) handlers.onEvent(eventName || 'message', data)
-        eventName = ''
+    // SSE 事件以空行分帧；一个事件可含多个 data: 行（Spring 发送长 JSON 时按行拆分），
+    // 须聚合完整帧后再触发一次回调，否则逐行触发会把长 JSON 拆碎导致解析失败
+    const frames = buffer.split('\n\n')
+    buffer = frames.pop() ?? ''
+    for (const frame of frames) {
+      if (!frame.trim()) continue
+      let eventName = ''
+      const dataLines: string[] = []
+      for (const line of frame.split('\n')) {
+        if (line.startsWith('event:')) {
+          eventName = line.slice(6).trim()
+        } else if (line.startsWith('data:')) {
+          dataLines.push(line.slice(5).replace(/^ /, ''))
+        }
+      }
+      if (dataLines.length) {
+        handlers.onEvent(eventName || 'message', dataLines.join('\n'))
       }
     }
   }
