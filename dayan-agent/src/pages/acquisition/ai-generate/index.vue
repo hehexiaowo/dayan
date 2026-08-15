@@ -21,6 +21,23 @@
           <text class="section-title">参考范文</text>
           <text class="section-sub">选一篇既有内容仿写其文风（可不选）</text>
         </view>
+        <view v-if="templates.length" class="pick-list tpl-list">
+          <view class="group-label">平台范文模板</view>
+          <view
+            v-for="t in templates"
+            :key="t.code"
+            class="pick-item dy-clickable"
+            :class="{ picked: refContentCode === t.code }"
+            @click="toggleRef(t.code)"
+          >
+            <view class="pick-main">
+              <text class="pick-title">{{ t.name }}</text>
+              <text class="pick-tag one-line">{{ t.excerpt }}</text>
+            </view>
+            <text class="pick-check">{{ refContentCode === t.code ? '✓ 已选' : '选为范文' }}</text>
+          </view>
+        </view>
+        <view v-if="refList.length" class="group-label standalone">渠道内容</view>
         <view class="search-row">
           <input v-model="refKeyword" class="search-input" placeholder="搜索文章标题" confirm-type="search" @confirm="loadRefList" />
           <view class="btn-search dy-clickable" @click="loadRefList">搜索</view>
@@ -147,6 +164,24 @@
 
       <view class="section">
         <view class="section-head">
+          <text class="section-title">目标读者</text>
+        </view>
+        <view class="option-grid">
+          <view
+            v-for="o in AI_AUDIENCE_OPTIONS"
+            :key="o.value"
+            class="option-card dy-clickable"
+            :class="{ picked: audience === o.value }"
+            @click="audience = o.value"
+          >
+            <text class="option-label">{{ o.label }}</text>
+            <text class="option-desc">{{ o.desc }}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="section">
+        <view class="section-head">
           <text class="section-title">主题与要求</text>
           <text class="section-sub">可留空，默认按素材归纳</text>
         </view>
@@ -157,8 +192,11 @@
     <!-- ============ Step 3 生成与保存 ============ -->
     <template v-else>
       <view v-if="generating" class="generating">
-        <view class="generating-icon">✨</view>
-        <text class="generating-text">AI 创作中，约 30-60 秒…</text>
+        <text class="stage-text">{{ stageText }}</text>
+        <scroll-view v-if="streamText" scroll-y class="stream-preview" :scroll-top="streamScrollTop">
+          <text class="stream-text">{{ streamText }}</text>
+        </scroll-view>
+        <view v-else class="generating-icon">✨</view>
       </view>
 
       <template v-else-if="result">
@@ -184,6 +222,7 @@
       </template>
       <template v-else-if="result && !generating">
         <view class="btn-plain dy-clickable" @click="regenerate">重新生成</view>
+        <view class="btn-plain dy-clickable" @click="copyResult">复制</view>
         <view class="btn-primary dy-clickable" :class="{ disabled: saving }" @click="save">保存到我的内容</view>
       </template>
     </view>
@@ -193,13 +232,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS } from '@/types/aiContent'
-import type { AiGenerateResult, KnowledgeDocOption } from '@/types/aiContent'
+import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS, AI_AUDIENCE_OPTIONS } from '@/types/aiContent'
+import type { AiGenerateResult, KnowledgeDocOption, AiRefTemplateOption } from '@/types/aiContent'
 import type { ContentArticle, GoodsProduct } from '@/types'
 import { getContentList } from '@/api/content'
 import { getGoodsList } from '@/api/goods'
 import { getKnowledgeDocs } from '@/api/knowledge'
-import { generateAiContent, saveAiContent } from '@/api/aiContent'
+import { generateAiContent, saveAiContent, getAiTemplates } from '@/api/aiContent'
+import { postSseStream } from '@/utils/sse'
+import { copyText } from '@/utils/clipboard'
 
 const stepDefs = [
   { key: 'material', label: '选素材' },
@@ -216,6 +257,7 @@ const refTotal = ref(0)
 const refLoading = ref(false)
 const refPage = ref(1)
 const refContentCode = ref('')
+const templates = ref<AiRefTemplateOption[]>([])
 
 const kbKeyword = ref('')
 const kbDocs = ref<KnowledgeDocOption[]>([])
@@ -231,12 +273,16 @@ const goodsCodes = ref<string[]>([])
 // ---- Step2 形态风格 ----
 const contentType = ref<number>(1)
 const styleCode = ref('professional')
+const audience = ref('general')
 const topic = ref('')
 
 // ---- Step3 生成 ----
 const generating = ref(false)
 const saving = ref(false)
 const result = ref<AiGenerateResult | null>(null)
+const stageText = ref('')
+const streamText = ref('')
+const streamScrollTop = ref(0)
 
 async function loadRefList() {
   refLoading.value = true
@@ -269,6 +315,14 @@ async function loadRefMore() {
 
 function toggleRef(code: string) {
   refContentCode.value = refContentCode.value === code ? '' : code
+}
+
+async function loadTemplates() {
+  try {
+    templates.value = await getAiTemplates()
+  } catch {
+    templates.value = []
+  }
 }
 
 async function loadKbDocs() {
@@ -315,24 +369,87 @@ function goNext() {
   }
 }
 
+const FALLBACK_STAGES = ['正在准备素材…', '正在检索知识库…', '正在创作，约需 30-60 秒…']
+
+function buildPayload() {
+  return {
+    contentType: contentType.value,
+    styleCode: styleCode.value,
+    audience: audience.value,
+    refContentCode: refContentCode.value || undefined,
+    kbFileIds: kbFileIds.value,
+    goodsCodes: goodsCodes.value,
+    topic: topic.value || undefined
+  }
+}
+
 async function doGenerate() {
   if (generating.value) return
   generating.value = true
   result.value = null
+  streamText.value = ''
+  step.value = 3
+  // #ifdef H5
+  await doGenerateStream()
+  // #endif
+  // #ifndef H5
+  await doGenerateFallback()
+  // #endif
+}
+
+// #ifdef H5
+async function doGenerateStream() {
+  stageText.value = '正在准备素材…'
   try {
-    result.value = await generateAiContent({
-      contentType: contentType.value,
-      styleCode: styleCode.value,
-      refContentCode: refContentCode.value || undefined,
-      kbFileIds: kbFileIds.value,
-      goodsCodes: goodsCodes.value,
-      topic: topic.value || undefined
+    await postSseStream('/agent-api/ai/generate/stream', buildPayload(), {
+      onEvent: (name, data) => {
+        if (name === 'stage') {
+          stageText.value = (JSON.parse(data) as { message: string }).message
+        } else if (name === 'delta') {
+          streamText.value += (JSON.parse(data) as { text: string }).text
+          streamScrollTop.value += 9999
+        } else if (name === 'done') {
+          result.value = JSON.parse(data)
+          streamText.value = ''
+        } else if (name === 'error') {
+          uni.showToast({ title: (JSON.parse(data) as { message: string }).message || '生成失败', icon: 'none' })
+        }
+      }
     })
-    step.value = 3
   } catch {
-    // 错误提示由全局拦截器统一处理
+    uni.showToast({ title: '生成失败，请稍后重试', icon: 'none' })
   } finally {
     generating.value = false
+  }
+}
+// #endif
+
+// #ifndef H5
+async function doGenerateFallback() {
+  let idx = 0
+  stageText.value = FALLBACK_STAGES[0]
+  const timer = setInterval(() => {
+    idx = Math.min(idx + 1, FALLBACK_STAGES.length - 1)
+    stageText.value = FALLBACK_STAGES[idx]
+  }, 8000)
+  try {
+    result.value = await generateAiContent(buildPayload())
+  } catch {
+    // 全局拦截器已提示
+  } finally {
+    clearInterval(timer)
+    generating.value = false
+  }
+}
+// #endif
+
+async function copyResult() {
+  if (!result.value) return
+  try {
+    await copyText(result.value.contentBody.replace(/<[^>]+>/g, ''))
+    uni.showToast({ title: '已复制正文', icon: 'success' })
+  } catch {
+    uni.showToast({ title: '复制失败', icon: 'none' })
   }
 }
 
@@ -350,6 +467,7 @@ async function save() {
       contentType: result.value.contentType,
       contentBody: result.value.contentBody,
       styleCode: styleCode.value,
+      audience: audience.value,
       refContentCode: refContentCode.value || undefined,
       refKbFiles: kbFileIds.value.length
         ? JSON.stringify(kbDocs.value.filter((d) => kbFileIds.value.includes(d.fileId)).map((d) => ({ fileId: d.fileId, fileName: d.fileName })))
@@ -366,6 +484,7 @@ async function save() {
 }
 
 onLoad(() => {
+  loadTemplates()
   loadRefList()
   loadKbDocs()
   loadGoods()
@@ -407,7 +526,13 @@ onLoad(() => {
 .topic-input { width: 100%; background: #fff; border-radius: 16rpx; padding: 24rpx; font-size: 26rpx; min-height: 160rpx; box-sizing: border-box; }
 .generating { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; gap: 24rpx; }
 .generating-icon { font-size: 80rpx; }
-.generating-text { color: #909399; font-size: 28rpx; }
+.group-label { font-size: 24rpx; color: #909399; padding: 20rpx 24rpx 8rpx; }
+.group-label.standalone { padding: 8rpx 8rpx 8rpx; margin-bottom: 8rpx; }
+.tpl-list { margin-bottom: 8rpx; }
+.pick-tag.one-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage-text { font-size: 28rpx; color: #606266; }
+.stream-preview { margin-top: 24rpx; width: 100%; height: 560rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; box-sizing: border-box; }
+.stream-text { font-size: 26rpx; color: #606266; line-height: 1.8; word-break: break-all; }
 .warn-box { background: rgba(230, 162, 60, .12); border-radius: 12rpx; padding: 20rpx 24rpx; margin-top: 24rpx; }
 .warn-line { display: block; font-size: 24rpx; color: #e6a23c; line-height: 1.6; }
 .result-card { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-top: 24rpx; }
