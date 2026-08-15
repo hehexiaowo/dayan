@@ -157,7 +157,12 @@ public class BailianChatClient {
                     HttpResponse.BodyHandlers.ofInputStream());
             if (resp.statusCode() != 200) {
                 String errBody = new String(resp.body().readAllBytes(), StandardCharsets.UTF_8);
-                String err = JSONUtil.parseObj(errBody).getStr("error", errBody);
+                String err = errBody;
+                try {
+                    err = JSONUtil.parseObj(errBody).getStr("error", errBody);
+                } catch (Exception ignore) {
+                    // 非 JSON 错误体（网关纯文本报错等）直接透传原文，避免掩盖 HTTP 状态
+                }
                 throw new BusinessException(ErrorCode.BUSINESS,
                         "AI 流式调用失败（HTTP " + resp.statusCode() + "）：" + StrUtil.maxLength(err, 200));
             }
@@ -169,7 +174,7 @@ public class BailianChatClient {
                     if (!line.startsWith("data:")) {
                         continue;
                     }
-                    String data = line.substring(4).trim();
+                    String data = line.length() > 5 ? line.substring(5).trim() : "";
                     if (data.isEmpty() || "[DONE]".equals(data)) {
                         continue;
                     }
