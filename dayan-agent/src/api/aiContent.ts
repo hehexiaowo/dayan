@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 import type { PageQuery, PageResult } from '@/types'
-import type { AiContent, AiGeneratePayload, AiGenerateResult } from '@/types/aiContent'
+import type { AiContent, AiGeneratePayload, AiGenerateResult, AiRefTemplateOption } from '@/types/aiContent'
 
 /** AI 生成内容（POST /agent-api/ai/generate，不落库） */
 export function generateAiContent(payload: AiGeneratePayload): Promise<AiGenerateResult> {
@@ -34,4 +34,9 @@ export function updateAiContent(id: number, data: Partial<AiContent>): Promise<v
 /** 删除我的内容 */
 export function deleteAiContent(id: number): Promise<void> {
   return request<void>({ url: `/ai/contents/${id}`, method: 'DELETE' })
+}
+
+/** 内置范文模板（GET /agent-api/ai/templates） */
+export function getAiTemplates(): Promise<AiRefTemplateOption[]> {
+  return request<AiRefTemplateOption[]>({ url: '/ai/templates', method: 'GET' })
 }

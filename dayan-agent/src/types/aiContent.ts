@@ -42,6 +42,8 @@ export interface AiGeneratePayload {
   goodsCodes?: string[]
   /** 主题/补充要求 */
   topic?: string
+  /** 目标读者（children/elder/general） */
+  audience?: string
 }
 
 /** AI 生成结果（预览用） */
@@ -68,6 +70,8 @@ export interface AiContent {
   refContentCode?: string
   refKbFiles?: string
   refGoodsCodes?: string
+  /** 目标读者（children/elder/general） */
+  audience?: string
   status?: number
   createdAt?: string
   updatedAt?: string
@@ -93,3 +97,17 @@ export function aiContentTypeLabel(type?: number): string {
 export function aiStyleLabel(style?: string): string {
   return AI_STYLE_OPTIONS.find((o) => o.value === style)?.label ?? ''
 }
+
+/** 内置范文模板选项（GET /ai/templates） */
+export interface AiRefTemplateOption {
+  code: string
+  name: string
+  desc: string
+  excerpt: string
+}
+
+export const AI_AUDIENCE_OPTIONS = [
+  { value: 'general', label: '通用人群', desc: '客户与子女都易读' },
+  { value: 'children', label: '子女决策者', desc: '理性数据，家庭责任视角' },
+  { value: 'elder', label: '老人本人', desc: '直白温暖，自身利益视角' }
+] as const
