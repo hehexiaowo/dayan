@@ -21,8 +21,8 @@
           <text class="section-title">参考范文</text>
           <text class="section-sub">选一篇既有内容仿写其文风（可不选）</text>
         </view>
-        <view v-if="templates.length" class="pick-list tpl-list">
-          <view class="group-label">平台范文模板</view>
+        <view class="group-label">平台范文模板</view>
+        <view v-if="templates.length" class="pick-list">
           <view
             v-for="t in templates"
             :key="t.code"
@@ -34,12 +34,12 @@
               <text class="pick-title">{{ t.name }}</text>
               <text class="pick-tag one-line">{{ t.excerpt }}</text>
             </view>
-            <text class="pick-check">{{ refContentCode === t.code ? '✓ 已选' : '选为范文' }}</text>
+            <view class="check-round" :class="{ on: refContentCode === t.code }"><text class="check-mark">✓</text></view>
           </view>
         </view>
-        <view v-if="refList.length" class="group-label standalone">渠道内容</view>
+        <view class="group-label">渠道内容</view>
         <view class="search-row">
-          <input v-model="refKeyword" class="search-input" placeholder="搜索文章标题" confirm-type="search" @confirm="loadRefList" />
+          <input v-model="refKeyword" class="search-input" placeholder="搜索渠道内容标题" confirm-type="search" @confirm="loadRefList" />
           <view class="btn-search dy-clickable" @click="loadRefList">搜索</view>
         </view>
         <view v-if="refList.length" class="pick-list">
@@ -51,7 +51,7 @@
             @click="toggleRef(item.contentCode)"
           >
             <text class="pick-title">{{ item.title }}</text>
-            <text class="pick-check">{{ refContentCode === item.contentCode ? '✓ 已选' : '选为范文' }}</text>
+            <view class="check-round" :class="{ on: refContentCode === item.contentCode }"><text class="check-mark">✓</text></view>
           </view>
           <view v-if="refLoading" class="pick-more">加载中…</view>
           <view v-else-if="refList.length < refTotal" class="pick-more dy-clickable" @click="loadRefMore">加载更多</view>
@@ -81,7 +81,7 @@
               <text class="pick-title">{{ doc.fileName }}</text>
               <text v-if="doc.repoName" class="pick-tag">{{ doc.repoName }}</text>
             </view>
-            <text class="pick-check">{{ kbFileIds.includes(doc.fileId) ? '✓ 已选' : '选入素材' }}</text>
+            <view class="check-round" :class="{ on: kbFileIds.includes(doc.fileId) }"><text class="check-mark">✓</text></view>
           </view>
         </view>
         <view v-else-if="!kbLoading" class="empty-hint">
@@ -111,7 +111,7 @@
               <text class="pick-title">{{ g.goodsName }}</text>
               <text class="pick-tag">¥{{ g.salePrice ?? '面议' }}</text>
             </view>
-            <text class="pick-check">{{ goodsCodes.includes(g.goodsCode) ? '✓ 已选' : '选入推荐' }}</text>
+            <view class="check-round" :class="{ on: goodsCodes.includes(g.goodsCode) }"><text class="check-mark">✓</text></view>
           </view>
         </view>
         <view v-else-if="!goodsLoading" class="empty-hint">暂无可选商品</view>
@@ -137,6 +137,7 @@
             :class="{ picked: contentType === o.value }"
             @click="contentType = o.value"
           >
+            <view v-if="contentType === o.value" class="option-flag"><text class="option-flag-mark">✓</text></view>
             <text class="option-label">{{ o.label }}</text>
             <text class="option-desc">{{ o.desc }}</text>
           </view>
@@ -156,6 +157,7 @@
             :class="{ picked: styleCode === o.value }"
             @click="styleCode = o.value"
           >
+            <view v-if="styleCode === o.value" class="option-flag"><text class="option-flag-mark">✓</text></view>
             <text class="option-label">{{ o.label }}</text>
             <text class="option-desc">{{ o.desc }}</text>
           </view>
@@ -174,6 +176,7 @@
             :class="{ picked: audience === o.value }"
             @click="audience = o.value"
           >
+            <view v-if="audience === o.value" class="option-flag"><text class="option-flag-mark">✓</text></view>
             <text class="option-label">{{ o.label }}</text>
             <text class="option-desc">{{ o.desc }}</text>
           </view>
@@ -192,18 +195,26 @@
     <!-- ============ Step 3 生成与保存 ============ -->
     <template v-else>
       <view v-if="generating" class="generating">
+        <view class="dot-loading">
+          <view class="dl-dot" />
+          <view class="dl-dot" />
+          <view class="dl-dot" />
+        </view>
         <text class="stage-text">{{ stageText }}</text>
         <scroll-view v-if="streamText" scroll-y class="stream-preview" :scroll-top="streamScrollTop">
-          <text class="stream-text">{{ streamText }}</text>
+          <text class="stream-text">{{ streamText }}<text class="stream-cursor">▍</text></text>
         </scroll-view>
-        <view v-else class="generating-icon">✨</view>
       </view>
 
       <template v-else-if="result">
         <view v-if="result.warnings?.length" class="warn-box">
-          <text v-for="(w, i) in result.warnings" :key="i" class="warn-line">⚠ {{ w }}</text>
+          <text v-for="(w, i) in result.warnings" :key="i" class="warn-line">{{ w }}</text>
         </view>
         <view class="result-card">
+          <view class="result-head">
+            <text class="type-tag" :class="`tag-${result.contentType}`">{{ aiContentTypeLabel(result.contentType) }}</text>
+            <view class="result-copy dy-clickable" @click="copyResult">复制正文</view>
+          </view>
           <text class="result-title">{{ result.title }}</text>
           <text v-if="result.summary" class="result-summary">{{ result.summary }}</text>
           <rich-text v-if="result.contentType === 1" class="result-body" :nodes="result.contentBody" />
@@ -214,16 +225,14 @@
 
     <!-- 底部操作 -->
     <view class="footer-bar">
-      <template v-if="step > 1 && !generating">
-        <view class="btn-plain dy-clickable" @click="step -= 1">上一步</view>
-      </template>
-      <template v-if="step < 3">
-        <view class="btn-primary dy-clickable" :class="{ disabled: generating }" @click="goNext">{{ generating ? '生成中…' : (step === 2 ? '生成内容' : '下一步') }}</view>
-      </template>
-      <template v-else-if="result && !generating">
-        <view class="btn-plain dy-clickable" @click="regenerate">重新生成</view>
-        <view class="btn-plain dy-clickable" @click="copyResult">复制</view>
-        <view class="btn-primary dy-clickable" :class="{ disabled: saving }" @click="save">保存到我的内容</view>
+      <view v-if="generating" class="footer-hint">AI 正在创作中，约需 30-60 秒，请稍候…</view>
+      <template v-else>
+        <view v-if="step > 1" class="btn-plain dy-clickable" @click="step -= 1">上一步</view>
+        <view v-if="step < 3" class="btn-primary dy-clickable" @click="goNext">{{ step === 2 ? '生成内容' : '下一步' }}</view>
+        <template v-else-if="result">
+          <view class="btn-plain dy-clickable" @click="regenerate">重新生成</view>
+          <view class="btn-primary btn-grow dy-clickable" :class="{ disabled: saving }" @click="save">保存到我的内容</view>
+        </template>
       </template>
     </view>
   </view>
@@ -232,7 +241,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS, AI_AUDIENCE_OPTIONS } from '@/types/aiContent'
+import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS, AI_AUDIENCE_OPTIONS, aiContentTypeLabel } from '@/types/aiContent'
 import type { AiGenerateResult, KnowledgeDocOption, AiRefTemplateOption } from '@/types/aiContent'
 import type { ContentArticle, GoodsProduct } from '@/types'
 import { getContentList } from '@/api/content'
@@ -500,55 +509,112 @@ onLoad(() => {
 </script>
 
 <style lang="scss" scoped>
-.page { padding: 24rpx 24rpx 160rpx; background: $bg-page; min-height: 100vh; }
-.steps { display: flex; justify-content: space-around; padding: 24rpx 0 8rpx; }
-.step { display: flex; flex-direction: column; align-items: center; gap: 8rpx; opacity: .5; }
+.page { padding: $spacing-md $spacing-md 180rpx; background: $bg-page; min-height: 100vh; }
+
+// ===== 步骤条（带连接线） =====
+.steps { position: relative; display: flex; justify-content: space-around; padding: $spacing-md 0 8rpx; }
+.steps::before { content: ''; position: absolute; top: 47rpx; left: 16%; right: 16%; height: 2rpx; background: $border-base; }
+.step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx; opacity: .55; transition: opacity $transition-base; }
 .step.active, .step.done { opacity: 1; }
-.step-dot { width: 48rpx; height: 48rpx; border-radius: 50%; background: #fff; border: 2rpx solid #c0c4cc; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #606266; }
+.step-dot { width: 48rpx; height: 48rpx; border-radius: 50%; background: $bg-card; border: 2rpx solid $border-base; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: $text-regular; transition: background-color $transition-base, border-color $transition-base; }
 .step.active .step-dot { background: $brand-primary; border-color: $brand-primary; color: #fff; }
-.step.done .step-dot { background: #67c23a; border-color: #67c23a; color: #fff; }
-.step-label { font-size: 24rpx; color: #606266; }
-.section { margin-top: 24rpx; }
-.section-head { display: flex; align-items: baseline; gap: 16rpx; margin-bottom: 16rpx; }
-.section-title { font-size: 30rpx; font-weight: 600; color: #303133; }
-.section-sub { font-size: 22rpx; color: #909399; }
-.search-row { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
-.search-input { flex: 1; background: #fff; border-radius: 12rpx; padding: 0 20rpx; height: 68rpx; font-size: 26rpx; }
-.btn-search { background: $brand-primary; color: #fff; border-radius: 12rpx; padding: 0 28rpx; display: flex; align-items: center; font-size: 26rpx; }
-.pick-list { background: #fff; border-radius: 16rpx; overflow: hidden; }
-.pick-item { display: flex; align-items: center; justify-content: space-between; padding: 24rpx; border-bottom: 1rpx solid #f0f0f0; }
-.pick-item.picked { background: rgba(64, 158, 255, .06); }
-.pick-main { display: flex; flex-direction: column; gap: 8rpx; flex: 1; margin-right: 16rpx; }
-.pick-title { font-size: 28rpx; color: #303133; }
-.pick-tag { font-size: 22rpx; color: #909399; }
-.pick-check { font-size: 24rpx; color: #909399; }
-.pick-item.picked .pick-check { color: $brand-primary; }
-.pick-more { text-align: center; padding: 20rpx; font-size: 24rpx; color: #909399; }
-.empty-hint { text-align: center; color: #c0c4cc; font-size: 24rpx; padding: 32rpx 0; }
-.summary-hint { margin-top: 24rpx; padding: 20rpx 24rpx; background: rgba(64, 158, 255, .08); border-radius: 12rpx; font-size: 24rpx; color: $brand-primary; }
-.option-grid { display: flex; flex-wrap: wrap; gap: 20rpx; }
-.option-card { width: calc(50% - 10rpx); background: #fff; border-radius: 16rpx; padding: 24rpx; border: 2rpx solid transparent; }
-.option-card.picked { border-color: $brand-primary; background: rgba(64, 158, 255, .06); }
-.option-label { display: block; font-size: 28rpx; font-weight: 600; color: #303133; margin-bottom: 8rpx; }
-.option-desc { font-size: 22rpx; color: #909399; line-height: 1.5; }
-.topic-input { width: 100%; background: #fff; border-radius: 16rpx; padding: 24rpx; font-size: 26rpx; min-height: 160rpx; box-sizing: border-box; }
-.generating { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; gap: 24rpx; }
-.generating-icon { font-size: 80rpx; }
-.group-label { font-size: 24rpx; color: #909399; padding: 20rpx 24rpx 8rpx; }
-.group-label.standalone { padding: 8rpx 8rpx 8rpx; margin-bottom: 8rpx; }
-.tpl-list { margin-bottom: 8rpx; }
+.step.done .step-dot { background: $brand-success; border-color: $brand-success; color: #fff; }
+.step-label { font-size: 24rpx; color: $text-regular; transition: color $transition-base; }
+.step.active .step-label { color: $brand-primary; font-weight: 600; }
+
+// ===== 分区 =====
+.section { margin-top: $spacing-md; }
+.section-head { display: flex; align-items: baseline; gap: $spacing-sm; margin-bottom: $spacing-sm; }
+.section-title { font-size: 30rpx; font-weight: 600; color: $text-primary; }
+.section-sub { font-size: 22rpx; color: $text-secondary; }
+.group-label { font-size: 24rpx; color: $text-secondary; padding: 8rpx 8rpx 12rpx; }
+
+// ===== 搜索行 =====
+.search-row { display: flex; gap: $spacing-sm; margin-bottom: $spacing-sm; }
+.search-input { flex: 1; background: $bg-card; border-radius: $radius-md; padding: 0 20rpx; height: $control-height-sm; font-size: 26rpx; }
+.btn-search { background: $brand-primary; color: #fff; border-radius: $radius-md; padding: 0 32rpx; height: $control-height-sm; display: flex; align-items: center; font-size: 26rpx; transition: opacity $transition-fast; }
+.btn-search:active { opacity: .8; }
+
+// ===== 勾选列表 =====
+.pick-list { background: $bg-card; border-radius: $radius-md; overflow: hidden; box-shadow: $shadow-card; margin-bottom: $spacing-sm; }
+.pick-item { display: flex; align-items: center; justify-content: space-between; gap: $spacing-sm; padding: $spacing-md; border-bottom: 1rpx solid $border-light; transition: background-color $transition-base; }
+.pick-item:last-child { border-bottom: none; }
+.pick-item:active { background: $bg-page; }
+.pick-item.picked { background: $brand-primary-light; }
+.pick-item.picked .pick-title { color: $brand-primary-dark; font-weight: 500; }
+.pick-main { display: flex; flex-direction: column; gap: 8rpx; flex: 1; min-width: 0; }
+.pick-title { font-size: 28rpx; color: $text-primary; line-height: 1.5; }
+.pick-tag { font-size: 22rpx; color: $text-secondary; }
 .pick-tag.one-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stage-text { font-size: 28rpx; color: #606266; }
-.stream-preview { margin-top: 24rpx; width: 100%; height: 560rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; box-sizing: border-box; }
-.stream-text { font-size: 26rpx; color: #606266; line-height: 1.8; word-break: break-all; }
-.warn-box { background: rgba(230, 162, 60, .12); border-radius: 12rpx; padding: 20rpx 24rpx; margin-top: 24rpx; }
-.warn-line { display: block; font-size: 24rpx; color: #e6a23c; line-height: 1.6; }
-.result-card { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-top: 24rpx; }
-.result-title { display: block; font-size: 34rpx; font-weight: 600; color: #303133; margin-bottom: 12rpx; }
-.result-summary { display: block; font-size: 26rpx; color: #606266; margin-bottom: 16rpx; }
-.result-body { font-size: 28rpx; color: #303133; line-height: 1.8; }
-.footer-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 20rpx; padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom)); background: #fff; box-shadow: 0 -4rpx 16rpx rgba(0,0,0,.04); }
-.btn-primary { flex: 1; background: $brand-primary; color: #fff; border-radius: 12rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; }
-.btn-primary.disabled { opacity: .5; }
-.btn-plain { flex: 1; background: #f5f7fa; color: #606266; border-radius: 12rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; }
+.pick-more { text-align: center; padding: 20rpx; font-size: 24rpx; color: $text-secondary; }
+.empty-hint { text-align: center; color: $text-secondary; font-size: 24rpx; padding: 32rpx 0; }
+.summary-hint { margin-top: $spacing-md; padding: 20rpx $spacing-md; background: $brand-primary-light; border-radius: $radius-md; font-size: 24rpx; color: $brand-primary-dark; line-height: 1.6; }
+
+// 圆形勾选框（状态形状差异，不依赖颜色）
+.check-round { flex: none; width: 44rpx; height: 44rpx; border-radius: 50%; border: 2rpx solid $border-base; display: flex; align-items: center; justify-content: center; background: $bg-card; transition: background-color $transition-base, border-color $transition-base; }
+.check-mark { font-size: 24rpx; color: transparent; line-height: 1; }
+.check-round.on { background: $brand-primary; border-color: $brand-primary; }
+.check-round.on .check-mark { color: #fff; }
+
+// ===== 选项卡 =====
+.option-grid { display: flex; flex-wrap: wrap; gap: 20rpx; }
+.option-card { position: relative; width: calc(50% - 10rpx); background: $bg-card; border-radius: $radius-md; padding: $spacing-md; border: 2rpx solid transparent; box-sizing: border-box; box-shadow: $shadow-card; transition: border-color $transition-base, background-color $transition-base, transform $transition-fast; }
+.option-card:active { transform: scale(.97); }
+.option-card.picked { border-color: $brand-primary; background: $brand-primary-light; }
+.option-label { display: block; font-size: 28rpx; font-weight: 600; color: $text-primary; margin-bottom: 8rpx; }
+.option-card.picked .option-label { color: $brand-primary-dark; }
+.option-desc { font-size: 22rpx; color: $text-secondary; line-height: 1.5; }
+// 选中角标
+.option-flag { position: absolute; top: -12rpx; right: -12rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: $brand-primary; display: flex; align-items: center; justify-content: center; box-shadow: 0 4rpx 8rpx rgba(64, 158, 255, .4); }
+.option-flag-mark { color: #fff; font-size: 22rpx; line-height: 1; }
+
+.topic-input { width: 100%; background: $bg-card; border-radius: $radius-md; padding: $spacing-md; font-size: 26rpx; min-height: 160rpx; box-sizing: border-box; }
+
+// ===== 生成中 =====
+.generating { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; gap: $spacing-md; }
+.dot-loading { display: flex; gap: 12rpx; }
+.dl-dot { width: 16rpx; height: 16rpx; border-radius: 50%; background: $brand-primary; animation: dl-bounce 1s ease-in-out infinite; }
+.dl-dot:nth-child(2) { animation-delay: .15s; }
+.dl-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes dl-bounce {
+  0%, 100% { transform: translateY(0); opacity: .5; }
+  50% { transform: translateY(-12rpx); opacity: 1; }
+}
+.stage-text { font-size: 28rpx; color: $text-regular; }
+.stream-preview { margin-top: $spacing-md; width: 100%; height: 560rpx; background: $bg-card; border-radius: $radius-md; padding: $spacing-md; box-sizing: border-box; box-shadow: $shadow-card; }
+.stream-text { font-size: 26rpx; color: $text-regular; line-height: 1.8; word-break: break-all; }
+.stream-cursor { color: $brand-primary; animation: cursor-blink 1s step-end infinite; }
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+// ===== 结果 =====
+.warn-box { background: $brand-warning-light; border-left: 6rpx solid $brand-warning; border-radius: $radius-sm; padding: 20rpx $spacing-md; margin-top: $spacing-md; }
+.warn-line { display: block; font-size: 24rpx; color: $brand-warning-dark; line-height: 1.6; }
+.result-card { background: $bg-card; border-radius: $radius-md; padding: $spacing-lg; margin-top: $spacing-md; box-shadow: $shadow-card; }
+.result-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: $spacing-sm; }
+.type-tag { background: $brand-primary-light; color: $brand-primary-dark; font-size: 22rpx; padding: 4rpx 16rpx; border-radius: $radius-sm; }
+.type-tag.tag-2 { background: $brand-success-light; color: $brand-success-dark; }
+.type-tag.tag-3 { background: $brand-warning-light; color: $brand-warning-dark; }
+.result-copy { font-size: 24rpx; color: $brand-primary; padding: 8rpx 20rpx; }
+.result-copy:active { opacity: .7; }
+.result-title { display: block; font-size: 34rpx; font-weight: 600; color: $text-primary; line-height: 1.4; margin-bottom: 12rpx; }
+.result-summary { display: block; font-size: 26rpx; color: $text-regular; line-height: 1.7; background: $bg-page; border-left: 6rpx solid $brand-primary; border-radius: $radius-sm; padding: 16rpx 20rpx; margin-bottom: $spacing-md; }
+.result-body { display: block; font-size: 28rpx; color: $text-primary; line-height: 1.8; word-break: break-word; }
+.result-body.text { white-space: pre-wrap; }
+.result-body :deep(h2) { font-size: 32rpx; font-weight: 600; margin: 32rpx 0 16rpx; }
+.result-body :deep(p) { margin: 0 0 20rpx; }
+.result-body :deep(ul), .result-body :deep(ol) { margin: 0 0 20rpx; padding-left: 40rpx; }
+.result-body :deep(li) { margin-bottom: 8rpx; }
+
+// ===== 底部操作 =====
+.footer-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: flex; align-items: center; gap: 20rpx; padding: 20rpx $spacing-md calc(20rpx + env(safe-area-inset-bottom)); background: $bg-card; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, .04); }
+.footer-hint { flex: 1; text-align: center; font-size: 26rpx; color: $text-secondary; }
+.btn-primary, .btn-plain { border-radius: $radius-md; height: $control-height; display: flex; align-items: center; justify-content: center; font-size: 30rpx; transition: opacity $transition-fast, transform $transition-fast; }
+.btn-primary { flex: 1; background: $brand-primary; color: #fff; }
+.btn-primary.btn-grow { flex: 2; }
+.btn-primary.disabled { opacity: .5; pointer-events: none; }
+.btn-plain { flex: 1; background: $bg-page; color: $text-regular; }
+.btn-primary:active, .btn-plain:active { transform: scale(.97); opacity: .85; }
 </style>

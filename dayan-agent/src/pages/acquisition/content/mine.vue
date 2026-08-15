@@ -12,7 +12,7 @@
     <view v-if="list.length" class="list">
       <view v-for="item in list" :key="item.id" class="card dy-clickable" @click="goDetail(item.id)">
         <view class="card-top">
-          <text class="type-tag">{{ aiContentTypeLabel(item.contentType) }}</text>
+          <text class="type-tag" :class="`tag-${item.contentType}`">{{ aiContentTypeLabel(item.contentType) }}</text>
           <text class="time">{{ formatDateTime(item.createdAt) }}</text>
         </view>
         <text class="title">{{ item.title }}</text>
@@ -113,17 +113,20 @@ onPullDownRefresh(handlePullDown)
 </script>
 
 <style lang="scss" scoped>
-.page { padding: 24rpx; background: $bg-page; min-height: 100vh; }
-.filter-bar { display: flex; gap: 16rpx; background: $bg-page; padding: 0 0 20rpx; }
-.filter-pill { background: #fff; border-radius: 32rpx; padding: 10rpx 32rpx; font-size: 26rpx; color: #606266; }
-.filter-pill.active { background: $brand-primary; color: #fff; }
-.card { background: #fff; border-radius: 16rpx; padding: 28rpx; margin-bottom: 20rpx; }
+.page { padding: $spacing-md; background: $bg-page; min-height: 100vh; }
+.filter-bar { display: flex; gap: $spacing-sm; padding: 0 0 20rpx; }
+.filter-pill { background: $bg-card; border-radius: 32rpx; padding: 12rpx 36rpx; font-size: 26rpx; color: $text-regular; transition: background-color $transition-base, color $transition-base; }
+.filter-pill.active { background: $brand-primary; color: #fff; font-weight: 500; }
+.card { background: $bg-card; border-radius: $radius-md; padding: 28rpx; margin-bottom: 20rpx; box-shadow: $shadow-card; transition: transform $transition-fast; }
+.card:active { transform: scale(.98); }
 .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
-.type-tag { background: rgba(64, 158, 255, .1); color: $brand-primary; font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 8rpx; }
-.time { font-size: 22rpx; color: #c0c4cc; }
-.title { display: block; font-size: 30rpx; font-weight: 600; color: #303133; line-height: 1.5; }
-.summary { display: block; margin-top: 8rpx; font-size: 24rpx; color: #909399; }
+.type-tag { background: $brand-primary-light; color: $brand-primary-dark; font-size: 22rpx; padding: 4rpx 16rpx; border-radius: $radius-sm; }
+.type-tag.tag-2 { background: $brand-success-light; color: $brand-success-dark; }
+.type-tag.tag-3 { background: $brand-warning-light; color: $brand-warning-dark; }
+.time { font-size: 22rpx; color: $text-secondary; }
+.title { display: block; font-size: 30rpx; font-weight: 600; color: $text-primary; line-height: 1.5; }
+.summary { display: block; margin-top: 8rpx; font-size: 24rpx; color: $text-secondary; }
 .card-actions { display: flex; justify-content: flex-end; margin-top: 16rpx; }
-.action { font-size: 24rpx; color: #f56c6c; padding: 8rpx 20rpx; }
-.more { text-align: center; color: #909399; font-size: 24rpx; padding: 24rpx 0; }
+.action { font-size: 24rpx; color: $brand-error; padding: 12rpx 28rpx; }
+.more { text-align: center; color: $text-secondary; font-size: 24rpx; padding: $spacing-md 0; }
 </style>
