@@ -96,30 +96,34 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         // 1.2 知识库 RAG（平台库 + 本渠道库；勾选文档名并入检索词强制召回）
         List<String> selectedNames = resolveKbFileNames(channelCode, dto.getKbFileIds());
         boolean kbUsed = false;
+        boolean kbSearched = false;
         String searchQuery = buildSearchQuery(dto.getTopic(), selectedNames);
         List<KnowledgeRepoVO> repos = knowledgeRepoService.listForAgent(channelCode);
-        for (KnowledgeRepoVO repo : repos) {
-            if (StrUtil.isBlank(repo.getIndexId())) {
-                if (repo.getRepoType() != null && repo.getRepoType() == 2) {
-                    warnings.add("本渠道知识库尚未建库，本次未使用知识库素材");
-                }
-                continue;
-            }
-            List<KnowledgeChatVO.Citation> cites = knowledgeRepoService.retrieve(repo.getId(), searchQuery, 6);
-            if (!cites.isEmpty()) {
-                material.append("【知识库资料 · ").append(repo.getRepoName()).append("】\n");
-                for (int i = 0; i < cites.size(); i++) {
-                    String text = StrUtil.cleanBlank(cites.get(i).getText());
-                    if (StrUtil.isNotBlank(text)) {
-                        material.append('[').append(i + 1).append("] ").append(text).append('\n');
+        if (StrUtil.isNotBlank(searchQuery)) {
+            for (KnowledgeRepoVO repo : repos) {
+                if (StrUtil.isBlank(repo.getIndexId())) {
+                    if (repo.getRepoType() != null && repo.getRepoType() == 2) {
+                        warnings.add("本渠道知识库尚未建库，本次未使用知识库素材");
                     }
+                    continue;
                 }
-                material.append('\n');
-                kbUsed = true;
-                materialCount++;
+                kbSearched = true;
+                List<KnowledgeChatVO.Citation> cites = knowledgeRepoService.retrieve(repo.getId(), searchQuery, 6);
+                if (!cites.isEmpty()) {
+                    material.append("【知识库资料 · ").append(repo.getRepoName()).append("】\n");
+                    for (int i = 0; i < cites.size(); i++) {
+                        String text = StrUtil.cleanBlank(cites.get(i).getText());
+                        if (StrUtil.isNotBlank(text)) {
+                            material.append('[').append(i + 1).append("] ").append(text).append('\n');
+                        }
+                    }
+                    material.append('\n');
+                    kbUsed = true;
+                    materialCount++;
+                }
             }
         }
-        if (!kbUsed && StrUtil.isBlank(searchQuery)) {
+        if (!kbSearched) {
             warnings.add("知识库未检索到素材，未使用知识库资料");
         }
 
@@ -205,18 +209,27 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         return vo;
     }
 
-    /** 提取【标记】后的内容（到下一标记或结尾） */
+    /** 输出标记（extract 截断边界用） */
+    private static final List<String> OUTPUT_MARKERS = List.of("【标题】", "【摘要】", "【正文】");
+
+    /** 提取【标记】后的内容（到下一已知标记或结尾；不识别正文内的业务标记如【画面】） */
     private String extract(String answer, String marker) {
         int start = answer.indexOf(marker);
         if (start < 0) {
             return null;
         }
         int contentStart = start + marker.length();
-        int next = answer.indexOf("【", contentStart);
-        if (next < 0) {
-            return answer.substring(contentStart).trim();
+        int end = answer.length();
+        for (String m : OUTPUT_MARKERS) {
+            if (m.equals(marker)) {
+                continue;
+            }
+            int idx = answer.indexOf(m, contentStart);
+            if (idx >= 0 && idx < end) {
+                end = idx;
+            }
         }
-        return answer.substring(contentStart, next).trim();
+        return answer.substring(contentStart, end).trim();
     }
 
     /** 参考范文渠道可见性校验（appType=agent 且已配置） */
