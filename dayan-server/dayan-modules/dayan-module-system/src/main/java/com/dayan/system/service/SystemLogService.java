@@ -61,7 +61,9 @@ public class SystemLogService {
                                                                Integer resultStatus,
                                                                String startTime, String endTime) {
         BaseMapper<T> mapper = (BaseMapper<T>) router.mapperOf(src);
-        LambdaQueryWrapper<T> wrapper = new LambdaQueryWrapper<T>()
+        // 显式指定子类实体类：基类 SystemLogEntry 无 Mapper 注册，
+        // lambda 列缓存必须借具体表实体的 TableInfo 解析（见 SystemLogRouter.entityClassOf）
+        LambdaQueryWrapper<T> wrapper = new LambdaQueryWrapper<>((Class<T>) router.entityClassOf(src))
                 .orderByDesc(SystemLogEntry::getCreatedAt);
         if (module != null && !module.isEmpty()) {
             wrapper.like(SystemLogEntry::getModule, module);

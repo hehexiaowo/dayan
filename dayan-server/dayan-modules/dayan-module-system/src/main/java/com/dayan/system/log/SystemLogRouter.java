@@ -54,6 +54,22 @@ public class SystemLogRouter {
     }
 
     /**
+     * 按来源取对应表的实体类。
+     * 供查询侧给 LambdaQueryWrapper 显式指定 entityClass：
+     * lambda（如 SystemLogEntry::getModule）按声明类找列缓存，
+     * 基类无 Mapper 注册，必须借具体子类的 TableInfo 解析，否则报
+     * "can not find lambda cache for this entity"。
+     */
+    public Class<? extends SystemLogEntry> entityClassOf(SystemLogSource source) {
+        return switch (source) {
+            case ORGAN -> SystemLogOrgan.class;
+            case CHANNEL -> SystemLogChannel.class;
+            case AGENT -> SystemLogAgent.class;
+            case CLIENT -> SystemLogClient.class;
+        };
+    }
+
+    /**
      * 异步落库（失败仅告警，不影响主流程）。
      * 需在启动模块启用 @EnableAsync（四个启动类均已启用）。
      */
