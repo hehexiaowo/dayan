@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * 素材库面板（机构模式传 parkCode / 全局模式不传）：图片/视频/文档/VR 四类素材管理，复用本组件。
+ * 素材仓库面板（机构模式传 parkCode / 全局模式不传）：图片/视频/文档/VR 四类素材管理，复用本组件。
  *
  * 单表 CRUD：useCrud（idKey:'id', fixedParams:{parkCode, assetType}）。
  * 通过 assetType prop 区分图片(1)/视频(2)/文件(3)/VR(4)，复用同一组件。
  * storageType 区分本地 OSS（上传得 key）与外链（手填完整 http(s) URL）。
- * 表格"来源"列展示 sourceType，素材库直录的显示"素材库"。
+ * 表格"来源"列展示 sourceType，素材仓库直录的显示"素材仓库"。
  */
 import { reactive, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'

@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 表 system_asset 对应实体——系统素材库。
+ * 表 system_asset 对应实体——系统素材仓库。
  *
  * 统一管理整个系统的文件与外链资源（本地 OSS 对象或外部存储链接），
  * 通过 source_type + source_ref_code 追踪来源，供各业务模块统一调配。

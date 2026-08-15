@@ -17,12 +17,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 系统素材库（system_asset）管理 Controller（admin 端）。
+ * 系统素材仓库（system_asset）管理 Controller（admin 端）。
  *
  * 统一管理整个系统的文件与外链资源（本地 OSS 对象 / 外部存储链接）。
  * POST /register 供其他业务 tab 上传后幂等登记（复用 create 权限）。
  */
-@Tag(name = "系统素材库管理")
+@Tag(name = "系统素材仓库管理")
 @RestController
 @RequestMapping("/system/asset")
 @RequiredArgsConstructor

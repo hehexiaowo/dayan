@@ -10,7 +10,7 @@ import lombok.Data;
  *
  * storageType 区分本地 OSS 对象（assetUrl=OSS key）与外部链接（assetUrl=完整 http(s) URL）。
  * assetType 区分图片/视频/文件/VR，类型专属字段按需填写。
- * sourceType + sourceRefCode 追踪来源，默认 media_mgmt（素材库直录）。
+ * sourceType + sourceRefCode 追踪来源，默认 media_mgmt（素材仓库直录）。
  */
 @Data
 public class SystemAssetCreateDTO {

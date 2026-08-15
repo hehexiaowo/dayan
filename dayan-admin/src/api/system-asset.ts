@@ -3,7 +3,7 @@ import type { PageResult } from '@/types/common'
 import type { SystemAsset, SystemAssetQuery } from '@/types/asset'
 
 /**
- * 系统素材库 API（后端 /admin-api/system/asset）。
+ * 系统素材仓库 API（后端 /admin-api/system/asset）。
  *
  * 统一管理整个系统的文件与外链资源（本地 OSS 对象 / 外部存储链接）。
  */

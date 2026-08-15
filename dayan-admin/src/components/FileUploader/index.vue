@@ -28,7 +28,7 @@ const props = withDefaults(defineProps<{
   limit?: number
   disabled?: boolean
   module?: string
-  /** 素材登记：传 registerAsset 即在上传时由服务端同事务登记素材库 */
+  /** 素材登记：传 registerAsset 即在上传时由服务端同事务登记素材仓库 */
   registerAsset?: boolean
   /** 归属机构（空=平台素材） */
   assetParkCode?: string
@@ -54,7 +54,7 @@ const uploading = ref(false)
 
 const pickerVisible = ref(false)
 
-/** 素材库选择回填：单选 set，多选 append（去重 + 受 limit 截断） */
+/** 素材仓库选择回填：单选 set，多选 append（去重 + 受 limit 截断） */
 function onPicked(keys: string[]) {
   if (keys.length === 0) return
   if (props.multiple) {
@@ -212,7 +212,7 @@ function fileName(key: string): string {
       class="pick-btn"
       :disabled="disabled"
       @click="pickerVisible = true"
-    >从素材库选择</el-button>
+    >从素材仓库选择</el-button>
 
     <AssetPicker
       v-model="pickerVisible"

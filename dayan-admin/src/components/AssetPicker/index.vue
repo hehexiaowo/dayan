@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * AssetPicker 素材选择弹窗：从系统素材库（system_asset）选图片/视频，回填资源地址。
+ * AssetPicker 素材选择弹窗：从系统素材仓库（system_asset）选图片/视频，回填资源地址。
  * v-model 控制显隐；confirm 后 emit('select', keys)（OSS key 或外链 URL 数组，调用方自行拼 URL）。
  */
 import { computed, ref, watch } from 'vue'
@@ -95,7 +95,7 @@ function onConfirm() {
 </script>
 
 <template>
-  <el-dialog v-model="visible" :title="type === 'video' ? '从素材库选择视频' : '从素材库选择图片'" width="720px">
+  <el-dialog v-model="visible" :title="type === 'video' ? '从素材仓库选择视频' : '从素材仓库选择图片'" width="720px">
     <el-form :inline="true" @submit.prevent>
       <el-form-item label="名称">
         <el-input
@@ -134,7 +134,7 @@ function onConfirm() {
         </div>
         <div class="picker-label">{{ item.assetName || '--' }}</div>
       </div>
-      <el-empty v-if="!loading && records.length === 0" description="暂无素材，可先在素材库上传" />
+      <el-empty v-if="!loading && records.length === 0" description="暂无素材，可先在素材仓库上传" />
     </div>
 
     <el-pagination

@@ -64,7 +64,7 @@
  *
  * 每业态 = 轮播图（已选横排：排序/删除/从图片库选择）+ 缩略图（点击轮播图点选，默认第一张）。
  * 数据结构不变：park_info.xxxConfig 存 JSON {banners:[key...], thumbnail:"key"}；
- * 选择弹窗复用 AssetPicker（机构素材库），组件不再全量加载机构图。
+ * 选择弹窗复用 AssetPicker（机构素材仓库），组件不再全量加载机构图。
  */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'

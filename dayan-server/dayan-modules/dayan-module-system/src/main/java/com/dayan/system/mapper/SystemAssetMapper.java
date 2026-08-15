@@ -5,7 +5,7 @@ import com.dayan.system.entity.SystemAsset;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 系统素材库（system_asset）Mapper。
+ * 系统素材仓库（system_asset）Mapper。
  */
 @Mapper
 public interface SystemAssetMapper extends BaseMapper<SystemAsset> {

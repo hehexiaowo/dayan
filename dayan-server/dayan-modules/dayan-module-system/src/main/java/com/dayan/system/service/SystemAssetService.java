@@ -9,7 +9,7 @@ import com.dayan.system.vo.SystemAssetVO;
 import java.util.List;
 
 /**
- * 系统素材库（system_asset）服务接口。
+ * 系统素材仓库（system_asset）服务接口。
  */
 public interface SystemAssetService {
 
@@ -35,7 +35,7 @@ public interface SystemAssetService {
 
     /**
      * 幂等注册：同 (parkCode, assetUrl, sourceType, sourceRefCode) 已存在则返回已存 id，否则创建。
-     * 供各业务模块上传后自动登记素材库（storage_type 固定 1=本地OSS）。
+     * 供各业务模块上传后自动登记素材仓库（storage_type 固定 1=本地OSS）。
      *
      * @param parkCode      机构编码（空=平台素材）
      * @param assetType     素材类型（1图片 2视频 3文件 4VR）

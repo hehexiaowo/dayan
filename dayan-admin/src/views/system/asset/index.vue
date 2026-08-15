@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 系统素材库（系统管理 → 素材库）。
+ * 系统素材仓库（系统管理 → 素材仓库）。
  *
  * 管理整个系统的文件与外链资源：本地 OSS 对象 + 外部存储链接（storageType 区分），
  * 跨机构浏览/筛选（含平台素材 park_code=NULL）；
@@ -15,7 +15,7 @@ const activeName = ref('image')
 <template>
   <div class="asset-library">
     <el-alert type="info" :closable="false" style="margin-bottom: 12px">
-      系统素材库：统一管理本地 OSS 文件与外部链接资源，各业务模块从这里统一调配；机构编码留空查询即含平台素材，删除受引用保护。
+      系统素材仓库：统一管理本地 OSS 文件与外部链接资源，各业务模块从这里统一调配；机构编码留空查询即含平台素材，删除受引用保护。
     </el-alert>
     <el-tabs v-model="activeName" type="card">
       <el-tab-pane label="图片" name="image" lazy>

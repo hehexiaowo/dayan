@@ -1,7 +1,7 @@
 import type { PageQuery } from './common'
 
 // ============================================================================
-// 系统素材库（SystemAsset，system_asset）—— 系统级文件/外链资源统一管理
+// 系统素材仓库（SystemAsset，system_asset）—— 系统级文件/外链资源统一管理
 // 对应后端 com.dayan.system.vo.SystemAssetVO（/admin-api/system/asset）。
 // ============================================================================
 
@@ -9,7 +9,7 @@ import type { PageQuery } from './common'
  * 系统素材（后端 SystemAssetVO）。
  *
  * assetType 区分类型（1图片 2视频 3文件 4VR）；storageType 区分本地 OSS 与外链；
- * 类型专属字段按需填写；sourceType + sourceRefCode 追踪来源，media_mgmt=素材库直录。
+ * 类型专属字段按需填写；sourceType + sourceRefCode 追踪来源，media_mgmt=素材仓库直录。
  */
 export interface SystemAsset {
   id?: number
@@ -119,7 +119,7 @@ export const VR_CATEGORY_OPTIONS = [
 
 /** 素材来源（source_type） */
 export const SOURCE_TYPE_OPTIONS = [
-  { label: '素材库', value: 'media_mgmt' },
+  { label: '素材仓库', value: 'media_mgmt' },
   { label: '房型', value: 'room_type' },
   { label: '餐饮', value: 'food_type' },
   { label: '设施', value: 'facility_type' },
@@ -160,7 +160,7 @@ export function categoryLabel(assetType?: number, category?: number): string {
 }
 /** 来源 label */
 export function sourceTypeLabel(v?: string): string {
-  if (!v) return '素材库'
+  if (!v) return '素材仓库'
   const found = SOURCE_TYPE_OPTIONS.find((o) => o.value === v)
   return found ? found.label : v
 }

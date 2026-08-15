@@ -2,7 +2,7 @@
 /**
  * RichEditor 富文本编辑器封装（wangeditor-next）。
  *
- * - 图片/视频插入走统一上传链路（uploadFile），携带素材登记上下文自动入素材库。
+ * - 图片/视频插入走统一上传链路（uploadFile），携带素材登记上下文自动入素材仓库。
  * - v-model 为 HTML 字符串；存量手写 HTML 直接回显。
  * - 内嵌资源使用服务端返回的 absoluteUrl（完整 URL）——agent/client rich-text
  *   渲染 HTML 时不做任何 URL 改写，相对路径在小程序端无法加载。
@@ -46,7 +46,7 @@ const editorConfig: Partial<IEditorConfig> = {
   placeholder: props.placeholder,
   MENU_CONF: {
     uploadImage: {
-      // 服务端同事务登记素材库（assetType=1 图片）
+      // 服务端同事务登记素材仓库（assetType=1 图片）
       async customUpload(file: File, insertFn: (url: string, alt?: string, href?: string) => void) {
         const res = await uploadFile(file, props.module, {
           registerAsset: props.registerAsset,

@@ -8,10 +8,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
- * 文件上传 → 素材库登记监听器。
+ * 文件上传 → 素材仓库登记监听器。
  *
  * <p>同步 @EventListener：registerIfAbsent 幂等（parkCode+assetUrl+sourceType+sourceRef），
- * 登记失败抛异常使上传接口返回失败，杜绝「上传成功但素材库缺失」。
+ * 登记失败抛异常使上传接口返回失败，杜绝「上传成功但素材仓库缺失」。
  */
 @Slf4j
 @Component

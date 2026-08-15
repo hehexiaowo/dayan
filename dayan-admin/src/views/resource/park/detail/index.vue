@@ -10,7 +10,7 @@
  * - 基本信息：ParkInfo 主表字段编辑 + ParkScore 评分
  * - 服务配置：内层 el-tabs 切 5 子面板——房型 / 照护 / 餐饮 / 设施 / 服务项目，
  *   各子面板内联展开行定价（ParkPricing）
- * - 素材库：内层 el-tabs 切 4 类型——图片 / 视频 / 文件 / VR（system_asset 统一表）
+ * - 素材仓库：内层 el-tabs 切 4 类型——图片 / 视频 / 文件 / VR（system_asset 统一表）
  * - 联系顾问：ParkAdviser
  * - 周边相关：ParkPeriphery
  * - 展示板块：ParkDisplayBlock

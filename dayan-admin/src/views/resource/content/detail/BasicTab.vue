@@ -180,7 +180,7 @@ onMounted(() => {
                 v-model="form.contentBody"
                 module="content"
                 register-asset
-                placeholder="正文支持图文混排，插图自动上传并登记素材库"
+                placeholder="正文支持图文混排，插图自动上传并登记素材仓库"
               />
             </el-form-item>
           </el-col>

@@ -1,6 +1,6 @@
 import { request } from '@/utils/request'
 
-/** 素材登记上下文：随上传一并提交，服务端同事务登记素材库 */
+/** 素材登记上下文：随上传一并提交，服务端同事务登记素材仓库 */
 export interface AssetUploadContext {
   registerAsset?: boolean
   assetParkCode?: string

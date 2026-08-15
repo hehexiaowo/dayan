@@ -21,7 +21,7 @@ SET NAMES utf8mb4;
 -- =====================================================================
 
 -- ============================================================
--- 一、Park 域（71 个权限码，14 资源 + info 状态机；素材库已迁 system 域）
+-- 一、Park 域（71 个权限码，14 资源 + info 状态机；素材仓库已迁 system 域）
 -- ============================================================
 INSERT INTO `organ_permission`
   (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
@@ -89,11 +89,11 @@ VALUES
   ('park:periphery:update', '修改周边信息', 'park:periphery', 3, '/admin-api/park/periphery/*', 'PUT',    203, 1, '机构周边信息', NOW(), NOW(), 'system', 'system', 0),
   ('park:periphery:delete', '删除周边信息', 'park:periphery', 3, '/admin-api/park/periphery/*', 'DELETE', 204, 1, '机构周边信息', NOW(), NOW(), 'system', 'system', 0),
   -- park:asset 已迁至 system 域（51_system_asset.sql：表 system_asset + /admin-api/system/asset）
-  ('system:asset:list',   '素材列表', 'system:asset', 3, '/admin-api/system/asset', 'GET',     210, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
-  ('system:asset:query',  '素材详情', 'system:asset', 3, '/admin-api/system/asset/*', 'GET',    211, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
-  ('system:asset:create', '新增素材', 'system:asset', 3, '/admin-api/system/asset', 'POST',    212, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
-  ('system:asset:update', '修改素材', 'system:asset', 3, '/admin-api/system/asset/*', 'PUT',    213, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
-  ('system:asset:delete', '删除素材', 'system:asset', 3, '/admin-api/system/asset/*', 'DELETE', 214, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:list',   '素材列表', 'system:asset', 3, '/admin-api/system/asset', 'GET',     210, 1, '系统素材仓库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:query',  '素材详情', 'system:asset', 3, '/admin-api/system/asset/*', 'GET',    211, 1, '系统素材仓库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:create', '新增素材', 'system:asset', 3, '/admin-api/system/asset', 'POST',    212, 1, '系统素材仓库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:update', '修改素材', 'system:asset', 3, '/admin-api/system/asset/*', 'PUT',    213, 1, '系统素材仓库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:delete', '删除素材', 'system:asset', 3, '/admin-api/system/asset/*', 'DELETE', 214, 1, '系统素材仓库', NOW(), NOW(), 'system', 'system', 0),
   -- park:facility-price（已合并入 park:pricing，charge_type=5）
   -- park:service-price（已合并入 park:pricing，charge_type=6）
   -- park:display-block（展示板块）

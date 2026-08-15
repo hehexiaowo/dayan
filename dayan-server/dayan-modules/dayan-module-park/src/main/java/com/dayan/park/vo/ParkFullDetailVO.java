@@ -17,7 +17,7 @@ public class ParkFullDetailVO {
     /** 机构主信息 */
     private ParkInfoVO parkInfo;
 
-    /** 媒体素材（banner 轮播图从此取 assetType=1 图片，来自系统素材库 system_asset） */
+    /** 媒体素材（banner 轮播图从此取 assetType=1 图片，来自系统素材仓库 system_asset） */
     private List<SystemAssetVO> assets;
 
     /** 房型 */
