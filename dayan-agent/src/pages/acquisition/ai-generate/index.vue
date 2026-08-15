@@ -57,6 +57,23 @@
           <view v-else-if="refList.length < refTotal" class="pick-more dy-clickable" @click="loadRefMore">加载更多</view>
         </view>
         <view v-else-if="!refLoading" class="empty-hint">暂无可选内容</view>
+        <view class="group-label">我的内容</view>
+        <view v-if="myRefList.length" class="pick-list">
+          <view
+            v-for="item in myRefList"
+            :key="item.id"
+            class="pick-item dy-clickable"
+            :class="{ picked: refContentCode === `MY:${item.id}` }"
+            @click="toggleRef(`MY:${item.id}`)"
+          >
+            <view class="pick-main">
+              <text class="pick-title">{{ item.title }}</text>
+              <text class="pick-tag">{{ aiContentTypeLabel(item.contentType) }}</text>
+            </view>
+            <view class="check-round" :class="{ on: refContentCode === `MY:${item.id}` }"><text class="check-mark">✓</text></view>
+          </view>
+        </view>
+        <view v-else class="empty-hint">还没有生成过内容</view>
       </view>
 
       <!-- 知识库文档 -->
@@ -188,6 +205,14 @@
           <text class="section-title">主题与要求</text>
           <text class="section-sub">可留空，默认按素材归纳</text>
         </view>
+        <view class="topic-actions">
+          <view
+            class="btn-topic dy-clickable"
+            :class="{ disabled: topicsLoading }"
+            @click="onSuggestTopics"
+          >{{ topicsLoading ? '正在想选题…' : '帮我出选题' }}</view>
+          <text class="topic-tip">按已勾选素材和当前时节出 5 个方向</text>
+        </view>
         <textarea v-model="topic" class="topic-input" placeholder="例如：介绍大雁养老的终身养老权益，突出六档覆盖人数，引导客户咨询" :maxlength="200" />
       </view>
     </template>
@@ -213,12 +238,32 @@
         <view class="result-card">
           <view class="result-head">
             <text class="type-tag" :class="`tag-${result.contentType}`">{{ aiContentTypeLabel(result.contentType) }}</text>
-            <view class="result-copy dy-clickable" @click="copyResult">复制正文</view>
+            <view class="result-tools">
+              <text
+                v-if="titleOptions.length > 1"
+                class="tool dy-clickable"
+                @click="onSwitchTitle"
+              >换标题</text>
+              <text class="tool dy-clickable" @click="onConvert">{{ converting ? '转换中…' : '转形态' }}</text>
+              <text class="tool dy-clickable" @click="copyResult">复制正文</text>
+            </view>
           </view>
           <text class="result-title">{{ result.title }}</text>
           <text v-if="result.summary" class="result-summary">{{ result.summary }}</text>
           <rich-text v-if="result.contentType === 1" class="result-body" :nodes="result.contentBody" />
           <text v-else class="result-body text">{{ result.contentBody }}</text>
+        </view>
+        <view v-if="result.sources?.length" class="sources-box">
+          <view class="sources-head dy-clickable" @click="sourcesOpen = !sourcesOpen">
+            <text class="sources-title">素材来源（{{ result.sources.length }} 条片段，供核对事实）</text>
+            <text class="sources-arrow">{{ sourcesOpen ? '收起' : '展开' }}</text>
+          </view>
+          <view v-if="sourcesOpen" class="sources-list">
+            <view v-for="(s, i) in result.sources" :key="i" class="source-item">
+              <text class="source-repo">{{ s.repoName }}</text>
+              <text class="source-text">{{ s.text }}</text>
+            </view>
+          </view>
         </view>
       </template>
     </template>
@@ -239,15 +284,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue'
+import { onLoad, onBackPress } from '@dcloudio/uni-app'
 import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS, AI_AUDIENCE_OPTIONS, aiContentTypeLabel } from '@/types/aiContent'
-import type { AiGenerateResult, KnowledgeDocOption, AiRefTemplateOption } from '@/types/aiContent'
+import type { AiGenerateResult, KnowledgeDocOption, AiRefTemplateOption, AiContent } from '@/types/aiContent'
 import type { ContentArticle, GoodsProduct } from '@/types'
 import { getContentList } from '@/api/content'
 import { getGoodsList } from '@/api/goods'
 import { getKnowledgeDocs } from '@/api/knowledge'
-import { generateAiContent, saveAiContent, getAiTemplates } from '@/api/aiContent'
+import { generateAiContent, saveAiContent, getAiTemplates, suggestAiTopics, convertAiContent, getMyContents } from '@/api/aiContent'
 import { postSseStream } from '@/utils/sse'
 import { copyText } from '@/utils/clipboard'
 import { htmlToText } from '@/utils/htmlToText'
@@ -280,19 +325,129 @@ const goodsList = ref<GoodsProduct[]>([])
 const goodsLoading = ref(false)
 const goodsCodes = ref<string[]>([])
 
+// 我的内容（范文候选，近 10 条）
+const myRefList = ref<AiContent[]>([])
+
 // ---- Step2 形态风格 ----
 const contentType = ref<number>(1)
 const styleCode = ref('professional')
 const audience = ref('general')
 const topic = ref('')
+const topicsLoading = ref(false)
 
 // ---- Step3 生成 ----
 const generating = ref(false)
 const saving = ref(false)
+const saved = ref(false)
+const converting = ref(false)
+const sourcesOpen = ref(false)
 const result = ref<AiGenerateResult | null>(null)
 const stageText = ref('')
 const streamText = ref('')
 const streamScrollTop = ref(0)
+
+/** 标题候选（当前标题 + 模型备选，去重） */
+const titleOptions = computed<string[]>(() => {
+  if (!result.value) return []
+  const all = [result.value.title, ...(result.value.alternativeTitles ?? [])]
+  return [...new Set(all.filter(Boolean))]
+})
+
+async function loadMyRefs() {
+  try {
+    const res = await getMyContents({ current: 1, size: 10 })
+    myRefList.value = res.records
+  } catch {
+    myRefList.value = []
+  }
+}
+
+/** 选题灵感：基于勾选素材 + 时节出方向，ActionSheet 点选回填 */
+async function onSuggestTopics() {
+  if (topicsLoading.value) return
+  topicsLoading.value = true
+  try {
+    const topics = await suggestAiTopics({
+      kbFileIds: kbFileIds.value,
+      goodsCodes: goodsCodes.value
+    })
+    if (!topics.length) {
+      uni.showToast({ title: '没有想出合适的选题，可先勾选知识库或商品', icon: 'none' })
+      return
+    }
+    uni.showActionSheet({
+      itemList: topics.slice(0, 6),
+      success: (res) => {
+        topic.value = topics[res.tapIndex]
+      }
+    })
+  } catch {
+    // 全局拦截器已提示
+  } finally {
+    topicsLoading.value = false
+  }
+}
+
+/** 换标题：当前 + 备选标题 ActionSheet 切换 */
+function onSwitchTitle() {
+  if (!result.value || titleOptions.value.length < 2) return
+  uni.showActionSheet({
+    itemList: titleOptions.value,
+    success: (res) => {
+      result.value!.title = titleOptions.value[res.tapIndex]
+    }
+  })
+}
+
+/** 转形态：已生成内容改写为其他发布形态（事实保持一致） */
+function onConvert() {
+  if (!result.value || converting.value) return
+  const labels: Record<number, string> = { 1: '图文文章', 2: '朋友圈文案', 3: '视频脚本' }
+  const options = ([1, 2, 3] as const).filter((t) => t !== result.value!.contentType)
+  uni.showActionSheet({
+    itemList: options.map((t) => labels[t]),
+    success: async (res) => {
+      const target = options[res.tapIndex]
+      converting.value = true
+      try {
+        const converted = await convertAiContent({
+          title: result.value!.title,
+          summary: result.value!.summary,
+          contentBody: result.value!.contentBody,
+          targetContentType: target,
+          styleCode: styleCode.value
+        })
+        converted.sources = result.value!.sources
+        result.value = converted
+        uni.showToast({ title: `已转换为${labels[target]}`, icon: 'success' })
+      } catch {
+        // 全局拦截器已提示
+      } finally {
+        converting.value = false
+      }
+    }
+  })
+}
+
+/** 未保存离开保护（App/H5 返回；小程序导航栏返回不受控） */
+onBackPress(() => {
+  if (step.value === 3 && result.value && !saved.value) {
+    uni.showModal({
+      title: '离开确认',
+      content: '生成的内容尚未保存，确定离开吗？',
+      confirmText: '离开',
+      confirmColor: '#fa3534',
+      success: (res) => {
+        if (res.confirm) {
+          saved.value = true
+          uni.navigateBack()
+        }
+      }
+    })
+    return true
+  }
+  return false
+})
 
 async function loadRefList() {
   refLoading.value = true
@@ -422,6 +577,9 @@ async function doGenerateStream() {
         }
         if (name === 'stage') {
           stageText.value = parsed.message
+        } else if (name === 'reset') {
+          // 自检未过触发自动重写：清空已推送文本，重新打字
+          streamText.value = ''
         } else if (name === 'delta') {
           streamText.value += parsed.text
           streamScrollTop.value += 9999
@@ -492,6 +650,7 @@ async function save() {
       refGoodsCodes: goodsCodes.value.length ? JSON.stringify(goodsCodes.value) : undefined
     })
     uni.showToast({ title: '已保存到我的内容', icon: 'success' })
+    saved.value = true
     setTimeout(() => {
       uni.redirectTo({ url: '/pages/acquisition/content/mine' })
     }, 800)
@@ -503,6 +662,7 @@ async function save() {
 onLoad(() => {
   loadTemplates()
   loadRefList()
+  loadMyRefs()
   loadKbDocs()
   loadGoods()
 })
@@ -568,6 +728,11 @@ onLoad(() => {
 .option-flag { position: absolute; top: -12rpx; right: -12rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: $brand-primary; display: flex; align-items: center; justify-content: center; box-shadow: 0 4rpx 8rpx rgba(64, 158, 255, .4); }
 .option-flag-mark { color: #fff; font-size: 22rpx; line-height: 1; }
 
+.topic-actions { display: flex; align-items: center; gap: $spacing-sm; margin-bottom: $spacing-sm; }
+.btn-topic { background: $brand-primary-light; color: $brand-primary-dark; border: 2rpx solid $brand-primary; border-radius: 32rpx; padding: 8rpx 32rpx; font-size: 26rpx; transition: opacity $transition-fast; }
+.btn-topic:active { opacity: .75; }
+.btn-topic.disabled { opacity: .5; pointer-events: none; }
+.topic-tip { font-size: 22rpx; color: $text-secondary; }
 .topic-input { width: 100%; background: $bg-card; border-radius: $radius-md; padding: $spacing-md; font-size: 26rpx; min-height: 160rpx; box-sizing: border-box; }
 
 // ===== 生成中 =====
@@ -597,8 +762,9 @@ onLoad(() => {
 .type-tag { background: $brand-primary-light; color: $brand-primary-dark; font-size: 22rpx; padding: 4rpx 16rpx; border-radius: $radius-sm; }
 .type-tag.tag-2 { background: $brand-success-light; color: $brand-success-dark; }
 .type-tag.tag-3 { background: $brand-warning-light; color: $brand-warning-dark; }
-.result-copy { font-size: 24rpx; color: $brand-primary; padding: 8rpx 20rpx; }
-.result-copy:active { opacity: .7; }
+.result-tools { display: flex; align-items: center; }
+.tool { font-size: 24rpx; color: $brand-primary; padding: 8rpx 20rpx; }
+.tool:active { opacity: .7; }
 .result-title { display: block; font-size: 34rpx; font-weight: 600; color: $text-primary; line-height: 1.4; margin-bottom: 12rpx; }
 .result-summary { display: block; font-size: 26rpx; color: $text-regular; line-height: 1.7; background: $bg-page; border-left: 6rpx solid $brand-primary; border-radius: $radius-sm; padding: 16rpx 20rpx; margin-bottom: $spacing-md; }
 .result-body { display: block; font-size: 28rpx; color: $text-primary; line-height: 1.8; word-break: break-word; }
@@ -607,6 +773,16 @@ onLoad(() => {
 .result-body :deep(p) { margin: 0 0 20rpx; }
 .result-body :deep(ul), .result-body :deep(ol) { margin: 0 0 20rpx; padding-left: 40rpx; }
 .result-body :deep(li) { margin-bottom: 8rpx; }
+
+// 素材来源（引用片段折叠）
+.sources-box { background: $bg-card; border-radius: $radius-md; margin-top: $spacing-sm; box-shadow: $shadow-card; overflow: hidden; }
+.sources-head { display: flex; justify-content: space-between; align-items: center; padding: 20rpx $spacing-md; }
+.sources-title { font-size: 24rpx; color: $text-regular; }
+.sources-arrow { font-size: 24rpx; color: $brand-primary; }
+.sources-list { padding: 0 $spacing-md 20rpx; }
+.source-item { display: flex; flex-direction: column; gap: 8rpx; background: $bg-page; border-radius: $radius-sm; padding: 16rpx 20rpx; margin-bottom: 12rpx; }
+.source-repo { font-size: 22rpx; color: $brand-primary-dark; }
+.source-text { font-size: 24rpx; color: $text-regular; line-height: 1.6; }
 
 // ===== 底部操作 =====
 .footer-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: flex; align-items: center; gap: 20rpx; padding: 20rpx $spacing-md calc(20rpx + env(safe-area-inset-bottom)); background: $bg-card; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, .04); }

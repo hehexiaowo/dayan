@@ -11,4 +11,8 @@ public interface AiGenerateProgressListener {
     /** 生成文本增量（仅 composing 阶段） */
     default void onDelta(String text) {
     }
+
+    /** 重置流式预览（自检未过触发自动重写时，前端清空已推送文本） */
+    default void onReset() {
+    }
 }

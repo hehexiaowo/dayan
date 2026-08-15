@@ -7,6 +7,22 @@ export function generateAiContent(payload: AiGeneratePayload): Promise<AiGenerat
   return request<AiGenerateResult>({ url: '/ai/generate', method: 'POST', data: payload })
 }
 
+/** 选题灵感（POST /agent-api/ai/topics，基于勾选素材 + 时节出 5 个方向） */
+export function suggestAiTopics(payload: { kbFileIds?: string[]; goodsCodes?: string[] }): Promise<string[]> {
+  return request<string[]>({ url: '/ai/topics', method: 'POST', data: payload })
+}
+
+/** 形态转换（POST /agent-api/ai/convert，已生成内容改写为其他形态） */
+export function convertAiContent(payload: {
+  title: string
+  summary?: string
+  contentBody: string
+  targetContentType: number
+  styleCode?: string
+}): Promise<AiGenerateResult> {
+  return request<AiGenerateResult>({ url: '/ai/convert', method: 'POST', data: payload })
+}
+
 /** 保存生成内容（POST /agent-api/ai/contents） */
 export function saveAiContent(data: Partial<AiContent>): Promise<number> {
   return request<number>({ url: '/ai/contents', method: 'POST', data })

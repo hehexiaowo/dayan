@@ -223,6 +223,7 @@
 import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
 import { useUserStore } from '@/stores/user';
 import type { ChannelOption } from '@/api/auth';
+import { setToken } from '@/utils/request';
 
 const userStore = useUserStore();
 
@@ -325,6 +326,14 @@ onUnmounted(() => {
 
 onMounted(() => {
   smsMobile.value = uni.getStorageSync('agent_remember_mobile') || '';
+  // DEV 调试钩子：#/ ?token=xxx 直接注入会话（自动化验证用，生产构建剔除）
+  if (import.meta.env.DEV) {
+    const m = location.hash.match(/token=([^&]+)/);
+    if (m) {
+      setToken(decodeURIComponent(m[1]));
+      location.hash = '#/pages/acquisition/index';
+    }
+  }
 });
 
 /** 发送验证码 */

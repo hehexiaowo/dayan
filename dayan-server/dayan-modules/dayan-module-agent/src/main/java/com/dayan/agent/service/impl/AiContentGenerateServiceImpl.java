@@ -1,11 +1,16 @@
 package com.dayan.agent.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.dayan.agent.dto.AiConvertDTO;
 import com.dayan.agent.dto.AiGenerateDTO;
+import com.dayan.agent.dto.AiTopicsDTO;
 import com.dayan.agent.model.AiRefTemplates;
+import com.dayan.agent.service.AgentContentService;
 import com.dayan.agent.service.AiContentGenerateService;
 import com.dayan.agent.service.AiGenerateProgressListener;
+import com.dayan.agent.vo.AgentContentVO;
 import com.dayan.agent.vo.AiGenerateResultVO;
+import com.dayan.agent.vo.AiMaterialSourceVO;
 import com.dayan.channel.entity.ChannelConfigContent;
 import com.dayan.channel.entity.ChannelConfigGoods;
 import com.dayan.channel.service.ChannelConfigContentService;
@@ -26,7 +31,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,11 +81,21 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
     /** 参考范文正文最大截取字符数 */
     private static final int REF_CONTENT_MAX = 3000;
 
+    /** 引用片段回显截断字符数 */
+    private static final int SOURCE_TEXT_MAX = 120;
+
+    /** 转换温度（形态转换要求忠实，低于创作温度） */
+    private static final double CONVERT_TEMPERATURE = 0.4;
+
+    /** 选题温度（求多样性，高于创作温度） */
+    private static final double TOPIC_TEMPERATURE = 0.8;
+
     private final KnowledgeRepoService knowledgeRepoService;
     private final ContentInfoService contentInfoService;
     private final GoodsInfoService goodsInfoService;
     private final ChannelConfigContentService channelConfigContentService;
     private final ChannelConfigGoodsService channelConfigGoodsService;
+    private final AgentContentService agentContentService;
     private final SystemConfigService systemConfigService;
     private final BailianChatClient bailianChatClient = new BailianChatClient();
 
@@ -109,8 +126,9 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         StringBuilder material = new StringBuilder();
         int materialCount = 0;
         List<String> selectedGoodsNames = new ArrayList<>();
+        List<AiMaterialSourceVO> sources = new ArrayList<>();
 
-        // 1.1 参考范文（TPL: 模板直取；否则渠道可见性校验）
+        // 1.1 参考范文（TPL: 模板直取 / MY: 我的内容 / 渠道可见性校验）
         if (StrUtil.isNotBlank(dto.getRefContentCode())) {
             if (dto.getRefContentCode().startsWith("TPL:")) {
                 AiRefTemplates.RefTemplate tpl = AiRefTemplates.byCode(dto.getRefContentCode());
@@ -119,6 +137,11 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                 }
                 material.append("【参考范文】标题：").append(tpl.name()).append('\n')
                         .append(tpl.body()).append("\n\n");
+            } else if (dto.getRefContentCode().startsWith("MY:")) {
+                AgentContentVO my = loadMyContent(dto.getRefContentCode());
+                material.append("【参考范文】标题：").append(my.getTitle()).append('\n')
+                        .append(stripHtml(my.getContentBody()))
+                        .append("\n\n");
             } else {
                 ContentInfoVO ref = loadVisibleContent(channelCode, dto.getRefContentCode());
                 material.append("【参考范文】标题：").append(ref.getTitle()).append('\n')
@@ -163,6 +186,8 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                         String text = StrUtil.cleanBlank(cites.get(i).getText());
                         if (StrUtil.isNotBlank(text)) {
                             material.append('[').append(i + 1).append("] ").append(text).append('\n');
+                            sources.add(new AiMaterialSourceVO(repo.getRepoName(),
+                                    StrUtil.maxLength(text, SOURCE_TEXT_MAX)));
                         }
                     }
                     material.append('\n');
@@ -206,21 +231,145 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         String apiHost = requireConfig("llm.api-host", "AI 网关未配置，请联系管理员");
         String model = StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus");
         notifyStage(listener, "composing", "正在撰写内容…");
-        String answer = listener == null
-                ? bailianChatClient.chat(apiKey, apiHost, model, SYSTEM_PROMPT, userPrompt, CREATIVE_TEMPERATURE)
-                : bailianChatClient.chatStream(apiKey, apiHost, model, SYSTEM_PROMPT, userPrompt,
-                        CREATIVE_TEMPERATURE, listener::onDelta);
+        String answer = callChat(apiKey, apiHost, model, userPrompt, CREATIVE_TEMPERATURE, listener);
 
-        // ---------- 3. 解析输出 ----------
+        // ---------- 3. 解析输出 + 自检（失败自动重写一次，仍失败降级 warning） ----------
         AiGenerateResultVO result = parseAnswer(dto.getContentType(), answer, dto.getTopic());
-        selfCheck(result, dto, selectedGoodsNames, warnings);
+        List<String> errors = selfCheck(result, dto, selectedGoodsNames);
+        if (!errors.isEmpty()) {
+            notifyStage(listener, "rewriting", "自检未通过，正在优化重写…");
+            if (listener != null) {
+                listener.onReset();
+            }
+            String rewritePrompt = buildRewritePrompt(userPrompt, answer, errors);
+            answer = callChat(apiKey, apiHost, model, rewritePrompt, CREATIVE_TEMPERATURE, listener);
+            result = parseAnswer(dto.getContentType(), answer, dto.getTopic());
+            warnings.addAll(selfCheck(result, dto, selectedGoodsNames));
+        }
         result.setWarnings(warnings);
-        log.info("AI 生成完成 channel={} contentType={} style={} refContent={} kbFiles={} goods={} materialBlocks={} costMs={}",
+        result.setSources(sources);
+        log.info("AI 生成完成 channel={} contentType={} style={} refContent={} kbFiles={} goods={} materialBlocks={} sources={} costMs={}",
                 channelCode, dto.getContentType(), dto.getStyleCode(), dto.getRefContentCode(),
                 dto.getKbFileIds() == null ? 0 : dto.getKbFileIds().size(),
                 dto.getGoodsCodes() == null ? 0 : dto.getGoodsCodes().size(),
-                materialCount, System.currentTimeMillis() - startMillis);
+                materialCount, sources.size(), System.currentTimeMillis() - startMillis);
         return result;
+    }
+
+    /** 统一 chat 调用（listener 非空走流式，增量回调） */
+    private String callChat(String apiKey, String apiHost, String model, String prompt,
+                            double temperature, AiGenerateProgressListener listener) {
+        return listener == null
+                ? bailianChatClient.chat(apiKey, apiHost, model, SYSTEM_PROMPT, prompt, temperature)
+                : bailianChatClient.chatStream(apiKey, apiHost, model, SYSTEM_PROMPT, prompt,
+                        temperature, listener::onDelta);
+    }
+
+    /** 自动重写 prompt：原任务 + 初稿全文 + 修正清单 */
+    private String buildRewritePrompt(String originalPrompt, String draft, List<String> errors) {
+        return originalPrompt + "\n\n【上一版初稿】\n" + draft
+                + "\n\n【修正要求】\n上一版存在以下问题，请修正后按【输出格式】完整重新输出：\n- "
+                + String.join("\n- ", errors);
+    }
+
+    @Override
+    public List<String> suggestTopics(AiTopicsDTO dto) {
+        String channelCode = ContextHolder.getChannelCode();
+        // 素材：勾选文档名 + 商品名与卖点（轻量，不做 RAG 全文）
+        StringBuilder material = new StringBuilder();
+        List<String> docNames = resolveKbFileNames(channelCode, dto == null ? null : dto.getKbFileIds());
+        if (!docNames.isEmpty()) {
+            material.append("【知识库文档】").append(String.join("、", docNames)).append('\n');
+        }
+        List<String> goodsCodes = dto == null ? null : dto.getGoodsCodes();
+        if (goodsCodes != null && !goodsCodes.isEmpty()) {
+            Set<String> whitelist = channelConfigGoodsService.listByChannel(channelCode).stream()
+                    .map(ChannelConfigGoods::getGoodsCode).collect(Collectors.toSet());
+            material.append("【商品】\n");
+            for (String goodsCode : goodsCodes) {
+                if (!whitelist.contains(goodsCode)) {
+                    throw new BusinessException(ErrorCode.BUSINESS, "商品不在可购范围: " + goodsCode);
+                }
+                GoodsInfoVO g = goodsInfoService.getDetail(goodsCode);
+                material.append("- ").append(g.getGoodsName())
+                        .append(g.getSummary() == null ? "" : "：" + g.getSummary()).append('\n');
+            }
+        }
+        if (material.isEmpty()) {
+            material.append("（未指定素材，可围绕养老规划、旅居权益、家庭关怀等通用方向）");
+        }
+        String prompt = """
+                你是「大雁养老」的营销选题顾问，帮保险/养老代理人想公众号/朋友圈的获客选题。
+                当前时节：%s。
+                【可用素材】
+                %s
+                请给出 5 个选题，每行一个，格式为"序号、选题一句话（15-30 字）"。
+                要求：贴合素材与时节、突出具体利益点或客户痛点、口语化不空泛、不使用绝对化与收益承诺用语、不得使用“免费”等与商品实际价格不符的表述。""".formatted(seasonHint(), material);
+        String answer = callChat(
+                requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
+                requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
+                StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
+                prompt, TOPIC_TEMPERATURE, null);
+        return parseTopics(answer);
+    }
+
+    @Override
+    public AiGenerateResultVO convert(AiConvertDTO dto) {
+        String formInstruction = FORM_INSTRUCTIONS.get(dto.getTargetContentType());
+        if (formInstruction == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "目标形态取值 1-3");
+        }
+        String styleInstruction = dto.getStyleCode() == null
+                ? "沿用原稿的既有风格与语气" : STYLE_INSTRUCTIONS.getOrDefault(dto.getStyleCode(), "沿用原稿的既有风格与语气");
+        StringBuilder sb = new StringBuilder();
+        sb.append("【改写任务】\n把下面这篇内容改写为另一种发布形态，核心事实（权益档位、价格、商品名、机构信息）必须与原稿完全一致，不得新增或修改任何事实，不得出现绝对化与收益承诺用语。\n");
+        sb.append("目标形态：").append(formInstruction).append('\n');
+        sb.append("风格：").append(styleInstruction).append('\n');
+        sb.append("\n【输出格式】\n严格按以下标记输出，不要输出其他内容：\n【标题】xxx\n【摘要】xxx\n【正文】xxx\n【备选标题】另拟 3 个风格不同的备选标题，用分号分隔\n\n");
+        sb.append("【原稿】\n标题：").append(dto.getTitle()).append('\n');
+        if (StrUtil.isNotBlank(dto.getSummary())) {
+            sb.append("摘要：").append(dto.getSummary()).append('\n');
+        }
+        sb.append("正文：\n").append(stripHtml(dto.getContentBody()));
+        String answer = callChat(
+                requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
+                requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
+                StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
+                sb.toString(), CONVERT_TEMPERATURE, null);
+        return parseAnswer(dto.getTargetContentType(), answer, dto.getTitle());
+    }
+
+    /** 按月给出季节/节日提示（选题贴合时节） */
+    private String seasonHint() {
+        return switch (LocalDate.now().getMonthValue()) {
+            case 12, 1, 2 -> "冬季（跨年/春节/寒假，旅居过冬、防寒养生、团圆话题）";
+            case 3, 4, 5 -> "春季（踏青/清明/五一/母亲节，出行、健康体检、感恩话题）";
+            case 6, 7, 8 -> "夏季（端午/父亲节/暑假，避暑旅居、亲子陪伴话题）";
+            default -> "秋季（中秋/国庆/重阳节，敬老、秋游、团聚话题）";
+        };
+    }
+
+    /** 解析选题输出：按行拆、去编号前缀、取前 5 */
+    private List<String> parseTopics(String answer) {
+        return Arrays.stream(answer.split("\\n"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty() && !s.startsWith("（") && !s.startsWith("好的"))
+                .map(s -> s.replaceFirst("^\\d+\\s*[、.．)）]\\s*", ""))
+                .filter(s -> s.length() >= 8 && s.length() <= 60)
+                .limit(5)
+                .toList();
+    }
+
+    /** MY:{id} 参考范文：本人内容（非本人自动 NOT_FOUND，防越权） */
+    private AgentContentVO loadMyContent(String refContentCode) {
+        String idStr = StrUtil.removePrefix(refContentCode, "MY:");
+        long id;
+        try {
+            id = Long.parseLong(idStr);
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "我的内容范文格式错误");
+        }
+        return agentContentService.getDetail(id);
     }
 
     /** 阶段回调（listener 为空时忽略，非流式零开销） */
@@ -253,12 +402,12 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
             sb.append("范文仿写：请模仿【素材】中参考范文的语气与行文结构，事实一律以素材为准。\n");
         }
         sb.append("主题：").append(StrUtil.isNotBlank(dto.getTopic()) ? dto.getTopic() : "（缺省，请从素材归纳一个具体主题）").append('\n');
-        sb.append("\n【输出格式】\n严格按以下标记输出，不要输出其他内容：\n【标题】xxx\n【摘要】xxx\n【正文】xxx\n\n");
+        sb.append("\n【输出格式】\n严格按以下标记输出，不要输出其他内容：\n【标题】xxx\n【摘要】xxx\n【正文】xxx\n【备选标题】另拟 3 个风格不同的备选标题，用分号分隔\n\n");
         sb.append("【素材】\n").append(StrUtil.isBlank(material) ? "（无素材，请基于养老行业常识谨慎写作，并避免具体数字）" : material);
         return sb.toString();
     }
 
-    /** 解析模型输出：按标记拆 标题/摘要/正文，缺标题时按形态兜底 */
+    /** 解析模型输出：按标记拆 标题/摘要/正文/备选标题，缺标题时按形态兜底 */
     private AiGenerateResultVO parseAnswer(int contentType, String answer, String topic) {
         AiGenerateResultVO vo = new AiGenerateResultVO();
         vo.setContentType(contentType);
@@ -267,7 +416,10 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         String body = extract(answer, "【正文】");
         if (StrUtil.isBlank(body)) {
             // 解析失败兜底：整段作为正文（清理标记残留）
-            body = answer.replaceAll("【标题】.*?\\n", "").replaceAll("【摘要】.*?\\n", "").trim();
+            body = answer.replaceAll("【标题】.*?\\n", "")
+                    .replaceAll("【摘要】.*?\\n", "")
+                    .replaceAll("【备选标题】.*?(\\n|$)", "")
+                    .trim();
         }
         if (StrUtil.isBlank(title)) {
             if (contentType == 2 && StrUtil.isNotBlank(body)) {
@@ -279,11 +431,20 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         vo.setTitle(title);
         vo.setSummary(summary);
         vo.setContentBody(body);
+        String alt = extract(answer, "【备选标题】");
+        if (StrUtil.isNotBlank(alt)) {
+            final String mainTitle = title;
+            vo.setAlternativeTitles(Arrays.stream(alt.split("[；;\\n]"))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty() && !s.equals(mainTitle))
+                    .limit(3)
+                    .toList());
+        }
         return vo;
     }
 
     /** 输出标记（extract 截断边界用） */
-    private static final List<String> OUTPUT_MARKERS = List.of("【标题】", "【摘要】", "【正文】");
+    private static final List<String> OUTPUT_MARKERS = List.of("【标题】", "【摘要】", "【正文】", "【备选标题】");
 
     /** 提取【标记】后的内容（到下一已知标记或结尾；不识别正文内的业务标记如【画面】） */
     private String extract(String answer, String marker) {
@@ -305,30 +466,31 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         return answer.substring(contentStart, end).trim();
     }
 
-    /** 生成后规则自检（不调 LLM）：篇幅/商品融入/禁语 → 追加 warnings */
-    private void selfCheck(AiGenerateResultVO result, AiGenerateDTO dto,
-                           List<String> goodsNames, List<String> warnings) {
+    /** 生成后规则自检（不调 LLM）：篇幅/商品融入/禁语 → 返回可修正错误（驱动自动重写） */
+    private List<String> selfCheck(AiGenerateResultVO result, AiGenerateDTO dto, List<String> goodsNames) {
+        List<String> errors = new ArrayList<>();
         String plain = stripHtml(result.getContentBody());
         if (dto.getContentType() != null && dto.getContentType() == 1) {
             int len = plain.replaceAll("\\s", "").length();
             if (len < 300) {
-                warnings.add("篇幅偏短（约 " + len + " 字），建议补充素材后重新生成");
+                errors.add("正文篇幅不足（约 " + len + " 字），请扩写至 600 字以上");
             } else if (len > 3000) {
-                warnings.add("篇幅偏长（约 " + len + " 字），建议手动精简");
+                errors.add("正文超长（约 " + len + " 字），请精简至 1200 字以内");
             }
         }
         if (goodsNames != null && !goodsNames.isEmpty()) {
             boolean mentioned = goodsNames.stream().anyMatch(n -> n != null && result.getContentBody().contains(n));
             if (!mentioned) {
-                warnings.add("勾选的推荐商品未融入正文，建议重新生成");
+                errors.add("勾选的推荐商品（" + String.join("、", goodsNames) + "）未融入正文，请自然融入其名称与卖点");
             }
         }
         for (String banned : BANNED_PHRASES) {
             if (plain.contains(banned)) {
-                warnings.add("内容含绝对化用语「" + banned + "」，建议人工复核后使用");
+                errors.add("正文含绝对化用语「" + banned + "」，请改写为合规表达并全文复查类似用语");
                 break;
             }
         }
+        return errors;
     }
 
     /** 参考范文渠道可见性校验（appType=agent 且已配置） */

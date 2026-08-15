@@ -3,7 +3,9 @@ package com.dayan.agent.controller.agent;
 import com.dayan.agent.dto.AgentContentCreateDTO;
 import com.dayan.agent.dto.AgentContentQueryDTO;
 import com.dayan.agent.dto.AgentContentUpdateDTO;
+import com.dayan.agent.dto.AiConvertDTO;
 import com.dayan.agent.dto.AiGenerateDTO;
+import com.dayan.agent.dto.AiTopicsDTO;
 import com.dayan.agent.service.AgentContentService;
 import com.dayan.agent.service.AiContentGenerateService;
 import com.dayan.agent.service.AiGenerateProgressListener;
@@ -47,6 +49,18 @@ public class AgentAiContentController {
         return R.ok(aiContentGenerateService.generate(dto));
     }
 
+    @Operation(summary = "选题灵感（基于勾选素材 + 时节出 5 个获客选题）")
+    @PostMapping("/topics")
+    public R<List<String>> topics(@RequestBody AiTopicsDTO dto) {
+        return R.ok(aiContentGenerateService.suggestTopics(dto));
+    }
+
+    @Operation(summary = "形态转换（已生成内容改写为其他发布形态，事实保持一致）")
+    @PostMapping("/convert")
+    public R<AiGenerateResultVO> convert(@RequestBody @Valid AiConvertDTO dto) {
+        return R.ok(aiContentGenerateService.convert(dto));
+    }
+
     @Operation(summary = "AI 生成内容（SSE 流式：stage/delta/done/error 事件）")
     @PostMapping("/generate/stream")
     public SseEmitter generateStream(@RequestBody @Valid AiGenerateDTO dto) {
@@ -82,6 +96,19 @@ public class AgentAiContentController {
                             .data(java.util.Map.of("text", text), MediaType.APPLICATION_JSON));
                 } catch (Exception e) {
                     log.warn("SSE delta 发送失败: {}", e.getMessage());
+                }
+            }
+
+            @Override
+            public void onReset() {
+                if (cancelled.get()) {
+                    return;
+                }
+                try {
+                    emitter.send(SseEmitter.event().name("reset")
+                            .data(java.util.Map.of(), MediaType.APPLICATION_JSON));
+                } catch (Exception e) {
+                    log.warn("SSE reset 发送失败: {}", e.getMessage());
                 }
             }
         };

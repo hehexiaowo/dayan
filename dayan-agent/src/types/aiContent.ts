@@ -53,6 +53,16 @@ export interface AiGenerateResult {
   contentBody: string
   contentType: number
   warnings?: string[]
+  /** 备选标题（模型顺带给出的候选，可切换） */
+  alternativeTitles?: string[]
+  /** 本次写作引用的知识库片段（核对事实出处） */
+  sources?: AiMaterialSource[]
+}
+
+/** 知识库引用片段 */
+export interface AiMaterialSource {
+  repoName: string
+  text: string
 }
 
 /** 我的内容（agent_content） */
