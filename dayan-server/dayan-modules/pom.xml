@@ -36,5 +36,6 @@
         <module>dayan-module-distributor</module>
         <module>dayan-module-tool</module>
         <module>dayan-module-lead</module>
+        <module>dayan-module-knowledge</module>
     </modules>
 </project>

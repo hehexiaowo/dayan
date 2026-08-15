@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.dayan</groupId>
+        <artifactId>dayan-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>dayan-common-aliyun</artifactId>
+    <name>dayan-common-aliyun</name>
+    <description>大雁养老 - 公共模块（阿里云百炼：知识库管理 OpenAPI + 模型推理）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.dayan</groupId>
+            <artifactId>dayan-common-core</artifactId>
+        </dependency>
+        <!-- 百炼知识库管理 OpenAPI（RPC/ROA 混合签名由 SDK 处理，凭据注入式） -->
+        <dependency>
+            <groupId>com.aliyun</groupId>
+            <artifactId>bailian20231229</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aliyun</groupId>
+            <artifactId>tea-openapi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
+</project>

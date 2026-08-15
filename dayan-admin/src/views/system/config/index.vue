@@ -42,6 +42,11 @@ const GROUP_CARDS = [
     value: 'payment',
     label: '支付渠道',
     desc: '微信 / 支付宝收单凭据（预留槽位，接入支付网关后消费）'
+  },
+  {
+    value: 'llm',
+    label: '百炼大模型',
+    desc: '阿里云百炼：AccessKey 三件套管理知识库（资源管理-知识仓库），API-Key + 专属网关域名驱动 AI 问答（RAG）'
   }
 ] as const
 

@@ -29,5 +29,6 @@
         <module>dayan-common-sms</module>
         <module>dayan-common-pay</module>
         <module>dayan-common-lbs</module>
+        <module>dayan-common-aliyun</module>
     </modules>
 </project>

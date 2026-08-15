@@ -45,6 +45,9 @@
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <redisson.version>3.34.1</redisson.version>
         <minio.version>8.5.12</minio.version>
+        <!-- 阿里云百炼（知识库管理 OpenAPI + 模型推理） -->
+        <bailian.version>2.0.8</bailian.version>
+        <tea-openapi.version>0.3.8</tea-openapi.version>
 
         <!-- 插件 -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -192,6 +195,18 @@
                 <groupId>io.minio</groupId>
                 <artifactId>minio</artifactId>
                 <version>${minio.version}</version>
+            </dependency>
+
+            <!-- 阿里云百炼（知识库管理 OpenAPI，RPC/ROA 混合签名由 SDK 处理） -->
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>bailian20231229</artifactId>
+                <version>${bailian.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>tea-openapi</artifactId>
+                <version>${tea-openapi.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

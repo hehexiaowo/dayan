@@ -70,6 +70,11 @@
                 <artifactId>dayan-common-lbs</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-common-aliyun</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- 业务模块版本统一管理（17 域） -->
             <dependency>
@@ -165,6 +170,11 @@
             <dependency>
                 <groupId>com.dayan</groupId>
                 <artifactId>dayan-module-lead</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dayan</groupId>
+                <artifactId>dayan-module-knowledge</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
