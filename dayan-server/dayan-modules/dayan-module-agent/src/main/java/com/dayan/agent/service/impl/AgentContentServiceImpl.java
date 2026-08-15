@@ -73,6 +73,12 @@ public class AgentContentServiceImpl implements AgentContentService {
     @Override
     public void update(Long id, AgentContentUpdateDTO dto) {
         AgentContent entity = requireOwned(id);
+        if (dto.getTitle() != null && dto.getTitle().isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "标题不能为空");
+        }
+        if (dto.getContentBody() != null && dto.getContentBody().isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "正文不能为空");
+        }
         if (dto.getTitle() != null) {
             entity.setTitle(dto.getTitle());
         }

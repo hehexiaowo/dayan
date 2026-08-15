@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getMyContents, deleteAiContent } from '@/api/aiContent'
 import type { AiContent } from '@/types/aiContent'
 import { aiContentTypeLabel } from '@/types/aiContent'
@@ -80,6 +80,13 @@ function formatDateTime(dt?: string): string {
 }
 
 onShow(() => loadList(true))
+
+async function handlePullDown() {
+  await loadList(true)
+  uni.stopPullDownRefresh()
+}
+
+onPullDownRefresh(handlePullDown)
 </script>
 
 <style lang="scss" scoped>

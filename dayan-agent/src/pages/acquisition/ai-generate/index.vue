@@ -180,7 +180,7 @@
         <view class="btn-plain dy-clickable" @click="step -= 1">上一步</view>
       </template>
       <template v-if="step < 3">
-        <view class="btn-primary dy-clickable" :class="{ disabled: !canNext }" @click="goNext">{{ step === 2 ? '生成内容' : '下一步' }}</view>
+        <view class="btn-primary dy-clickable" :class="{ disabled: generating }" @click="goNext">{{ generating ? '生成中…' : (step === 2 ? '生成内容' : '下一步') }}</view>
       </template>
       <template v-else-if="result && !generating">
         <view class="btn-plain dy-clickable" @click="regenerate">重新生成</view>
@@ -191,14 +191,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS } from '@/types/aiContent'
 import type { AiGenerateResult, KnowledgeDocOption } from '@/types/aiContent'
-import type { ContentArticle, GoodsProduct, PageResult } from '@/types'
+import type { ContentArticle, GoodsProduct } from '@/types'
 import { getContentList } from '@/api/content'
 import { getGoodsList } from '@/api/goods'
-import { getMyKnowledgeRepos, getKnowledgeDocs } from '@/api/knowledge'
+import { getKnowledgeDocs } from '@/api/knowledge'
 import { generateAiContent, saveAiContent } from '@/api/aiContent'
 
 const stepDefs = [
@@ -238,11 +238,6 @@ const generating = ref(false)
 const saving = ref(false)
 const result = ref<AiGenerateResult | null>(null)
 
-const canNext = computed(() => {
-  if (step.value === 2) return true
-  return step.value === 1
-})
-
 async function loadRefList() {
   refLoading.value = true
   try {
@@ -258,10 +253,18 @@ async function loadRefList() {
 }
 
 async function loadRefMore() {
+  if (refLoading.value) return
   const page = refPage.value + 1
-  const res = await getContentList({ current: page, size: 10, title: refKeyword.value })
-  refList.value = [...refList.value, ...res.records]
-  refPage.value = page
+  refLoading.value = true
+  try {
+    const res = await getContentList({ current: page, size: 10, title: refKeyword.value })
+    refList.value = [...refList.value, ...res.records]
+    refPage.value = page
+  } catch {
+    // 全局拦截器已提示
+  } finally {
+    refLoading.value = false
+  }
 }
 
 function toggleRef(code: string) {
@@ -348,7 +351,9 @@ async function save() {
       contentBody: result.value.contentBody,
       styleCode: styleCode.value,
       refContentCode: refContentCode.value || undefined,
-      refKbFiles: kbFileIds.value.length ? JSON.stringify(kbFileIds.value) : undefined,
+      refKbFiles: kbFileIds.value.length
+        ? JSON.stringify(kbDocs.value.filter((d) => kbFileIds.value.includes(d.fileId)).map((d) => ({ fileId: d.fileId, fileName: d.fileName })))
+        : undefined,
       refGoodsCodes: goodsCodes.value.length ? JSON.stringify(goodsCodes.value) : undefined
     })
     uni.showToast({ title: '已保存到我的内容', icon: 'success' })

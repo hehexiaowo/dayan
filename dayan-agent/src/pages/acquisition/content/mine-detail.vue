@@ -55,7 +55,11 @@ onLoad((query) => {
 })
 
 async function loadDetail() {
-  detail.value = await getMyContentDetail(id.value)
+  try {
+    detail.value = await getMyContentDetail(id.value)
+  } catch {
+    uni.showToast({ title: '加载失败', icon: 'none' })
+  }
 }
 
 function startEdit() {

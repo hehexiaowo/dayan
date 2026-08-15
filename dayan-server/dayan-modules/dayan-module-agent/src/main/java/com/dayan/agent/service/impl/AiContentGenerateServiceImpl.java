@@ -69,6 +69,9 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
 
     @Override
     public AiGenerateResultVO generate(AiGenerateDTO dto) {
+        if (dto.getContentType() == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "内容形态必选");
+        }
         String formInstruction = FORM_INSTRUCTIONS.get(dto.getContentType());
         if (formInstruction == null) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "内容形态取值 1-3");
@@ -78,6 +81,7 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的写作风格: " + dto.getStyleCode());
         }
         String channelCode = ContextHolder.getChannelCode();
+        long startMillis = System.currentTimeMillis();
         List<String> warnings = new ArrayList<>();
 
         // ---------- 1. 素材聚合 ----------
@@ -96,6 +100,7 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         // 1.2 知识库 RAG（平台库 + 本渠道库；勾选文档名并入检索词强制召回）
         List<String> selectedNames = resolveKbFileNames(channelCode, dto.getKbFileIds());
         boolean kbUsed = false;
+        boolean kbSearched = false;
         String searchQuery = buildSearchQuery(dto.getTopic(), selectedNames);
         List<KnowledgeRepoVO> repos = knowledgeRepoService.listForAgent(channelCode);
         if (StrUtil.isNotBlank(searchQuery)) {
@@ -107,6 +112,7 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                     continue;
                 }
                 List<KnowledgeChatVO.Citation> cites = knowledgeRepoService.retrieve(repo.getId(), searchQuery, 6);
+                kbSearched = true;
                 if (!cites.isEmpty()) {
                     material.append("【知识库资料 · ").append(repo.getRepoName()).append("】\n");
                     for (int i = 0; i < cites.size(); i++) {
@@ -121,8 +127,8 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                 }
             }
         }
-        if (!kbUsed) {
-            warnings.add("知识库未检索到素材，未使用知识库资料");
+        if (kbSearched && !kbUsed) {
+            warnings.add("知识库未检索到相关素材，未使用知识库资料");
         }
 
         // 1.3 商品（渠道白名单校验）
@@ -160,6 +166,11 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         // ---------- 3. 解析输出 ----------
         AiGenerateResultVO result = parseAnswer(dto.getContentType(), answer, dto.getTopic());
         result.setWarnings(warnings);
+        log.info("AI 生成完成 channel={} contentType={} style={} refContent={} kbFiles={} goods={} materialBlocks={} costMs={}",
+                channelCode, dto.getContentType(), dto.getStyleCode(), dto.getRefContentCode(),
+                dto.getKbFileIds() == null ? 0 : dto.getKbFileIds().size(),
+                dto.getGoodsCodes() == null ? 0 : dto.getGoodsCodes().size(),
+                materialCount, System.currentTimeMillis() - startMillis);
         return result;
     }
 
@@ -177,6 +188,9 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         sb.append("【写作任务】\n");
         sb.append("形态：").append(formInstruction).append('\n');
         sb.append("风格：").append(styleInstruction).append('\n');
+        if (StrUtil.isNotBlank(dto.getRefContentCode())) {
+            sb.append("范文仿写：请模仿【素材】中参考范文的语气与行文结构，事实一律以素材为准。\n");
+        }
         sb.append("主题：").append(StrUtil.isNotBlank(dto.getTopic()) ? dto.getTopic() : "（缺省，请从素材归纳一个具体主题）").append('\n');
         sb.append("\n【输出格式】\n严格按以下标记输出，不要输出其他内容：\n【标题】xxx\n【摘要】xxx\n【正文】xxx\n\n");
         sb.append("【素材】\n").append(StrUtil.isBlank(material) ? "（无素材，请基于养老行业常识谨慎写作，并避免具体数字）" : material);
