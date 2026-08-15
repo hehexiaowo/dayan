@@ -28,4 +28,10 @@ public class KnowledgeDocVO {
 
     /** 文档类型 */
     private String documentType;
+
+    /** 来源仓库 ID（agent 端合并列表时填充；admin 单库列表为空） */
+    private Long repoId;
+
+    /** 来源仓库名称（agent 端合并列表时填充） */
+    private String repoName;
 }

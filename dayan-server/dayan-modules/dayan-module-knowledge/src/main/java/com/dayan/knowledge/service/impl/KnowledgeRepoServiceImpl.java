@@ -94,6 +94,18 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     }
 
     @Override
+    public List<KnowledgeRepoVO> listForAgent(String channelCode) {
+        LambdaQueryWrapper<KnowledgeRepo> wrapper = new LambdaQueryWrapper<KnowledgeRepo>()
+                .eq(KnowledgeRepo::getRepoType, TYPE_PLATFORM)
+                .or(w -> w.eq(KnowledgeRepo::getRepoType, TYPE_CHANNEL)
+                        .eq(KnowledgeRepo::getChannelCode, channelCode))
+                .orderByAsc(KnowledgeRepo::getSortOrder)
+                .orderByDesc(KnowledgeRepo::getId);
+        return knowledgeRepoMapper.selectList(wrapper).stream()
+                .map(this::toVO).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(KnowledgeRepoCreateDTO dto) {
         // 归属唯一性：平台/渠道各自仅允许一个仓库

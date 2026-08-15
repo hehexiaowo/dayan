@@ -67,6 +67,9 @@ public interface KnowledgeRepoService {
     /** 删除索引内文档（远端永久删除） */
     void deleteDocument(Long id, String fileId);
 
+    /** Agent 端：当前渠道可见仓库（平台库 + 本渠道库，按排序） */
+    List<KnowledgeRepoVO> listForAgent(String channelCode);
+
     /** RAG 问答（检索命中 + 大模型生成） */
     KnowledgeChatVO chat(Long id, KnowledgeChatDTO dto);
 
