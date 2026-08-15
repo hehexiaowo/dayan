@@ -1,5 +1,14 @@
 <template>
   <view class="page dy-safe-bottom">
+    <view class="filter-bar">
+      <view
+        v-for="f in typeFilters"
+        :key="f.label"
+        class="filter-pill dy-clickable"
+        :class="{ active: activeType === f.value }"
+        @click="switchType(f.value)"
+      >{{ f.label }}</view>
+    </view>
     <view v-if="list.length" class="list">
       <view v-for="item in list" :key="item.id" class="card dy-clickable" @click="goDetail(item.id)">
         <view class="card-top">
@@ -32,11 +41,25 @@ const total = ref(0)
 const loading = ref(false)
 const page = ref(1)
 
+const typeFilters = [
+  { label: '全部', value: undefined as number | undefined },
+  { label: '图文', value: 1 },
+  { label: '朋友圈', value: 2 },
+  { label: '脚本', value: 3 }
+]
+const activeType = ref<number | undefined>(undefined)
+
+function switchType(v: number | undefined) {
+  if (activeType.value === v) return
+  activeType.value = v
+  loadList(true)
+}
+
 async function loadList(reset = false) {
   if (loading.value) return
   loading.value = true
   try {
-    const res = await getMyContents({ current: reset ? 1 : page.value, size: 10 })
+    const res = await getMyContents({ current: reset ? 1 : page.value, size: 10, contentType: activeType.value })
     list.value = reset ? res.records : [...list.value, ...res.records]
     total.value = res.total
     page.value = reset ? 1 : page.value + 1
@@ -91,6 +114,9 @@ onPullDownRefresh(handlePullDown)
 
 <style lang="scss" scoped>
 .page { padding: 24rpx; background: $bg-page; min-height: 100vh; }
+.filter-bar { display: flex; gap: 16rpx; background: $bg-page; padding: 0 0 20rpx; }
+.filter-pill { background: #fff; border-radius: 32rpx; padding: 10rpx 32rpx; font-size: 26rpx; color: #606266; }
+.filter-pill.active { background: $brand-primary; color: #fff; }
 .card { background: #fff; border-radius: 16rpx; padding: 28rpx; margin-bottom: 20rpx; }
 .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .type-tag { background: rgba(64, 158, 255, .1); color: $brand-primary; font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 8rpx; }

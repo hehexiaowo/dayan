@@ -11,6 +11,7 @@
       <text v-else class="body text">{{ detail.contentBody }}</text>
       <view class="footer-bar">
         <view class="btn-plain dy-clickable" @click="onDelete">删除</view>
+        <view class="btn-plain dy-clickable" @click="copyBody">复制全文</view>
         <view class="btn-primary dy-clickable" @click="startEdit">编辑</view>
       </view>
     </view>
@@ -42,6 +43,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { getMyContentDetail, updateAiContent, deleteAiContent } from '@/api/aiContent'
 import type { AiContent } from '@/types/aiContent'
 import { aiContentTypeLabel } from '@/types/aiContent'
+import { copyText } from '@/utils/clipboard'
 
 const id = ref(0)
 const detail = ref<AiContent | null>(null)
@@ -66,8 +68,30 @@ function startEdit() {
   if (!detail.value) return
   form.title = detail.value.title
   form.summary = detail.value.summary ?? ''
-  form.contentBody = detail.value.contentBody
+  form.contentBody = detail.value.contentType === 1 ? htmlToText(detail.value.contentBody) : detail.value.contentBody
   editing.value = true
+}
+
+/** HTML → 纯文本（编辑态展示；块级标签转换行，li 加 "- "） */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<\/(p|h1|h2|h3|h4|li|div)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+async function copyBody() {
+  if (!detail.value) return
+  const text = detail.value.contentType === 1 ? htmlToText(detail.value.contentBody) : detail.value.contentBody
+  try {
+    await copyText(text)
+    uni.showToast({ title: '已复制全文', icon: 'success' })
+  } catch {
+    uni.showToast({ title: '复制失败', icon: 'none' })
+  }
 }
 
 /** 图文正文保存：已是 HTML（含标签）直接存原文；纯文本按换行转段落 */
