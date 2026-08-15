@@ -12,9 +12,10 @@
  * images / imageDescriptions 在 DB 存为 JSON 数组字符串（TEXT 列），
  * 前端提交前 JSON.stringify，回显时 JSON.parse。
  */
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
+import { getPark } from '@/api/park'
 import {
   pageDisplayBlocks,
   createDisplayBlock,
@@ -36,6 +37,24 @@ import { formatFileUrl } from '@/utils/file'
 const props = defineProps<{
   parkCode: string
 }>()
+
+/** 机构网络归属（基本信息的网络类型）——板块「适用业态」可选项跟随联动 */
+const parkNetworks = ref<string[]>([])
+
+onMounted(async () => {
+  try {
+    const park = await getPark(props.parkCode)
+    parkNetworks.value = park.networkTags ?? []
+  } catch {
+    parkNetworks.value = []
+  }
+})
+
+/** 业态选项：限定机构网络归属内；未配置归属时兜底全量（避免无选项可勾） */
+const networkOptions = computed(() => {
+  const filtered = NETWORK_TYPE_OPTIONS.filter((o) => parkNetworks.value.includes(o.value))
+  return filtered.length ? filtered : [...NETWORK_TYPE_OPTIONS]
+})
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
   ParkDisplayBlock,
@@ -345,11 +364,11 @@ defineExpose({ loadPage })
           <el-col :span="24">
             <el-form-item label="适用业态">
               <el-checkbox-group v-model="networkTagsArr">
-                <el-checkbox v-for="o in NETWORK_TYPE_OPTIONS" :key="o.value" :value="o.value">
+                <el-checkbox v-for="o in networkOptions" :key="o.value" :value="o.value">
                   {{ o.label }}
                 </el-checkbox>
               </el-checkbox-group>
-              <div class="form-tip">不勾选 = 三种业态详情页全部展示</div>
+              <div class="form-tip">选项跟随「基本信息-网络归属」；不勾选 = 三种业态详情页全部展示</div>
             </el-form-item>
           </el-col>
           <el-col :span="24">
