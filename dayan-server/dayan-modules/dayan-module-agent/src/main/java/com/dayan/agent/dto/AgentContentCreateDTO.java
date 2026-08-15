@@ -44,4 +44,7 @@ public class AgentContentCreateDTO {
 
     /** 勾选商品 codes JSON */
     private String refGoodsCodes;
+
+    /** 目标读者（children/elder/general，可空） */
+    private String audience;
 }

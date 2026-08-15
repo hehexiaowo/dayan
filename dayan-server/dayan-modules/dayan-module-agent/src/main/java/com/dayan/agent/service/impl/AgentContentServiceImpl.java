@@ -65,6 +65,7 @@ public class AgentContentServiceImpl implements AgentContentService {
         entity.setRefContentCode(dto.getRefContentCode());
         entity.setRefKbFiles(dto.getRefKbFiles());
         entity.setRefGoodsCodes(dto.getRefGoodsCodes());
+        entity.setAudience(dto.getAudience());
         entity.setStatus(1);
         agentContentMapper.insert(entity);
         return entity.getId();

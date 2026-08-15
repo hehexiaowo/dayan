@@ -54,6 +54,9 @@ public class AgentContent extends BaseEntity {
     /** 勾选商品 codes JSON（["GDxxx"]） */
     private String refGoodsCodes;
 
+    /** 目标读者（children=子女决策者/elder=老人本人/general=通用） */
+    private String audience;
+
     /** 状态（1=正常） */
     private Integer status;
 }
