@@ -96,7 +96,6 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         // 1.2 知识库 RAG（平台库 + 本渠道库；勾选文档名并入检索词强制召回）
         List<String> selectedNames = resolveKbFileNames(channelCode, dto.getKbFileIds());
         boolean kbUsed = false;
-        boolean kbSearched = false;
         String searchQuery = buildSearchQuery(dto.getTopic(), selectedNames);
         List<KnowledgeRepoVO> repos = knowledgeRepoService.listForAgent(channelCode);
         if (StrUtil.isNotBlank(searchQuery)) {
@@ -107,7 +106,6 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                     }
                     continue;
                 }
-                kbSearched = true;
                 List<KnowledgeChatVO.Citation> cites = knowledgeRepoService.retrieve(repo.getId(), searchQuery, 6);
                 if (!cites.isEmpty()) {
                     material.append("【知识库资料 · ").append(repo.getRepoName()).append("】\n");
@@ -123,7 +121,7 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                 }
             }
         }
-        if (!kbSearched) {
+        if (!kbUsed) {
             warnings.add("知识库未检索到素材，未使用知识库资料");
         }
 
