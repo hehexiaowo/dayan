@@ -3,8 +3,11 @@ package com.dayan.agent.controller.agent;
 import com.dayan.agent.dto.AgentContentCreateDTO;
 import com.dayan.agent.dto.AgentContentQueryDTO;
 import com.dayan.agent.dto.AgentContentUpdateDTO;
+import com.dayan.agent.dto.AiGenerateDTO;
 import com.dayan.agent.service.AgentContentService;
+import com.dayan.agent.service.AiContentGenerateService;
 import com.dayan.agent.vo.AgentContentVO;
+import com.dayan.agent.vo.AiGenerateResultVO;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +28,13 @@ import org.springframework.web.bind.annotation.*;
 public class AgentAiContentController {
 
     private final AgentContentService agentContentService;
+    private final AiContentGenerateService aiContentGenerateService;
+
+    @Operation(summary = "AI 生成内容（不落库，预览用）")
+    @PostMapping("/generate")
+    public R<AiGenerateResultVO> generate(@RequestBody @Valid AiGenerateDTO dto) {
+        return R.ok(aiContentGenerateService.generate(dto));
+    }
 
     @Operation(summary = "保存 AI 生成内容")
     @PostMapping("/contents")

@@ -23,6 +23,9 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-content</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-client</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-lead</artifactId></dependency>
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-goods</artifactId></dependency>
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-knowledge</artifactId></dependency>
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-system</artifactId></dependency>
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
         <dependency><groupId>org.mapstruct</groupId><artifactId>mapstruct</artifactId></dependency>
     </dependencies>
