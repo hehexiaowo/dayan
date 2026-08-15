@@ -7,12 +7,12 @@ import com.dayan.common.mybatis.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 /**
- * 表 system_dict_business 对应实体。
+ * 表 system_dict 对应实体（原 system_dict_common，54 迁移统一双字典后改名）。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("system_dict_business")
-public class SystemDictBusiness extends BaseEntity {
+@TableName("system_dict")
+public class SystemDict extends BaseEntity {
 
     /** 主键 */
     @TableId(type = IdType.AUTO)
@@ -31,23 +31,32 @@ public class SystemDictBusiness extends BaseEntity {
     /** 字典存储值 */
     private String dictValue;
 
-    /** 图标（内容分类等场景使用） */
-    private String icon;
-
-    /** 扩展属性（JSON 字符串）：内容分类的 coverImage/isVisible 等 */
-    private String extra;
-
     /** 父级编码 */
     private String parentCode;
 
-    /** 所属业务域 */
+    /** 层级 */
+    private Integer level;
+
+    /** 业务域（通用字典为空；业务语义字典标注所属域，如 park/content） */
     private String domain;
 
     /** 排序号 */
     private Integer sortOrder;
 
+    /** 图标 */
+    private String icon;
+
+    /** 样式类名 */
+    private String cssClass;
+
+    /** 扩展属性（JSON，如内容分类的 coverImage/isVisible） */
+    private String extra;
+
     /** 状态 */
     private Integer status;
+
+    /** 是否默认项 */
+    private Integer isDefault;
 
     /** 备注 */
     private String remark;

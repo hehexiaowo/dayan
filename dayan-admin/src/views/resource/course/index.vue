@@ -20,10 +20,10 @@ import {
   COURSE_STATUS_OPTIONS
 } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
-import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import { useDictOptions } from '@/composables/useDict'
 
 /** 课程分类选项（业务字典 course_category，管理入口：系统管理-业务字典） */
-const { options: categoryOptions } = useBusinessDictOptions('course_category')
+const { options: categoryOptions } = useDictOptions('course_category')
 
 /**
  * 课程管理页。

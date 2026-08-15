@@ -8,18 +8,19 @@ import {
   updateDict,
   deleteDict
 } from '@/api/dict'
-import { DICT_TYPE_OPTIONS, type SystemDictCommon } from '@/types/dict'
+import { DICT_TYPE_OPTIONS, type SystemDict } from '@/types/dict'
 
 /**
- * 字典管理页。
+ * 字典管理页（统一单表 system_dict，54 迁移合并原通用/业务双字典）。
  *
  * - 左侧字典类型从后端 listDictTypes() 动态加载（根治硬编码脱节）；
  * - 右侧展示该类型全部字典项（含禁用，管理用），支持新增/编辑/删除；
+ * - 业务语义类型以「业务域」标注所属域（通用字典留空）；
  * - 切换类型显式 loadData（不再 watch+click 双触发）。
  */
 
 const loading = ref(false)
-const tableData = ref<SystemDictCommon[]>([])
+const tableData = ref<SystemDict[]>([])
 /** 字典类型列表（动态加载，失败时回退到预设） */
 const dictTypes = ref<string[]>(DICT_TYPE_OPTIONS.map((o) => o.value))
 /** 当前选中的字典类型 */
@@ -68,7 +69,7 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-function defaultForm(): SystemDictCommon {
+function defaultForm(): SystemDict {
   return {
     dictType: currentType.value,
     dictCode: '',
@@ -76,6 +77,7 @@ function defaultForm(): SystemDictCommon {
     dictValue: '',
     parentCode: null,
     level: 1,
+    domain: null,
     sortOrder: 0,
     icon: null,
     cssClass: null,
@@ -85,9 +87,9 @@ function defaultForm(): SystemDictCommon {
   }
 }
 
-const form = reactive<SystemDictCommon>(defaultForm())
+const form = reactive<SystemDict>(defaultForm())
 
-const rules: FormRules<SystemDictCommon> = {
+const rules: FormRules<SystemDict> = {
   dictCode: [{ required: true, message: '请输入字典编码', trigger: 'blur' }],
   dictName: [{ required: true, message: '请输入字典名称', trigger: 'blur' }],
   dictValue: [{ required: true, message: '请输入字典值', trigger: 'blur' }]
@@ -99,7 +101,7 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: SystemDictCommon) {
+function openEdit(row: SystemDict) {
   dialogMode.value = 'edit'
   Object.assign(form, defaultForm(), row)
   dialogVisible.value = true
@@ -128,7 +130,7 @@ async function handleSubmit() {
   }
 }
 
-async function onDelete(row: SystemDictCommon) {
+async function onDelete(row: SystemDict) {
   if (!row.id) return
   try {
     await ElMessageBox.confirm(`确定删除字典项「${row.dictName}」吗？`, '提示', {
@@ -186,6 +188,12 @@ onMounted(() => {
             <el-table-column prop="dictCode" label="编码" min-width="140" />
             <el-table-column prop="dictName" label="名称" min-width="140" />
             <el-table-column prop="dictValue" label="值" min-width="120" />
+            <el-table-column label="业务域" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.domain" size="small" type="success">{{ row.domain }}</el-tag>
+                <span v-else class="text-muted">通用</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
             <el-table-column label="状态" width="90" align="center">
               <template #default="{ row }">
@@ -240,6 +248,11 @@ onMounted(() => {
           <el-col :span="12">
             <el-form-item label="字典值" prop="dictValue">
               <el-input v-model="form.dictValue" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="业务域">
+              <el-input v-model="form.domain" placeholder="如 park/content（通用字典留空）" clearable />
             </el-form-item>
           </el-col>
           <el-col :span="12">

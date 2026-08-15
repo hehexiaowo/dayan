@@ -1,6 +1,6 @@
 package com.dayan.system.service;
 
-import com.dayan.system.entity.SystemDictCommon;
+import com.dayan.system.entity.SystemDict;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -31,13 +31,13 @@ public class DictService {
     private static final long CACHE_TTL_HOURS = 24;
 
     private final StringRedisTemplate redisTemplate;
-    private final com.dayan.system.mapper.SystemDictCommonMapper dictMapper;
+    private final com.dayan.system.mapper.SystemDictMapper dictMapper;
     private final ObjectMapper objectMapper;
 
     /**
      * 按类型查询字典项列表（命中缓存）。
      */
-    public List<SystemDictCommon> getByType(String dictType) {
+    public List<SystemDict> getByType(String dictType) {
         String key = CACHE_PREFIX + dictType;
         try {
             List<Object> values = redisTemplate.opsForHash().values(key);
@@ -51,11 +51,11 @@ public class DictService {
             log.warn("字典缓存读取失败 type={}, 回源DB: {}", dictType, e.getMessage());
         }
         // 回源 DB
-        List<SystemDictCommon> list = dictMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDictCommon>()
-                        .eq(SystemDictCommon::getDictType, dictType)
-                        .eq(SystemDictCommon::getStatus, 1)
-                        .orderByAsc(SystemDictCommon::getSortOrder));
+        List<SystemDict> list = dictMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDict>()
+                        .eq(SystemDict::getDictType, dictType)
+                        .eq(SystemDict::getStatus, 1)
+                        .orderByAsc(SystemDict::getSortOrder));
         cacheByType(dictType, list);
         return list;
     }
@@ -63,7 +63,7 @@ public class DictService {
     /**
      * 按类型 + code 查单个字典项。
      */
-    public SystemDictCommon getByCode(String dictType, String dictCode) {
+    public SystemDict getByCode(String dictType, String dictCode) {
         return getByType(dictType).stream()
                 .filter(d -> dictCode.equals(d.getDictCode()))
                 .findFirst()
@@ -73,11 +73,11 @@ public class DictService {
     /**
      * 缓存指定类型（供写入后调用刷新）。
      */
-    public void cacheByType(String dictType, List<SystemDictCommon> list) {
+    public void cacheByType(String dictType, List<SystemDict> list) {
         String key = CACHE_PREFIX + dictType;
         try {
             java.util.Map<String, String> hash = new java.util.HashMap<>();
-            for (SystemDictCommon d : list) {
+            for (SystemDict d : list) {
                 hash.put(d.getDictCode(), serialize(d));
             }
             redisTemplate.opsForHash().putAll(key, hash);
@@ -98,9 +98,9 @@ public class DictService {
      * 全部字典类型枚举（distinct dict_type，供前端左侧类型选择）。
      */
     public List<String> listTypes() {
-        List<SystemDictCommon> all = dictMapper.selectList(null);
+        List<SystemDict> all = dictMapper.selectList(null);
         return all.stream()
-                .map(SystemDictCommon::getDictType)
+                .map(SystemDict::getDictType)
                 .filter(t -> t != null && !t.isEmpty())
                 .distinct()
                 .sorted()
@@ -110,22 +110,22 @@ public class DictService {
     /**
      * 按类型查询全部字典项（含禁用，管理页用；不过滤 status、不走缓存）。
      */
-    public List<SystemDictCommon> listAllByType(String dictType) {
+    public List<SystemDict> listAllByType(String dictType) {
         return dictMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDictCommon>()
-                        .eq(SystemDictCommon::getDictType, dictType)
-                        .orderByAsc(SystemDictCommon::getSortOrder));
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDict>()
+                        .eq(SystemDict::getDictType, dictType)
+                        .orderByAsc(SystemDict::getSortOrder));
     }
 
     /**
      * 新增字典项。（dictType, dictCode）唯一校验，写入后失效缓存。
      */
     @Transactional(rollbackFor = Exception.class)
-    public Long create(SystemDictCommon dict) {
+    public Long create(SystemDict dict) {
         Long count = dictMapper.selectCount(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDictCommon>()
-                        .eq(SystemDictCommon::getDictType, dict.getDictType())
-                        .eq(SystemDictCommon::getDictCode, dict.getDictCode()));
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDict>()
+                        .eq(SystemDict::getDictType, dict.getDictType())
+                        .eq(SystemDict::getDictCode, dict.getDictCode()));
         if (count > 0) {
             throw new BusinessException(ErrorCode.BUSINESS, "字典编码已存在: " + dict.getDictCode());
         }
@@ -141,8 +141,8 @@ public class DictService {
      * 修改字典项（按 id）。新旧 dictType 缓存均失效。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, SystemDictCommon dict) {
-        SystemDictCommon existing = dictMapper.selectById(id);
+    public void update(Long id, SystemDict dict) {
+        SystemDict existing = dictMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "字典项不存在: id=" + id);
         }
@@ -151,9 +151,9 @@ public class DictService {
         String newCode = dict.getDictCode();
         if (newCode != null && !newCode.equals(existing.getDictCode())) {
             Long count = dictMapper.selectCount(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDictCommon>()
-                            .eq(SystemDictCommon::getDictType, existing.getDictType())
-                            .eq(SystemDictCommon::getDictCode, newCode));
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SystemDict>()
+                            .eq(SystemDict::getDictType, existing.getDictType())
+                            .eq(SystemDict::getDictCode, newCode));
             if (count > 0) {
                 throw new BusinessException(ErrorCode.BUSINESS, "字典编码已存在: " + newCode);
             }
@@ -170,7 +170,7 @@ public class DictService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        SystemDictCommon existing = dictMapper.selectById(id);
+        SystemDict existing = dictMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "字典项不存在: id=" + id);
         }
@@ -178,7 +178,7 @@ public class DictService {
         evict(existing.getDictType());
     }
 
-    private String serialize(SystemDictCommon d) {
+    private String serialize(SystemDict d) {
         try {
             return objectMapper.writeValueAsString(d);
         } catch (Exception e) {
@@ -186,11 +186,11 @@ public class DictService {
         }
     }
 
-    private SystemDictCommon deserialize(String json) {
+    private SystemDict deserialize(String json) {
         try {
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
-            return new SystemDictCommon();
+            return new SystemDict();
         }
     }
 }

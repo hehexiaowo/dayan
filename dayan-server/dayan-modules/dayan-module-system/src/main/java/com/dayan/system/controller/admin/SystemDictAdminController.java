@@ -3,7 +3,7 @@ package com.dayan.system.controller.admin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.log.operation.OperationLog;
-import com.dayan.system.entity.SystemDictCommon;
+import com.dayan.system.entity.SystemDict;
 import com.dayan.system.service.DictService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,21 +37,21 @@ public class SystemDictAdminController {
     @Operation(summary = "按类型查询字典项（仅启用，业务消费用）")
     @SaCheckPermission("system:dict:list")
     @GetMapping("/type/{dictType}")
-    public R<List<SystemDictCommon>> listByType(@PathVariable String dictType) {
+    public R<List<SystemDict>> listByType(@PathVariable String dictType) {
         return R.ok(dictService.getByType(dictType));
     }
 
     @Operation(summary = "按类型查询全部字典项（含禁用，管理页用）")
     @SaCheckPermission("system:dict:list")
     @GetMapping("/type/{dictType}/all")
-    public R<List<SystemDictCommon>> listAllByType(@PathVariable String dictType) {
+    public R<List<SystemDict>> listAllByType(@PathVariable String dictType) {
         return R.ok(dictService.listAllByType(dictType));
     }
 
     @Operation(summary = "查询单个字典项")
     @SaCheckPermission("system:dict:query")
     @GetMapping("/{dictType}/{dictCode}")
-    public R<SystemDictCommon> getByCode(@PathVariable String dictType, @PathVariable String dictCode) {
+    public R<SystemDict> getByCode(@PathVariable String dictType, @PathVariable String dictCode) {
         return R.ok(dictService.getByCode(dictType, dictCode));
     }
 
@@ -59,7 +59,7 @@ public class SystemDictAdminController {
     @OperationLog(module = "字典管理", action = "新增")
     @SaCheckPermission("system:dict:create")
     @PostMapping
-    public R<Long> create(@RequestBody SystemDictCommon dict) {
+    public R<Long> create(@RequestBody SystemDict dict) {
         return R.ok(dictService.create(dict));
     }
 
@@ -67,7 +67,7 @@ public class SystemDictAdminController {
     @OperationLog(module = "字典管理", action = "修改")
     @SaCheckPermission("system:dict:update")
     @PutMapping("/{id}")
-    public R<Void> update(@PathVariable Long id, @RequestBody SystemDictCommon dict) {
+    public R<Void> update(@PathVariable Long id, @RequestBody SystemDict dict) {
         dictService.update(id, dict);
         return R.ok();
     }

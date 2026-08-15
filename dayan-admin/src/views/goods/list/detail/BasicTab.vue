@@ -26,10 +26,10 @@ import type { GoodsInfo } from '@/types/goods'
 import { formatDate, formatDateTime } from '@/utils/format'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { formatFileUrl } from '@/utils/file'
-import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import { useDictOptions } from '@/composables/useDict'
 
 /** 商品分类选项（业务字典 goods_category） */
-const { options: categoryOptions } = useBusinessDictOptions('goods_category')
+const { options: categoryOptions } = useDictOptions('goods_category')
 
 /** 分类编码 → 分类名（未命中字典时原样展示编码） */
 function categoryName(code?: string): string {

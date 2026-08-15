@@ -26,7 +26,7 @@ class DayanTenantHandlerTest {
 
     @Test
     void ignoreTable_shouldIgnoreSystemDomainByPrefix() {
-        assertThat(handler.ignoreTable("system_dict_common")).isTrue();
+        assertThat(handler.ignoreTable("system_dict")).isTrue();
         assertThat(handler.ignoreTable("system_menu")).isTrue();
         assertThat(handler.ignoreTable("`system_state_machine`")).isTrue();
     }
@@ -47,7 +47,7 @@ class DayanTenantHandlerTest {
     @Test
     void ignoreTable_shouldIgnorePlatformSharedDomainsByPrefix() {
         // 平台共享表（无 channel_code 字段）应被忽略
-        assertThat(handler.ignoreTable("system_dict_common")).isTrue();
+        assertThat(handler.ignoreTable("system_dict")).isTrue();
         assertThat(handler.ignoreTable("organ_account")).isTrue();
         assertThat(handler.ignoreTable("butler_info")).isTrue();
         assertThat(handler.ignoreTable("distributor_info")).isTrue();

@@ -1,14 +1,13 @@
 /**
- * 字典相关类型。
- *
- * 字段对齐后端 com.dayan.system.entity.SystemDictCommon。
- * 字典为只读数据（由后端 seed 初始化），无新增/修改/删除。
+ * 字典类型（统一单表 system_dict，原 system_dict_common + system_dict_business 于 54 迁移合并）。
+ * 字典管理（系统管理 → 字典管理）统一维护全部类型；
+ * 业务语义类型以 domain 标注所属域，extra(JSON) 承载扩展属性。
  */
 
-/** 字典项（后端 SystemDictCommon 实体） */
-export interface SystemDictCommon {
+/** 字典项（后端 SystemDict 实体，表 system_dict） */
+export interface SystemDict {
   id?: number
-  /** 字典类型（如 equity_status / order_status / pay_type） */
+  /** 字典类型（如 gender / content_category / asset_ref_type2） */
   dictType: string
   /** 字典编码（类型内唯一） */
   dictCode: string
@@ -20,12 +19,16 @@ export interface SystemDictCommon {
   parentCode: string | null
   /** 层级（从 1 开始） */
   level: number
+  /** 业务域（通用字典为空；业务语义字典标注所属域，如 park/content） */
+  domain?: string | null
   /** 排序号 */
   sortOrder: number
   /** 图标（可选） */
   icon: string | null
   /** CSS 类名（可选，用于前端样式区分） */
   cssClass: string | null
+  /** 扩展属性（JSON 字符串，如内容分类的 coverImage/isVisible） */
+  extra?: string | null
   /** 状态：1启用 0禁用 */
   status: number
   /** 是否默认：1是 0否 */
@@ -40,50 +43,15 @@ export interface SystemDictCommon {
 
 /**
  * 字典类型预设（fallback）。
- *
  * 运行时以 listDictTypes() 接口返回为准（动态加载真实存在的类型）；
  * 此处仅作接口不可用时的兜底，避免左侧菜单空白。
  */
 export const DICT_TYPE_OPTIONS = [
-  { label: '权益状态', value: 'equity_status' },
-  { label: '订单状态', value: 'order_status' },
-  { label: '支付方式', value: 'pay_type' },
   { label: '性别', value: 'gender' },
-  { label: '场景状态', value: 'scene_status' },
+  { label: '是否', value: 'yes_no' },
+  { label: '通用状态', value: 'common_status' },
   { label: '账户状态', value: 'account_status' },
-  { label: '角色类型', value: 'role_type' },
-  { label: '菜单类型', value: 'menu_type' }
+  { label: '业务状态', value: 'biz_status' },
+  { label: '内容分类', value: 'content_category' },
+  { label: '素材细分分类', value: 'asset_ref_type2' }
 ] as const
-
-/**
- * 业务字典项（后端 SystemDictBusiness 实体，表 system_dict_business）。
- * 按 domain（业务域）组织，区别于通用字典 SystemDictCommon。
- */
-export interface SystemDictBusiness {
-  id?: number
-  dictType: string
-  dictCode: string
-  dictName: string
-  dictValue: string
-  /** 图标（内容分类等场景使用，可选） */
-  icon?: string
-  /** 扩展属性（JSON 字符串，如内容分类的 coverImage/isVisible，可选） */
-  extra?: string
-  parentCode?: string
-  /** 所属业务域（如 park/scene/order/content） */
-  domain?: string
-  sortOrder?: number
-  /** 状态：1启用 0禁用 */
-  status?: number
-  remark?: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-/** 业务字典分页查询参数 */
-export interface SystemDictBusinessQuery {
-  dictType?: string
-  domain?: string
-  current: number
-  size: number
-}

@@ -14,7 +14,7 @@ import {
   publishContent,
   offlineContent
 } from '@/api/content'
-import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import { useDictOptions } from '@/composables/useDict'
 import type { ContentInfo, ContentInfoQuery } from '@/types/content'
 import {
   ContentType,
@@ -57,7 +57,7 @@ const {
 const router = useRouter()
 
 /** 分类下拉选项 + 名称映射（业务字典 content_category 承载，VO 不带名称前端自行映射） */
-const { options: categoryOptions } = useBusinessDictOptions('content_category')
+const { options: categoryOptions } = useDictOptions('content_category')
 const categoryNameMap = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {}
   for (const c of categoryOptions.value) {

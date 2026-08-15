@@ -6,7 +6,7 @@ import com.dayan.common.core.exception.ErrorCode;
 import java.util.LinkedHashSet;
 
 /**
- * 养老业态（三业态）：与 system_dict_business(dict_type='network_type') 字典一一对应。
+ * 养老业态（三业态）：与 system_dict(dict_type='network_type') 字典一一对应。
  *
  * <p>存储形态：逗号分隔字符串（如 "vital,care"）；NULL/空 = 全部业态。
  * 用于 park_info.network_tags、park_display_block.network_tags、content_info.network_tags。

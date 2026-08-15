@@ -11,7 +11,7 @@
 import { reactive, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
-import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import { useDictOptions } from '@/composables/useDict'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { formatFileUrl } from '@/utils/file'
 import {
@@ -78,8 +78,8 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 loadPage()
 
 // ---------- 字典 ----------
-const { options: refType2Options } = useBusinessDictOptions('asset_ref_type2')
-const { options: vrProviderOptions } = useBusinessDictOptions('vr_provider')
+const { options: refType2Options } = useDictOptions('asset_ref_type2')
+const { options: vrProviderOptions } = useDictOptions('vr_provider')
 
 // ---------- 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)

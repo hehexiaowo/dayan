@@ -2,7 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { getContent, updateContent } from '@/api/content'
-import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import { useDictOptions } from '@/composables/useDict'
 import type { ContentInfo } from '@/types/content'
 import { CONTENT_TYPE_OPTIONS, SOURCE_TYPE_OPTIONS } from '@/types/content'
 import { NETWORK_TYPE_OPTIONS, networkTagsToList } from '@/types/park'
@@ -15,7 +15,7 @@ const emit = defineEmits<{ (e: 'updated'): void }>()
 const loading = ref(false)
 const detail = ref<ContentInfo | null>(null)
 /** 分类下拉选项（业务字典 content_category 承载） */
-const { options: categoryOptions } = useBusinessDictOptions('content_category')
+const { options: categoryOptions } = useDictOptions('content_category')
 
 async function loadDetail() {
   loading.value = true

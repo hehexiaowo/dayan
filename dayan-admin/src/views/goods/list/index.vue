@@ -21,10 +21,10 @@ import {
   GOODS_AUDIT_STATUS_OPTIONS
 } from '@/types/goods'
 import FileUploader from '@/components/FileUploader/index.vue'
-import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import { useDictOptions } from '@/composables/useDict'
 
 /** 商品分类选项（业务字典 goods_category，管理入口：系统管理-业务字典） */
-const { options: categoryOptions } = useBusinessDictOptions('goods_category')
+const { options: categoryOptions } = useDictOptions('goods_category')
 
 /** 分类编码 → 分类名（未命中字典时原样展示编码） */
 function categoryName(code?: string): string {

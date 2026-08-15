@@ -17,8 +17,8 @@ import com.dayan.content.dto.ContentInfoUpdateDTO;
 import com.dayan.content.entity.ContentInfo;
 import com.dayan.content.enums.ContentEvent;
 import com.dayan.content.mapper.ContentInfoMapper;
-import com.dayan.system.entity.SystemDictBusiness;
-import com.dayan.system.mapper.SystemDictBusinessMapper;
+import com.dayan.system.entity.SystemDict;
+import com.dayan.system.mapper.SystemDictMapper;
 import com.dayan.content.service.ContentInfoService;
 import com.dayan.content.vo.ContentCategoryOptionVO;
 import com.dayan.content.vo.ContentInfoVO;
@@ -62,7 +62,7 @@ public class ContentInfoServiceImpl implements ContentInfoService {
     private final ContentInfoMapper contentInfoMapper;
     private final SequenceProvider sequenceProvider;
     private final StateMachineEngine stateMachineEngine;
-    private final SystemDictBusinessMapper dictBusinessMapper;
+    private final SystemDictMapper dictMapper;
 
     @Override
     public PageResult<ContentInfoVO> page(ContentInfoQueryDTO query) {
@@ -302,14 +302,14 @@ public class ContentInfoServiceImpl implements ContentInfoService {
             return List.of();
         }
         // 2. 查启用+可见的分类字典项（dict_type=content_category，按 sortOrder/name 排序），过滤出有用到的
-        List<SystemDictBusiness> dicts = dictBusinessMapper.selectList(
-                new LambdaQueryWrapper<SystemDictBusiness>()
-                        .eq(SystemDictBusiness::getDictType, "content_category")
-                        .eq(SystemDictBusiness::getStatus, 1)
+        List<SystemDict> dicts = dictMapper.selectList(
+                new LambdaQueryWrapper<SystemDict>()
+                        .eq(SystemDict::getDictType, "content_category")
+                        .eq(SystemDict::getStatus, 1)
                         .apply("JSON_UNQUOTE(JSON_EXTRACT(`extra`, '$.isVisible')) = {0}", "1")
-                        .orderByAsc(SystemDictBusiness::getSortOrder)
-                        .orderByAsc(SystemDictBusiness::getDictName)
-                        .orderByAsc(SystemDictBusiness::getId));
+                        .orderByAsc(SystemDict::getSortOrder)
+                        .orderByAsc(SystemDict::getDictName)
+                        .orderByAsc(SystemDict::getId));
         return dicts.stream()
                 .filter(d -> usedCodes.contains(d.getDictCode()))
                 .map(d -> new ContentCategoryOptionVO(d.getDictCode(), d.getDictName()))

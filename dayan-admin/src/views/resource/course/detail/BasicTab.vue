@@ -5,10 +5,10 @@ import { getCourse, updateCourse } from '@/api/course'
 import type { CourseInfo, CourseLecturer } from '@/types/course'
 import { COURSE_TYPE_OPTIONS } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
-import { useBusinessDictOptions } from '@/composables/useBusinessDict'
+import { useDictOptions } from '@/composables/useDict'
 
 /** 课程分类选项（业务字典 course_category） */
-const { options: categoryOptions } = useBusinessDictOptions('course_category')
+const { options: categoryOptions } = useDictOptions('course_category')
 
 const props = defineProps<{ courseCode: string; lecturers: CourseLecturer[] }>()
 const emit = defineEmits<{ (e: 'updated'): void }>()
