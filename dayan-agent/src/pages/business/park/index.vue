@@ -75,7 +75,7 @@ async function loadCategories() {
     categories.value = [
       { category: 'vital', categoryName: '活力长居', count: 0, available: true },
       { category: 'care', categoryName: '照护长居', count: 0, available: true },
-      { category: 'sojourn', categoryName: '旅游短居养老', count: 0, available: false },
+      { category: 'sojourn', categoryName: '旅游短居', count: 0, available: false },
     ];
   } finally {
     loading.value = false;

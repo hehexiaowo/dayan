@@ -14,7 +14,7 @@ import lombok.Data;
 @Data
 public class RegionQueryDTO {
 
-    /** 分类：vital=活力长居, care=照护长居, sojourn=旅游短居养老 */
+    /** 分类：vital=活力长居, care=照护长居, sojourn=旅游短居 */
     @NotBlank(message = "分类不能为空")
     @Pattern(regexp = "vital|care|sojourn", message = "分类只能是 vital/care/sojourn")
     private String category;

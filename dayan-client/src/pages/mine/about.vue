@@ -13,7 +13,7 @@
     <view class="section-title">关于我们</view>
     <view class="card">
       <text class="intro-text">
-        大雁养老客户端，为家属提供一站式养老服务体验。在这里，您可以便捷地查询全国养老机构、预订旅游短居养老、管理专属权益、跟进服务进度，让长辈的晚年生活更安心、更舒心。
+        大雁养老客户端，为家属提供一站式养老服务体验。在这里，您可以便捷地查询全国养老机构、预订旅游短居、管理专属权益、跟进服务进度，让长辈的晚年生活更安心、更舒心。
       </text>
     </view>
 
@@ -55,7 +55,7 @@
 const version = '1.0.0';
 
 const features = [
-  { icon: '构', color: 'linear-gradient(135deg,#409eff,#5f8afe)', title: '养老网络', desc: '活力长居 / 照护长居 / 旅游短居养老，地图下钻精准找机构' },
+  { icon: '构', color: 'linear-gradient(135deg,#409eff,#5f8afe)', title: '养老网络', desc: '活力长居 / 照护长居 / 旅游短居，地图下钻精准找机构' },
   { icon: '单', color: 'linear-gradient(135deg,#36cfc9,#5cdbd3)', title: '旅游短居预订', desc: '在线选房型、定日期，便捷预订心仪机构' },
   { icon: '益', color: 'linear-gradient(135deg,#67c23a,#85ce61)', title: '权益管理', desc: '专属权益随时查看，激活使用一目了然' },
   { icon: '服', color: 'linear-gradient(135deg,#ff9900,#ffb84d)', title: '服务跟进', desc: '服务进度透明可视，全程安心可控' },

@@ -79,7 +79,7 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         return List.of(
                 countForTag("vital", "活力长居"),
                 countForTag("care", "照护长居"),
-                countForTag("sojourn", "旅游短居养老")
+                countForTag("sojourn", "旅游短居")
         );
     }
 
@@ -271,7 +271,7 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         return switch (category) {
             case "vital" -> "活力长居";
             case "care" -> "照护长居";
-            case "sojourn" -> "旅游短居养老";
+            case "sojourn" -> "旅游短居";
             default -> category;
         };
     }

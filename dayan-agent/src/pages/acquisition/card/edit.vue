@@ -117,7 +117,7 @@
           <input
             v-model="form.tags"
             class="dy-input"
-            placeholder="逗号分隔，如：旅游短居养老,长照咨询"
+            placeholder="逗号分隔，如：旅游短居,长照咨询"
             placeholder-class="input-placeholder"
             maxlength="500"
           />

@@ -9,7 +9,7 @@ export type ParkCategory = 'vital' | 'care' | 'sojourn';
 export const NETWORK_TAG_LABELS: Record<string, { label: string; color: string }> = {
   vital: { label: '活力长居', color: 'blue' },
   care: { label: '照护长居', color: 'orange' },
-  sojourn: { label: '旅游短居养老', color: 'green' },
+  sojourn: { label: '旅游短居', color: 'green' },
 };
 
 /** 将逗号分隔的网络标签字符串解析为标签数组 */

@@ -61,7 +61,7 @@ public class AgentCard extends BaseEntity {
     /** 个人简介 */
     private String intro;
 
-    /** 专长标签（逗号分隔，如：旅游短居养老,长照咨询） */
+    /** 专长标签（逗号分隔，如：旅游短居,长照咨询） */
     private String tags;
 
     /** 排序值（越小越靠前） */

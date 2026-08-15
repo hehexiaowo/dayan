@@ -2,7 +2,7 @@
   <view class="list-page">
     <!-- 头部统计 -->
     <view class="header-section">
-      <text class="header-title">旅游短居养老</text>
+      <text class="header-title">旅游短居</text>
       <text class="header-subtitle">精选旅游短居机构 · 随心住 · 灵活周期</text>
       <view v-if="!loading" class="header-count">
         <text class="count-num">{{ parks.length }}</text>
