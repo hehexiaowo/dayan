@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.dayan.agent.dto.AiGenerateDTO;
 import com.dayan.agent.model.AiRefTemplates;
 import com.dayan.agent.service.AiContentGenerateService;
+import com.dayan.agent.service.AiGenerateProgressListener;
 import com.dayan.agent.vo.AiGenerateResultVO;
 import com.dayan.channel.entity.ChannelConfigContent;
 import com.dayan.channel.entity.ChannelConfigGoods;
@@ -83,6 +84,11 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
 
     @Override
     public AiGenerateResultVO generate(AiGenerateDTO dto) {
+        return generate(dto, null);
+    }
+
+    @Override
+    public AiGenerateResultVO generate(AiGenerateDTO dto, AiGenerateProgressListener listener) {
         if (dto.getContentType() == null) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "内容形态必选");
         }
@@ -97,6 +103,7 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         String channelCode = ContextHolder.getChannelCode();
         long startMillis = System.currentTimeMillis();
         List<String> warnings = new ArrayList<>();
+        notifyStage(listener, "material", "正在准备素材…");
 
         // ---------- 1. 素材聚合 ----------
         StringBuilder material = new StringBuilder();
@@ -128,6 +135,7 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         boolean kbSearched = false;
         List<KnowledgeRepoVO> repos = knowledgeRepoService.listForAgent(channelCode);
         if (hasSelectedDocs || StrUtil.isNotBlank(dto.getTopic())) {
+            notifyStage(listener, "retrieving", "正在检索知识库…");
             for (KnowledgeRepoVO repo : repos) {
                 if (StrUtil.isBlank(repo.getIndexId())) {
                     if (repo.getRepoType() != null && repo.getRepoType() == 2) {
@@ -194,11 +202,14 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
 
         // ---------- 2. 拼 prompt 并调用 ----------
         String userPrompt = buildUserPrompt(dto, formInstruction, styleInstruction, material.toString());
-        String answer = bailianChatClient.chat(
-                requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
-                requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
-                StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
-                SYSTEM_PROMPT, userPrompt, CREATIVE_TEMPERATURE);
+        String apiKey = requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员");
+        String apiHost = requireConfig("llm.api-host", "AI 网关未配置，请联系管理员");
+        String model = StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus");
+        notifyStage(listener, "composing", "正在撰写内容…");
+        String answer = listener == null
+                ? bailianChatClient.chat(apiKey, apiHost, model, SYSTEM_PROMPT, userPrompt, CREATIVE_TEMPERATURE)
+                : bailianChatClient.chatStream(apiKey, apiHost, model, SYSTEM_PROMPT, userPrompt,
+                        CREATIVE_TEMPERATURE, listener::onDelta);
 
         // ---------- 3. 解析输出 ----------
         AiGenerateResultVO result = parseAnswer(dto.getContentType(), answer, dto.getTopic());
@@ -210,6 +221,13 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                 dto.getGoodsCodes() == null ? 0 : dto.getGoodsCodes().size(),
                 materialCount, System.currentTimeMillis() - startMillis);
         return result;
+    }
+
+    /** 阶段回调（listener 为空时忽略，非流式零开销） */
+    private void notifyStage(AiGenerateProgressListener listener, String stage, String message) {
+        if (listener != null) {
+            listener.onStage(stage, message);
+        }
     }
 
     /** 系统提示词：防幻觉铁律 + 合规红线 */

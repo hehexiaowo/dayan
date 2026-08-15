@@ -1,11 +1,13 @@
 package com.dayan.common.aliyun.bailian;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -111,5 +113,86 @@ public class BailianChatClient {
 
     /** 对话消息 */
     public record Message(String role, String content) {
+    }
+
+    /** 流式增量回调（每个非空 delta 触发一次） */
+    @FunctionalInterface
+    public interface DeltaListener {
+        void onDelta(String text);
+    }
+
+    /**
+     * 单轮流式对话（stream:true，SSE 逐 delta 回调），返回完整拼接文本。
+     * 生成结束以 data: [DONE] 为准；HTTP 非 200 抛 BusinessException。
+     */
+    public String chatStream(String apiKey, String apiHost, String model,
+                             String systemPrompt, String userPrompt,
+                             double temperature, DeltaListener onDelta) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new BusinessException(ErrorCode.BUSINESS, "百炼模型 API-Key 未配置（system_config → llm 分组）");
+        }
+        if (apiHost == null || apiHost.isBlank()) {
+            throw new BusinessException(ErrorCode.BUSINESS, "百炼专属网关域名未配置（system_config → llm 分组）");
+        }
+        String baseUrl = apiHost.startsWith("http") ? apiHost : "https://" + apiHost;
+        String url = baseUrl.replaceAll("/+$", "") + "/compatible-mode/v1/chat/completions";
+
+        JSONArray msgs = new JSONArray();
+        msgs.add(new JSONObject().set("role", "system").set("content", systemPrompt));
+        msgs.add(new JSONObject().set("role", "user").set("content", userPrompt));
+        JSONObject body = new JSONObject()
+                .set("model", model == null || model.isBlank() ? "qwen-plus" : model)
+                .set("messages", msgs)
+                .set("temperature", temperature)
+                .set("stream", true);
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(150))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<InputStream> resp = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofInputStream());
+            if (resp.statusCode() != 200) {
+                String errBody = new String(resp.body().readAllBytes(), StandardCharsets.UTF_8);
+                String err = JSONUtil.parseObj(errBody).getStr("error", errBody);
+                throw new BusinessException(ErrorCode.BUSINESS,
+                        "AI 流式调用失败（HTTP " + resp.statusCode() + "）：" + StrUtil.maxLength(err, 200));
+            }
+            StringBuilder full = new StringBuilder();
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(resp.body(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (!line.startsWith("data:")) {
+                        continue;
+                    }
+                    String data = line.substring(4).trim();
+                    if (data.isEmpty() || "[DONE]".equals(data)) {
+                        continue;
+                    }
+                    JSONObject chunk = JSONUtil.parseObj(data);
+                    JSONArray choices = chunk.getJSONArray("choices");
+                    if (choices == null || choices.isEmpty()) {
+                        continue;
+                    }
+                    JSONObject delta = choices.getJSONObject(0).getJSONObject("delta");
+                    String text = delta == null ? null : delta.getStr("content");
+                    if (text != null && !text.isEmpty()) {
+                        full.append(text);
+                        if (onDelta != null) {
+                            onDelta.onDelta(text);
+                        }
+                    }
+                }
+            }
+            return full.toString();
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.BUSINESS, "AI 流式调用异常: " + e.getMessage(), e);
+        }
     }
 }

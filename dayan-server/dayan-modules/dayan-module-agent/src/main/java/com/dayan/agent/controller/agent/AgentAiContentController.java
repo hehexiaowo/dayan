@@ -6,8 +6,10 @@ import com.dayan.agent.dto.AgentContentUpdateDTO;
 import com.dayan.agent.dto.AiGenerateDTO;
 import com.dayan.agent.service.AgentContentService;
 import com.dayan.agent.service.AiContentGenerateService;
+import com.dayan.agent.service.AiGenerateProgressListener;
 import com.dayan.agent.vo.AgentContentVO;
 import com.dayan.agent.vo.AiGenerateResultVO;
+import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.agent.model.AiRefTemplates;
@@ -15,7 +17,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -24,6 +29,7 @@ import java.util.List;
  *
  * <p>路径 {@code /agent-api/ai/...}。agentCode 服务端从登录上下文注入，防越权。
  */
+@Slf4j
 @Tag(name = "Agent AI 内容")
 @RestController
 @RequestMapping("/ai")
@@ -37,6 +43,52 @@ public class AgentAiContentController {
     @PostMapping("/generate")
     public R<AiGenerateResultVO> generate(@RequestBody @Valid AiGenerateDTO dto) {
         return R.ok(aiContentGenerateService.generate(dto));
+    }
+
+    @Operation(summary = "AI 生成内容（SSE 流式：stage/delta/done/error 事件）")
+    @PostMapping("/generate/stream")
+    public SseEmitter generateStream(@RequestBody @Valid AiGenerateDTO dto) {
+        SseEmitter emitter = new SseEmitter(150_000L);
+        AiGenerateProgressListener listener = new AiGenerateProgressListener() {
+            @Override
+            public void onStage(String stage, String message) {
+                try {
+                    emitter.send(SseEmitter.event().name("stage")
+                            .data(java.util.Map.of("stage", stage, "message", message), MediaType.APPLICATION_JSON));
+                } catch (Exception e) {
+                    log.warn("SSE stage 发送失败: {}", e.getMessage());
+                }
+            }
+
+            @Override
+            public void onDelta(String text) {
+                try {
+                    emitter.send(SseEmitter.event().name("delta")
+                            .data(java.util.Map.of("text", text), MediaType.APPLICATION_JSON));
+                } catch (Exception e) {
+                    log.warn("SSE delta 发送失败: {}", e.getMessage());
+                }
+            }
+        };
+        Thread.ofVirtual().name("ai-generate-stream").start(() -> {
+            try {
+                AiGenerateResultVO result = aiContentGenerateService.generate(dto, listener);
+                emitter.send(SseEmitter.event().name("done").data(result, MediaType.APPLICATION_JSON));
+                emitter.complete();
+            } catch (Exception e) {
+                String msg = e instanceof BusinessException be
+                        ? be.getMessage() : "生成失败，请稍后重试";
+                log.warn("AI 流式生成失败: {}", e.getMessage());
+                try {
+                    emitter.send(SseEmitter.event().name("error")
+                            .data(java.util.Map.of("message", msg), MediaType.APPLICATION_JSON));
+                } catch (Exception ignore) {
+                    // 客户端已断开
+                }
+                emitter.complete();
+            }
+        });
+        return emitter;
     }
 
     @Operation(summary = "内置范文模板（平台风格参考）")
