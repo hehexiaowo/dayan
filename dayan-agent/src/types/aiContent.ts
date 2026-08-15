@@ -1,0 +1,95 @@
+/**
+ * AI 内容创作（agent 端）类型定义。
+ */
+
+/** 当前渠道可见知识仓库（平台库 + 本渠道库） */
+export interface KnowledgeRepoOption {
+  id: number
+  repoCode: string
+  repoName: string
+  /** 1=平台 2=渠道 */
+  repoType?: number
+  channelCode?: string
+  /** 百炼远端索引 ID（空 = 未建库） */
+  indexId?: string
+  docCount?: number
+  /** 0=构建中 1=正常 2=远端异常 */
+  status?: number
+}
+
+/** 知识库文档（勾选用） */
+export interface KnowledgeDocOption {
+  fileId: string
+  fileName: string
+  indexStatus?: string
+  parseStatus?: string
+  /** 来源仓库（前端标注库名） */
+  repoId?: number
+  repoName?: string
+}
+
+/** AI 生成请求参数 */
+export interface AiGeneratePayload {
+  /** 1=图文 2=朋友圈 3=视频脚本 */
+  contentType: number
+  /** professional/warm/authoritative/colloquial */
+  styleCode: string
+  /** 参考范文 contentCode */
+  refContentCode?: string
+  /** 勾选知识库文档 fileId */
+  kbFileIds?: string[]
+  /** 勾选商品 goodsCode */
+  goodsCodes?: string[]
+  /** 主题/补充要求 */
+  topic?: string
+}
+
+/** AI 生成结果（预览用） */
+export interface AiGenerateResult {
+  title: string
+  summary?: string
+  contentBody: string
+  contentType: number
+  warnings?: string[]
+}
+
+/** 我的内容（agent_content） */
+export interface AiContent {
+  id: number
+  agentCode?: string
+  channelCode?: string
+  title: string
+  summary?: string
+  coverImage?: string
+  /** 1=图文 2=朋友圈 3=视频脚本 */
+  contentType: number
+  contentBody: string
+  styleCode?: string
+  refContentCode?: string
+  refKbFiles?: string
+  refGoodsCodes?: string
+  status?: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export const AI_CONTENT_TYPE_OPTIONS = [
+  { value: 1, label: '图文文章', desc: '600-1200 字，含小标题与推荐，适合长文分享' },
+  { value: 2, label: '朋友圈文案', desc: '200 字以内短文案，适合直接转发' },
+  { value: 3, label: '视频脚本', desc: '60-90 秒口播脚本，含画面/口播/字幕' }
+] as const
+
+export const AI_STYLE_OPTIONS = [
+  { value: 'professional', label: '专业科普', desc: '严谨数据化，面向家庭决策者' },
+  { value: 'warm', label: '温情软文', desc: '生活场景切入，情感共鸣' },
+  { value: 'authoritative', label: '权威数据', desc: '结论先行，塑造专业可信' },
+  { value: 'colloquial', label: '口语化', desc: '短句亲切，适合朋友圈' }
+] as const
+
+export function aiContentTypeLabel(type?: number): string {
+  return AI_CONTENT_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? '内容'
+}
+
+export function aiStyleLabel(style?: string): string {
+  return AI_STYLE_OPTIONS.find((o) => o.value === style)?.label ?? ''
+}
