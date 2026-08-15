@@ -310,6 +310,17 @@ defineExpose({ loadDetail, loadScore })
         <el-descriptions-item label="能力类型">{{ abilityTypeLabel(parkInfo.abilityType) }}</el-descriptions-item>
         <el-descriptions-item label="性质类型">{{ natureTypeLabel(parkInfo.natureType) }}</el-descriptions-item>
         <el-descriptions-item label="大雁等级">{{ dayanLevelLabel(parkInfo.dayanLevel) }}</el-descriptions-item>
+        <el-descriptions-item label="网络归属" :span="3">
+          <template v-if="parkInfo.networkTags?.length">
+            <el-tag
+              v-for="tag in parkInfo.networkTags"
+              :key="tag"
+              size="small"
+              class="network-tag"
+            >{{ NETWORK_TAG_OPTIONS.find((o) => o.value === tag)?.label ?? tag }}</el-tag>
+          </template>
+          <span v-else>--</span>
+        </el-descriptions-item>
         <el-descriptions-item label="特色标签" :span="3">{{ parkInfo.specialtyTag ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="基地简介" :span="3">{{ parkInfo.baseDescription ?? '--' }}</el-descriptions-item>
       </el-descriptions>
@@ -393,7 +404,8 @@ defineExpose({ loadDetail, loadScore })
         <el-descriptions-item label="浏览次数">{{ parkInfo.viewCount ?? 0 }}</el-descriptions-item>
         <el-descriptions-item label="收藏次数">{{ parkInfo.collectCount ?? 0 }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ formatDate(parkInfo.createdAt) }}</el-descriptions-item>
-        <el-descriptions-item label="备注" :span="2">{{ parkInfo.remark ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="排序号">{{ parkInfo.sortOrder ?? 0 }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="3">{{ parkInfo.remark ?? '--' }}</el-descriptions-item>
       </el-descriptions>
     </template>
     <el-empty v-else-if="!loading" description="未加载到机构信息" />
@@ -756,5 +768,8 @@ defineExpose({ loadDetail, loadScore })
 }
 .mt16 {
   margin-top: 16px;
+}
+.network-tag {
+  margin-right: 6px;
 }
 </style>
