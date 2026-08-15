@@ -10,6 +10,7 @@ import com.dayan.agent.service.AiGenerateProgressListener;
 import com.dayan.agent.vo.AgentContentVO;
 import com.dayan.agent.vo.AiGenerateResultVO;
 import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
 import com.dayan.agent.model.AiRefTemplates;
@@ -70,7 +71,18 @@ public class AgentAiContentController {
                 }
             }
         };
+        // 虚拟线程不继承请求线程的 ThreadLocal（SaTokenContextFilter 仅在请求线程设置），
+        // 先捕获登录上下文再在异步线程内恢复——否则 channelCode 为空导致渠道校验失败，
+        // accountType 为空会让租户拦截器误判放行（安全隐患）
+        final String ctxChannelCode = ContextHolder.getChannelCode();
+        final String ctxAccountCode = ContextHolder.getAccountCode();
+        final String ctxAccountType = ContextHolder.getAccountType();
+        final String ctxAccountName = ContextHolder.getAccountName();
         Thread.ofVirtual().name("ai-generate-stream").start(() -> {
+            ContextHolder.setChannelCode(ctxChannelCode);
+            ContextHolder.setAccountCode(ctxAccountCode);
+            ContextHolder.setAccountType(ctxAccountType);
+            ContextHolder.setAccountName(ctxAccountName);
             try {
                 AiGenerateResultVO result = aiContentGenerateService.generate(dto, listener);
                 emitter.send(SseEmitter.event().name("done").data(result, MediaType.APPLICATION_JSON));
