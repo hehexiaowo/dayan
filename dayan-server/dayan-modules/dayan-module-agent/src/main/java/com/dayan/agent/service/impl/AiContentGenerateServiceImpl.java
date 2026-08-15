@@ -2,6 +2,7 @@ package com.dayan.agent.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.dayan.agent.dto.AiGenerateDTO;
+import com.dayan.agent.model.AiRefTemplates;
 import com.dayan.agent.service.AiContentGenerateService;
 import com.dayan.agent.vo.AiGenerateResultVO;
 import com.dayan.channel.entity.ChannelConfigContent;
@@ -56,6 +57,19 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
             "authoritative", "权威报告风格：结论先行、分点论述、数据化表达，塑造平台专业可信形象",
             "colloquial", "口语化风格：短句、亲切、像朋友聊天，适合朋友圈阅读");
 
+    /** 目标读者指令（进 prompt；audience 归一后取值） */
+    private static final Map<String, String> AUDIENCE_INSTRUCTIONS = Map.of(
+            "children", "目标读者：为父母养老做决策的子女（30-50 岁）。用理性、数据与家庭责任视角，语气专业可信赖，突出“替父母安排妥当”的安心感",
+            "elder", "目标读者：老人本人（55-75 岁）。直白温暖、多用短句，从老人自身利益出发（住得舒心、有人照应、不拖累子女），避免专业术语",
+            "general", "目标读者：40-70 岁客户及其子女，通俗易懂");
+
+    /** 生成后自检禁语清单（与 SYSTEM_PROMPT 合规红线一致） */
+    private static final List<String> BANNED_PHRASES = List.of(
+            "保证收益", "稳赚", "包赚", "最高级", "国家级", "顶级", "100%", "百分百", "绝对", "秒杀", "史上");
+
+    /** 创作采样温度（重新生成有差异性；知识问答仍 0.3 不受影响） */
+    private static final double CREATIVE_TEMPERATURE = 0.6;
+
     /** 参考范文正文最大截取字符数 */
     private static final int REF_CONTENT_MAX = 3000;
 
@@ -87,23 +101,33 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         // ---------- 1. 素材聚合 ----------
         StringBuilder material = new StringBuilder();
         int materialCount = 0;
+        List<String> selectedGoodsNames = new ArrayList<>();
 
-        // 1.1 参考范文（渠道可见性校验）
+        // 1.1 参考范文（TPL: 模板直取；否则渠道可见性校验）
         if (StrUtil.isNotBlank(dto.getRefContentCode())) {
-            ContentInfoVO ref = loadVisibleContent(channelCode, dto.getRefContentCode());
-            material.append("【参考范文】标题：").append(ref.getTitle()).append('\n')
-                    .append(stripHtml(ref.getContentBody()))
-                    .append("\n\n");
+            if (dto.getRefContentCode().startsWith("TPL:")) {
+                AiRefTemplates.RefTemplate tpl = AiRefTemplates.byCode(dto.getRefContentCode());
+                if (tpl == null) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "范文模板不存在: " + dto.getRefContentCode());
+                }
+                material.append("【参考范文】标题：").append(tpl.name()).append('\n')
+                        .append(tpl.body()).append("\n\n");
+            } else {
+                ContentInfoVO ref = loadVisibleContent(channelCode, dto.getRefContentCode());
+                material.append("【参考范文】标题：").append(ref.getTitle()).append('\n')
+                        .append(stripHtml(ref.getContentBody()))
+                        .append("\n\n");
+            }
             materialCount++;
         }
 
-        // 1.2 知识库 RAG（平台库 + 本渠道库；勾选文档名并入检索词强制召回）
+        // 1.2 知识库 RAG：勾选文档 → SearchFilters 按 ID 精准召回；未勾选 → topic 语义检索
+        boolean hasSelectedDocs = dto.getKbFileIds() != null && !dto.getKbFileIds().isEmpty();
         List<String> selectedNames = resolveKbFileNames(channelCode, dto.getKbFileIds());
         boolean kbUsed = false;
         boolean kbSearched = false;
-        String searchQuery = buildSearchQuery(dto.getTopic(), selectedNames);
         List<KnowledgeRepoVO> repos = knowledgeRepoService.listForAgent(channelCode);
-        if (StrUtil.isNotBlank(searchQuery)) {
+        if (hasSelectedDocs || StrUtil.isNotBlank(dto.getTopic())) {
             for (KnowledgeRepoVO repo : repos) {
                 if (StrUtil.isBlank(repo.getIndexId())) {
                     if (repo.getRepoType() != null && repo.getRepoType() == 2) {
@@ -111,7 +135,19 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                     }
                     continue;
                 }
-                List<KnowledgeChatVO.Citation> cites = knowledgeRepoService.retrieve(repo.getId(), searchQuery, 6);
+                List<KnowledgeChatVO.Citation> cites;
+                if (hasSelectedDocs) {
+                    List<String> docIdsInRepo = resolveKbDocIdsInRepo(repo.getId(), repos, dto.getKbFileIds());
+                    if (docIdsInRepo.isEmpty()) {
+                        continue;
+                    }
+                    // query 用主题，主题空则用首个勾选文档名兜底（retrieve 要求非空）
+                    String q = StrUtil.blankToDefault(dto.getTopic(),
+                            selectedNames.isEmpty() ? "养老" : selectedNames.get(0));
+                    cites = knowledgeRepoService.retrieveByDocuments(repo.getId(), q, 8, docIdsInRepo);
+                } else {
+                    cites = knowledgeRepoService.retrieve(repo.getId(), dto.getTopic(), 6);
+                }
                 kbSearched = true;
                 if (!cites.isEmpty()) {
                     material.append("【知识库资料 · ").append(repo.getRepoName()).append("】\n");
@@ -141,6 +177,7 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                     throw new BusinessException(ErrorCode.BUSINESS, "商品不在可购范围: " + goodsCode);
                 }
                 GoodsInfoVO g = goodsInfoService.getDetail(goodsCode);
+                selectedGoodsNames.add(g.getGoodsName());
                 material.append("- ").append(g.getGoodsName())
                         .append(g.getSummary() == null ? "" : "：" + g.getSummary())
                         .append("；价格 ")
@@ -161,10 +198,11 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                 requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
                 requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
                 StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
-                SYSTEM_PROMPT, userPrompt);
+                SYSTEM_PROMPT, userPrompt, CREATIVE_TEMPERATURE);
 
         // ---------- 3. 解析输出 ----------
         AiGenerateResultVO result = parseAnswer(dto.getContentType(), answer, dto.getTopic());
+        selfCheck(result, dto, selectedGoodsNames, warnings);
         result.setWarnings(warnings);
         log.info("AI 生成完成 channel={} contentType={} style={} refContent={} kbFiles={} goods={} materialBlocks={} costMs={}",
                 channelCode, dto.getContentType(), dto.getStyleCode(), dto.getRefContentCode(),
@@ -174,20 +212,25 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         return result;
     }
 
-    /** 系统提示词：防幻觉铁律 */
+    /** 系统提示词：防幻觉铁律 + 合规红线 */
     private static final String SYSTEM_PROMPT = """
             你是「大雁养老」的资深内容创作助手，帮助保险/养老代理人撰写获客营销内容。
             铁律：
             1. 所有事实（权益档位、价格、机构名、数据、产品信息）只能来自用户消息的【素材】部分，素材没有的信息一律不得编造；
             2. 不虚构任何机构名称、价格、日期、政策；
-            3. 语言自然流畅，避免空泛套话（如"综上所述""赋能""值得一提的是"），避免堆砌形容词；
-            4. 全文简体中文，面向 40-70 岁客户及其子女，通俗易懂。""";
+            3. 语言自然流畅，避免空泛套话（如“综上所述”“赋能”“值得一提的是”），避免堆砌形容词；
+            4. 全文简体中文；
+            5. 合规红线：不得出现“保证收益、稳赚、包赚、最高级、最好、第一、国家级、顶级、100%、百分百、绝对、秒杀、史上”等绝对化或收益承诺用语；不得提及具体保险产品名称与费率。""";
 
     private String buildUserPrompt(AiGenerateDTO dto, String formInstruction, String styleInstruction, String material) {
+        String audienceKey = StrUtil.blankToDefault(dto.getAudience(), "general");
+        String audienceInstruction = AUDIENCE_INSTRUCTIONS.getOrDefault(audienceKey,
+                AUDIENCE_INSTRUCTIONS.get("general"));
         StringBuilder sb = new StringBuilder();
         sb.append("【写作任务】\n");
         sb.append("形态：").append(formInstruction).append('\n');
         sb.append("风格：").append(styleInstruction).append('\n');
+        sb.append("读者：").append(audienceInstruction).append('\n');
         if (StrUtil.isNotBlank(dto.getRefContentCode())) {
             sb.append("范文仿写：请模仿【素材】中参考范文的语气与行文结构，事实一律以素材为准。\n");
         }
@@ -244,6 +287,32 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         return answer.substring(contentStart, end).trim();
     }
 
+    /** 生成后规则自检（不调 LLM）：篇幅/商品融入/禁语 → 追加 warnings */
+    private void selfCheck(AiGenerateResultVO result, AiGenerateDTO dto,
+                           List<String> goodsNames, List<String> warnings) {
+        String plain = stripHtml(result.getContentBody());
+        if (dto.getContentType() != null && dto.getContentType() == 1) {
+            int len = plain.replaceAll("\\s", "").length();
+            if (len < 300) {
+                warnings.add("篇幅偏短（约 " + len + " 字），建议补充素材后重新生成");
+            } else if (len > 3000) {
+                warnings.add("篇幅偏长（约 " + len + " 字），建议手动精简");
+            }
+        }
+        if (goodsNames != null && !goodsNames.isEmpty()) {
+            boolean mentioned = goodsNames.stream().anyMatch(n -> n != null && result.getContentBody().contains(n));
+            if (!mentioned) {
+                warnings.add("勾选的推荐商品未融入正文，建议重新生成");
+            }
+        }
+        for (String banned : BANNED_PHRASES) {
+            if (plain.contains(banned)) {
+                warnings.add("内容含绝对化用语「" + banned + "」，建议人工复核后使用");
+                break;
+            }
+        }
+    }
+
     /** 参考范文渠道可见性校验（appType=agent 且已配置） */
     private ContentInfoVO loadVisibleContent(String channelCode, String contentCode) {
         List<String> codes = channelConfigContentService.listByChannel(channelCode).stream()
@@ -279,21 +348,16 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         return names;
     }
 
-    /** 检索词：主题 + 勾选文档名拼接（空时返回空串，跳过知识库检索） */
-    private String buildSearchQuery(String topic, List<String> selectedNames) {
-        StringBuilder sb = new StringBuilder();
-        if (StrUtil.isNotBlank(topic)) {
-            sb.append(topic);
+    /** 指定仓库内、被勾选的文档 ID 列表（跨库勾选时按归属分库检索） */
+    private List<String> resolveKbDocIdsInRepo(Long repoId, List<KnowledgeRepoVO> repos, List<String> fileIds) {
+        if (fileIds == null || fileIds.isEmpty()) {
+            return List.of();
         }
-        for (String name : selectedNames) {
-            if (name != null && !name.isBlank()) {
-                if (sb.length() > 0) {
-                    sb.append(' ');
-                }
-                sb.append(name);
-            }
-        }
-        return sb.toString();
+        Set<String> target = Set.copyOf(fileIds);
+        return knowledgeRepoService.listDocuments(repoId, 1, 100, null, null).stream()
+                .map(com.dayan.knowledge.vo.KnowledgeDocVO::getFileId)
+                .filter(id -> id != null && target.contains(id))
+                .collect(Collectors.toList());
     }
 
     /** HTML 去标签（正文素材用，保留纯文本） */

@@ -47,11 +47,23 @@ public class BailianChatClient {
     public String chat(String apiKey, String apiHost, String model,
                        String systemPrompt, String userPrompt) {
         return chat(apiKey, apiHost, model,
-                List.of(new Message("system", systemPrompt), new Message("user", userPrompt)));
+                List.of(new Message("system", systemPrompt), new Message("user", userPrompt)), 0.3);
+    }
+
+    /** 单轮对话（指定采样温度：知识问答 0.3，营销创作建议 0.6） */
+    public String chat(String apiKey, String apiHost, String model,
+                       String systemPrompt, String userPrompt, double temperature) {
+        return chat(apiKey, apiHost, model,
+                List.of(new Message("system", systemPrompt), new Message("user", userPrompt)), temperature);
     }
 
     /** 多轮对话（messages 由调用方组装，支持 role: system/user/assistant） */
     public String chat(String apiKey, String apiHost, String model, List<Message> messages) {
+        return chat(apiKey, apiHost, model, messages, 0.3);
+    }
+
+    /** 多轮对话（指定采样温度），messages 由调用方组装 */
+    public String chat(String apiKey, String apiHost, String model, List<Message> messages, double temperature) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new BusinessException(ErrorCode.BUSINESS, "百炼模型 API-Key 未配置（system_config → llm 分组）");
         }
@@ -68,7 +80,7 @@ public class BailianChatClient {
         JSONObject body = new JSONObject()
                 .set("model", model == null || model.isBlank() ? "qwen-plus" : model)
                 .set("messages", msgs)
-                .set("temperature", 0.3);
+                .set("temperature", temperature);
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
