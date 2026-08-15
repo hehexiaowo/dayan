@@ -36,12 +36,16 @@ export const CONFIG_SCOPE_OPTIONS = [
   { label: '用户级', value: 'user' }
 ] as const
 
-/** 常见配置分组（搜索栏下拉用） */
+/** 常见配置分组（搜索栏下拉用）。oss/map/sms/payment 为外部平台核心凭据组（迁移 56 收口） */
 export const CONFIG_GROUP_OPTIONS = [
   { label: '系统基础', value: 'system' },
   { label: '安全策略', value: 'security' },
   { label: '通知', value: 'notify' },
-  { label: '存储', value: 'storage' },
+  { label: '对象存储 oss', value: 'oss' },
+  { label: '地图服务 map', value: 'map' },
+  { label: '短信平台 sms', value: 'sms' },
+  { label: '支付渠道 payment', value: 'payment' },
+  { label: '存储（旧）', value: 'storage' },
   { label: '第三方', value: 'third_party' }
 ] as const
 

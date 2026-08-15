@@ -7,6 +7,7 @@ import com.dayan.common.core.event.FileUploadedEvent;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.R;
+import com.dayan.common.oss.config.DynamicMinioClientHolder;
 import com.dayan.common.oss.config.StorageProperties;
 import com.dayan.common.oss.dto.FileUploadDTO;
 import com.dayan.common.oss.service.StorageService;
@@ -41,6 +42,7 @@ public class FileAdminController {
 
     private final StorageService storageService;
     private final StorageProperties storageProperties;
+    private final DynamicMinioClientHolder clientHolder;
     private final ApplicationEventPublisher eventPublisher;
 
     /** 允许的文件后缀白名单 */
@@ -157,16 +159,17 @@ public class FileAdminController {
         }
     }
 
-    /** 富文本内嵌资源完整 URL：优先 public-base-url，未配置回退 MinIO 公开桶直链 */
+    /** 富文本内嵌资源完整 URL：优先 public-base-url，未配置回退 MinIO 公开桶直链（均取自当前生效凭据快照） */
     private String buildAbsoluteUrl(String key) {
-        String base = storageProperties.getPublicBaseUrl();
+        com.dayan.common.oss.config.StorageCredential credential = clientHolder.credential();
+        String base = credential.publicBaseUrl();
         if (base != null && !base.isBlank()) {
             return (base.endsWith("/") ? base : base + "/") + key;
         }
-        String endpoint = storageProperties.getEndpoint();
+        String endpoint = credential.endpoint();
         if (endpoint.endsWith("/")) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
-        return endpoint + "/" + storageProperties.getBucket() + "/" + key;
+        return endpoint + "/" + credential.bucket() + "/" + key;
     }
 }

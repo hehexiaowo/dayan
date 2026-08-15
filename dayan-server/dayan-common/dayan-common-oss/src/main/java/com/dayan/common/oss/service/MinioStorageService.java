@@ -2,7 +2,7 @@ package com.dayan.common.oss.service;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
-import com.dayan.common.oss.config.StorageProperties;
+import com.dayan.common.oss.config.DynamicMinioClientHolder;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -20,6 +20,9 @@ import java.time.format.DateTimeFormatter;
 /**
  * MinIO 存储 实现。
  * objectKey 命名规范：{module}/{channelCode}/{yyyy/MM/dd}/{uuid}.{ext}
+ *
+ * <p>client 与 bucket 均从 {@link DynamicMinioClientHolder} 动态获取
+ * （凭据/桶名支持系统配置热更，OSS 凭据收口 system_config）。
  */
 @Slf4j
 @Service
@@ -28,8 +31,7 @@ public class MinioStorageService implements StorageService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
-    private final MinioClient minioClient;
-    private final StorageProperties properties;
+    private final DynamicMinioClientHolder clientHolder;
 
     @Override
     public String upload(String module, String channelCode, InputStream is, long size,
@@ -39,10 +41,11 @@ public class MinioStorageService implements StorageService {
         String uuid = IdUtil.simpleUUID();
         String key = module + "/" + channelCode + "/" + datePath + "/" + uuid
                 + (ext != null && !ext.isEmpty() ? "." + ext : "");
+        MinioClient minioClient = clientHolder.client();
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(properties.getBucket())
+                            .bucket(clientHolder.credential().bucket())
                             .object(key)
                             .stream(is, size, -1)
                             .contentType(contentType)
@@ -57,9 +60,9 @@ public class MinioStorageService implements StorageService {
     @Override
     public InputStream download(String key) {
         try {
-            return minioClient.getObject(
+            return clientHolder.client().getObject(
                     GetObjectArgs.builder()
-                            .bucket(properties.getBucket())
+                            .bucket(clientHolder.credential().bucket())
                             .object(key)
                             .build());
         } catch (Exception e) {
@@ -70,9 +73,9 @@ public class MinioStorageService implements StorageService {
     @Override
     public void delete(String key) {
         try {
-            minioClient.removeObject(
+            clientHolder.client().removeObject(
                     RemoveObjectArgs.builder()
-                            .bucket(properties.getBucket())
+                            .bucket(clientHolder.credential().bucket())
                             .object(key)
                             .build());
         } catch (Exception e) {
@@ -83,9 +86,9 @@ public class MinioStorageService implements StorageService {
     @Override
     public boolean exists(String key) {
         try {
-            minioClient.statObject(
+            clientHolder.client().statObject(
                     StatObjectArgs.builder()
-                            .bucket(properties.getBucket())
+                            .bucket(clientHolder.credential().bucket())
                             .object(key)
                             .build());
             return true;

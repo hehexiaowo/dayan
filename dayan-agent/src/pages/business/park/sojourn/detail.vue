@@ -438,13 +438,16 @@ watch(activeTab, async (idx) => {
   setTimeout(() => {
     if (!detailMap) {
       import('@/utils/map').then(({ initDetailMap }) => {
-        detailMap = initDetailMap(
+        // initDetailMap 异步取天地图 Key（系统配置下发）后再建图
+        initDetailMap(
           'detail-map',
           Number(p.latitude),
           Number(p.longitude),
           p.shortName || p.fullName || '',
           '#19be6b',
-        );
+        ).then((m) => {
+          detailMap = m;
+        });
       });
     }
   }, 300);

@@ -108,36 +108,39 @@ async function fetchData() {
 
 // #ifdef H5
 function initMapView() {
-  map = initMap('care-district-map');
-  if (!map) return;
+  // initMap 异步取天地图 Key（系统配置下发），完成后再摆放 marker
+  initMap('care-district-map').then((m) => {
+    map = m;
+    if (!map) return;
 
-  // 先设一个初始中心点（省中心或北京）
-  const fallback = PROVINCE_CENTERS[provinceCode.value] || { lng: 116.4, lat: 39.9 };
-  map.setView([fallback.lat, fallback.lng], 10);
+    // 先设一个初始中心点（省中心或北京）
+    const fallback = PROVINCE_CENTERS[provinceCode.value] || { lng: 116.4, lat: 39.9 };
+    map.setView([fallback.lat, fallback.lng], 10);
 
-  const itemsWithCoords: MapMarkerItem[] = parks.value
-    .filter((p) => p.latitude && p.longitude)
-    .map((p) => ({
-      latitude: p.latitude!,
-      longitude: p.longitude!,
-      name: p.shortName || p.fullName,
-      code: p.parkCode,
-      networkType: NETWORK_TYPE,
-    }));
+    const itemsWithCoords: MapMarkerItem[] = parks.value
+      .filter((p) => p.latitude && p.longitude)
+      .map((p) => ({
+        latitude: p.latitude!,
+        longitude: p.longitude!,
+        name: p.shortName || p.fullName,
+        code: p.parkCode,
+        networkType: NETWORK_TYPE,
+      }));
 
-  if (itemsWithCoords.length > 0) {
-    markerGroup = addIconMarkers(map, itemsWithCoords, (item) => {
-      uni.navigateTo({
-        url: `/pages/business/park/care/detail?parkCode=${item.code}`,
+    if (itemsWithCoords.length > 0) {
+      markerGroup = addIconMarkers(map, itemsWithCoords, (item) => {
+        uni.navigateTo({
+          url: `/pages/business/park/care/detail?parkCode=${item.code}`,
+        });
       });
-    });
-  } else {
-    // 无坐标机构 → 按区县名搜索定位
-    const districtName = parks.value[0]?.district;
-    if (districtName) {
-      searchByName(map, districtName);
+    } else {
+      // 无坐标机构 → 按区县名搜索定位
+      const districtName = parks.value[0]?.district;
+      if (districtName) {
+        searchByName(map, districtName);
+      }
     }
-  }
+  });
 }
 // #endif
 

@@ -18,11 +18,11 @@ import {
 } from '@/types/config'
 
 /**
- * 系统配置管理页（完整 CRUD）。
+ * 系统配置管理页（完整 CRUD，外部平台核心凭据仓库：oss / map / sms / payment）。
  *
  * - configGroup 筛选 + 分页列表；
- * - isSecret=1 的配置在列表脱敏显示（展示 `***`）；
- * - 新增/编辑弹窗（编辑时 configValue 可填写，提交时校验 configKey 唯一）。
+ * - isSecret=1 的配置双重脱敏（后端响应已置 ******，前端兜底不展示原值）；
+ * - 编辑敏感值留空提交 = 保持原值不变（后端 update 语义），填写即覆盖。
  */
 
 const crud = useCrud<SystemConfig, ConfigQuery>(
@@ -101,7 +101,10 @@ function openCreate() {
 function openEdit(row: SystemConfig) {
   dialogMode.value = 'edit'
   Object.assign(form, defaultForm(), row)
-  // 编辑时，敏感配置的 value 也回填原值（编辑态允许填写）
+  // 敏感配置的值不回填（后端已脱敏为 ******），留空提交即保持原值
+  if (form.isSecret === 1) {
+    form.configValue = ''
+  }
   dialogVisible.value = true
 }
 
@@ -139,9 +142,9 @@ async function onDelete(row: SystemConfig) {
   }
 }
 
-/** 列表脱敏显示：isSecret=1 时展示 `***` */
+/** 列表脱敏显示：isSecret=1 时不展示后端返回值（双重保险，后端已统一脱敏 ******） */
 function displayValue(row: SystemConfig): string {
-  if (row.isSecret === 1) return '***'
+  if (row.isSecret === 1) return '******'
   return row.configValue ?? ''
 }
 
@@ -308,7 +311,7 @@ loadPage()
             v-model="form.configValue"
             type="textarea"
             :rows="2"
-            :placeholder="form.isSecret === 1 ? '敏感值，请填写（保存后列表将脱敏）' : '请输入配置值'"
+            :placeholder="form.isSecret === 1 ? '敏感值：留空保持原值不变，填写即覆盖' : '请输入配置值'"
           />
         </el-form-item>
 
