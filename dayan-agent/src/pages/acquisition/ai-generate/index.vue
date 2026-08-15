@@ -241,6 +241,7 @@ import { getKnowledgeDocs } from '@/api/knowledge'
 import { generateAiContent, saveAiContent, getAiTemplates } from '@/api/aiContent'
 import { postSseStream } from '@/utils/sse'
 import { copyText } from '@/utils/clipboard'
+import { htmlToText } from '@/utils/htmlToText'
 
 const stepDefs = [
   { key: 'material', label: '选素材' },
@@ -453,7 +454,7 @@ async function doGenerateFallback() {
 async function copyResult() {
   if (!result.value) return
   try {
-    await copyText(result.value.contentBody.replace(/<[^>]+>/g, ''))
+    await copyText(htmlToText(result.value.contentBody))
     uni.showToast({ title: '已复制正文', icon: 'success' })
   } catch {
     uni.showToast({ title: '复制失败', icon: 'none' })

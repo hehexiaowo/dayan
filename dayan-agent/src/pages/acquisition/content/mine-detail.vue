@@ -44,6 +44,7 @@ import { getMyContentDetail, updateAiContent, deleteAiContent } from '@/api/aiCo
 import type { AiContent } from '@/types/aiContent'
 import { aiContentTypeLabel } from '@/types/aiContent'
 import { copyText } from '@/utils/clipboard'
+import { htmlToText } from '@/utils/htmlToText'
 
 const id = ref(0)
 const detail = ref<AiContent | null>(null)
@@ -70,17 +71,6 @@ function startEdit() {
   form.summary = detail.value.summary ?? ''
   form.contentBody = detail.value.contentType === 1 ? htmlToText(detail.value.contentBody) : detail.value.contentBody
   editing.value = true
-}
-
-/** HTML → 纯文本（编辑态展示；块级标签转换行，li 加 "- "） */
-function htmlToText(html: string): string {
-  return html
-    .replace(/<li[^>]*>/gi, '- ')
-    .replace(/<\/(p|h1|h2|h3|h4|li|div)>/gi, '\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
 }
 
 async function copyBody() {

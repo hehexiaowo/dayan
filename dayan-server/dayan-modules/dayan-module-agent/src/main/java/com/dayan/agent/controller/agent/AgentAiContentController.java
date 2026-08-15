@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Agent AI 内容接口：生成（不落库）+ 个人内容 CRUD。
@@ -50,9 +51,19 @@ public class AgentAiContentController {
     @PostMapping("/generate/stream")
     public SseEmitter generateStream(@RequestBody @Valid AiGenerateDTO dto) {
         SseEmitter emitter = new SseEmitter(150_000L);
+        // 客户端断开/超时后置位，onStage/onDelta 据此停发，避免 send 失败 WARN 刷屏
+        final AtomicBoolean cancelled = new AtomicBoolean(false);
+        emitter.onCompletion(() -> cancelled.set(true));
+        emitter.onTimeout(() -> {
+            cancelled.set(true);
+            emitter.complete();
+        });
         AiGenerateProgressListener listener = new AiGenerateProgressListener() {
             @Override
             public void onStage(String stage, String message) {
+                if (cancelled.get()) {
+                    return;
+                }
                 try {
                     emitter.send(SseEmitter.event().name("stage")
                             .data(java.util.Map.of("stage", stage, "message", message), MediaType.APPLICATION_JSON));
@@ -63,6 +74,9 @@ public class AgentAiContentController {
 
             @Override
             public void onDelta(String text) {
+                if (cancelled.get()) {
+                    return;
+                }
                 try {
                     emitter.send(SseEmitter.event().name("delta")
                             .data(java.util.Map.of("text", text), MediaType.APPLICATION_JSON));

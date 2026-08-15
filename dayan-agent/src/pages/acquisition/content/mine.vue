@@ -50,7 +50,7 @@ const typeFilters = [
 const activeType = ref<number | undefined>(undefined)
 
 function switchType(v: number | undefined) {
-  if (activeType.value === v) return
+  if (loading.value || activeType.value === v) return
   activeType.value = v
   loadList(true)
 }
