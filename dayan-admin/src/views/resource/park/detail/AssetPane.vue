@@ -32,6 +32,7 @@ import {
   fileSizeLabel
 } from '@/types/asset'
 import type { SystemAsset, SystemAssetQuery } from '@/types/asset'
+import type { SystemDict } from '@/types/dict'
 
 const props = defineProps<{
   /** 类型1：业务维度（锁定模式传如 'park'；不传=全局模式可自由筛选） */
@@ -99,10 +100,41 @@ function cascadeType2(type1?: string) {
     (d) => !d.parentCode || !type1 || d.parentCode === type1
   )
 }
-/** 表单类型2 级联选项 */
+/** 表单类型2 级联选项（表单类型1 恒有值：锁定模式取 props，全局默认 platform） */
 const formType2Options = computed(() => cascadeType2(form.refType1))
-/** 筛选类型2 级联选项 */
-const queryType2Options = computed(() => cascadeType2(query.refType1))
+
+/** 当前生效的筛选类型1（筛选未选时锁定模式兜底 props.refType1） */
+function effectiveQueryType1(): string | undefined {
+  return query.refType1 || props.refType1
+}
+
+/** 筛选类型2 按父级域分组（关联一目了然）：限定类型1 → 所属组+通用组；未限定 → 各域组+通用组 */
+const queryType2Groups = computed(() => {
+  const items = cascadeType2(effectiveQueryType1())
+  const byParent = new Map<string, SystemDict[]>()
+  for (const d of items) {
+    const key = d.parentCode || '__common__'
+    const arr = byParent.get(key) ?? []
+    arr.push(d)
+    byParent.set(key, arr)
+  }
+  const groups: Array<{ label: string; items: SystemDict[] }> = []
+  for (const t of refType1Items.value) {
+    const arr = byParent.get(t.value)
+    if (arr?.length) groups.push({ label: t.label, items: arr })
+  }
+  const common = byParent.get('__common__')
+  if (common?.length) groups.push({ label: '通用', items: common })
+  return groups
+})
+
+/** 筛选切换类型1 时，清理不属于新维度（且非通用）的类型2 */
+function onQueryRefType1Change() {
+  const v = query.refType2
+  if (v && !cascadeType2(effectiveQueryType1()).some((d) => d.dictCode === v)) {
+    query.refType2 = undefined
+  }
+}
 
 /** 类型1 label（字典优先，回退常量） */
 function type1Label(v?: string): string {
@@ -269,7 +301,7 @@ defineExpose({ loadPage })
   <div class="asset-pane">
     <el-form :inline="true" :model="query" @submit.prevent>
       <el-form-item v-if="!refType1" label="类型1">
-        <el-select v-model="query.refType1" placeholder="全部" clearable style="width: 130px">
+        <el-select v-model="query.refType1" placeholder="全部" clearable style="width: 130px" @change="onQueryRefType1Change">
           <el-option v-for="o in refType1Items" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </el-form-item>
@@ -280,8 +312,10 @@ defineExpose({ loadPage })
         <el-input v-model="query.keyword" placeholder="名称/URL 关键字" clearable style="width: 160px" @keyup.enter="handleSearch" />
       </el-form-item>
       <el-form-item label="类型2">
-        <el-select v-model="query.refType2" placeholder="全部（随类型1 级联）" clearable style="width: 140px">
-          <el-option v-for="d in queryType2Options" :key="d.dictCode" :label="d.dictName" :value="d.dictCode" />
+        <el-select v-model="query.refType2" placeholder="全部（按类型1 关联分组）" clearable style="width: 150px">
+          <el-option-group v-for="g in queryType2Groups" :key="g.label" :label="g.label">
+            <el-option v-for="d in g.items" :key="d.dictCode" :label="d.dictName" :value="d.dictCode" />
+          </el-option-group>
         </el-select>
       </el-form-item>
       <el-form-item label="存储">
