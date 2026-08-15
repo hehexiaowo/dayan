@@ -3,7 +3,8 @@
  * 机构详情页 - 素材库 tab（容器组件）。
  *
  * 内层 el-tabs 切 4 类素材（图片/视频/文件/VR），全部复用统一 AssetPane 组件。
- * 每类素材通过 :asset-type prop 过滤，UI 体验不变，后端统一走 park_asset 单表。
+ * 每类素材通过 :asset-type prop 过滤，UI 体验不变，后端统一走 system_asset 单表
+ * （系统素材库，机构维度按 parkCode 过滤）。
  */
 import { ref } from 'vue'
 import AssetPane from './AssetPane.vue'

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /**
- * 全局素材库（资源管理 → 素材库）。
+ * 系统素材库（系统管理 → 素材库）。
  *
- * 跨机构浏览/筛选/管理全部素材（含平台素材 park_code=NULL）；
- * 机构维度视图仍在机构详情「素材库」tab（AssetTab 传 parkCode 复用 AssetPane）。
+ * 管理整个系统的文件与外链资源：本地 OSS 对象 + 外部存储链接（storageType 区分），
+ * 跨机构浏览/筛选（含平台素材 park_code=NULL）；
+ * 机构维度视图仍在机构详情「素材仓库」tab（AssetTab 传 parkCode 复用 AssetPane）。
  */
 import { ref } from 'vue'
-import AssetPane from '../park/detail/AssetPane.vue'
+import AssetPane from '@/views/resource/park/detail/AssetPane.vue'
 
 const activeName = ref('image')
 </script>
@@ -14,7 +15,7 @@ const activeName = ref('image')
 <template>
   <div class="asset-library">
     <el-alert type="info" :closable="false" style="margin-bottom: 12px">
-      全局素材库：汇集各机构素材与平台素材（机构编码留空查询即含平台素材）。素材删除受引用保护。
+      系统素材库：统一管理本地 OSS 文件与外部链接资源，各业务模块从这里统一调配；机构编码留空查询即含平台素材，删除受引用保护。
     </el-alert>
     <el-tabs v-model="activeName" type="card">
       <el-tab-pane label="图片" name="image" lazy>

@@ -4,7 +4,8 @@
  *
  * 单表 CRUD：useCrud（idKey:'id', fixedParams:{parkCode, assetType}）。
  * 通过 assetType prop 区分图片(1)/视频(2)/文件(3)/VR(4)，复用同一组件。
- * 表格"来源"列展示 sourceType，素材库直传的显示"素材库"。
+ * storageType 区分本地 OSS（上传得 key）与外链（手填完整 http(s) URL）。
+ * 表格"来源"列展示 sourceType，素材库直录的显示"素材库"。
  */
 import { reactive, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -17,15 +18,17 @@ import {
   createAsset,
   updateAsset,
   deleteAsset
-} from '@/api/park-asset'
+} from '@/api/system-asset'
 import {
+  STORAGE_TYPE_OPTIONS,
+  SOURCE_TYPE_OPTIONS,
   categoryOptionsByType,
   categoryLabel,
+  storageTypeLabel,
   sourceTypeLabel,
   fileSizeLabel
-} from '@/types/park'
-import { SOURCE_TYPE_OPTIONS } from '@/types/park'
-import type { ParkAsset, ParkAssetQuery } from '@/types/park'
+} from '@/types/asset'
+import type { SystemAsset, SystemAssetQuery } from '@/types/asset'
 
 const props = defineProps<{
   /** 机构编码（不传=全局模式：可跨机构/平台素材查询） */
@@ -45,9 +48,12 @@ const uploaderType = computed(() => {
   }
 })
 
+/** 是否外链模式（storageType=2） */
+const isExternal = computed(() => form.storageType === 2)
+
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
-  ParkAsset,
-  ParkAssetQuery,
+  SystemAsset,
+  SystemAssetQuery,
   number
 >(
   {
@@ -57,7 +63,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
     remove: deleteAsset
   },
   {
-    initialQuery: { parkCode: undefined, keyword: undefined, assetCategory: undefined, sourceType: undefined, isCover: undefined, status: undefined },
+    initialQuery: { parkCode: undefined, keyword: undefined, storageType: undefined, assetCategory: undefined, sourceType: undefined, isCover: undefined, status: undefined },
     idKey: 'id',
     fixedParams: {
       ...(props.parkCode ? { parkCode: props.parkCode } : {}),
@@ -74,10 +80,11 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-const form = reactive<ParkAsset>({
+const form = reactive<SystemAsset>({
   id: undefined,
   parkCode: '',
   assetType: props.assetType,
+  storageType: 1,
   assetUrl: '',
   assetName: '',
   assetCategory: undefined,
@@ -97,8 +104,27 @@ const form = reactive<ParkAsset>({
   status: 1
 })
 
-const rules: FormRules<ParkAsset> = {
-  assetUrl: [{ required: true, message: '请上传文件', trigger: 'change' }]
+const rules: FormRules<SystemAsset> = {
+  assetUrl: [{
+    required: true,
+    validator: (_rule, value: string, callback) => {
+      if (!value) {
+        callback(new Error(form.storageType === 2 ? '请输入外链地址' : '请上传文件'))
+        return
+      }
+      const isHttp = value.startsWith('http://') || value.startsWith('https://')
+      if (form.storageType === 2 && !isHttp) {
+        callback(new Error('外链地址必须以 http:// 或 https:// 开头'))
+        return
+      }
+      if (form.storageType === 1 && isHttp) {
+        callback(new Error('本地OSS 模式请上传文件；http 开头的外部地址请切换为「外链」'))
+        return
+      }
+      callback()
+    },
+    trigger: 'change'
+  }]
 }
 
 const categoryOpts = computed(() => categoryOptionsByType(props.assetType))
@@ -110,6 +136,7 @@ function resetForm() {
     id: undefined,
     parkCode: '',
     assetType: props.assetType,
+    storageType: 1,
     assetUrl: '',
     assetName: '',
     assetCategory: undefined,
@@ -137,11 +164,17 @@ function openCreate() {
   dialogVisible.value = true
 }
 
-function openEdit(row: ParkAsset) {
+function openEdit(row: SystemAsset) {
   dialogMode.value = 'edit'
   resetForm()
   Object.assign(form, row)
   dialogVisible.value = true
+}
+
+/** 切换存储方式时清掉地址，避免 OSS key / 外链 URL 混用误提交 */
+function onStorageTypeChange() {
+  form.assetUrl = ''
+  form.fileSize = undefined
 }
 
 async function handleSubmit() {
@@ -167,7 +200,7 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(row: ParkAsset) {
+async function handleDelete(row: SystemAsset) {
   if (!row.id) return
   await ElMessageBox.confirm('确定删除该素材记录？', '提示', {
     confirmButtonText: '确定',
@@ -205,6 +238,11 @@ defineExpose({ loadPage })
       <el-form-item label="分类">
         <el-select v-model="query.assetCategory" placeholder="全部" clearable style="width: 140px">
           <el-option v-for="o in categoryOpts" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="存储">
+        <el-select v-model="query.storageType" placeholder="全部" clearable style="width: 120px">
+          <el-option v-for="o in STORAGE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </el-form-item>
       <el-form-item label="来源">
@@ -263,6 +301,13 @@ defineExpose({ loadPage })
       <el-table-column prop="assetName" label="名称" min-width="160" show-overflow-tooltip />
       <el-table-column label="分类" width="100" align="center">
         <template #default="{ row }">{{ categoryLabel(assetType, row.assetCategory) }}</template>
+      </el-table-column>
+      <el-table-column label="存储" width="90" align="center">
+        <template #default="{ row }">
+          <el-tag size="small" :type="row.storageType === 2 ? 'warning' : 'info'">
+            {{ storageTypeLabel(row.storageType) }}
+          </el-tag>
+        </template>
       </el-table-column>
       <el-table-column v-if="assetType === 1" label="尺寸" width="120" align="center">
         <template #default="{ row }">
@@ -325,14 +370,26 @@ defineExpose({ loadPage })
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="24">
+            <el-form-item label="存储方式" prop="storageType">
+              <el-radio-group v-model="form.storageType" :disabled="dialogMode === 'edit'" @change="onStorageTypeChange">
+                <el-radio :value="1">本地上传（OSS）</el-radio>
+                <el-radio :value="2">外部链接</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
             <el-form-item label="文件" prop="assetUrl">
               <FileUploader
+                v-if="!isExternal"
                 v-model="form.assetUrl"
                 :type="uploaderType"
-                module="park"
-                register-asset
-                :asset-park-code="form.parkCode || undefined"
-                asset-source-type="media_mgmt"
+                module="system"
+              />
+              <el-input
+                v-else
+                v-model="form.assetUrl"
+                placeholder="https://example.com/video.mp4（完整外链地址）"
+                clearable
               />
             </el-form-item>
           </el-col>
@@ -377,7 +434,7 @@ defineExpose({ loadPage })
           <template v-if="assetType === 2">
             <el-col :span="24">
               <el-form-item label="封面图">
-                <FileUploader v-model="form.coverUrl" type="image" module="park" />
+                <FileUploader v-model="form.coverUrl" type="image" module="system" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -412,12 +469,12 @@ defineExpose({ loadPage })
             </el-col>
             <el-col :span="24">
               <el-form-item label="缩略图">
-                <FileUploader v-model="form.thumbnailUrl" type="image" module="park" />
+                <FileUploader v-model="form.thumbnailUrl" type="image" module="system" />
               </el-form-item>
             </el-col>
           </template>
 
-          <el-col :span="12">
+          <el-col v-if="!isExternal" :span="12">
             <el-form-item label="文件大小(B)">
               <el-input-number v-model="form.fileSize" :min="0" controls-position="right" style="width: 100%" />
             </el-form-item>

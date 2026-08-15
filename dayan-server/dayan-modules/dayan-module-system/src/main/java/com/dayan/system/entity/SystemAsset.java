@@ -1,4 +1,4 @@
-package com.dayan.park.entity;
+package com.dayan.system.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -8,26 +8,30 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 表 park_asset 对应实体——机构素材库。
+ * 表 system_asset 对应实体——系统素材库。
  *
- * 统一管理所有来源的图片/视频/文件/VR，通过 source_type + source_ref_code 追踪来源。
+ * 统一管理整个系统的文件与外链资源（本地 OSS 对象或外部存储链接），
+ * 通过 source_type + source_ref_code 追踪来源，供各业务模块统一调配。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("park_asset")
-public class ParkAsset extends BaseEntity {
+@TableName("system_asset")
+public class SystemAsset extends BaseEntity {
 
     /** 主键 */
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 机构编码 */
+    /** 归属机构编码（NULL=平台素材） */
     private String parkCode;
 
     /** 素材类型（1=图片 2=视频 3=文件 4=VR） */
     private Integer assetType;
 
-    /** 文件 OSS key（存 key 非完整 URL） */
+    /** 存储方式（1=本地OSS 2=外链） */
+    private Integer storageType;
+
+    /** 资源地址：storage_type=1 存 OSS key；=2 存完整 http(s) 外链 */
     private String assetUrl;
 
     /** 文件名称 */
@@ -39,7 +43,7 @@ public class ParkAsset extends BaseEntity {
     /** 描述 */
     private String description;
 
-    /** 文件大小（字节） */
+    /** 文件大小（字节，外链未知时可空） */
     private Long fileSize;
 
     /** 图片宽度px（图片专属） */

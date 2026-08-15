@@ -1,9 +1,9 @@
-package com.dayan.park.service.support;
+package com.dayan.system.service.support;
 
 import java.util.List;
 
 /**
- * 素材引用地图：声明哪些业务表哪些列可能存放素材 OSS key。
+ * 素材引用地图：声明哪些业务表哪些列可能存放素材地址（OSS key 或外链 URL）。
  * 素材删除前按此逐表反查，命中则拒删（列名均来自 db/migration 各表 DDL，改表需同步维护）。
  */
 public final class AssetRefMap {
@@ -32,8 +32,8 @@ public final class AssetRefMap {
             new RefCheck("park_adviser", "adviser_image", "顾问-头像", Match.EXACT),
             new RefCheck("park_display_block", "images", "展示板块-配图", Match.JSON_LIKE),
             new RefCheck("park_display_block", "content", "展示板块-正文内嵌图", Match.HTML_LIKE),
-            new RefCheck("park_asset", "cover_url", "素材-视频封面", Match.EXACT),
-            new RefCheck("park_asset", "thumbnail_url", "素材-VR缩略图", Match.EXACT),
+            new RefCheck("system_asset", "cover_url", "素材-视频封面", Match.EXACT),
+            new RefCheck("system_asset", "thumbnail_url", "素材-VR缩略图", Match.EXACT),
             new RefCheck("goods_info", "cover_image", "商品-封面图", Match.EXACT),
             new RefCheck("goods_info", "image_urls", "商品-图片集", Match.JSON_LIKE),
             new RefCheck("goods_info", "video_url", "商品-视频", Match.EXACT),

@@ -21,7 +21,7 @@ SET NAMES utf8mb4;
 -- =====================================================================
 
 -- ============================================================
--- 一、Park 域（76 个权限码，15 资源 + info 状态机）
+-- 一、Park 域（71 个权限码，14 资源 + info 状态机；素材库已迁 system 域）
 -- ============================================================
 INSERT INTO `organ_permission`
   (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
@@ -88,12 +88,12 @@ VALUES
   ('park:periphery:create', '新增周边信息', 'park:periphery', 3, '/admin-api/park/periphery', 'POST',    202, 1, '机构周边信息', NOW(), NOW(), 'system', 'system', 0),
   ('park:periphery:update', '修改周边信息', 'park:periphery', 3, '/admin-api/park/periphery/*', 'PUT',    203, 1, '机构周边信息', NOW(), NOW(), 'system', 'system', 0),
   ('park:periphery:delete', '删除周边信息', 'park:periphery', 3, '/admin-api/park/periphery/*', 'DELETE', 204, 1, '机构周边信息', NOW(), NOW(), 'system', 'system', 0),
-  -- park:asset（机构素材库，合并原 media-image/media-video/media-vr/media-file）
-  ('park:asset:list',   '素材列表', 'park:asset', 3, '/admin-api/park/asset', 'GET',     210, 1, '机构素材库', NOW(), NOW(), 'system', 'system', 0),
-  ('park:asset:query',  '素材详情', 'park:asset', 3, '/admin-api/park/asset/*', 'GET',    211, 1, '机构素材库', NOW(), NOW(), 'system', 'system', 0),
-  ('park:asset:create', '新增素材', 'park:asset', 3, '/admin-api/park/asset', 'POST',    212, 1, '机构素材库', NOW(), NOW(), 'system', 'system', 0),
-  ('park:asset:update', '修改素材', 'park:asset', 3, '/admin-api/park/asset/*', 'PUT',    213, 1, '机构素材库', NOW(), NOW(), 'system', 'system', 0),
-  ('park:asset:delete', '删除素材', 'park:asset', 3, '/admin-api/park/asset/*', 'DELETE', 214, 1, '机构素材库', NOW(), NOW(), 'system', 'system', 0),
+  -- park:asset 已迁至 system 域（51_system_asset.sql：表 system_asset + /admin-api/system/asset）
+  ('system:asset:list',   '素材列表', 'system:asset', 3, '/admin-api/system/asset', 'GET',     210, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:query',  '素材详情', 'system:asset', 3, '/admin-api/system/asset/*', 'GET',    211, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:create', '新增素材', 'system:asset', 3, '/admin-api/system/asset', 'POST',    212, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:update', '修改素材', 'system:asset', 3, '/admin-api/system/asset/*', 'PUT',    213, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
+  ('system:asset:delete', '删除素材', 'system:asset', 3, '/admin-api/system/asset/*', 'DELETE', 214, 1, '系统素材库', NOW(), NOW(), 'system', 'system', 0),
   -- park:facility-price（已合并入 park:pricing，charge_type=5）
   -- park:service-price（已合并入 park:pricing，charge_type=6）
   -- park:display-block（展示板块）
@@ -354,11 +354,11 @@ VALUES
   ('ROLE_OPERATOR', 'park:periphery:create', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:periphery:update', NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:periphery:delete', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:asset:list',   NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:asset:query',  NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:asset:create', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:asset:update', NOW(), NOW(), 'system', 'system', 0),
-  ('ROLE_OPERATOR', 'park:asset:delete', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'system:asset:list',   NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'system:asset:query',  NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'system:asset:create', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'system:asset:update', NOW(), NOW(), 'system', 'system', 0),
+  ('ROLE_OPERATOR', 'system:asset:delete', NOW(), NOW(), 'system', 'system', 0),
   -- park:score（机构评分）
   ('ROLE_OPERATOR', 'park:score:query',  NOW(), NOW(), 'system', 'system', 0),
   ('ROLE_OPERATOR', 'park:score:update', NOW(), NOW(), 'system', 'system', 0),

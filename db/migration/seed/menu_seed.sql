@@ -32,6 +32,7 @@ VALUES
   ('admin_system_state_machine', '状态规则', 'admin_system', 2, '/system/state-machine', 'system/stateMachine/index', 'system:sm:list', 'Connection', 2, 1, 'admin', 1, '状态机规则配置', NOW(), NOW(), 'system', 'system', 0),
   ('admin_system_config', '系统配置', 'admin_system', 2, '/system/config', 'system/config/index', 'system:config:list', 'Tools', 3, 1, 'admin', 1, '系统参数配置', NOW(), NOW(), 'system', 'system', 0),
   ('admin_system_log', '系统日志', 'admin_system', 2, '/system/log', 'system/log/index', 'system:log:list', 'Document', 4, 1, 'admin', 1, '四端操作与登录日志审计', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_system_asset', '素材库', 'admin_system', 2, '/system/asset', 'system/asset/index', 'system:asset:list', 'PictureFilled', 5, 1, 'admin', 1, '系统素材库：OSS 文件与外链统一管理', NOW(), NOW(), 'system', 'system', 0),
 
   -- ========== 基础管理子菜单（账号/角色/菜单/架构，原系统管理迁出）==========
   ('admin_basic_account', '账号管理', 'admin_basic', 2, '/basic/account', 'basic/account/index', 'organ:account:list', 'User', 1, 1, 'admin', 1, '核心账号管理', NOW(), NOW(), 'system', 'system', 0),
@@ -45,7 +46,6 @@ VALUES
   ('admin_resource_scene', '场景管理', 'admin_resource', 2, '/resource/scene', 'resource/scene/index', 'scene:info:list', 'Place', 3, 1, 'admin', 1, '场景活动管理', NOW(), NOW(), 'system', 'system', 0),
   ('admin_resource_content', '内容素材', 'admin_resource', 2, '/resource/content', 'resource/content/index', 'content:info:list', 'Picture', 4, 1, 'admin', 1, '内容素材库', NOW(), NOW(), 'system', 'system', 0),
   ('admin_resource_course', '课程管理', 'admin_resource', 2, '/resource/course', 'resource/course/index', 'course:info:list', 'Reading', 5, 1, 'admin', 1, '课程管理', NOW(), NOW(), 'system', 'system', 0),
-  ('admin_resource_asset', '素材库', 'admin_resource', 2, '/resource/asset', 'resource/asset/index', 'park:asset:list', 'PictureFilled', 6, 1, 'admin', 1, '全局素材库（含平台素材）', NOW(), NOW(), 'system', 'system', 0),
 
   -- ========== 权益管理子菜单 ==========
   ('admin_equity_batch', '批次管理', 'admin_equity', 2, '/equity/batch', 'equity/batch/index', 'equity:batch:list', 'Files', 1, 1, 'admin', 1, '权益批次管理', NOW(), NOW(), 'system', 'system', 0),

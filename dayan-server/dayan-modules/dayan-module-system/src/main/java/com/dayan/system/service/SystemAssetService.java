@@ -1,43 +1,43 @@
-package com.dayan.park.service;
+package com.dayan.system.service;
 
 import com.dayan.common.core.resp.PageResult;
-import com.dayan.park.dto.ParkAssetCreateDTO;
-import com.dayan.park.dto.ParkAssetQueryDTO;
-import com.dayan.park.dto.ParkAssetUpdateDTO;
-import com.dayan.park.vo.ParkAssetVO;
+import com.dayan.system.dto.SystemAssetCreateDTO;
+import com.dayan.system.dto.SystemAssetQueryDTO;
+import com.dayan.system.dto.SystemAssetUpdateDTO;
+import com.dayan.system.vo.SystemAssetVO;
 
 import java.util.List;
 
 /**
- * 机构素材库（park_asset）服务接口。
+ * 系统素材库（system_asset）服务接口。
  */
-public interface ParkAssetService {
+public interface SystemAssetService {
 
-    PageResult<ParkAssetVO> page(ParkAssetQueryDTO query);
+    PageResult<SystemAssetVO> page(SystemAssetQueryDTO query);
 
     /**
      * 按机构编码查询全部素材。
      */
-    List<ParkAssetVO> listByPark(String parkCode);
+    List<SystemAssetVO> listByPark(String parkCode);
 
     /**
      * 按机构编码 + 素材类型查询。
      */
-    List<ParkAssetVO> listByParkAndType(String parkCode, Integer assetType);
+    List<SystemAssetVO> listByParkAndType(String parkCode, Integer assetType);
 
-    ParkAssetVO getDetail(Long id);
+    SystemAssetVO getDetail(Long id);
 
-    Long create(ParkAssetCreateDTO dto);
+    Long create(SystemAssetCreateDTO dto);
 
-    void update(Long id, ParkAssetUpdateDTO dto);
+    void update(Long id, SystemAssetUpdateDTO dto);
 
     void delete(Long id);
 
     /**
      * 幂等注册：同 (parkCode, assetUrl, sourceType, sourceRefCode) 已存在则返回已存 id，否则创建。
-     * 供其他业务 tab 上传后自动注册到素材库。
+     * 供各业务模块上传后自动登记素材库（storage_type 固定 1=本地OSS）。
      *
-     * @param parkCode      机构编码
+     * @param parkCode      机构编码（空=平台素材）
      * @param assetType     素材类型（1图片 2视频 3文件 4VR）
      * @param assetUrl      文件 key
      * @param sourceType    来源类型

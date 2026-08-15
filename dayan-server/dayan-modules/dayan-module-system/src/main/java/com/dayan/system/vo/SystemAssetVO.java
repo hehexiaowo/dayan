@@ -1,18 +1,20 @@
-package com.dayan.park.vo;
+package com.dayan.system.vo;
 
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
- * 机构素材展示对象（后端→前端）。
+ * 系统素材展示对象（后端→前端）。
  */
 @Data
-public class ParkAssetVO {
+public class SystemAssetVO {
 
     private Long id;
     private String parkCode;
     private Integer assetType;
+    /** 存储方式（1=本地OSS 2=外链） */
+    private Integer storageType;
     private String assetUrl;
     private String assetName;
     private Integer assetCategory;

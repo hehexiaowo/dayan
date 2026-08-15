@@ -10,7 +10,7 @@ defineOptions({ name: 'FileUploader' })
 
 type FileType = 'image' | 'video' | 'file' | 'vr' | 'any'
 
-/** FileType → asset_type 数字映射（park_asset.asset_type） */
+/** FileType → asset_type 数字映射（system_asset.asset_type） */
 const FILE_TYPE_TO_ASSET_TYPE: Record<FileType, number | undefined> = {
   image: 1,
   video: 2,

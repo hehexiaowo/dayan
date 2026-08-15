@@ -551,65 +551,6 @@ export interface ParkScore {
 }
 
 // ============================================================================
-// 素材库（ParkAsset）—— 统一管理所有来源的图片/视频/文件/VR
-// ============================================================================
-
-/**
- * 机构素材（后端 ParkAssetVO）。
- *
- * assetType 区分类型（1图片 2视频 3文件 4VR）；类型专属字段按需填写。
- * sourceType + sourceRefCode 追踪来源，media_mgmt=素材库直传。
- */
-export interface ParkAsset {
-  id?: number
-  parkCode?: string
-  /** 素材类型（1=图片 2=视频 3=文件 4=VR） */
-  assetType?: number
-  /** 文件 OSS key */
-  assetUrl?: string
-  /** 文件名称 */
-  assetName?: string
-  /** 业务分类（图片:1-11 视频:1-3 文件:1-5 VR:1-3） */
-  assetCategory?: number
-  /** 描述 */
-  description?: string
-  /** 文件大小（字节） */
-  fileSize?: number
-  // 图片专属
-  width?: number
-  height?: number
-  isCover?: number
-  // 视频专属
-  coverUrl?: string
-  duration?: number
-  // 文件专属
-  fileFormat?: string
-  // VR 专属
-  vrProvider?: string
-  thumbnailUrl?: string
-  // 来源追踪
-  /** 来源（media_mgmt/room_type/food_type/facility_type/service_type/display_block/adviser/park_info） */
-  sourceType?: string
-  /** 来源编码（media_mgmt 时为空） */
-  sourceRefCode?: string
-  sortOrder?: number
-  status?: number
-  createdAt?: string
-}
-
-/** 素材分页查询参数 */
-export interface ParkAssetQuery extends PageQuery {
-  parkCode?: string
-  /** 名称/URL 模糊搜索 */
-  keyword?: string
-  assetType?: number
-  assetCategory?: number
-  isCover?: number
-  sourceType?: string
-  status?: number
-}
-
-// ============================================================================
 // 设施类型（ParkFacilityType）
 // ============================================================================
 
@@ -819,64 +760,6 @@ export const SPECIAL_DIET_OPTIONS = [
   { label: '是', value: 1 }
 ] as const
 
-/** 素材类型（asset_type）：1=图片 2=视频 3=文件 4=VR */
-export const ASSET_TYPE_OPTIONS = [
-  { label: '图片', value: 1 },
-  { label: '视频', value: 2 },
-  { label: '文件', value: 3 },
-  { label: 'VR', value: 4 }
-] as const
-
-/** 图片业务分类（asset_category, asset_type=1）：1=外观..11=其他 */
-export const IMAGE_CATEGORY_OPTIONS = [
-  { label: '外观', value: 1 },
-  { label: '大堂', value: 2 },
-  { label: '房间', value: 3 },
-  { label: '餐厅', value: 4 },
-  { label: '活动区', value: 5 },
-  { label: '花园', value: 6 },
-  { label: '医疗区', value: 7 },
-  { label: '户型', value: 8 },
-  { label: '文娱生活', value: 9 },
-  { label: '康养状况', value: 10 },
-  { label: '其他', value: 11 }
-] as const
-
-/** 视频业务分类（asset_category, asset_type=2）：1=宣传视频, 2=环境展示, 3=活动记录 */
-export const VIDEO_CATEGORY_OPTIONS = [
-  { label: '宣传视频', value: 1 },
-  { label: '环境展示', value: 2 },
-  { label: '活动记录', value: 3 }
-] as const
-
-/** 文件业务分类（asset_category, asset_type=3）：1=资质文件..5=其他 */
-export const FILE_CATEGORY_OPTIONS = [
-  { label: '资质文件', value: 1 },
-  { label: '合同文件', value: 2 },
-  { label: '宣传资料', value: 3 },
-  { label: '费用文档', value: 4 },
-  { label: '其他', value: 5 }
-] as const
-
-/** VR 业务分类（asset_category, asset_type=4）：1=全景VR, 2=3D模型, 3=视频VR */
-export const VR_CATEGORY_OPTIONS = [
-  { label: '全景VR', value: 1 },
-  { label: '3D模型', value: 2 },
-  { label: '视频VR', value: 3 }
-] as const
-
-/** 素材来源（source_type） */
-export const SOURCE_TYPE_OPTIONS = [
-  { label: '素材库', value: 'media_mgmt' },
-  { label: '房型', value: 'room_type' },
-  { label: '餐饮', value: 'food_type' },
-  { label: '设施', value: 'facility_type' },
-  { label: '服务项目', value: 'service_type' },
-  { label: '展示板块', value: 'display_block' },
-  { label: '顾问', value: 'adviser' },
-  { label: '机构信息', value: 'park_info' }
-] as const
-
 /** 设施类型-类别（facility_type_category）：1=休闲娱乐..6=安全保障 */
 export const FACILITY_TYPE_CATEGORY_OPTIONS = [
   { label: '休闲娱乐', value: 1 },
@@ -935,31 +818,6 @@ export const stayTypeLabel = (v?: number) => labelOf(STAY_TYPE_OPTIONS, v)
 export const careLevelLabel = (v?: number) => labelOf(CARE_LEVEL_OPTIONS, v)
 export const mealPlanLabel = (v?: number) => labelOf(MEAL_PLAN_OPTIONS, v)
 export const specialDietLabel = (v?: number) => labelOf(SPECIAL_DIET_OPTIONS, v)
-export const assetTypeLabel = (v?: number) => labelOf(ASSET_TYPE_OPTIONS, v)
-export const imageCategoryLabel = (v?: number) => labelOf(IMAGE_CATEGORY_OPTIONS, v)
-export const videoCategoryLabel = (v?: number) => labelOf(VIDEO_CATEGORY_OPTIONS, v)
-export const fileCategoryLabel = (v?: number) => labelOf(FILE_CATEGORY_OPTIONS, v)
-export const vrCategoryLabel = (v?: number) => labelOf(VR_CATEGORY_OPTIONS, v)
-/** 按 assetType 返回对应的分类 OPTIONS */
-export function categoryOptionsByType(assetType?: number) {
-  switch (assetType) {
-    case 1: return IMAGE_CATEGORY_OPTIONS
-    case 2: return VIDEO_CATEGORY_OPTIONS
-    case 3: return FILE_CATEGORY_OPTIONS
-    case 4: return VR_CATEGORY_OPTIONS
-    default: return []
-  }
-}
-/** 按 assetType 返回对应的分类 label */
-export function categoryLabel(assetType?: number, category?: number): string {
-  return labelOf(categoryOptionsByType(assetType), category)
-}
-/** 来源 label */
-export function sourceTypeLabel(v?: string): string {
-  if (!v) return '素材库'
-  const found = SOURCE_TYPE_OPTIONS.find((o) => o.value === v)
-  return found ? found.label : v
-}
 export const facilityTypeCategoryLabel = (v?: number) => labelOf(FACILITY_TYPE_CATEGORY_OPTIONS, v)
 export const serviceTypeCategoryLabel = (v?: number) => labelOf(SERVICE_TYPE_CATEGORY_OPTIONS, v)
 export const peripheryTypeLabel = (v?: number) => labelOf(PERIPHERY_TYPE_OPTIONS, v)
@@ -967,13 +825,6 @@ export const peripheryTypeLabel = (v?: number) => labelOf(PERIPHERY_TYPE_OPTIONS
 export const boolIntLabel = (v?: number) => labelOf(BOOL_INT_OPTIONS, v)
 /** 子表状态 label：启用/停用 */
 export const subTableStatusLabel = (v?: number) => labelOf(SUB_TABLE_STATUS_OPTIONS, v)
-/** 文件大小格式化：B → KB/MB 友好显示 */
-export function fileSizeLabel(bytes?: number): string {
-  if (bytes == null) return '--'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
-}
 
 // ==================== 展示板块 ====================
 

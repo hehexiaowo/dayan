@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * AssetPicker 素材选择弹窗：从素材库（park_asset）选图片/视频，回填 OSS key。
- * v-model 控制显隐；confirm 后 emit('select', keys)（key 数组，调用方自行拼 URL）。
+ * AssetPicker 素材选择弹窗：从系统素材库（system_asset）选图片/视频，回填资源地址。
+ * v-model 控制显隐；confirm 后 emit('select', keys)（OSS key 或外链 URL 数组，调用方自行拼 URL）。
  */
 import { computed, ref, watch } from 'vue'
 import { VideoPlay } from '@element-plus/icons-vue'
-import { pageAssets } from '@/api/park-asset'
+import { pageAssets } from '@/api/system-asset'
 import { formatFileUrl } from '@/utils/file'
-import type { ParkAsset } from '@/types/park'
+import type { SystemAsset } from '@/types/asset'
 
 defineOptions({ name: 'AssetPicker' })
 
@@ -36,7 +36,7 @@ const visible = computed({
 
 const assetType = computed(() => (props.type === 'video' ? 2 : 1))
 const loading = ref(false)
-const records = ref<ParkAsset[]>([])
+const records = ref<SystemAsset[]>([])
 const total = ref(0)
 const query = ref({ current: 1, size: 12, keyword: '', parkCode: props.parkCode || undefined })
 const selected = ref<string[]>([])

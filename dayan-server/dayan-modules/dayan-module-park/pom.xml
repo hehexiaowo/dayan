@@ -18,6 +18,8 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-security</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-log</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-common-swagger</artifactId></dependency>
+        <!-- 系统素材库（system_asset）：Agent 端机构全量详情需查素材列表 -->
+        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-system</artifactId></dependency>
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
         <dependency><groupId>org.mapstruct</groupId><artifactId>mapstruct</artifactId></dependency>
     </dependencies>

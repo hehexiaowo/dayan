@@ -1,7 +1,7 @@
-package com.dayan.park.listener;
+package com.dayan.system.listener;
 
 import com.dayan.common.core.event.FileUploadedEvent;
-import com.dayan.park.service.ParkAssetService;
+import com.dayan.system.service.SystemAssetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -16,16 +16,16 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ParkAssetRegisterListener {
+public class SystemAssetRegisterListener {
 
-    private final ParkAssetService parkAssetService;
+    private final SystemAssetService systemAssetService;
 
     @EventListener
     public void onFileUploaded(FileUploadedEvent event) {
         if (!event.isAssetRegister()) {
             return;
         }
-        parkAssetService.registerIfAbsent(
+        systemAssetService.registerIfAbsent(
                 blankToNull(event.getAssetParkCode()),
                 event.getAssetType() != null ? event.getAssetType() : inferAssetType(event.getContentType()),
                 event.getKey(),

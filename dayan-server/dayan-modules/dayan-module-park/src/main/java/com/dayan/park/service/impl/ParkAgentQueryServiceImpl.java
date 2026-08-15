@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.park.dto.RegionQueryDTO;
-import com.dayan.park.entity.ParkAsset;
 import com.dayan.park.entity.ParkCareType;
 import com.dayan.park.entity.ParkDisplayBlock;
 import com.dayan.park.entity.ParkFacilityType;
@@ -15,7 +14,6 @@ import com.dayan.park.entity.ParkPricing;
 import com.dayan.park.entity.ParkRoomType;
 import com.dayan.park.entity.ParkScore;
 import com.dayan.park.entity.ParkServiceType;
-import com.dayan.park.mapper.ParkAssetMapper;
 import com.dayan.park.mapper.ParkCareTypeMapper;
 import com.dayan.park.mapper.ParkDisplayBlockMapper;
 import com.dayan.park.mapper.ParkFacilityTypeMapper;
@@ -28,8 +26,10 @@ import com.dayan.park.mapper.ParkScoreMapper;
 import com.dayan.park.mapper.ParkServiceTypeMapper;
 import com.dayan.park.service.ParkAgentQueryService;
 import com.dayan.park.vo.CategoryCountVO;
-import com.dayan.park.vo.ParkAssetVO;
 import com.dayan.park.vo.ParkCardVO;
+import com.dayan.system.entity.SystemAsset;
+import com.dayan.system.mapper.SystemAssetMapper;
+import com.dayan.system.vo.SystemAssetVO;
 import com.dayan.park.vo.ParkCareTypeVO;
 import com.dayan.park.vo.ParkDisplayBlockVO;
 import com.dayan.park.vo.ParkFacilityTypeVO;
@@ -60,7 +60,7 @@ import java.util.stream.Collectors;
 public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
 
     private final ParkInfoMapper parkInfoMapper;
-    private final ParkAssetMapper parkAssetMapper;
+    private final SystemAssetMapper systemAssetMapper;
     private final ParkRoomTypeMapper parkRoomTypeMapper;
     private final ParkPricingMapper parkPricingMapper;
     private final ParkCareTypeMapper parkCareTypeMapper;
@@ -203,8 +203,8 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
 
         // 3. 子实体（条件：park_code + status=1 + deleted=0，deleted 由 @TableLogic 自动过滤）
         vo.setAssets(copyList(
-                parkAssetMapper.selectList(activeWrapper(parkCode, ParkAsset::getParkCode, ParkAsset::getStatus)),
-                ParkAssetVO::new));
+                systemAssetMapper.selectList(activeWrapper(parkCode, SystemAsset::getParkCode, SystemAsset::getStatus)),
+                SystemAssetVO::new));
 
         vo.setRoomTypes(copyList(
                 parkRoomTypeMapper.selectList(activeWrapper(parkCode, ParkRoomType::getParkCode, ParkRoomType::getStatus)),
