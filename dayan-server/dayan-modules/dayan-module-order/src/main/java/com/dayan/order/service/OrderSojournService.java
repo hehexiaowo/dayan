@@ -13,7 +13,7 @@ import com.dayan.order.vo.OrderSojournVO;
 import java.util.List;
 
 /**
- * 旅居预订订单（order_sojourn）服务 —— 核心链路。
+ * 旅游短居预订订单（order_sojourn）服务 —— 核心链路。
  *
  * <p>所有 order_status 变更必须经 {@code StateMachineEngine.transition("ORDER_SM", from, event)}。
  * 每次状态流转后写一条 order_status_change_record（经 OrderStatusChangeRecordHelper）。

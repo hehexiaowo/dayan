@@ -13,7 +13,7 @@ import type { PageQuery } from '@/types/common'
 /**
  * 权益类型：对齐后端 DDL 10_equity.sql:17。
  * 1=机构入住权益 / 2=机构参观权益 / 3=场景活动权益 / 4=居家护理权益 /
- * 5=健康检测权益 / 6=课程学习权益 / 7=旅居体验权益。
+ * 5=健康检测权益 / 6=课程学习权益 / 7=旅游短居体验权益。
  */
 export enum EquityType {
   /** 机构入住权益 */
@@ -28,7 +28,7 @@ export enum EquityType {
   HEALTH_CHECK = 5,
   /** 课程学习权益 */
   COURSE_LEARNING = 6,
-  /** 旅居体验权益 */
+  /** 旅游短居体验权益 */
   SOJOURN_EXPERIENCE = 7
 }
 
@@ -40,7 +40,7 @@ export const EQUITY_TYPE_OPTIONS = [
   { label: '居家护理权益', value: EquityType.HOME_CARE },
   { label: '健康检测权益', value: EquityType.HEALTH_CHECK },
   { label: '课程学习权益', value: EquityType.COURSE_LEARNING },
-  { label: '旅居体验权益', value: EquityType.SOJOURN_EXPERIENCE }
+  { label: '旅游短居体验权益', value: EquityType.SOJOURN_EXPERIENCE }
 ] as const
 
 /**

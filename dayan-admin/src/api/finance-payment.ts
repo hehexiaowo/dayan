@@ -49,7 +49,7 @@ export function getPayment(paymentCode: string): Promise<FinancePayment> {
  * 成功后返回新生成的 paymentCode。
  */
 export function createPayment(data: {
-  /** 订单类型：1=权益/2=场景/3=课程/4=旅居（NotNull） */
+  /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居（NotNull） */
   orderType: number
   /** 订单编号（NotBlank） */
   orderCode: string

@@ -9,16 +9,16 @@ import com.dayan.goods.vo.GoodsSojournVO;
 import java.util.List;
 
 /**
- * 旅居 SKU（goods_sojourn）服务。
+ * 旅游短居 SKU（goods_sojourn）服务。
  *
- * <p>按 {@code goodsCode} 维度管理旅居 SKU；{@code parkCode}/{@code roomTypeCode} 弱校验。
+ * <p>按 {@code goodsCode} 维度管理旅游短居 SKU；{@code parkCode}/{@code roomTypeCode} 弱校验。
  * 时长范围由 {@code minDays}/{@code maxDays} 承载。
  */
 public interface GoodsSojournService {
 
     PageResult<GoodsSojournVO> page(GoodsSojournQueryDTO query);
 
-    /** 按商品编码查询全部旅居 SKU */
+    /** 按商品编码查询全部旅游短居 SKU */
     List<GoodsSojournVO> listByGoods(String goodsCode);
 
     GoodsSojournVO getDetail(Long id);

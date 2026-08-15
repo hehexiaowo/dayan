@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 旅居预订订单（order_sojourn）VO。
+ * 旅游短居预订订单（order_sojourn）VO。
  */
 @Data
 public class OrderSojournVO {

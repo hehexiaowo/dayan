@@ -20,7 +20,7 @@ export interface GoodsInfo {
   goodsName?: string
   /** 商品简称 */
   goodsShortName?: string
-  /** 商品类型：1=权益 / 2=场景 / 3=课程 / 4=旅居 */
+  /** 商品类型：1=权益 / 2=场景 / 3=课程 / 4=旅游短居 */
   goodsType?: number
   /** 分类编码 */
   categoryCode?: string
@@ -79,7 +79,7 @@ export const GOODS_TYPE_OPTIONS = [
   { label: '权益', value: 1 },
   { label: '场景', value: 2 },
   { label: '课程', value: 3 },
-  { label: '旅居', value: 4 }
+  { label: '旅游短居', value: 4 }
 ] as const
 
 /**

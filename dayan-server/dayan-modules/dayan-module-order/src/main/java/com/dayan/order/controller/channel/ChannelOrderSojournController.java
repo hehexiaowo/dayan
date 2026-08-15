@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Channel 渠道端旅居订单接口（订单管理）。
+ * Channel 渠道端旅游短居订单接口（订单管理）。
  *
  * <p>路径：{@code /channel-api/order-sojourns/*}（由 dayan-channel 启动模块的 context-path 拼接）。
  *
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
  *
  * <p>本接口为纯读接口（列表 + 详情 + 取消），不做下单。
  */
-@Tag(name = "Channel 旅居订单")
+@Tag(name = "Channel 旅游短居订单")
 @RestController
 @RequestMapping("/order-sojourns")
 @RequiredArgsConstructor
@@ -35,7 +35,7 @@ public class ChannelOrderSojournController {
 
     private final OrderSojournService orderSojournService;
 
-    @Operation(summary = "本渠道旅居订单分页列表")
+    @Operation(summary = "本渠道旅游短居订单分页列表")
     @SaCheckPermission("channel:order:list")
     @GetMapping
     public R<PageResult<OrderSojournVO>> page(OrderSojournQueryDTO query) {
@@ -44,7 +44,7 @@ public class ChannelOrderSojournController {
         return R.ok(orderSojournService.page(query));
     }
 
-    @Operation(summary = "旅居订单详情")
+    @Operation(summary = "旅游短居订单详情")
     @SaCheckPermission("channel:order:query")
     @GetMapping("/{orderCode}")
     public R<OrderSojournVO> getDetail(@PathVariable String orderCode) {
@@ -56,7 +56,7 @@ public class ChannelOrderSojournController {
         return R.ok(vo);
     }
 
-    @Operation(summary = "取消旅居订单")
+    @Operation(summary = "取消旅游短居订单")
     @SaCheckPermission("channel:order:cancel")
     @PostMapping("/{orderCode}/cancel")
     public R<Void> cancel(@PathVariable String orderCode, @RequestBody @Valid OrderCancelDTO dto) {

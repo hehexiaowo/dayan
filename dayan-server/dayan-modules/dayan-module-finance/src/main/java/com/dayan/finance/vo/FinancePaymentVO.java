@@ -18,7 +18,7 @@ public class FinancePaymentVO implements Serializable {
 
     private Long id;
     private String paymentCode;
-    /** 订单类型：1=权益/2=场景/3=课程/4=旅居 */
+    /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居 */
     private Integer orderType;
     private String orderCode;
     /** 支付方式：1=微信/2=支付宝/3=银行转账/4=余额/5=线下 */

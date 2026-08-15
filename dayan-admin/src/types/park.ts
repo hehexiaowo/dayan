@@ -52,7 +52,7 @@ export const ABILITY_TYPE_OPTIONS = [
 export const NETWORK_TAG_OPTIONS = [
   { label: '活力长居', value: 'vital' },
   { label: '照护长居', value: 'care' },
-  { label: '旅居养老', value: 'sojourn' }
+  { label: '旅游短居养老', value: 'sojourn' }
 ] as const
 
 /** 性质类型选项（natureType 字段） */
@@ -108,13 +108,13 @@ export interface ParkInfo {
   brandLogo?: string
   /** 能力类型：1自理/2半自理/3不能自理/4综合 */
   abilityType?: number
-  /** 网络归属（多选：vital=活力长居/care=照护长居/sojourn=旅居养老） */
+  /** 网络归属（多选：vital=活力长居/care=照护长居/sojourn=旅游短居养老） */
   networkTags?: string[]
   /** 活力长居展示配置JSON（{banners:[], thumbnail:""}） */
   vitalConfig?: string
   /** 照护长居展示配置JSON */
   careConfig?: string
-  /** 旅居展示配置JSON */
+  /** 旅游短居展示配置JSON */
   sojournConfig?: string
   /** 性质类型：1公办/2民办/3公建民营/4合资 */
   natureType?: number
@@ -790,10 +790,10 @@ export const ROOM_CATEGORY_OPTIONS = [
   { label: 'VIP房', value: 5 }
 ] as const
 
-/** 房型-居住类型（stay_type）：1=长居, 2=旅居 */
+/** 房型-居住类型（stay_type）：1=长居, 2=旅游短居 */
 export const STAY_TYPE_OPTIONS = [
   { label: '长居', value: 1 },
-  { label: '旅居', value: 2 }
+  { label: '旅游短居', value: 2 }
 ] as const
 
 /** 照护-照护等级（care_level）：1=特级护理..5=生活自理 */
@@ -998,7 +998,7 @@ export const displayBlockTypeLabel = (v?: string) =>
 export const NETWORK_TYPE_OPTIONS = [
   { label: '活力长居', value: 'vital' },
   { label: '照护长居', value: 'care' },
-  { label: '旅居', value: 'sojourn' }
+  { label: '旅游短居', value: 'sojourn' }
 ] as const
 
 export const networkTypeLabel = (v?: string) =>

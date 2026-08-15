@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 旅居预订订单（order_sojourn）服务实现 —— 核心链路。
+ * 旅游短居预订订单（order_sojourn）服务实现 —— 核心链路。
  *
  * <p>核心链路（所有写操作 {@code @Transactional}，状态变更均经 ORDER_SM 状态机）：
  * <ul>
@@ -94,7 +94,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
                 .eq(OrderSojourn::getOrderCode, orderCode)
                 .last("LIMIT 1"));
         if (order == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "旅居订单不存在: " + orderCode);
+            throw new BusinessException(ErrorCode.NOT_FOUND, "旅游短居订单不存在: " + orderCode);
         }
         return order;
     }
@@ -188,9 +188,9 @@ public class OrderSojournServiceImpl implements OrderSojournService {
                 OrderEvent.STATUS_PENDING_PAY, OrderEvent.STATUS_PENDING_PAY,
                 "订单创建",
                 dto.getOperatorCode(), dto.getOperatorName(), "admin",
-                "旅居预订订单创建");
+                "旅游短居预订订单创建");
 
-        log.info("旅居订单创建成功: orderCode={}, totalAmount={}, payAmount={}, stayDays={}",
+        log.info("旅游短居订单创建成功: orderCode={}, totalAmount={}, payAmount={}, stayDays={}",
                 orderCode, totalAmount, payAmount, stayDays);
         return orderCode;
     }
@@ -218,7 +218,7 @@ public class OrderSojournServiceImpl implements OrderSojournService {
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
                 "tradeNo=" + dto.getPayTradeNo());
 
-        log.info("旅居订单支付成功: orderCode={}, {} --pay--> {}", order.getOrderCode(), from, to);
+        log.info("旅游短居订单支付成功: orderCode={}, {} --pay--> {}", order.getOrderCode(), from, to);
     }
 
     // ====== 核心链路：complete ======
@@ -238,8 +238,8 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         changeRecordHelper.writeRecord(OrderType.SOJOURN, order.getOrderCode(),
                 from, to, "业务完结（离店）",
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
-                "旅居订单完成");
-        log.info("旅居订单完成: orderCode={}, {} --complete--> {}", order.getOrderCode(), from, to);
+                "旅游短居订单完成");
+        log.info("旅游短居订单完成: orderCode={}, {} --complete--> {}", order.getOrderCode(), from, to);
     }
 
     // ====== 核心链路：applyRefund ======
@@ -259,8 +259,8 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         changeRecordHelper.writeRecord(OrderType.SOJOURN, order.getOrderCode(),
                 from, to, "申请退款：" + dto.getRefundReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
-                "旅居订单申请退款");
-        log.info("旅居订单申请退款: orderCode={}, {} --refund_apply--> {}", order.getOrderCode(), from, to);
+                "旅游短居订单申请退款");
+        log.info("旅游短居订单申请退款: orderCode={}, {} --refund_apply--> {}", order.getOrderCode(), from, to);
     }
 
     // ====== 核心链路：cancel ======
@@ -281,8 +281,8 @@ public class OrderSojournServiceImpl implements OrderSojournService {
         changeRecordHelper.writeRecord(OrderType.SOJOURN, order.getOrderCode(),
                 from, to, "取消订单：" + dto.getCancelReason(),
                 dto.getOperatorCode(), dto.getOperatorName(), dto.getOperatorType(),
-                "旅居订单取消");
-        log.info("旅居订单取消: orderCode={}, {} --cancel--> {}", order.getOrderCode(), from, to);
+                "旅游短居订单取消");
+        log.info("旅游短居订单取消: orderCode={}, {} --cancel--> {}", order.getOrderCode(), from, to);
     }
 
     // ====== 内部方法 ======

@@ -10,7 +10,7 @@ import java.time.LocalDate;
  * 需求收集（service_equity_demand）创建入参。
  *
  * <p>demandCode(DM+10) 由服务端生成。demandType 5 类需求（1机构入住/2日间照料/3居家护理/
- * 4场景活动/5旅居）。校验 budgetMin ≤ budgetMax。
+ * 4场景活动/5旅游短居）。校验 budgetMin ≤ budgetMax。
  */
 @Data
 public class ServiceEquityDemandCreateDTO {
@@ -23,7 +23,7 @@ public class ServiceEquityDemandCreateDTO {
 
     private String butlerCode;
 
-    /** 需求类型（1=机构入住, 2=日间照料, 3=居家护理, 4=场景活动, 5=旅居） */
+    /** 需求类型（1=机构入住, 2=日间照料, 3=居家护理, 4=场景活动, 5=旅游短居） */
     private Integer demandType;
 
     private String usePersonName;

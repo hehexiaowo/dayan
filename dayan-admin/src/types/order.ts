@@ -324,10 +324,10 @@ export const COURSE_ORDER_STATUS_OPTIONS = [
 ] as const
 
 /**
- * 课程/旅居订单支付方式（pay_type）。
+ * 课程/旅游短居订单支付方式（pay_type）。
  *
  * 与权益/场景订单不同：1=微信 / 2=支付宝 / 3=银行转账 / 4=余额 / 5=线下。
- * 课程与旅居共用同一枚举，故以 COURSE_PAY_TYPE_OPTIONS 命名并复用。
+ * 课程与旅游短居共用同一枚举，故以 COURSE_PAY_TYPE_OPTIONS 命名并复用。
  */
 export const COURSE_PAY_TYPE_OPTIONS = [
   { label: '微信', value: 1 },
@@ -419,10 +419,10 @@ export interface OrderCourseQuery extends PageQuery {
   payType?: number
 }
 
-// ==================== 旅居订单 ====================
+// ==================== 旅游短居订单 ====================
 
 /**
- * 旅居订单状态（order_sojourn.order_status）。
+ * 旅游短居订单状态（order_sojourn.order_status）。
  *
  * 对齐后端 DDL 15_order.sql：0=待支付 / 1=已支付 / 2=部分发放 / 3=已发放 / 4=已完成 / 5=已取消 / 6=退款中 / 7=已退款。
  */
@@ -445,7 +445,7 @@ export enum SojournOrderStatus {
   REFUNDED = 7
 }
 
-/** 旅居订单状态选项 */
+/** 旅游短居订单状态选项 */
 export const SOJOURN_ORDER_STATUS_OPTIONS = [
   { label: '待支付', value: SojournOrderStatus.PENDING_PAY },
   { label: '已支付', value: SojournOrderStatus.PAID },
@@ -458,7 +458,7 @@ export const SOJOURN_ORDER_STATUS_OPTIONS = [
 ] as const
 
 /**
- * 旅居订单实体（后端 OrderSojournVO）。
+ * 旅游短居订单实体（后端 OrderSojournVO）。
  */
 export interface OrderSojourn {
   id?: number
@@ -486,9 +486,9 @@ export interface OrderSojourn {
   goodsCode?: string
   /** 商品名称（快照） */
   goodsName?: string
-  /** 旅居基地编码 */
+  /** 旅游短居基地编码 */
   parkCode?: string
-  /** 旅居基地名称（快照） */
+  /** 旅游短居基地名称（快照） */
   parkFullName?: string
   /** 房型编码 */
   roomTypeCode?: string
@@ -551,7 +551,7 @@ export interface OrderSojourn {
 }
 
 /**
- * 旅居订单分页查询参数（后端 OrderSojournQueryDTO）。
+ * 旅游短居订单分页查询参数（后端 OrderSojournQueryDTO）。
  */
 export interface OrderSojournQuery extends PageQuery {
   orderCode?: string

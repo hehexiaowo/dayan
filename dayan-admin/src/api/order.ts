@@ -12,7 +12,7 @@ import type {
 } from '@/types/order'
 
 /**
- * 订单域接口封装（权益订单 + 场景订单 + 课程订单 + 旅居订单）。
+ * 订单域接口封装（权益订单 + 场景订单 + 课程订单 + 旅游短居订单）。
  *
  * 对应后端：
  * - OrderEquityAdminController（/admin-api/order/equity/*）
@@ -145,9 +145,9 @@ export function cancelOrderCourse(data: {
 // - complete（3→4 已完成）：POST /admin-api/order/course/complete
 // - applyRefund（1/2/3→6 退款中）：POST /admin-api/order/course/apply-refund
 
-// ==================== 旅居订单 ====================
+// ==================== 旅游短居订单 ====================
 
-/** 旅居订单分页：GET /admin-api/order/sojourn/page */
+/** 旅游短居订单分页：GET /admin-api/order/sojourn/page */
 export function pageOrderSojourns(query: OrderSojournQuery): Promise<PageResult<OrderSojourn>> {
   return request<PageResult<OrderSojourn>>({
     url: '/admin-api/order/sojourn/page',
@@ -156,7 +156,7 @@ export function pageOrderSojourns(query: OrderSojournQuery): Promise<PageResult<
   })
 }
 
-/** 旅居订单详情：GET /admin-api/order/sojourn/{orderCode} */
+/** 旅游短居订单详情：GET /admin-api/order/sojourn/{orderCode} */
 export function getOrderSojourn(orderCode: string): Promise<OrderSojourn> {
   return request<OrderSojourn>({
     url: `/admin-api/order/sojourn/${orderCode}`,
@@ -165,7 +165,7 @@ export function getOrderSojourn(orderCode: string): Promise<OrderSojourn> {
 }
 
 /**
- * 取消旅居订单：POST /admin-api/order/sojourn/cancel
+ * 取消旅游短居订单：POST /admin-api/order/sojourn/cancel
  *
  * 入参对齐后端 OrderCancelDTO（@RequestBody），状态机流转：0→5 或 6→5。
  */

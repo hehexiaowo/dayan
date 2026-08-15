@@ -38,7 +38,7 @@ const ORDER_TYPE_OPTIONS = [
   { label: '权益订单', value: 1 },
   { label: '场景订单', value: 2 },
   { label: '课程订单', value: 3 },
-  { label: '旅居订单', value: 4 }
+  { label: '旅游短居订单', value: 4 }
 ] as const
 
 const route = useRoute()
@@ -64,7 +64,7 @@ function handleReset() {
   handleSearch()
 }
 
-/** 订单类型 tag 颜色：1权益=primary / 2场景=success / 3课程=warning / 4旅居=info */
+/** 订单类型 tag 颜色：1权益=primary / 2场景=success / 3课程=warning / 4旅游短居=info */
 function orderTypeTagType(v?: number): 'info' | 'warning' | 'success' | 'primary' | 'danger' {
   switch (v) {
     case 1:
@@ -162,7 +162,7 @@ const submitting = ref(false)
 const createFormRef = ref<FormInstance>()
 
 interface CreateForm {
-  /** 订单类型：1权益/2场景/3课程/4旅居 */
+  /** 订单类型：1权益/2场景/3课程/4旅游短居 */
   orderType: number | undefined
   /** 订单编码 */
   orderCode: string

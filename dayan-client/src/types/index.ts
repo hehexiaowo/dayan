@@ -125,7 +125,7 @@ export interface ServiceRequestDTO {
 /** 订单状态（对齐后端 OrderEvent）：0待支付/1已支付/2部分发放/3已发放/4已完成/5已取消/6退款中/7已退款 */
 export type OrderStatus = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
-/** 订单（旅居订单，对齐后端 ClientOrderVO） */
+/** 订单（旅游短居订单，对齐后端 ClientOrderVO） */
 export interface Order {
   orderCode: string;
   orderStatus: OrderStatus;

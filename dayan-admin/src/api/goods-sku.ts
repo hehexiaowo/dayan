@@ -12,7 +12,7 @@ import type {
 /**
  * 商品域子表接口封装。
  *
- * 场景/课程/旅居配置路径：/admin-api/goods/scene/course/sojourn（无 sku 前缀）。
+ * 场景/课程/旅游短居配置路径：/admin-api/goods/scene/course/sojourn（无 sku 前缀）。
  *
  * 公共契约（3 子表一致）：
  * - 主键：物理 id（自增 number，非雪花），update/delete/{id} 都用 id。
@@ -137,10 +137,10 @@ export function deleteCourse(id: number): Promise<void> {
 }
 
 // ============================================================================
-// 3. 旅居配置（sojourn，skuCode 前缀 GJ）
+// 3. 旅游短居配置（sojourn，skuCode 前缀 GJ）
 // ============================================================================
 
-/** 旅居配置分页：GET /admin-api/goods/sojourn/page */
+/** 旅游短居配置分页：GET /admin-api/goods/sojourn/page */
 export function pageSojourns(query: GoodsSojournQuery): Promise<PageResult<GoodsSojourn>> {
   return request<PageResult<GoodsSojourn>>({
     url: '/admin-api/goods/sojourn/page',
@@ -149,7 +149,7 @@ export function pageSojourns(query: GoodsSojournQuery): Promise<PageResult<Goods
   })
 }
 
-/** 旅居配置列表（按 goodsCode 过滤，非分页）：GET /admin-api/goods/sojourn/list */
+/** 旅游短居配置列表（按 goodsCode 过滤，非分页）：GET /admin-api/goods/sojourn/list */
 export function listSojourns(goodsCode: string): Promise<GoodsSojourn[]> {
   return request<GoodsSojourn[]>({
     url: '/admin-api/goods/sojourn/list',
@@ -158,7 +158,7 @@ export function listSojourns(goodsCode: string): Promise<GoodsSojourn[]> {
   })
 }
 
-/** 旅居配置详情：GET /admin-api/goods/sojourn/{id} */
+/** 旅游短居配置详情：GET /admin-api/goods/sojourn/{id} */
 export function getSojourn(id: number): Promise<GoodsSojourn> {
   return request<GoodsSojourn>({
     url: `/admin-api/goods/sojourn/${id}`,
@@ -166,7 +166,7 @@ export function getSojourn(id: number): Promise<GoodsSojourn> {
   })
 }
 
-/** 新增旅居配置：POST /admin-api/goods/sojourn（返回 id） */
+/** 新增旅游短居配置：POST /admin-api/goods/sojourn（返回 id） */
 export function createSojourn(data: Partial<GoodsSojourn>): Promise<number> {
   return request<number>({
     url: '/admin-api/goods/sojourn',
@@ -175,7 +175,7 @@ export function createSojourn(data: Partial<GoodsSojourn>): Promise<number> {
   })
 }
 
-/** 修改旅居配置：PUT /admin-api/goods/sojourn/{id} */
+/** 修改旅游短居配置：PUT /admin-api/goods/sojourn/{id} */
 export function updateSojourn(id: number, data: Partial<GoodsSojourn>): Promise<void> {
   return request<void>({
     url: `/admin-api/goods/sojourn/${id}`,
@@ -184,7 +184,7 @@ export function updateSojourn(id: number, data: Partial<GoodsSojourn>): Promise<
   })
 }
 
-/** 删除旅居配置：DELETE /admin-api/goods/sojourn/{id} */
+/** 删除旅游短居配置：DELETE /admin-api/goods/sojourn/{id} */
 export function deleteSojourn(id: number): Promise<void> {
   return request<void>({
     url: `/admin-api/goods/sojourn/${id}`,

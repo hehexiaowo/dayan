@@ -171,7 +171,7 @@ const intentionOptions = [
   { label: '高', value: 3 },
 ];
 
-const interestTypeOptions = ['旅居', '活力长居', '照护'];
+const interestTypeOptions = ['旅游短居', '活力长居', '照护'];
 
 function toggleInterest(tag: string) {
   const idx = selectedInterests.value.indexOf(tag);

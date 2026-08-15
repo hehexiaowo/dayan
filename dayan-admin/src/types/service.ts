@@ -639,13 +639,13 @@ export interface ServiceEvaluationQuery extends PageQuery {
 
 // ==================== 子表：权益需求（ServiceEquityDemand）====================
 
-/** 需求类型：1机构入住/2日间照料/3居家护理/4场景活动/5旅居 */
+/** 需求类型：1机构入住/2日间照料/3居家护理/4场景活动/5旅游短居 */
 export const DEMAND_TYPE_OPTIONS = [
   { label: '机构入住', value: 1 },
   { label: '日间照料', value: 2 },
   { label: '居家护理', value: 3 },
   { label: '场景活动', value: 4 },
-  { label: '旅居', value: 5 }
+  { label: '旅游短居', value: 5 }
 ] as const
 
 /** 联系偏好：1电话/2微信/3短信 */

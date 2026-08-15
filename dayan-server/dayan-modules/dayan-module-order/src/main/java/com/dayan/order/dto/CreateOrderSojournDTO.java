@@ -9,17 +9,17 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * 创建旅居预订订单（order_sojourn）入参。
+ * 创建旅游短居预订订单（order_sojourn）入参。
  *
  * <p>金额校验：{@code totalAmount = roomFee + careFee + foodFee + otherFee}，
- * {@code payAmount = totalAmount - discountAmount}（旅居订单无 couponAmount 字段，仅 discount）。
+ * {@code payAmount = totalAmount - discountAmount}（旅游短居订单无 couponAmount 字段，仅 discount）。
  * depositAmount 为押金（独立于 totalAmount，可空）。支持权益抵扣 equityCode。
  * 快照字段（channelFullName/parkFullName 等）由 DTO 传入，不强校验存在性。
  */
 @Data
 public class CreateOrderSojournDTO {
 
-    /** 订单类型（默认 4=旅居，可空） */
+    /** 订单类型（默认 4=旅游短居，可空） */
     private Integer orderType;
 
     /** 渠道编码（可空） */

@@ -146,9 +146,9 @@ export function cancelOrderCourse(orderCode: string, data: OrderCancelData): Pro
   })
 }
 
-// ==================== 旅居订单（/channel-api/order-sojourns） ====================
+// ==================== 旅游短居订单（/channel-api/order-sojourns） ====================
 
-/** 旅居订单分页：GET /channel-api/order-sojourns */
+/** 旅游短居订单分页：GET /channel-api/order-sojourns */
 export function pageOrderSojourns(query: OrderSojournQuery): Promise<PageResult<OrderSojourn>> {
   return request<PageResult<OrderSojourn>>({
     url: '/channel-api/order-sojourns',
@@ -157,7 +157,7 @@ export function pageOrderSojourns(query: OrderSojournQuery): Promise<PageResult<
   })
 }
 
-/** 旅居订单详情：GET /channel-api/order-sojourns/{orderCode} */
+/** 旅游短居订单详情：GET /channel-api/order-sojourns/{orderCode} */
 export function getOrderSojourn(orderCode: string): Promise<OrderSojourn> {
   return request<OrderSojourn>({
     url: `/channel-api/order-sojourns/${orderCode}`,
@@ -165,7 +165,7 @@ export function getOrderSojourn(orderCode: string): Promise<OrderSojourn> {
   })
 }
 
-/** 取消旅居订单：POST /channel-api/order-sojourns/{orderCode}/cancel */
+/** 取消旅游短居订单：POST /channel-api/order-sojourns/{orderCode}/cancel */
 export function cancelOrderSojourn(orderCode: string, data: OrderCancelData): Promise<void> {
   return request<void>({
     url: `/channel-api/order-sojourns/${orderCode}/cancel`,

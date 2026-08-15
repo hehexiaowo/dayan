@@ -41,7 +41,7 @@ import java.util.List;
  *
  * <p>防越权：支付金额从订单权威解析（{@code order_equity.pay_amount}），禁止客户端传金额（防篡改）。
  *
- * <p>读接口（列表/详情）：finance_payment 表无 channel_code 字段，靠反查本渠道 4 类订单（权益/场景/课程/旅居）
+ * <p>读接口（列表/详情）：finance_payment 表无 channel_code 字段，靠反查本渠道 4 类订单（权益/场景/课程/旅游短居）
  * 的 orderCode 集合做归属过滤。
  */
 @Tag(name = "Channel 支付")
@@ -161,7 +161,7 @@ public class ChannelFinanceController {
      * 对应类型的订单 Service，不做顺序探测——避免误命中类型的"订单不存在"异常中断流程。
      *
      * @param orderCode   支付单关联的订单编码
-     * @param orderType   订单类型：1=权益/2=场景/3=课程/4=旅居
+     * @param orderType   订单类型：1=权益/2=场景/3=课程/4=旅游短居
      * @param channelCode 当前渠道编码
      * @return true=属于本渠道；false=不属于或 orderType 非法
      */
@@ -183,7 +183,7 @@ public class ChannelFinanceController {
                     OrderCourseVO cq = orderCourseService.getDetail(orderCode);
                     return cq != null && channelCode.equals(cq.getChannelCode());
                 }
-                case 4: { // 旅居
+                case 4: { // 旅游短居
                     OrderSojournVO jq = orderSojournService.getDetail(orderCode);
                     return jq != null && channelCode.equals(jq.getChannelCode());
                 }
@@ -204,7 +204,7 @@ public class ChannelFinanceController {
      * 两者结构相似但职责不同（getDetail 不需要金额，create 需要金额），保留并存优于过度抽象。
      *
      * @param orderCode   订单编码
-     * @param orderType   订单类型：1=权益/2=场景/3=课程/4=旅居
+     * @param orderType   订单类型：1=权益/2=场景/3=课程/4=旅游短居
      * @param channelCode 当前渠道编码
      * @return 订单实付金额（订单存在且属于本渠道）；null=订单不存在/不属于本渠道/orderType 非法
      */
@@ -226,7 +226,7 @@ public class ChannelFinanceController {
                     OrderCourseVO o = orderCourseService.getDetail(orderCode);
                     return (o != null && channelCode.equals(o.getChannelCode())) ? o.getPayAmount() : null;
                 }
-                case 4: { // 旅居
+                case 4: { // 旅游短居
                     OrderSojournVO o = orderSojournService.getDetail(orderCode);
                     return (o != null && channelCode.equals(o.getChannelCode())) ? o.getPayAmount() : null;
                 }

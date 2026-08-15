@@ -15,7 +15,7 @@ public class FinancePaymentQueryDTO {
     private Long size = 20L;
 
     private String paymentCode;
-    /** 订单类型：1=权益/2=场景/3=课程/4=旅居 */
+    /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居 */
     private Integer orderType;
     private String orderCode;
     /** 订单编码集合（多值 IN 过滤，渠道端按本渠道订单码反查支付单时使用） */

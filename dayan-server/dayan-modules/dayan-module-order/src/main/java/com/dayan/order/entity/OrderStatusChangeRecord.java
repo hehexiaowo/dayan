@@ -24,7 +24,7 @@ public class OrderStatusChangeRecord extends BaseEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 订单类型（1权益/2场景/3课程/4旅居 等） */
+    /** 订单类型（1权益/2场景/3课程/4旅游短居 等） */
     private Integer orderType;
 
     /** 订单编号 */

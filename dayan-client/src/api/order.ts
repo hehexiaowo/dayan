@@ -1,5 +1,5 @@
 /**
- * 订单相关 API（"我的订单"入口，旅居订单）。
+ * 订单相关 API（"我的订单"入口，旅游短居订单）。
  */
 import request from '@/utils/request';
 import type { Order, PageResult, PageQuery } from '@/types';
@@ -9,7 +9,7 @@ export interface OrderQuery extends PageQuery {
   group?: string;
 }
 
-/** 我的旅居订单列表（分页） */
+/** 我的旅游短居订单列表（分页） */
 export function getOrders(query: OrderQuery = {}): Promise<PageResult<Order>> {
   return request<PageResult<Order>>({ url: '/orders', method: 'GET', data: query });
 }

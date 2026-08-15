@@ -13,13 +13,13 @@ export const ITEM_CATEGORY_OPTIONS = [
 
 /** 安排权益子类 */
 export enum ItemSubtype {
-  SOJOURN = 1,         // 旅居
+  SOJOURN = 1,         // 旅游短居
   VITAL_LONG_STAY = 2, // 活力长居
   CARE_LONG_STAY = 3,  // 照护长居
 }
 
 export const ITEM_SUBTYPE_OPTIONS = [
-  { label: '旅居', value: ItemSubtype.SOJOURN },
+  { label: '旅游短居', value: ItemSubtype.SOJOURN },
   { label: '活力长居', value: ItemSubtype.VITAL_LONG_STAY },
   { label: '照护长居', value: ItemSubtype.CARE_LONG_STAY },
 ]

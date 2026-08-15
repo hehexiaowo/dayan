@@ -35,13 +35,13 @@ VALUES
   ('order:course:complete',     '课程订单完成',   'order:course', 3, '/admin-api/order/course/*/complete',  'POST',   124, 1, '课程订单', NOW(), NOW(), 'system', 'system', 0),
   ('order:course:apply-refund', '课程订单退款',   'order:course', 3, '/admin-api/order/course/*/apply-refund','POST', 125, 1, '课程订单', NOW(), NOW(), 'system', 'system', 0),
   ('order:course:cancel',       '课程订单取消',   'order:course', 3, '/admin-api/order/course/*/cancel',    'POST',   126, 1, '课程订单', NOW(), NOW(), 'system', 'system', 0),
-  ('order:sojourn:list',        '旅居订单列表',   'order:sojourn',3, '/admin-api/order/sojourn',           'GET',    130, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0),
-  ('order:sojourn:query',       '旅居订单详情',   'order:sojourn',3, '/admin-api/order/sojourn/*',          'GET',    131, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0),
-  ('order:sojourn:create',      '新增旅居订单',   'order:sojourn',3, '/admin-api/order/sojourn',            'POST',   132, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0),
-  ('order:sojourn:pay-callback','旅居订单支付回调','order:sojourn',3, '/admin-api/order/sojourn/*/pay-callback','POST',133, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0),
-  ('order:sojourn:complete',    '旅居订单完成',   'order:sojourn',3, '/admin-api/order/sojourn/*/complete', 'POST',   134, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0),
-  ('order:sojourn:apply-refund','旅居订单退款',   'order:sojourn',3, '/admin-api/order/sojourn/*/apply-refund','POST',135, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0),
-  ('order:sojourn:cancel',      '旅居订单取消',   'order:sojourn',3, '/admin-api/order/sojourn/*/cancel',   'POST',   136, 1, '旅居订单', NOW(), NOW(), 'system', 'system', 0)
+  ('order:sojourn:list',        '旅游短居订单列表',   'order:sojourn',3, '/admin-api/order/sojourn',           'GET',    130, 1, '旅游短居订单', NOW(), NOW(), 'system', 'system', 0),
+  ('order:sojourn:query',       '旅游短居订单详情',   'order:sojourn',3, '/admin-api/order/sojourn/*',          'GET',    131, 1, '旅游短居订单', NOW(), NOW(), 'system', 'system', 0),
+  ('order:sojourn:create',      '新增旅游短居订单',   'order:sojourn',3, '/admin-api/order/sojourn',            'POST',   132, 1, '旅游短居订单', NOW(), NOW(), 'system', 'system', 0),
+  ('order:sojourn:pay-callback','旅游短居订单支付回调','order:sojourn',3, '/admin-api/order/sojourn/*/pay-callback','POST',133, 1, '旅游短居订单', NOW(), NOW(), 'system', 'system', 0),
+  ('order:sojourn:complete',    '旅游短居订单完成',   'order:sojourn',3, '/admin-api/order/sojourn/*/complete', 'POST',   134, 1, '旅游短居订单', NOW(), NOW(), 'system', 'system', 0),
+  ('order:sojourn:apply-refund','旅游短居订单退款',   'order:sojourn',3, '/admin-api/order/sojourn/*/apply-refund','POST',135, 1, '旅游短居订单', NOW(), NOW(), 'system', 'system', 0),
+  ('order:sojourn:cancel',      '旅游短居订单取消',   'order:sojourn',3, '/admin-api/order/sojourn/*/cancel',   'POST',   136, 1, '旅游短居订单', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ==================== equity 域 ====================

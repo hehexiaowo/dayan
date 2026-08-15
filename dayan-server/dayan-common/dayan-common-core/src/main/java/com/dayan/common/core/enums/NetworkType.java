@@ -15,7 +15,7 @@ public enum NetworkType {
 
     VITAL("vital", "活力长居"),
     CARE("care", "照护长居"),
-    SOJOURN("sojourn", "旅居");
+    SOJOURN("sojourn", "旅游短居");
 
     private final String code;
     private final String label;

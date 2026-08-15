@@ -147,7 +147,7 @@ public final class FinanceEvent {
     public static final int ORDER_TYPE_SCENE = 2;
     /** 订单类型：课程 */
     public static final int ORDER_TYPE_COURSE = 3;
-    /** 订单类型：旅居 */
+    /** 订单类型：旅游短居 */
     public static final int ORDER_TYPE_SOJOURN = 4;
 
     // ====== biz_type / account_type 字符串常量（finance_flow） ======
@@ -157,7 +157,7 @@ public final class FinanceEvent {
     public static final String BIZ_TYPE_SCENE_ORDER = "scene_order";
     /** 业务类型：课程订单 */
     public static final String BIZ_TYPE_COURSE_ORDER = "course_order";
-    /** 业务类型：旅居订单 */
+    /** 业务类型：旅游短居订单 */
     public static final String BIZ_TYPE_TRAVEL_ORDER = "travel_order";
     /** 业务类型：结算 */
     public static final String BIZ_TYPE_SETTLEMENT = "settlement";

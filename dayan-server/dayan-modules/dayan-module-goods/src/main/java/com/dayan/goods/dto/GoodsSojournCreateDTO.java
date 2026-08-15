@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * 旅居 SKU（goods_sojourn）创建入参。
+ * 旅游短居 SKU（goods_sojourn）创建入参。
  *
  * <p>{@code skuCode} 由系统生成（GJ 前缀 + 5 位序列）；{@code parkCode}/{@code roomTypeCode} 弱校验。
  */

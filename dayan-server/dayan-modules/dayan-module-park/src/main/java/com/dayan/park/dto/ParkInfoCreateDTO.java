@@ -45,7 +45,7 @@ public class ParkInfoCreateDTO {
     private String vitalConfig;
     /** 照护长居展示配置JSON */
     private String careConfig;
-    /** 旅居展示配置JSON */
+    /** 旅游短居展示配置JSON */
     private String sojournConfig;
     private Integer natureType;
     private String natureTypeDescription;

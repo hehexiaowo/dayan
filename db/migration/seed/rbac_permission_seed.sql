@@ -290,12 +290,12 @@ VALUES
   ('goods:scene:create', '新增场景配置', 'goods:scene', 3, '/admin-api/goods/scene', 'POST',    632, 1, '商品场景配置', NOW(), NOW(), 'system', 'system', 0),
   ('goods:scene:update', '修改场景配置', 'goods:scene', 3, '/admin-api/goods/scene/*', 'PUT',    633, 1, '商品场景配置', NOW(), NOW(), 'system', 'system', 0),
   ('goods:scene:delete', '删除场景配置', 'goods:scene', 3, '/admin-api/goods/scene/*', 'DELETE', 634, 1, '商品场景配置', NOW(), NOW(), 'system', 'system', 0),
-  -- goods:sojourn（旅居配置）
-  ('goods:sojourn:list',   '旅居配置列表', 'goods:sojourn', 3, '/admin-api/goods/sojourn', 'GET',     640, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sojourn:query',  '旅居配置详情', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'GET',    641, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sojourn:create', '新增旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn', 'POST',    642, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sojourn:update', '修改旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'PUT',    643, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0),
-  ('goods:sojourn:delete', '删除旅居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'DELETE', 644, 1, '商品旅居配置', NOW(), NOW(), 'system', 'system', 0)
+  -- goods:sojourn（旅游短居配置）
+  ('goods:sojourn:list',   '旅游短居配置列表', 'goods:sojourn', 3, '/admin-api/goods/sojourn', 'GET',     640, 1, '商品旅游短居配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:sojourn:query',  '旅游短居配置详情', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'GET',    641, 1, '商品旅游短居配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:sojourn:create', '新增旅游短居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn', 'POST',    642, 1, '商品旅游短居配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:sojourn:update', '修改旅游短居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'PUT',    643, 1, '商品旅游短居配置', NOW(), NOW(), 'system', 'system', 0),
+  ('goods:sojourn:delete', '删除旅游短居配置', 'goods:sojourn', 3, '/admin-api/goods/sojourn/*', 'DELETE', 644, 1, '商品旅游短居配置', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================

@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  */
 public interface OrderPriceResolver {
 
-    /** 旅居订单权威费用。返回 [roomFee, careFee, foodFee]；deposit 权威另查（null=透传客户端） */
+    /** 旅游短居订单权威费用。返回 [roomFee, careFee, foodFee]；deposit 权威另查（null=透传客户端） */
     SojournAuthority resolveSojourn(CreateOrderSojournDTO dto, int stayDays);
 
     /** 场景订单权威单价（null=无权威，调用方按模式处理） */

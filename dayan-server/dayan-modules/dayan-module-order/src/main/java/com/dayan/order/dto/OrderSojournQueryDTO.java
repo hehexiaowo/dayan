@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 /**
- * 旅居预订订单（order_sojourn）查询入参（分页 + 多条件）。
+ * 旅游短居预订订单（order_sojourn）查询入参（分页 + 多条件）。
  */
 @Data
 public class OrderSojournQueryDTO {

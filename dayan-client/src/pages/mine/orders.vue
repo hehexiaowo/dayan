@@ -17,7 +17,7 @@
     <view v-if="orders.length" class="order-list">
       <view v-for="o in orders" :key="o.orderCode" class="order-card">
         <view class="card-head">
-          <text class="park-name">{{ o.parkName || o.title || '旅居订单' }}</text>
+          <text class="park-name">{{ o.parkName || o.title || '旅游短居订单' }}</text>
           <text class="status-tag" :class="statusClass(o.orderStatus)">{{ o.statusText || statusFallback(o.orderStatus) }}</text>
         </view>
         <view v-if="o.skuName" class="card-row">
@@ -47,7 +47,7 @@
 
     <!-- 底部提示 -->
     <view v-if="orders.length" class="list-footer">
-      <text class="footer-text">仅显示旅居订单 · 共 {{ total }} 条</text>
+      <text class="footer-text">仅显示旅游短居订单 · 共 {{ total }} 条</text>
     </view>
   </view>
 </template>

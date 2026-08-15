@@ -249,7 +249,7 @@ public class ClientEquityController {
         private String itemName;
         /** 大类（1=安排权益,2=费用权益） */
         private Integer itemCategory;
-        /** 子类（1=旅居,2=活力长居,3=照护长居） */
+        /** 子类（1=旅游短居,2=活力长居,3=照护长居） */
         private Integer itemSubtype;
         /** 配额上限 */
         private Integer quantity;

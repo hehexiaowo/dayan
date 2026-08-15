@@ -11,7 +11,7 @@
  *   - goodsType=1（权益商品）→ 权益配置（EquityConfigTab）
  *   - goodsType=2（场景商品）→ 场景配置（SceneTab）
  *   - goodsType=3（课程商品）→ 课程配置（CourseTab）
- *   - goodsType=4（旅居商品）→ 旅居配置（SojournTab)
+ *   - goodsType=4（旅游短居商品）→ 旅游短居配置（SojournTab)
  *
  * 加载 getGoods 拿到 goodsType 后才计算 tab 列表，避免未拿主信息时渲染错误 SKU tab。
  * 所有 tab 带 lazy 属性懒加载（子 tab nav 常驻，未访问不渲染内容）。
@@ -68,7 +68,7 @@ const tabs = computed(() => {
     1: { name: 'equity-config', label: '权益配置' },
     2: { name: 'scene', label: '场景配置' },
     3: { name: 'course', label: '课程配置' },
-    4: { name: 'sojourn', label: '旅居配置' }
+    4: { name: 'sojourn', label: '旅游短居配置' }
   }
   const goodsType = goodsInfo.value?.goodsType
   const skuTab = goodsType != null ? skuTabMap[goodsType] : null

@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Client 端订单列表项 VO（旅居订单 order_sojourn）。
+ * Client 端订单列表项 VO（旅游短居订单 order_sojourn）。
  *
  * <p>字段为客户端「我的订单」展示精简集，含状态文案（后端预计算）。
  */

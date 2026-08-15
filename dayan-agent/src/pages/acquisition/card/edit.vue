@@ -15,7 +15,7 @@
           <input
             v-model="form.cardName"
             class="dy-input"
-            placeholder="如：旅居专员名片"
+            placeholder="如：旅游短居专员名片"
             placeholder-class="input-placeholder"
             maxlength="100"
           />
@@ -117,7 +117,7 @@
           <input
             v-model="form.tags"
             class="dy-input"
-            placeholder="逗号分隔，如：旅居养老,长照咨询"
+            placeholder="逗号分隔，如：旅游短居养老,长照咨询"
             placeholder-class="input-placeholder"
             maxlength="500"
           />

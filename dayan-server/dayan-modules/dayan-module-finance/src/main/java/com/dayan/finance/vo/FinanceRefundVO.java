@@ -18,7 +18,7 @@ public class FinanceRefundVO implements Serializable {
 
     private Long id;
     private String refundCode;
-    /** 订单类型：1=权益/2=场景/3=课程/4=旅居 */
+    /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居 */
     private Integer orderType;
     private String orderCode;
     private String paymentCode;

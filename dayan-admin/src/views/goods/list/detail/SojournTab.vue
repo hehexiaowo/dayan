@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 商品详情页 - 旅居配置 tab（goodsType=4 时显示）。
+ * 商品详情页 - 旅游短居配置 tab（goodsType=4 时显示）。
  *
  * 分页模式：useCrud（主键 id 自增 number，传 idKey:'id'，fixedParams:{goodsCode}）。
  *
@@ -11,7 +11,7 @@
  * - 后端校验：minDays ≤ maxDays（maxDays 可空=不限）、effectiveDate ≤ expireDate（expireDate 可空=不限）。
  *   update 时合并已有值再校验——前端表单做轻量预校验提示（非必须，后端兜底）。
  * - effectiveDate/expireDate 是 LocalDate（传 YYYY-MM-DD），用 el-date-picker。
- * - priceUnit 旅居默认"元/月"（与主表的"元"不同）。
+ * - priceUnit 旅游短居默认"元/月"（与主表的"元"不同）。
  * - salesCount create 硬编码 0，UpdateDTO 无此字段，表单不展示。
  * - roomTypeCode/careTypeCode/foodTypeCode 无跨模块选择器文档，暂用 el-input 兜底。
  */
@@ -42,7 +42,7 @@ const props = defineProps<{
   goodsCode: string
 }>()
 
-// ---------- 旅居配置列表（useCrud，主键 id 自增 number） ----------
+// ---------- 旅游短居配置列表（useCrud，主键 id 自增 number） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
   useCrud<GoodsSojourn, GoodsSojournQuery, number>(
     {
@@ -129,7 +129,7 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
-/** 旅居价格单位默认值（与主表的"元"不同） */
+/** 旅游短居价格单位默认值（与主表的"元"不同） */
 const DEFAULT_PRICE_UNIT_SOJOURN = '元/月'
 
 const form = reactive<GoodsSojourn>({
@@ -249,7 +249,7 @@ async function handleSubmit() {
 
 async function handleDeleteRow(row: GoodsSojourn) {
   if (!row.id) return
-  await ElMessageBox.confirm('确定删除该旅居配置记录？', '提示', {
+  await ElMessageBox.confirm('确定删除该旅游短居配置记录？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
@@ -295,7 +295,7 @@ async function handleDeleteRow(row: GoodsSojourn) {
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增旅居配置</el-button>
+        <el-button :icon="'Plus'" @click="openCreate">新增旅游短居配置</el-button>
       </el-form-item>
     </el-form>
 
@@ -354,7 +354,7 @@ async function handleDeleteRow(row: GoodsSojourn) {
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增旅居配置' : '编辑旅居配置'"
+      :title="dialogMode === 'create' ? '新增旅游短居配置' : '编辑旅游短居配置'"
       width="820px"
       :close-on-click-modal="false"
     >

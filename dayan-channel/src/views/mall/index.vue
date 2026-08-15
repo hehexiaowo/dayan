@@ -18,7 +18,7 @@ import { formatFileUrl } from '@/utils/file'
  * 后端防篡改：goodsName/unitPrice 会被服务端权威覆盖。
  */
 
-/** 商品类型 tag 颜色映射：1=primary(权益) / 2=success(场景) / 3=warning(课程) / 4=info(旅居) */
+/** 商品类型 tag 颜色映射：1=primary(权益) / 2=success(场景) / 3=warning(课程) / 4=info(旅游短居) */
 const GOODS_TYPE_TAG: Record<number, 'primary' | 'success' | 'warning' | 'info'> = {
   1: 'primary',
   2: 'success',

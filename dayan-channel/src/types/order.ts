@@ -8,14 +8,14 @@
  * - OrderEquity（权益订单，对齐 OrderEquityVO，本文件下方 `Order` interface）
  * - OrderScene（场景订单，对齐 OrderSceneVO）
  * - OrderCourse（课程订单，对齐 OrderCourseVO）
- * - OrderSojourn（旅居订单，对齐 OrderSojournVO）
+ * - OrderSojourn（旅游短居订单，对齐 OrderSojournVO）
  *
  * 金额单位均为「元」（后端 BigDecimal），前端直接显示，不要除以 100。
  */
 import type { PageQuery } from '@/types/common'
 
 /**
- * 订单类型：1=权益 / 2=场景 / 3=课程 / 4=旅居。
+ * 订单类型：1=权益 / 2=场景 / 3=课程 / 4=旅游短居。
  *
  * 对齐后端 finance_payment.order_type 与各订单表 order_type 字段。
  */
@@ -26,7 +26,7 @@ export enum OrderType {
   SCENE = 2,
   /** 课程订单 */
   COURSE = 3,
-  /** 旅居订单 */
+  /** 旅游短居订单 */
   SOJOURN = 4
 }
 
@@ -35,7 +35,7 @@ export const ORDER_TYPE_OPTIONS = [
   { label: '权益订单', value: OrderType.EQUITY },
   { label: '场景订单', value: OrderType.SCENE },
   { label: '课程订单', value: OrderType.COURSE },
-  { label: '旅居订单', value: OrderType.SOJOURN }
+  { label: '旅游短居订单', value: OrderType.SOJOURN }
 ] as const
 
 /**
@@ -285,16 +285,16 @@ export interface OrderCourseQuery extends PageQuery {
   clientCode?: string
 }
 
-// ==================== 旅居订单（OrderSojourn，对齐 OrderSojournVO） ====================
+// ==================== 旅游短居订单（OrderSojourn，对齐 OrderSojournVO） ====================
 
 /**
- * 旅居订单实体（渠道视角子集，对齐后端 OrderSojournVO）。
+ * 旅游短居订单实体（渠道视角子集，对齐后端 OrderSojournVO）。
  */
 export interface OrderSojourn {
   id?: number
   /** 订单编码（主键业务码） */
   orderCode?: string
-  /** 订单类型：4=旅居（OrderType.SOJOURN） */
+  /** 订单类型：4=旅游短居（OrderType.SOJOURN） */
   orderType?: number
   /** 渠道编码 */
   channelCode?: string
@@ -345,7 +345,7 @@ export interface OrderSojourn {
 }
 
 /**
- * 旅居订单分页查询参数（对齐后端 OrderSojournQueryDTO）。
+ * 旅游短居订单分页查询参数（对齐后端 OrderSojournQueryDTO）。
  *
  * 注意：channelCode 由后端从 ContextHolder 强制注入，前端不可传。
  */

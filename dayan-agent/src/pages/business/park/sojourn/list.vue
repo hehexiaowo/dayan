@@ -2,8 +2,8 @@
   <view class="list-page">
     <!-- 头部统计 -->
     <view class="header-section">
-      <text class="header-title">旅居养老</text>
-      <text class="header-subtitle">精选旅居机构 · 随心住 · 灵活周期</text>
+      <text class="header-title">旅游短居养老</text>
+      <text class="header-subtitle">精选旅游短居机构 · 随心住 · 灵活周期</text>
       <view v-if="!loading" class="header-count">
         <text class="count-num">{{ parks.length }}</text>
         <text class="count-label">家机构</text>
@@ -42,7 +42,7 @@
         </view>
         <text class="park-arrow">›</text>
       </view>
-      <DyEmpty v-if="!loading && !parks.length" text="暂无旅居机构" icon="空" color="gray" />
+      <DyEmpty v-if="!loading && !parks.length" text="暂无旅游短居机构" icon="空" color="gray" />
     </view>
   </view>
 </template>

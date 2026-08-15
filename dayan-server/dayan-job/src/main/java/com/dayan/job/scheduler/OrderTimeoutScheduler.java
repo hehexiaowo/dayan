@@ -77,7 +77,7 @@ public class OrderTimeoutScheduler {
             int courseCount = scanCourse();
             int sojournCount = scanSojourn();
             int total = equityCount + sceneCount + courseCount + sojournCount;
-            log.info("[订单超时取消] 扫描完成，权益 {} / 场景 {} / 课程 {} / 旅居 {} / 合计 {} 笔，耗时 {}ms",
+            log.info("[订单超时取消] 扫描完成，权益 {} / 场景 {} / 课程 {} / 旅游短居 {} / 合计 {} 笔，耗时 {}ms",
                     equityCount, sceneCount, courseCount, sojournCount, total,
                     System.currentTimeMillis() - start);
         } catch (Exception e) {
@@ -183,7 +183,7 @@ public class OrderTimeoutScheduler {
     }
 
     /**
-     * 扫描旅居订单：order_status=0 且 created_at < now - 30min。
+     * 扫描旅游短居订单：order_status=0 且 created_at < now - 30min。
      */
     private int scanSojourn() {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(DEFAULT_TIMEOUT_MINUTES);
@@ -202,7 +202,7 @@ public class OrderTimeoutScheduler {
                     orderSojournService.cancel(buildCancelDTO(order.getOrderCode()));
                     processed++;
                 } catch (Exception e) {
-                    log.warn("[订单超时取消-旅居] orderCode={} 取消失败: {}",
+                    log.warn("[订单超时取消-旅游短居] orderCode={} 取消失败: {}",
                             order.getOrderCode(), e.getMessage());
                 }
             }

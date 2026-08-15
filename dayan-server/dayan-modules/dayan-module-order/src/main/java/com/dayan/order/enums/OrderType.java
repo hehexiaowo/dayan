@@ -16,6 +16,6 @@ public final class OrderType {
     public static final int SCENE = 2;
     /** 课程购买订单 */
     public static final int COURSE = 3;
-    /** 旅居预订订单 */
+    /** 旅游短居预订订单 */
     public static final int SOJOURN = 4;
 }

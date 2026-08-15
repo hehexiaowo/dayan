@@ -210,7 +210,7 @@ public class FinancePaymentServiceImpl implements FinancePaymentService {
                 case 3: // 课程
                     orderCourseService.payCallback(payCallback);
                     break;
-                case 4: // 旅居
+                case 4: // 旅游短居
                     orderSojournService.payCallback(payCallback);
                     break;
                 default:

@@ -23,7 +23,7 @@ public class GoodsInfoCreateDTO {
     @Size(max = 100)
     private String goodsShortName;
 
-    /** 商品类型：1=权益 2=场景 3=课程 4=旅居 */
+    /** 商品类型：1=权益 2=场景 3=课程 4=旅游短居 */
     @NotNull(message = "商品类型不能为空")
     private Integer goodsType;
 

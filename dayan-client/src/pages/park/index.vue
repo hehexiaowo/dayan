@@ -63,7 +63,7 @@ const iconColor: Record<ParkCategory, 'blue' | 'orange' | 'green'> = {
 const descMap: Record<ParkCategory, string> = {
   vital: '自理活力老人 · CCRC 社区',
   care: '专业照护 · 医养结合',
-  sojourn: '候鸟式旅居 · 四季轮换',
+  sojourn: '候鸟式旅游短居 · 四季轮换',
 };
 
 async function loadCategories() {
@@ -75,7 +75,7 @@ async function loadCategories() {
     categories.value = [
       { category: 'vital', categoryName: '活力长居', count: 0, available: true },
       { category: 'care', categoryName: '照护长居', count: 0, available: true },
-      { category: 'sojourn', categoryName: '旅居养老', count: 0, available: false },
+      { category: 'sojourn', categoryName: '旅游短居养老', count: 0, available: false },
     ];
   } finally {
     loading.value = false;

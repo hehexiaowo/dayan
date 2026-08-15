@@ -308,7 +308,7 @@ loadPage()
                 v-model="form.serviceNetwork"
                 type="textarea"
                 :rows="2"
-                placeholder='JSON数组格式，如 ["*", "旅居*", "PARK001"]'
+                placeholder='JSON数组格式，如 ["*", "旅游短居*", "PARK001"]'
               />
             </el-form-item>
           </el-col>

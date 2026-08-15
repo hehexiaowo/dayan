@@ -3,7 +3,7 @@ package com.dayan.goods.dto;
 import lombok.Data;
 
 /**
- * 旅居 SKU（goods_sojourn）查询入参。
+ * 旅游短居 SKU（goods_sojourn）查询入参。
  */
 @Data
 public class GoodsSojournQueryDTO {

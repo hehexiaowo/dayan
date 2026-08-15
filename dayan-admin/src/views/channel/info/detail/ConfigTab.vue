@@ -398,7 +398,7 @@ function handleSubTabChange(name: string | number) {
                 <el-option :value="1" label="权益" />
                 <el-option :value="2" label="场景" />
                 <el-option :value="3" label="课程" />
-                <el-option :value="4" label="旅居" />
+                <el-option :value="4" label="旅游短居" />
               </el-select>
             </template>
           </el-table-column>

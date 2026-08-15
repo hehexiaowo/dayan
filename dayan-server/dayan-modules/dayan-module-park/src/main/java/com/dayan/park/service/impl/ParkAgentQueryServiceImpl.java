@@ -79,7 +79,7 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         return List.of(
                 countForTag("vital", "活力长居"),
                 countForTag("care", "照护长居"),
-                countForTag("sojourn", "旅居养老")
+                countForTag("sojourn", "旅游短居养老")
         );
     }
 
@@ -124,7 +124,7 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
                 List<ParkCardVO> parks = parkInfoMapper.selectParkCardList(
                         networkTag, query.getProvinceCode(), query.getCityCode(), query.getDistrictCode());
                 result.setParkList(parks);
-                // 无区域参数时（如旅居网络扁平列表），面包屑只显示网络名
+                // 无区域参数时（如旅游短居网络扁平列表），面包屑只显示网络名
                 if (query.getProvinceCode() == null || query.getProvinceCode().isBlank()) {
                     result.setBreadcrumb(categoryName(query.getCategory()));
                 } else {
@@ -271,7 +271,7 @@ public class ParkAgentQueryServiceImpl implements ParkAgentQueryService {
         return switch (category) {
             case "vital" -> "活力长居";
             case "care" -> "照护长居";
-            case "sojourn" -> "旅居养老";
+            case "sojourn" -> "旅游短居养老";
             default -> category;
         };
     }

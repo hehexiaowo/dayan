@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  * <p>编码规则：{@code "GD" + format(%05d, sequenceProvider.next("code:seq:GD:0"))}。
  * 平台共享表（AUTO_INCREMENT + DayanTenantHandler 忽略），主键为 id，业务键为 goodsCode。
  *
- * <p>商品类型 goodsType（1权益/2场景/3课程/4旅居）创建后不可变更；
+ * <p>商品类型 goodsType（1权益/2场景/3课程/4旅游短居）创建后不可变更；
  * 删除时按类型校验对应 SKU 子表无关联记录。
  */
 @Slf4j
@@ -195,7 +195,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
                         new LambdaQueryWrapper<GoodsScene>().eq(GoodsScene::getGoodsCode, goodsCode)));
                 case 3 -> checkSkuEmpty(goodsCode, "课程", courseMapper.selectCount(
                         new LambdaQueryWrapper<GoodsCourse>().eq(GoodsCourse::getGoodsCode, goodsCode)));
-                case 4 -> checkSkuEmpty(goodsCode, "旅居", sojournMapper.selectCount(
+                case 4 -> checkSkuEmpty(goodsCode, "旅游短居", sojournMapper.selectCount(
                         new LambdaQueryWrapper<GoodsSojourn>().eq(GoodsSojourn::getGoodsCode, goodsCode)));
                 default -> { /* 未知类型不阻塞删除 */ }
             }

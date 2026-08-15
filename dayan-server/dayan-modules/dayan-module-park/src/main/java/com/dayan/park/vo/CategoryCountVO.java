@@ -13,12 +13,12 @@ public class CategoryCountVO {
     /** 分类标识：vital/care/sojourn */
     private String category;
 
-    /** 分类中文名：活力长居/照护长居/旅居养老 */
+    /** 分类中文名：活力长居/照护长居/旅游短居养老 */
     private String categoryName;
 
     /** 该分类下已发布已上线的机构数 */
     private Integer count;
 
-    /** 是否可用（旅居=false，点击提示即将上线） */
+    /** 是否可用（旅游短居=false，点击提示即将上线） */
     private Boolean available;
 }

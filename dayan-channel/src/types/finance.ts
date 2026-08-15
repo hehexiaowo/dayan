@@ -137,7 +137,7 @@ export interface FinancePayment {
   id?: number
   /** 支付流水号（系统生成，PAY+序号） */
   paymentCode?: string
-  /** 订单类型：1=权益/2=场景/3=课程/4=旅居 */
+  /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居 */
   orderType?: number
   /** 关联订单编码 */
   orderCode?: string
@@ -174,7 +174,7 @@ export interface FinancePayment {
 export interface FinancePaymentQuery extends PageQuery {
   /** 支付流水号 */
   paymentCode?: string
-  /** 订单类型：1=权益/2=场景/3=课程/4=旅居 */
+  /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居 */
   orderType?: number
   /** 关联订单编码 */
   orderCode?: string
@@ -289,7 +289,7 @@ export interface FinanceInvoiceQuery extends PageQuery {
  * - paymentCode、payStatus、tradeNo 由服务端生成/管理。
  */
 export interface CreatePaymentData {
-  /** 订单类型：1=权益/2=场景/3=课程/4=旅居（必填） */
+  /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居（必填） */
   orderType: number
   /** 订单编码（必填） */
   orderCode: string

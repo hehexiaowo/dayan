@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 旅居 SKU（goods_sojourn）服务实现。
+ * 旅游短居 SKU（goods_sojourn）服务实现。
  *
  * <p>主键 id（AUTO_INCREMENT），业务键 skuCode（GJ + 5 位序列）。
  * 关联 {@code parkCode}/{@code roomTypeCode} 采用弱校验。时长范围 minDays/maxDays 校验。
@@ -117,7 +117,7 @@ public class GoodsSojournServiceImpl implements GoodsSojournService {
         entity.setStatus(dto.getStatus() == null ? DEFAULT_STATUS : dto.getStatus());
 
         sojournMapper.insert(entity);
-        log.info("创建旅居 SKU 成功: goodsCode={}, skuCode={}, id={}",
+        log.info("创建旅游短居 SKU 成功: goodsCode={}, skuCode={}, id={}",
                 dto.getGoodsCode(), entity.getSkuCode(), entity.getId());
         return entity.getId();
     }
@@ -154,7 +154,7 @@ public class GoodsSojournServiceImpl implements GoodsSojournService {
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
 
         sojournMapper.updateById(update);
-        log.info("更新旅居 SKU 成功: id={}", id);
+        log.info("更新旅游短居 SKU 成功: id={}", id);
     }
 
     @Override
@@ -162,7 +162,7 @@ public class GoodsSojournServiceImpl implements GoodsSojournService {
     public void delete(Long id) {
         GoodsSojourn existing = requireSku(id);
         sojournMapper.deleteById(existing.getId());
-        log.info("删除旅居 SKU 成功: id={}", id);
+        log.info("删除旅游短居 SKU 成功: id={}", id);
     }
 
     // ====== 内部方法 ======
@@ -211,7 +211,7 @@ public class GoodsSojournServiceImpl implements GoodsSojournService {
     private GoodsSojourn requireSku(Long id) {
         GoodsSojourn entity = sojournMapper.selectById(id);
         if (entity == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "旅居 SKU 不存在: id=" + id);
+            throw new BusinessException(ErrorCode.NOT_FOUND, "旅游短居 SKU 不存在: id=" + id);
         }
         return entity;
     }

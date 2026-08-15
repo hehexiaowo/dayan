@@ -51,7 +51,7 @@ export function getRefund(refundCode: string): Promise<FinanceRefund> {
  * 成功后返回新生成的 refundCode。
  */
 export function applyRefund(data: {
-  /** 订单类型：1=权益/2=场景/3=课程/4=旅居（NotNull） */
+  /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居（NotNull） */
   orderType: number
   /** 订单编号（NotBlank） */
   orderCode: string

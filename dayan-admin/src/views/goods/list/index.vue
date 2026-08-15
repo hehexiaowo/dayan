@@ -42,7 +42,7 @@ function categoryName(code?: string): string {
  * - 详情入口：操作列「详情」按钮跳转 GoodsDetail（按 goodsType 显示对应 SKU 子表）。
  *
  * 状态约定（对齐 DDL，5 态 / 4 值）：
- * - goodsType：1权益商品 / 2场景商品 / 3课程商品 / 4旅居商品
+ * - goodsType：1权益商品 / 2场景商品 / 3课程商品 / 4旅游短居商品
  * - goodsStatus：0草稿 / 1待上架 / 2已上架 / 3已下架 / 4已售罄
  * - auditStatus：0待审 / 1通过 / 2驳回
  *

@@ -24,12 +24,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Client 端「我的订单」接口（旅居订单）。
+ * Client 端「我的订单」接口（旅游短居订单）。
  *
- * <p>路径：{@code /client-api/orders}。仅查询当前登录客户的旅居订单（order_sojourn），
+ * <p>路径：{@code /client-api/orders}。仅查询当前登录客户的旅游短居订单（order_sojourn），
  * clientCode 取自登录态 {@code ContextHolder.getAccountCode()}（loginId=clientCode），防越权。
  *
- * <p>当前仅含旅居订单；权益订单无 client_code 关联，经「我的权益」入口单独管理。
+ * <p>当前仅含旅游短居订单；权益订单无 client_code 关联，经「我的权益」入口单独管理。
  * order_sojourn 的 deleted 由 MyBatis-Plus @TableLogic 自动过滤。
  *
  * <p>状态码 → 文案以 {@link com.dayan.order.enums.OrderEvent} 注释 + state_machine_seed 为准：
@@ -43,7 +43,7 @@ public class ClientOrderController {
 
     private final OrderSojournMapper orderSojournMapper;
 
-    @Operation(summary = "我的旅居订单（分页，按状态分组）")
+    @Operation(summary = "我的旅游短居订单（分页，按状态分组）")
     @GetMapping
     public R<PageResult<ClientOrderVO>> page(
             @RequestParam(defaultValue = "1") long current,

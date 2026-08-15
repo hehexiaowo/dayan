@@ -104,7 +104,7 @@ public class ChannelInvoiceController {
      * {@code OrderXxxService.getDetail} 在订单不存在时<b>抛 BusinessException 而非返回 null</b>
      * （见 OrderEquityServiceImpl.requireOrder），故对每一类 try/catch 尝试。
      *
-     * <p>探测顺序：权益→场景→课程→旅居。orderCode 在 4 类订单间理论上唯一（生成规则隔离），
+     * <p>探测顺序：权益→场景→课程→旅游短居。orderCode 在 4 类订单间理论上唯一（生成规则隔离），
      * 首个命中的即为目标；若全部不存在或存在但 channelCode 不匹配，返回 null（调用方按无权访问处理）。
      *
      * @param orderCode   关联订单编码
@@ -140,7 +140,7 @@ public class ChannelInvoiceController {
             }
         } catch (BusinessException ignore) {
         }
-        // 旅居
+        // 旅游短居
         try {
             OrderSojournVO o = orderSojournService.getDetail(orderCode);
             if (o != null && channelCode.equals(o.getChannelCode())) {

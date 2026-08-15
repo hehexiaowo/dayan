@@ -12,7 +12,7 @@ import {
 } from '@/types/order'
 
 /**
- * 旅居预订订单管理页（第一版简化）。
+ * 旅游短居预订订单管理页（第一版简化）。
  *
  * - 订单由业务流程创建，本页以只读列表为主：搜索 + 表格 + 分页 + 详情查看。
  * - 生命周期操作只保留「取消订单」（pay-callback/complete/apply-refund 暂留 TODO）。
@@ -203,8 +203,8 @@ loadPage()
         <el-form-item label="客户编码">
           <el-input v-model="query.clientCode" placeholder="客户编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item label="旅居基地">
-          <el-input v-model="query.parkCode" placeholder="旅居基地编码" clearable @keyup.enter="handleSearch" />
+        <el-form-item label="旅游短居基地">
+          <el-input v-model="query.parkCode" placeholder="旅游短居基地编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="入住日期">
           <el-date-picker
@@ -239,7 +239,7 @@ loadPage()
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>旅居订单列表</span>
+          <span>旅游短居订单列表</span>
         </div>
       </template>
 
@@ -254,7 +254,7 @@ loadPage()
         <el-table-column prop="clientFullName" label="客户" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">{{ row.clientFullName || row.clientCode || '--' }}</template>
         </el-table-column>
-        <el-table-column prop="parkFullName" label="旅居基地" min-width="140" show-overflow-tooltip>
+        <el-table-column prop="parkFullName" label="旅游短居基地" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ row.parkFullName || row.parkCode || '--' }}</template>
         </el-table-column>
         <el-table-column prop="checkinDate" label="入住日期" width="120" align="center">
@@ -311,7 +311,7 @@ loadPage()
     </el-card>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="旅居订单详情" width="820px" :close-on-click-modal="false">
+    <el-dialog v-model="detailVisible" title="旅游短居订单详情" width="820px" :close-on-click-modal="false">
       <el-descriptions :column="2" border>
         <el-descriptions-item label="订单编号">{{ detail.orderCode }}</el-descriptions-item>
         <el-descriptions-item label="订单类型">{{ detail.orderType ?? '--' }}</el-descriptions-item>
@@ -320,7 +320,7 @@ loadPage()
         <el-descriptions-item label="分销商">{{ detail.distributorFullName || detail.distributorCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="客户">{{ detail.clientFullName || detail.clientCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="商品">{{ detail.goodsName || detail.goodsCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="旅居基地">{{ detail.parkFullName || detail.parkCode || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="旅游短居基地">{{ detail.parkFullName || detail.parkCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="房型编码">{{ detail.roomTypeCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="SKU">{{ detail.skuName || detail.skuCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="入住日期">{{ detail.checkinDate || '--' }}</el-descriptions-item>

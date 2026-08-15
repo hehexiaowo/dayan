@@ -30,7 +30,7 @@ public class ServiceItem extends BaseEntity {
     private Integer itemCategory;
 
     /**
-     * 安排权益子类（1=旅居,2=活力长居,3=照护长居）；费用权益为NULL
+     * 安排权益子类（1=旅游短居,2=活力长居,3=照护长居）；费用权益为NULL
      * @deprecated 业态统一走 {@link com.dayan.common.core.enums.NetworkType}（network_tags），本字段仅存量数据沿用，勿在新代码使用
      */
     private Integer itemSubtype;

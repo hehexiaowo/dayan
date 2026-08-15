@@ -36,9 +36,9 @@ import { PAY_TYPE_OPTIONS, type PayType } from '@/types/finance'
 /**
  * 订单管理页（采购结算目录 - 4 类订单统一管理）。
  *
- * 4 个 tab：权益 / 场景 / 课程 / 旅居，每个 tab 一份独立的 useCrud 实例
+ * 4 个 tab：权益 / 场景 / 课程 / 旅游短居，每个 tab 一份独立的 useCrud 实例
  * （loading/tableData/total/query 互不影响）。各 tab 搜索条件统一为
- * 「订单编码 + 订单状态」两项（产品裁定：减少代码量，场景/课程/旅居的特有
+ * 「订单编码 + 订单状态」两项（产品裁定：减少代码量，场景/课程/旅游短居的特有
  * 搜索项 sceneCode/courseCode/parkCode 暂不暴露在搜索栏，仍可通过订单编码精确查询）。
  *
  * 懒加载：权益 tab 默认激活且 onMounted 即加载；其余 tab 首次切换时触发 loadPage
@@ -167,7 +167,7 @@ const ORDER_TYPE_LABEL_DETAIL: Record<TabKey, string> = {
   equity: '权益订单',
   scene: '场景订单',
   course: '课程订单',
-  sojourn: '旅居订单'
+  sojourn: '旅游短居订单'
 }
 
 /** 是否可取消（仅待支付 / 退款中可取消） */
@@ -266,20 +266,20 @@ const cancelSojourn = makeCancelHandler(cancelOrderSojourn, () => sojournCrud.lo
 
 /**
  * 订单类型 → 文案映射（支付弹窗头部展示用）。
- * 1=权益 / 2=场景 / 3=课程 / 4=旅居（与 finance_payment.order_type 一致）。
+ * 1=权益 / 2=场景 / 3=课程 / 4=旅游短居（与 finance_payment.order_type 一致）。
  */
 const ORDER_TYPE_LABEL: Record<number, string> = {
   1: '权益订单',
   2: '场景订单',
   3: '课程订单',
-  4: '旅居订单'
+  4: '旅游短居订单'
 }
 
 /** 支付弹窗状态（4 tab 共享一份） */
 const payDialog = reactive({
   visible: false,
   submitting: false,
-  /** 订单类型：1权益/2场景/3课程/4旅居 */
+  /** 订单类型：1权益/2场景/3课程/4旅游短居 */
   orderType: 0 as number,
   /** 订单编码 */
   orderCode: '' as string,
@@ -652,8 +652,8 @@ async function handleSubmitPay() {
         </div>
       </el-tab-pane>
 
-      <!-- ==================== 旅居订单 ==================== -->
-      <el-tab-pane label="旅居订单" name="sojourn" lazy>
+      <!-- ==================== 旅游短居订单 ==================== -->
+      <el-tab-pane label="旅游短居订单" name="sojourn" lazy>
         <div class="tab-inner">
           <el-card shadow="never" class="search-card">
             <el-form :inline="true" :model="sojournCrud.query" @submit.prevent>
@@ -684,7 +684,7 @@ async function handleSubmitPay() {
 
           <el-card shadow="never">
             <template #header>
-              <div class="card-header"><span>旅居订单列表</span></div>
+              <div class="card-header"><span>旅游短居订单列表</span></div>
             </template>
             <el-table
               v-loading="sojournCrud.loading.value"
@@ -908,7 +908,7 @@ async function handleSubmitPay() {
             </el-descriptions>
           </div>
 
-          <!-- ==================== 旅居订单详情 ==================== -->
+          <!-- ==================== 旅游短居订单详情 ==================== -->
           <div v-else-if="detailKind === 'sojourn'" class="detail-section">
             <h4 class="detail-section-title">基本信息</h4>
             <el-descriptions :column="2" border size="small">

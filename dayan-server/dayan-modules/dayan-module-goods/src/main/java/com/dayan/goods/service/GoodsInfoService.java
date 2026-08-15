@@ -14,7 +14,7 @@ import java.util.List;
  * 商品 SPU（goods_info）服务。
  *
  * <p>{@code goodsCode} 由 {@code "GD" + 5 位序列} 生成，全局唯一。
- * 商品类型 {@code goodsType}（1权益/2场景/3课程/4旅居）决定关联哪类 SKU 子表，
+ * 商品类型 {@code goodsType}（1权益/2场景/3课程/4旅游短居）决定关联哪类 SKU 子表，
  * 类型创建后不可变更。
  */
 public interface GoodsInfoService {

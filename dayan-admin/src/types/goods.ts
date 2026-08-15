@@ -5,7 +5,7 @@
  * GoodsCourse / GoodsSojourn）与对应的 DTO（DDL 来源：db/migration/12_goods.sql）。
  *
  * 枚举说明（重要，对齐 DDL 5 态）：
- * - GoodsType：4 值（1权益/2场景/3课程/4旅居），按 goodsType 互斥决定显示哪个 SKU 子表。
+ * - GoodsType：4 值（1权益/2场景/3课程/4旅游短居），按 goodsType 互斥决定显示哪个 SKU 子表。
  * - GoodsStatus：5 态（0草稿/1待上架/2已上架/3已下架/4已售罄）。
  * - shelf 接口语义偏差：上下架接口 GoodsInfoShelfDTO 只支持 0/1 二态（0下架/1上架），
  *   与 DDL 5 态存在语义偏差（shelf 的 1 在 DDL 是"待上架"，而非"已上架"）。
@@ -15,7 +15,7 @@ import type { PageQuery } from '@/types/common'
 import { AuditStatus, AUDIT_STATUS_OPTIONS } from '@/types/scene'
 
 /**
- * 商品类型：1=权益商品 / 2=场景商品 / 3=课程商品 / 4=旅居商品（对齐 DDL）。
+ * 商品类型：1=权益商品 / 2=场景商品 / 3=课程商品 / 4=旅游短居商品（对齐 DDL）。
  *
  * 创建后不可改（UpdateDTO 无此字段）；按该值互斥决定详情页显示哪个 SKU 子表。
  */
@@ -26,7 +26,7 @@ export enum GoodsType {
   SCENE = 2,
   /** 课程商品 */
   COURSE = 3,
-  /** 旅居商品 */
+  /** 旅游短居商品 */
   SOJOURN = 4
 }
 
@@ -35,7 +35,7 @@ export const GOODS_TYPE_OPTIONS = [
   { label: '权益商品', value: GoodsType.EQUITY },
   { label: '场景商品', value: GoodsType.SCENE },
   { label: '课程商品', value: GoodsType.COURSE },
-  { label: '旅居商品', value: GoodsType.SOJOURN }
+  { label: '旅游短居商品', value: GoodsType.SOJOURN }
 ] as const
 
 /**
@@ -90,7 +90,7 @@ export interface GoodsInfo {
   goodsName: string
   /** 商品简称 */
   goodsShortName?: string
-  /** 商品类型：1权益/2场景/3课程/4旅居（创建后不可改） */
+  /** 商品类型：1权益/2场景/3课程/4旅游短居（创建后不可改） */
   goodsType?: number
   /** 分类编码 */
   categoryCode?: string
@@ -323,23 +323,23 @@ export interface GoodsCourseQuery extends PageQuery {
 }
 
 // ============================================================================
-// 子表 C - 旅居配置 Sojourn（GoodsSojourn，表 goods_sojourn）
+// 子表 C - 旅游短居配置 Sojourn（GoodsSojourn，表 goods_sojourn）
 // ============================================================================
 
 /**
- * 旅居配置（后端 GoodsSojourn，表 goods_sojourn）。
+ * 旅游短居配置（后端 GoodsSojourn，表 goods_sojourn）。
  *
  * 主键 id（自增 number），业务键 skuCode（服务端生成 GJ 前缀）。
  *
  * 后端校验：minDays ≤ maxDays（maxDays 可空=不限）、effectiveDate ≤ expireDate（expireDate 可空=不限）。
- * priceUnit 旅居默认"元/月"。effectiveDate/expireDate 是 LocalDate（YYYY-MM-DD）。
+ * priceUnit 旅游短居默认"元/月"。effectiveDate/expireDate 是 LocalDate（YYYY-MM-DD）。
  */
 export interface GoodsSojourn {
   /** 自增 id（主键） */
   id?: number
   /** 商品编码（关联键） */
   goodsCode: string
-  /** 旅居规格编码（服务端生成） */
+  /** 旅游短居规格编码（服务端生成） */
   skuCode?: string
   /** 规格名称 */
   skuName?: string
@@ -356,7 +356,7 @@ export interface GoodsSojourn {
   foodTypeCode?: string
   /** SKU 价格 */
   skuPrice?: number
-  /** 价格单位（旅居默认"元/月"） */
+  /** 价格单位（旅游短居默认"元/月"） */
   priceUnit?: string
   /** 最少入住天数（≤ maxDays，maxDays 可空） */
   minDays?: number
@@ -378,7 +378,7 @@ export interface GoodsSojourn {
 }
 
 /**
- * 旅居配置分页查询参数（后端 GoodsSojournQueryDTO）。
+ * 旅游短居配置分页查询参数（后端 GoodsSojournQueryDTO）。
  */
 export interface GoodsSojournQuery extends PageQuery {
   /** 商品编码（详情页 tab 固定携带） */

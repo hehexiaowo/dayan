@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 @Data
 public class CreatePaymentDTO {
 
-    /** 订单类型：1=权益/2=场景/3=课程/4=旅居 */
+    /** 订单类型：1=权益/2=场景/3=课程/4=旅游短居 */
     @NotNull(message = "订单类型不能为空")
     private Integer orderType;
 

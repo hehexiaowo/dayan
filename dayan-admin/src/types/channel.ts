@@ -423,7 +423,7 @@ export interface ChannelConfigGoods {
   id?: number
   channelCode?: string
   goodsCode: string
-  /** 商品类型：1权益/2场景/3课程/4旅居（与 goods 域 GoodsType 对齐） */
+  /** 商品类型：1权益/2场景/3课程/4旅游短居（与 goods 域 GoodsType 对齐） */
   goodsType?: number
   customName?: string
   /** 自定义价格 */

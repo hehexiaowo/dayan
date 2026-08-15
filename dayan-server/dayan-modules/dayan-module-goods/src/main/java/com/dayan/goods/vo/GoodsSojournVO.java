@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 旅居 SKU（goods_sojourn）VO。
+ * 旅游短居 SKU（goods_sojourn）VO。
  */
 @Data
 public class GoodsSojournVO {
