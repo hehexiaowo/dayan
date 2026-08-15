@@ -176,6 +176,20 @@ public class BailianKnowledgeClient {
 
     /** 知识库检索（RAG 召回），返回命中片段 */
     public List<RetrieveNode> retrieve(String indexId, String queryText, int topK, boolean enableReranking) {
+        return retrieve(indexId, queryText, topK, enableReranking, null);
+    }
+
+    /**
+     * 知识库检索（按文档 ID 过滤，勾选文档精准召回）。
+     *
+     * <p>SearchFilters 须为 JSON 数组（子分组）形式，按切片元数据字段 doc_id 多值 IN 过滤，
+     * 即 {@code [{"doc_id":["<documentId>"]}]}}（实测：对象形式 {"documentIds":[...]} 报
+     * InvalidSearchFilters "JSON Array parsing error"）。
+     *
+     * @param documentIds 限定检索的文档 ID（null/空 = 不过滤）
+     */
+    public List<RetrieveNode> retrieve(String indexId, String queryText, int topK,
+                                       boolean enableReranking, List<String> documentIds) {
         Map<String, String> query = new HashMap<>();
         query.put("IndexId", indexId);
         query.put("Query", queryText);
@@ -183,6 +197,13 @@ public class BailianKnowledgeClient {
         query.put("SparseSimilarityTopK", String.valueOf(topK));
         query.put("EnableReranking", String.valueOf(enableReranking));
         query.put("RerankTopN", String.valueOf(topK));
+        if (documentIds != null && !documentIds.isEmpty()) {
+            JSONObject condition = new JSONObject();
+            condition.set("doc_id", documentIds);
+            JSONArray filters = new JSONArray();
+            filters.add(condition);
+            query.put("SearchFilters", filters.toString());
+        }
         JSONObject resp = callIndex("Retrieve", "/index/retrieve", query);
         JSONObject data = resp.getJSONObject("Data");
         List<RetrieveNode> nodes = new ArrayList<>();

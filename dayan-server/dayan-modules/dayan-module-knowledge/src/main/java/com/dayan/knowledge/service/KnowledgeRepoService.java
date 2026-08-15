@@ -75,4 +75,7 @@ public interface KnowledgeRepoService {
 
     /** 检索测试（仅返回命中片段，不调模型） */
     List<KnowledgeChatVO.Citation> retrieve(Long id, String query, Integer topK);
+
+    /** 按文档 ID 过滤检索（勾选文档精准召回；documentIds 须属于该仓库） */
+    List<KnowledgeChatVO.Citation> retrieveByDocuments(Long id, String query, Integer topK, List<String> documentIds);
 }

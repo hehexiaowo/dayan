@@ -394,6 +394,25 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<KnowledgeChatVO.Citation> retrieveByDocuments(Long id, String query, Integer topK, List<String> documentIds) {
+        KnowledgeRepo repo = requireRepo(id);
+        requireIndexId(repo);
+        if (StrUtil.isBlank(query)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "检索词不能为空");
+        }
+        if (documentIds == null || documentIds.isEmpty()) {
+            return List.of();
+        }
+        int k = topK == null || topK < 1 ? DEFAULT_TOP_K : topK;
+        return requireClient().retrieve(repo.getIndexId(), query, k, true, documentIds).stream()
+                .map(n -> KnowledgeChatVO.Citation.builder()
+                        .text(StrUtil.cleanBlank(n.getText()))
+                        .score(n.getScore())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     // ==================== 内部工具 ====================
 
     private boolean isJobFinished(String status) {
