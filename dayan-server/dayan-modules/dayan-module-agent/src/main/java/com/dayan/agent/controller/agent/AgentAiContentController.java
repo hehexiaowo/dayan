@@ -10,11 +10,14 @@ import com.dayan.agent.vo.AgentContentVO;
 import com.dayan.agent.vo.AiGenerateResultVO;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.agent.model.AiRefTemplates;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Agent AI 内容接口：生成（不落库）+ 个人内容 CRUD。
@@ -34,6 +37,12 @@ public class AgentAiContentController {
     @PostMapping("/generate")
     public R<AiGenerateResultVO> generate(@RequestBody @Valid AiGenerateDTO dto) {
         return R.ok(aiContentGenerateService.generate(dto));
+    }
+
+    @Operation(summary = "内置范文模板（平台风格参考）")
+    @GetMapping("/templates")
+    public R<List<AiRefTemplates.RefTemplate>> templates() {
+        return R.ok(AiRefTemplates.TEMPLATES);
     }
 
     @Operation(summary = "保存 AI 生成内容")
