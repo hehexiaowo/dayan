@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { type FormInstance, type FormRules } from 'element-plus'
-import { useCrud } from '@/composables/useCrud'
-import {
-  pageConfigs,
-  createConfig,
-  updateConfig,
-  deleteConfig
-} from '@/api/config'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { pageConfigs, createConfig, updateConfig, deleteConfig } from '@/api/config'
 import {
   type SystemConfig,
   type ConfigQuery,
@@ -18,36 +13,107 @@ import {
 } from '@/types/config'
 
 /**
- * 系统配置管理页（完整 CRUD，外部平台核心凭据仓库：oss / map / sms / payment）。
+ * 系统配置管理页（分组卡片式，外部平台核心凭据仓库：oss / map / sms / payment）。
  *
- * - configGroup 筛选 + 分页列表；
- * - isSecret=1 的配置双重脱敏（后端响应已置 ******，前端兜底不展示原值）；
- * - 编辑敏感值留空提交 = 保持原值不变（后端 update 语义），填写即覆盖。
+ * - 每个配置分组一张卡片（标题 + 说明 + 配置项清单），替代原平铺表格；
+ * - 卡片内按「名称 + Key + 值 + 操作」一行一项，敏感值双重脱敏（后端已置 ******）；
+ * - 编辑敏感值留空提交 = 保持原值不变（后端 update 语义），填写即覆盖；
+ * - 已知凭据分组恒展示（空组提示未配置），自定义分组自动追加卡片。
  */
 
-const crud = useCrud<SystemConfig, ConfigQuery>(
+/** 已知凭据分组的卡片元数据（展示顺序即卡片顺序） */
+const GROUP_CARDS = [
   {
-    page: pageConfigs,
-    create: createConfig,
-    update: updateConfig,
-    remove: deleteConfig
+    value: 'map',
+    label: '地图服务',
+    desc: '天地图开放平台。前端暴露型 Key，agent H5 运行时拉取（/agent-api/v1/config/map-key），改后全端生效'
   },
-  { initialQuery: { configGroup: '', configKey: '' } }
-)
+  {
+    value: 'oss',
+    label: '对象存储（MinIO / S3）',
+    desc: '文件上传与访问凭据。各服务 60 秒内热生效（无需重启）；配置缺失的键回退 MINIO_* 环境变量'
+  },
+  {
+    value: 'sms',
+    label: '短信平台',
+    desc: '验证码短信通道。当前 mock=开发态日志验证码；接入阿里云后由真实实现读取下列键'
+  },
+  {
+    value: 'payment',
+    label: '支付渠道',
+    desc: '微信 / 支付宝收单凭据（预留槽位，接入支付网关后消费）'
+  }
+] as const
 
-const {
-  loading,
-  tableData,
-  total,
-  query,
-  loadPage,
-  handleSearch,
-  handlePageChange,
-  handleSizeChange,
-  handleCreate,
-  handleUpdate,
-  handleDelete
-} = crud
+// ---------------- 数据加载与分组 ----------------
+const loading = ref(false)
+const allRows = ref<SystemConfig[]>([])
+const keyword = ref('')
+
+async function load() {
+  loading.value = true
+  try {
+    const result = await pageConfigs({ current: 1, size: 500, configGroup: '', configKey: '' } as ConfigQuery)
+    allRows.value = [...result.records].sort(
+      (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || (a.configKey || '').localeCompare(b.configKey || '')
+    )
+  } finally {
+    loading.value = false
+  }
+}
+
+/** 卡片视图模型：分组元数据 + 该组配置项（按关键字前端过滤） */
+interface GroupCard {
+  value: string
+  label: string
+  desc: string
+  items: SystemConfig[]
+}
+
+const groupCards = computed<GroupCard[]>(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  const match = (r: SystemConfig) =>
+    !kw ||
+    (r.configKey || '').toLowerCase().includes(kw) ||
+    (r.configName || '').toLowerCase().includes(kw)
+
+  const cards: GroupCard[] = GROUP_CARDS.map((g) => ({
+    value: g.value,
+    label: g.label,
+    desc: g.desc,
+    items: allRows.value.filter((r) => r.configGroup === g.value && match(r))
+  }))
+
+  // 自定义分组（已知凭据组之外的存量/新增行）自动追加卡片
+  const known = new Set<string>(GROUP_CARDS.map((g) => g.value))
+  const extras = [...new Set(allRows.value.map((r) => r.configGroup).filter((g) => g && !known.has(g)))]
+  for (const g of extras) {
+    const opt = CONFIG_GROUP_OPTIONS.find((o) => o.value === g)
+    cards.push({
+      value: g,
+      label: opt ? opt.label : `分组 ${g}`,
+      desc: '自定义配置分组',
+      items: allRows.value.filter((r) => r.configGroup === g && match(r))
+    })
+  }
+  // 无匹配关键字的空卡片不占位（已知组在无关键字时恒展示）
+  return kw ? cards.filter((c) => c.items.length > 0) : cards
+})
+
+const totalCount = computed(() => allRows.value.length)
+
+// ---------------- 值展示 ----------------
+
+/** 列表脱敏显示：isSecret=1 时不展示后端返回值（双重保险，后端已统一脱敏 ******） */
+function displayValue(row: SystemConfig): string {
+  if (row.isSecret === 1) return '******'
+  return row.configValue ?? ''
+}
+
+/** 未配置判断看原始值（空值敏感项显示「未配置」而非 ******，避免误读为已配置） */
+function isUnset(row: SystemConfig): boolean {
+  return !(row.configValue ?? '').trim()
+}
 
 // ---------------- 弹窗与表单 ----------------
 const dialogVisible = ref(false)
@@ -55,15 +121,15 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
 
-/** 表单默认值（新增时使用） */
-function defaultForm(): SystemConfig {
+/** 表单默认值（新增时使用，可预置分组） */
+function defaultForm(group = 'system'): SystemConfig {
   return {
-    configGroup: 'system',
+    configGroup: group,
     configKey: '',
     configValue: '',
     valueType: 'string',
-    env: 'all',
-    scope: 'system',
+    env: 'prod',
+    scope: 'global',
     organCode: null,
     userCode: null,
     configName: '',
@@ -90,18 +156,17 @@ const rules: FormRules<SystemConfig> = {
   env: [{ required: true, message: '请选择环境', trigger: 'change' }]
 }
 
-/** 打开新增弹窗 */
-function openCreate() {
+/** 打开新增弹窗（卡片入口可预置分组） */
+function openCreate(group?: string) {
   dialogMode.value = 'create'
-  Object.assign(form, defaultForm())
+  Object.assign(form, defaultForm(group))
   dialogVisible.value = true
 }
 
-/** 打开编辑弹窗（回填） */
+/** 打开编辑弹窗（回填；敏感值不回填——后端已脱敏，留空提交即保持原值） */
 function openEdit(row: SystemConfig) {
   dialogMode.value = 'edit'
   Object.assign(form, defaultForm(), row)
-  // 敏感配置的值不回填（后端已脱敏为 ******），留空提交即保持原值
   if (form.isSecret === 1) {
     form.configValue = ''
   }
@@ -120,11 +185,14 @@ async function handleSubmit() {
   submitting.value = true
   try {
     if (dialogMode.value === 'create') {
-      await handleCreate({ ...form })
+      await createConfig({ ...form })
+      ElMessage.success('配置已新增')
     } else {
-      await handleUpdate(form.configKey, { ...form })
+      await updateConfig(form.configKey, { ...form })
+      ElMessage.success('配置已保存（运行时配置各服务最迟 60 秒生效）')
     }
     dialogVisible.value = false
+    await load()
   } catch (err) {
     // 错误消息已由响应拦截器统一提示
     void err
@@ -133,135 +201,117 @@ async function handleSubmit() {
   }
 }
 
-/** 删除 */
+/** 删除（二次确认） */
 async function onDelete(row: SystemConfig) {
   try {
-    await handleDelete(row.configKey, `确定删除配置「${row.configName || row.configKey}」？`)
+    await ElMessageBox.confirm(
+      `确定删除配置「${row.configName || row.configKey}」？删除后该键回退默认值/环境变量。`,
+      '删除确认',
+      { type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await deleteConfig(row.configKey)
+    ElMessage.success('配置已删除')
+    await load()
   } catch (err) {
     void err
   }
 }
 
-/** 列表脱敏显示：isSecret=1 时不展示后端返回值（双重保险，后端已统一脱敏 ******） */
-function displayValue(row: SystemConfig): string {
-  if (row.isSecret === 1) return '******'
-  return row.configValue ?? ''
-}
-
-/** 值类型标签颜色 */
-function valueTypeTagType(vt: string) {
-  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
-    string: 'info',
-    number: 'success',
-    boolean: 'warning',
-    json: 'danger'
-  }
-  return map[vt] || 'info'
-}
-
-/** 重置搜索条件 */
+/** 重置搜索 */
 function handleReset() {
-  query.configGroup = ''
-  query.configKey = ''
-  handleSearch()
+  keyword.value = ''
 }
 
-/** env 标签文案 */
-function envLabel(env: string): string {
-  const o = CONFIG_ENV_OPTIONS.find((i) => i.value === env)
-  return o ? o.label : env
-}
-
-// 首次加载
-loadPage()
+onMounted(load)
 </script>
 
 <template>
   <div class="config-page">
-    <el-card shadow="never">
-      <!-- 搜索栏 -->
+    <el-card shadow="never" class="toolbar-card">
       <div class="toolbar">
-        <el-select
-          v-model="query.configGroup"
-          placeholder="全部分组"
-          clearable
-          style="width: 180px"
-          @change="handleSearch"
-        >
-          <el-option
-            v-for="item in CONFIG_GROUP_OPTIONS"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
-        <el-input
-          v-model="query.configKey"
-          placeholder="配置 Key"
-          clearable
-          style="width: 220px"
-          @keyup.enter="handleSearch"
-        />
+        <div class="toolbar-hint">
+          系统外部平台核心凭据仓库：修改保存后各服务最迟 60 秒热生效；敏感值列表脱敏、编辑留空即保持原值。
+        </div>
         <div class="toolbar-actions">
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>查询
-          </el-button>
+          <el-input
+            v-model="keyword"
+            placeholder="按 Key / 名称过滤"
+            clearable
+            style="width: 220px"
+          >
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
           <el-button @click="handleReset">
             <el-icon><Refresh /></el-icon>重置
           </el-button>
-          <el-button @click="openCreate">
+          <el-button type="primary" @click="openCreate()">
             <el-icon><Plus /></el-icon>新增配置
           </el-button>
         </div>
       </div>
-
-      <!-- 列表 -->
-      <el-table
-        v-loading="loading"
-        :data="tableData"
-        border
-        stripe
-        empty-text="暂无配置数据"
-      >
-        <el-table-column prop="configKey" label="配置 Key" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="configName" label="名称" min-width="160" show-overflow-tooltip />
-        <el-table-column label="值" min-width="180">
-          <template #default="{ row }">
-            <span :class="{ masked: row.isSecret === 1 }">{{ displayValue(row) }}</span>
-            <el-tag v-if="row.isSecret === 1" type="danger" size="small" class="secret-tag">敏感</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="configGroup" label="分组" width="110" align="center" />
-        <el-table-column label="值类型" width="90" align="center">
-          <template #default="{ row }">
-            <el-tag :type="valueTypeTagType(row.valueType)" size="small">{{ row.valueType }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="环境" width="80" align="center">
-          <template #default="{ row }">{{ envLabel(row.env) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="150" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="onDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页 -->
-      <div class="pager">
-        <el-pagination
-          v-model:current-page="query.current"
-          v-model:page-size="query.size"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          background
-          @current-change="handlePageChange"
-          @size-change="handleSizeChange"
-        />
-      </div>
     </el-card>
+
+    <div v-loading="loading" class="cards-wrap">
+      <el-row :gutter="16">
+        <el-col
+          v-for="card in groupCards"
+          :key="card.value"
+          :xs="24"
+          :sm="24"
+          :md="12"
+          :lg="12"
+        >
+          <el-card shadow="never" class="group-card">
+            <template #header>
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="card-name">{{ card.label }}</span>
+                  <el-tag size="small" type="info">{{ card.items.length }} 项</el-tag>
+                </div>
+                <el-button link type="primary" size="small" @click="openCreate(card.value)">
+                  <el-icon><Plus /></el-icon>新增
+                </el-button>
+              </div>
+              <div class="card-desc">{{ card.desc }}</div>
+            </template>
+
+            <div v-if="card.items.length === 0" class="empty-group">暂无配置项</div>
+            <div v-else class="cfg-list">
+              <div v-for="row in card.items" :key="row.configKey" class="cfg-row">
+                <div class="cfg-info">
+                  <div class="cfg-name">
+                    {{ row.configName }}
+                    <span class="cfg-key">{{ row.configKey }}</span>
+                  </div>
+                  <div class="cfg-value">
+                    <template v-if="isUnset(row)">
+                      <span class="unset">未配置</span>
+                    </template>
+                    <template v-else-if="row.isSecret === 1">
+                      <span class="masked">******</span>
+                      <el-tag type="danger" size="small" class="secret-tag">敏感</el-tag>
+                    </template>
+                    <el-tooltip v-else :content="displayValue(row)" placement="top" :disabled="displayValue(row).length < 40">
+                      <span class="value-text">{{ displayValue(row) }}</span>
+                    </el-tooltip>
+                  </div>
+                </div>
+                <div class="cfg-actions">
+                  <el-button type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
+                  <el-button type="danger" link size="small" @click="onDelete(row)">删除</el-button>
+                </div>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
+
+    <div class="pager-hint">共 {{ totalCount }} 项配置</div>
 
     <!-- 新增 / 编辑弹窗 -->
     <el-dialog
@@ -295,7 +345,7 @@ loadPage()
             <el-form-item label="配置 Key" prop="configKey">
               <el-input
                 v-model="form.configKey"
-                placeholder="如 system.title"
+                placeholder="如 oss.endpoint（建议带分组前缀）"
                 :disabled="dialogMode === 'edit'"
               />
             </el-form-item>
@@ -375,31 +425,141 @@ loadPage()
 
 <style scoped lang="scss">
 .config-page {
-  .toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .toolbar-card {
     margin-bottom: 16px;
 
-    .toolbar-actions {
+    .toolbar {
       display: flex;
-      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+
+      .toolbar-hint {
+        color: #909399;
+        font-size: 13px;
+        flex: 1;
+        min-width: 260px;
+      }
+
+      .toolbar-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
     }
   }
 
-  .masked {
+  .cards-wrap {
+    min-height: 200px;
+  }
+
+  .group-card {
+    margin-bottom: 16px;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .card-name {
+          font-weight: 600;
+        }
+      }
+    }
+
+    .card-desc {
+      margin-top: 6px;
+      color: #909399;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .empty-group {
+      color: #c0c4cc;
+      text-align: center;
+      padding: 18px 0;
+    }
+
+    .cfg-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cfg-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px dashed #ebeef5;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .cfg-info {
+        flex: 1;
+        min-width: 0;
+
+        .cfg-name {
+          font-size: 13px;
+          color: #303133;
+
+          .cfg-key {
+            margin-left: 8px;
+            color: #909399;
+            font-size: 12px;
+            font-family: monospace;
+          }
+        }
+
+        .cfg-value {
+          margin-top: 4px;
+          font-size: 13px;
+
+          .masked {
+            color: #909399;
+            letter-spacing: 2px;
+          }
+
+          .unset {
+            color: #e6a23c;
+          }
+
+          .value-text {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: bottom;
+            color: #606266;
+            font-family: monospace;
+          }
+
+          .secret-tag {
+            margin-left: 6px;
+          }
+        }
+      }
+
+      .cfg-actions {
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .pager-hint {
     color: #909399;
-    letter-spacing: 2px;
-  }
-
-  .secret-tag {
-    margin-left: 6px;
-  }
-
-  .pager {
-    margin-top: 16px;
-    display: flex;
-    justify-content: flex-end;
+    font-size: 13px;
+    text-align: center;
+    padding: 4px 0 8px;
   }
 }
 </style>

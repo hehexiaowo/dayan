@@ -26,12 +26,12 @@ export const CONFIG_ENV_OPTIONS = [
   { label: '全部', value: 'all' }
 ] as const
 
-/** 配置作用域 */
-export type ConfigScope = 'system' | 'organ' | 'user'
+/** 配置作用域（后端 P1 仅实现 global：SystemConfigService 强制 scope=global） */
+export type ConfigScope = 'global' | 'organ' | 'user'
 
 /** 配置作用域选项 */
 export const CONFIG_SCOPE_OPTIONS = [
-  { label: '系统级', value: 'system' },
+  { label: '系统级', value: 'global' },
   { label: '机构级', value: 'organ' },
   { label: '用户级', value: 'user' }
 ] as const
