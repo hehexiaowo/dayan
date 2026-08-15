@@ -33,6 +33,8 @@ VALUES
   ('admin_system_config', '系统配置', 'admin_system', 2, '/system/config', 'system/config/index', 'system:config:list', 'Tools', 3, 1, 'admin', 1, '系统参数配置', NOW(), NOW(), 'system', 'system', 0),
   ('admin_system_log', '系统日志', 'admin_system', 2, '/system/log', 'system/log/index', 'system:log:list', 'Document', 4, 1, 'admin', 1, '四端操作与登录日志审计', NOW(), NOW(), 'system', 'system', 0),
   ('admin_system_asset', '素材仓库', 'admin_system', 2, '/system/asset', 'system/asset/index', 'system:asset:list', 'PictureFilled', 5, 1, 'admin', 1, '系统素材仓库：OSS 文件与外链统一管理', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_system_message_template', '消息模板', 'admin_system', 2, '/system/message-template', 'system/message/template/index', 'system:msg-tpl:list', 'Message', 6, 1, 'admin', 1, '消息模板管理（短信/站内信/推送/邮件）', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_system_message_record', '发送记录', 'admin_system', 2, '/system/message-record', 'system/message/record/index', 'system:msg-record:list', 'ChatDotRound', 7, 1, 'admin', 1, '消息发送记录审计（只读）', NOW(), NOW(), 'system', 'system', 0),
 
   -- ========== 基础管理子菜单（账号/角色/菜单/架构，原系统管理迁出）==========
   ('admin_basic_account', '账号管理', 'admin_basic', 2, '/basic/account', 'basic/account/index', 'organ:account:list', 'User', 1, 1, 'admin', 1, '核心账号管理', NOW(), NOW(), 'system', 'system', 0),

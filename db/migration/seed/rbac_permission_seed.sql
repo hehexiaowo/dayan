@@ -94,6 +94,13 @@ VALUES
   ('system:asset:create', '新增素材', 'system:asset', 3, '/admin-api/system/asset', 'POST',    212, 1, '系统素材仓库', NOW(), NOW(), 'system', 'system', 0),
   ('system:asset:update', '修改素材', 'system:asset', 3, '/admin-api/system/asset/*', 'PUT',    213, 1, '系统素材仓库', NOW(), NOW(), 'system', 'system', 0),
   ('system:asset:delete', '删除素材', 'system:asset', 3, '/admin-api/system/asset/*', 'DELETE', 214, 1, '系统素材仓库', NOW(), NOW(), 'system', 'system', 0),
+  -- system:msg-tpl / system:msg-record（消息管理，57_message_admin.sql）
+  ('system:msg-tpl:list',   '消息模板列表', 'system:msg-tpl', 3, '/admin-api/message-templates',   'GET',    220, 1, '消息模板', NOW(), NOW(), 'system', 'system', 0),
+  ('system:msg-tpl:create', '新增消息模板', 'system:msg-tpl', 3, '/admin-api/message-templates',   'POST',   221, 1, '消息模板', NOW(), NOW(), 'system', 'system', 0),
+  ('system:msg-tpl:update', '修改消息模板', 'system:msg-tpl', 3, '/admin-api/message-templates/*', 'PUT',    222, 1, '消息模板', NOW(), NOW(), 'system', 'system', 0),
+  ('system:msg-tpl:delete', '删除消息模板', 'system:msg-tpl', 3, '/admin-api/message-templates/*', 'DELETE', 223, 1, '消息模板', NOW(), NOW(), 'system', 'system', 0),
+  ('system:msg-record:list',  '发送记录列表', 'system:msg-record', 3, '/admin-api/messages',   'GET',    224, 1, '消息发送记录', NOW(), NOW(), 'system', 'system', 0),
+  ('system:msg-record:query', '发送记录详情', 'system:msg-record', 3, '/admin-api/messages/*', 'GET',    225, 1, '消息发送记录', NOW(), NOW(), 'system', 'system', 0),
   -- park:facility-price（已合并入 park:pricing，charge_type=5）
   -- park:service-price（已合并入 park:pricing，charge_type=6）
   -- park:display-block（展示板块）
