@@ -136,7 +136,7 @@ public class AiMaterialAssembler {
                 material.append("- ").append(g.getGoodsName())
                         .append(g.getSummary() == null ? "" : "：" + g.getSummary())
                         .append("；价格 ").append(g.getSalePrice() == null ? "面议"
-                                : g.getSalePrice() + StrUtil.nullToEmpty(g.getPriceUnit()))
+                                : g.getSalePrice().stripTrailingZeros().toPlainString() + StrUtil.nullToEmpty(g.getPriceUnit()))
                         .append('\n');
             }
             material.append('\n');
@@ -214,7 +214,7 @@ public class AiMaterialAssembler {
                     sb.append(pr.getChargeType() == null ? "费用"
                                     : CHARGE_LABELS.getOrDefault(pr.getChargeType(), "费用")).append(' ')
                             .append(refName).append(' ')
-                            .append(pr.getSalePrice() == null ? "面议" : pr.getSalePrice() + "元/")
+                            .append(pr.getSalePrice() == null ? "面议" : pr.getSalePrice().stripTrailingZeros().toPlainString() + "元/")
                             .append(cycle).append("；");
                 }
                 sb.append('\n');

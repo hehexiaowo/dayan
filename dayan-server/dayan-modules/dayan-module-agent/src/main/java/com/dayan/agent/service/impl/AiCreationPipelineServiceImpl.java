@@ -648,11 +648,17 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
         return StrUtil.blankToDefault(p.getOutline(), "（无大纲）");
     }
 
-    /** 正文清洗：去围栏/前置标记行/首尾空白 */
+    /** 正文清洗：去围栏/前置标记行/Markdown 加粗残留/首尾空白 */
     String cleanBody(String raw) {
         if (raw == null) return "";
         String text = raw.replaceAll("```[a-zA-Z]*", "").replaceAll("```", "");
         text = text.replaceAll("(?m)^【(标题|摘要)】.*$", "");
+        // 模型偶发在 HTML 片段里混用 Markdown 加粗：HTML 形态转 <strong>，纯文本形态剥星号
+        if (text.contains("<")) {
+            text = text.replaceAll("\\*\\*([^*\\n]{1,200}?)\\*\\*", "<strong>$1</strong>");
+        } else {
+            text = text.replaceAll("\\*\\*([^*\\n]{1,200}?)\\*\\*", "$1");
+        }
         return text.trim();
     }
 
@@ -963,7 +969,7 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
         throw new BusinessException(ErrorCode.PARAM_ERROR, "当前阶段不允许该操作（status=" + p.getStatus() + "）");
     }
 
-    /** 标题清洗：去空、限 5 条、分数夹取 */
+    /** 标题清洗：去空、限 5 条、分数夹取、tag 规范化 */
     List<AiTitleVO> sanitizeTitles(List<AiTitleVO> titles) {
         if (titles == null || titles.isEmpty()) {
             throw new BusinessException(ErrorCode.BUSINESS, "模型未返回标题，请重试");
@@ -973,9 +979,24 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
                 .peek(t -> {
                     if (t.getViralScore() == null) t.setViralScore(80);
                     t.setViralScore(Math.max(70, Math.min(99, t.getViralScore())));
+                    t.setTag(normalizeTag(t.getTag()));
                 })
                 .limit(5)
                 .toList();
+    }
+
+    /** tag 规范化：模型常把候选值列表整串抄回（如 kb_number|doc_logic|emotion_hook） */
+    String normalizeTag(String tag) {
+        if (StrUtil.isBlank(tag)) {
+            return "doc_logic";
+        }
+        if (tag.contains("kb_number")) {
+            return "kb_number";
+        }
+        if (tag.contains("emotion_hook")) {
+            return "emotion_hook";
+        }
+        return "doc_logic";
     }
 
     String requireConfig(String key, String message) {
