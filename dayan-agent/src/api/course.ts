@@ -2,7 +2,7 @@ import request from '@/utils/request';
 import type { Course } from '@/types';
 
 /**
- * 平台课程列表（GET /agent-api/courses）。
+ * 大雁课程列表（GET /agent-api/courses，course_info 平台自研课程）。
  * @param courseType 1=线上录播 2=线上直播 3=线下课程 4=混合课程，不传 = 全部
  */
 export function getCourses(courseType?: number): Promise<Course[]> {

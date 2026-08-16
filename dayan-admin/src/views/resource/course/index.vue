@@ -21,18 +21,25 @@ import {
   courseStatusTagType
 } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
+import LecturerManageDrawer from './components/LecturerManageDrawer.vue'
+import LearningContentTab from './components/LearningContentTab.vue'
 import { useDictOptions } from '@/composables/useDict'
 
 /** 课程分类选项（业务字典 course_category，管理入口：系统管理-业务字典） */
 const { options: categoryOptions } = useDictOptions('course_category')
 
 /**
- * 课程管理页。
+ * 课程管理页（四大板块 tab）。
  *
- * - 标准 CRUD（搜索 + 表格 + 分页 + 新增/编辑弹窗）；
- * - 操作列按 courseStatus 动态显示上架 / 下架按钮（PUT publish / offline）。
+ * - 大雁课程 = course_info（平台自研）：标准 CRUD + 上/下架 + 讲师管理抽屉；
+ * - 渠道课程 / 外部课程 / 雁鸣中国 = learning_content 板块分类（1/2/3），
+ *   共用 LearningContentTab 组件，tab 懒加载时才发请求；
+ * - 所有 el-tab-pane 必须 lazy（避免 4 tab 同挂载 + 未捕获错误整页崩）；
  * - 路由由后端菜单 menu_seed（component='resource/course/index'）+ router/dynamic.ts 自动解析，无需改路由。
  */
+
+/** 板块 tab：dayan=大雁课程(channel course_info)，其余为 learning_content 分类 */
+const activeTab = ref('dayan')
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
   useCrud<CourseInfo, CourseInfoQuery>(
@@ -51,6 +58,9 @@ const router = useRouter()
 
 /** 讲师下拉选项 + 名称映射（后端 VO 不带 lecturerName，前端自行映射） */
 const lecturerOptions = ref<CourseLecturer[]>([])
+
+/** 讲师管理抽屉开关（v-if 挂载，打开才加载） */
+const lecturerDrawerVisible = ref(false)
 const lecturerNameMap = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {}
   for (const l of lecturerOptions.value) {
@@ -287,6 +297,10 @@ onMounted(() => {
 
 <template>
   <div class="page-container">
+    <el-tabs v-model="activeTab" class="board-tabs">
+      <!-- ===== 大雁课程（course_info 平台自研课程） ===== -->
+      <el-tab-pane label="大雁课程" name="dayan" lazy>
+        <div class="tab-body">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
       <el-form :inline="true" :model="query" @submit.prevent>
@@ -330,7 +344,10 @@ onMounted(() => {
       <template #header>
         <div class="card-header">
           <span>课程列表</span>
-          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增课程</el-button>
+          <div>
+            <el-button :icon="'UserFilled'" @click="lecturerDrawerVisible = true">讲师管理</el-button>
+            <el-button type="primary" :icon="'Plus'" @click="openCreate">新增课程</el-button>
+          </div>
         </div>
       </template>
 
@@ -399,8 +416,22 @@ onMounted(() => {
         />
       </div>
     </el-card>
+        </div>
+      </el-tab-pane>
 
-    <!-- 新增 / 编辑弹窗 -->
+      <!-- ===== learning_content 三板块（共用组件，懒加载） ===== -->
+      <el-tab-pane label="渠道课程" name="channel" lazy>
+        <LearningContentTab :category="1" />
+      </el-tab-pane>
+      <el-tab-pane label="外部课程" name="external" lazy>
+        <LearningContentTab :category="2" />
+      </el-tab-pane>
+      <el-tab-pane label="雁鸣中国" name="yanming" lazy>
+        <LearningContentTab :category="3" />
+      </el-tab-pane>
+    </el-tabs>
+
+    <!-- 新增 / 编辑课程弹窗（大雁课程） -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogType === 'create' ? '新增课程' : '编辑课程'"
@@ -591,11 +622,27 @@ onMounted(() => {
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 讲师管理抽屉（全局讲师资源内联 CRUD） -->
+    <LecturerManageDrawer v-if="lecturerDrawerVisible" v-model="lecturerDrawerVisible" @changed="loadLecturers" />
   </div>
 </template>
 
 <style scoped lang="scss">
 .page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.board-tabs {
+  :deep(.el-tabs__header) {
+    margin-bottom: 0;
+  }
+  :deep(.el-tabs__content) {
+    padding-top: 16px;
+  }
+}
+.tab-body {
   display: flex;
   flex-direction: column;
   gap: 16px;

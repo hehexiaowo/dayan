@@ -23,10 +23,10 @@ public class LearningContentController {
 
     private final LearningContentService learningContentService;
 
-    @Operation(summary = "内容列表（按分类）")
+    @Operation(summary = "内容列表（按板块分类）")
     @GetMapping("/contents")
     public R<List<LearningContentVO>> list(
-            @Parameter(description = "分类 1=视频课程 2=图文课程 3=雁鸣中国")
+            @Parameter(description = "板块分类 1=渠道课程 2=外部课程 3=雁鸣中国")
             @RequestParam(required = false) Integer category) {
         return R.ok(learningContentService.listByCategory(category));
     }
