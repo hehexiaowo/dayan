@@ -15,7 +15,6 @@
     { "path": "pages/acquisition/tools/gap-calculator", "style": { "navigationBarTitleText": "养老生活缺口计算器" } },
     { "path": "pages/acquisition/poster/index", "style": { "navigationBarTitleText": "营销海报", "enablePullDownRefresh": true } },
     { "path": "pages/acquisition/poster/detail", "style": { "navigationBarTitleText": "海报详情" } },
-    { "path": "pages/acquisition/ai-generate/index", "style": { "navigationBarTitleText": "AI 内容创作" } },
     { "path": "pages/acquisition/ai-create/index", "style": { "navigationBarTitleText": "AI 创作" } },
     { "path": "pages/acquisition/ai-create/step-material", "style": { "navigationBarTitleText": "AI 创作 · 目的与素材" } },
     { "path": "pages/acquisition/ai-create/step-strategy", "style": { "navigationBarTitleText": "AI 创作 · 策略与标题" } },

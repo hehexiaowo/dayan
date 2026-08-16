@@ -1,11 +1,6 @@
 import request from '@/utils/request'
 import type { PageQuery, PageResult } from '@/types'
-import type { AiContent, AiGeneratePayload, AiGenerateResult, AiRefTemplateOption } from '@/types/aiContent'
-
-/** AI 生成内容（POST /agent-api/ai/generate，不落库） */
-export function generateAiContent(payload: AiGeneratePayload): Promise<AiGenerateResult> {
-  return request<AiGenerateResult>({ url: '/ai/generate', method: 'POST', data: payload })
-}
+import type { AiContent, AiGenerateResult, AiRefTemplateOption } from '@/types/aiContent'
 
 /** 选题灵感（POST /agent-api/ai/topics，基于勾选素材 + 时节出 5 个方向） */
 export function suggestAiTopics(payload: { kbFileIds?: string[]; goodsCodes?: string[] }): Promise<string[]> {

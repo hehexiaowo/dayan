@@ -28,24 +28,6 @@ export interface KnowledgeDocOption {
   repoName?: string
 }
 
-/** AI 生成请求参数 */
-export interface AiGeneratePayload {
-  /** 1=图文 2=朋友圈 3=视频脚本 */
-  contentType: number
-  /** professional/warm/authoritative/colloquial */
-  styleCode: string
-  /** 参考范文 contentCode */
-  refContentCode?: string
-  /** 勾选知识库文档 fileId */
-  kbFileIds?: string[]
-  /** 勾选商品 goodsCode */
-  goodsCodes?: string[]
-  /** 主题/补充要求 */
-  topic?: string
-  /** 目标读者（children/elder/general） */
-  audience?: string
-}
-
 /** AI 生成结果（预览用） */
 export interface AiGenerateResult {
   title: string
@@ -73,10 +55,12 @@ export interface AiContent {
   title: string
   summary?: string
   coverImage?: string
-  /** 1=图文 2=朋友圈 3=视频脚本 */
+  /** 1=图文 2=朋友圈 3=视频脚本 4=小红书笔记 */
   contentType: number
   contentBody: string
   styleCode?: string
+  /** 创作目的（product/park/science，AI 创作流水线来源内容携带） */
+  purpose?: string
   refContentCode?: string
   refKbFiles?: string
   refGoodsCodes?: string
@@ -85,6 +69,13 @@ export interface AiContent {
   status?: number
   createdAt?: string
   updatedAt?: string
+}
+
+/** 创作目的中文标签（内容中心列表/详情展示用） */
+export const AI_PURPOSE_TAG: Record<string, string> = {
+  product: '产品宣传',
+  park: '机构推荐',
+  science: '科普获客'
 }
 
 export const AI_CONTENT_TYPE_OPTIONS = [
