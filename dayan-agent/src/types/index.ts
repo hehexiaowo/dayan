@@ -206,10 +206,10 @@ export interface LeadPoolItem {
 
 // ===== 学习中心 =====
 
-/** 学习内容分类：1=视频课程 2=图文课程 3=雁鸣中国 */
+/** 学习内容板块分类：1=渠道课程 2=外部课程 3=雁鸣中国（大雁课程=course_info，走 /courses） */
 export enum LearningCategory {
-  VIDEO = 1,
-  ARTICLE = 2,
+  CHANNEL = 1,
+  EXTERNAL = 2,
   YANMING = 3,
 }
 
@@ -219,11 +219,13 @@ export interface LearningContent {
   contentCode: string;
   title: string;
   summary?: string;
-  /** 1=视频 2=图文 3=雁鸣 */
+  /** 板块分类（1=渠道课程 2=外部课程 3=雁鸣中国） */
   category: LearningCategory | number;
   author?: string;
-  /** 时长（视频 28:30 / 图文 约15分钟） */
+  /** 时长（如 28:30 / 约15分钟） */
   duration?: string;
+  /** 正文（仅详情接口返回） */
+  body?: string;
   viewCount?: number;
   /** 角标（热/新/要闻/人物/动态/洞察） */
   badge?: string;
@@ -248,7 +250,7 @@ export interface CourseLecturerBrief {
   introduction?: string;
 }
 
-/** 平台课程（后端 CourseAgentVO） */
+/** 大雁课程（后端 CourseAgentVO，course_info 平台自研课程） */
 export interface Course {
   id?: string;
   courseCode: string;

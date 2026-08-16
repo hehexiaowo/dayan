@@ -19,10 +19,12 @@ public class LearningContentVO {
     private String contentCode;
     private String title;
     private String summary;
-    /** 分类 1=视频课程 2=图文课程 3=雁鸣中国 */
+    /** 板块分类（1=渠道课程 2=外部课程 3=雁鸣中国） */
     private Integer category;
     private String author;
     private String duration;
+    /** 正文（仅详情接口回填，列表不携带） */
+    private String body;
     private Integer viewCount;
     private String badge;
     private LocalDateTime publishTime;
