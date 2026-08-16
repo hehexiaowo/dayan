@@ -90,7 +90,8 @@ export interface AiContent {
 export const AI_CONTENT_TYPE_OPTIONS = [
   { value: 1, label: '图文文章', desc: '600-1200 字，含小标题与推荐，适合长文分享' },
   { value: 2, label: '朋友圈文案', desc: '200 字以内短文案，适合直接转发' },
-  { value: 3, label: '视频脚本', desc: '60-90 秒口播脚本，含画面/口播/字幕' }
+  { value: 3, label: '视频脚本', desc: '60-90 秒口播脚本，含画面/口播/字幕' },
+  { value: 4, label: '小红书笔记', desc: '600-800 字，Emoji 列表 + 标签，适合种草' }
 ] as const
 
 export const AI_STYLE_OPTIONS = [

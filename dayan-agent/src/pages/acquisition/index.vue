@@ -182,7 +182,7 @@ function onTool(type: string) {
     return;
   }
   if (type === 'ai') {
-    uni.navigateTo({ url: '/pages/acquisition/ai-generate/index' });
+    uni.navigateTo({ url: '/pages/acquisition/ai-create/index' });
     return;
   }
   if (type === 'poster') {
