@@ -4,28 +4,20 @@ import cn.hutool.core.util.StrUtil;
 import com.dayan.agent.dto.AiConvertDTO;
 import com.dayan.agent.dto.AiGenerateDTO;
 import com.dayan.agent.dto.AiTopicsDTO;
-import com.dayan.agent.model.AiRefTemplates;
-import com.dayan.agent.service.AgentContentService;
 import com.dayan.agent.service.AiContentGenerateService;
 import com.dayan.agent.service.AiGenerateProgressListener;
-import com.dayan.agent.vo.AgentContentVO;
+import com.dayan.agent.service.AiMaterialAssembler;
 import com.dayan.agent.vo.AiGenerateResultVO;
+import com.dayan.agent.vo.AiMaterialRefsVO;
 import com.dayan.agent.vo.AiMaterialSourceVO;
-import com.dayan.channel.entity.ChannelConfigContent;
 import com.dayan.channel.entity.ChannelConfigGoods;
-import com.dayan.channel.service.ChannelConfigContentService;
 import com.dayan.channel.service.ChannelConfigGoodsService;
 import com.dayan.common.aliyun.bailian.BailianChatClient;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.mybatis.context.ContextHolder;
-import com.dayan.content.service.ContentInfoService;
-import com.dayan.content.vo.ContentInfoVO;
 import com.dayan.goods.service.GoodsInfoService;
 import com.dayan.goods.vo.GoodsInfoVO;
-import com.dayan.knowledge.service.KnowledgeRepoService;
-import com.dayan.knowledge.vo.KnowledgeChatVO;
-import com.dayan.knowledge.vo.KnowledgeRepoVO;
 import com.dayan.system.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,10 +34,9 @@ import java.util.stream.Collectors;
 /**
  * AI 内容生成编排实现。
  *
- * <p>素材聚合规则：范文全文（去 HTML 截断 3000 字）→ 平台库 + 本渠道库 RAG 检索
- * （检索词 = 主题 + 勾选文档名，强制召回勾选文档）→ 勾选商品详情（渠道白名单校验）。
- * 全部素材分节进 prompt，仅允许基于素材写作（防幻觉）；输出按
- * 【标题】/【摘要】/【正文】标记解析，解析失败兜底整段为正文。
+ * <p>素材聚合（范文全文 → 知识库 RAG → 渠道白名单商品）已抽至 {@link AiMaterialAssembler}，
+ * 本类负责拼 prompt、调模型、解析输出与自检重写。全部素材分节进 prompt，
+ * 仅允许基于素材写作（防幻觉）；输出按【标题】/【摘要】/【正文】标记解析，解析失败兜底整段为正文。
  */
 @Slf4j
 @Service
@@ -78,24 +69,15 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
     /** 创作采样温度（重新生成有差异性；知识问答仍 0.3 不受影响） */
     private static final double CREATIVE_TEMPERATURE = 0.6;
 
-    /** 参考范文正文最大截取字符数 */
-    private static final int REF_CONTENT_MAX = 3000;
-
-    /** 引用片段回显截断字符数 */
-    private static final int SOURCE_TEXT_MAX = 120;
-
     /** 转换温度（形态转换要求忠实，低于创作温度） */
     private static final double CONVERT_TEMPERATURE = 0.4;
 
     /** 选题温度（求多样性，高于创作温度） */
     private static final double TOPIC_TEMPERATURE = 0.8;
 
-    private final KnowledgeRepoService knowledgeRepoService;
-    private final ContentInfoService contentInfoService;
     private final GoodsInfoService goodsInfoService;
-    private final ChannelConfigContentService channelConfigContentService;
     private final ChannelConfigGoodsService channelConfigGoodsService;
-    private final AgentContentService agentContentService;
+    private final AiMaterialAssembler materialAssembler;
     private final SystemConfigService systemConfigService;
     private final BailianChatClient bailianChatClient = new BailianChatClient();
 
@@ -122,111 +104,26 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         List<String> warnings = new ArrayList<>();
         notifyStage(listener, "material", "正在准备素材…");
 
-        // ---------- 1. 素材聚合 ----------
-        StringBuilder material = new StringBuilder();
-        int materialCount = 0;
+        // ---------- 1. 素材聚合（范文/RAG/商品，逻辑见 AiMaterialAssembler） ----------
+        AiMaterialRefsVO refs = new AiMaterialRefsVO();
+        refs.setRefContentCode(dto.getRefContentCode());
+        refs.setKbFileIds(dto.getKbFileIds());
+        refs.setGoodsCodes(dto.getGoodsCodes());
+        AiMaterialAssembler.MaterialBundle bundle =
+                materialAssembler.assemble(channelCode, refs, dto.getTopic(), warnings);
+        String material = bundle.blocks();
+        List<AiMaterialSourceVO> sources = bundle.sources();
+        int materialCount = bundle.blockCount();
+        // 商品名收集（自检用）
         List<String> selectedGoodsNames = new ArrayList<>();
-        List<AiMaterialSourceVO> sources = new ArrayList<>();
-
-        // 1.1 参考范文（TPL: 模板直取 / MY: 我的内容 / 渠道可见性校验）
-        if (StrUtil.isNotBlank(dto.getRefContentCode())) {
-            if (dto.getRefContentCode().startsWith("TPL:")) {
-                AiRefTemplates.RefTemplate tpl = AiRefTemplates.byCode(dto.getRefContentCode());
-                if (tpl == null) {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR, "范文模板不存在: " + dto.getRefContentCode());
-                }
-                material.append("【参考范文】标题：").append(tpl.name()).append('\n')
-                        .append(tpl.body()).append("\n\n");
-            } else if (dto.getRefContentCode().startsWith("MY:")) {
-                AgentContentVO my = loadMyContent(dto.getRefContentCode());
-                material.append("【参考范文】标题：").append(my.getTitle()).append('\n')
-                        .append(stripHtml(my.getContentBody()))
-                        .append("\n\n");
-            } else {
-                ContentInfoVO ref = loadVisibleContent(channelCode, dto.getRefContentCode());
-                material.append("【参考范文】标题：").append(ref.getTitle()).append('\n')
-                        .append(stripHtml(ref.getContentBody()))
-                        .append("\n\n");
-            }
-            materialCount++;
-        }
-
-        // 1.2 知识库 RAG：勾选文档 → SearchFilters 按 ID 精准召回；未勾选 → topic 语义检索
-        boolean hasSelectedDocs = dto.getKbFileIds() != null && !dto.getKbFileIds().isEmpty();
-        List<String> selectedNames = resolveKbFileNames(channelCode, dto.getKbFileIds());
-        boolean kbUsed = false;
-        boolean kbSearched = false;
-        List<KnowledgeRepoVO> repos = knowledgeRepoService.listForAgent(channelCode);
-        if (hasSelectedDocs || StrUtil.isNotBlank(dto.getTopic())) {
-            notifyStage(listener, "retrieving", "正在检索知识库…");
-            for (KnowledgeRepoVO repo : repos) {
-                if (StrUtil.isBlank(repo.getIndexId())) {
-                    if (repo.getRepoType() != null && repo.getRepoType() == 2) {
-                        warnings.add("本渠道知识库尚未建库，本次未使用知识库素材");
-                    }
-                    continue;
-                }
-                List<KnowledgeChatVO.Citation> cites;
-                if (hasSelectedDocs) {
-                    List<String> docIdsInRepo = resolveKbDocIdsInRepo(repo.getId(), repos, dto.getKbFileIds());
-                    if (docIdsInRepo.isEmpty()) {
-                        continue;
-                    }
-                    // query 用主题，主题空则用首个勾选文档名兜底（retrieve 要求非空）
-                    String q = StrUtil.blankToDefault(dto.getTopic(),
-                            selectedNames.isEmpty() ? "养老" : selectedNames.get(0));
-                    cites = knowledgeRepoService.retrieveByDocuments(repo.getId(), q, 8, docIdsInRepo);
-                } else {
-                    cites = knowledgeRepoService.retrieve(repo.getId(), dto.getTopic(), 6);
-                }
-                kbSearched = true;
-                if (!cites.isEmpty()) {
-                    material.append("【知识库资料 · ").append(repo.getRepoName()).append("】\n");
-                    for (int i = 0; i < cites.size(); i++) {
-                        String text = StrUtil.cleanBlank(cites.get(i).getText());
-                        if (StrUtil.isNotBlank(text)) {
-                            material.append('[').append(i + 1).append("] ").append(text).append('\n');
-                            sources.add(new AiMaterialSourceVO(repo.getRepoName(),
-                                    StrUtil.maxLength(text, SOURCE_TEXT_MAX)));
-                        }
-                    }
-                    material.append('\n');
-                    kbUsed = true;
-                    materialCount++;
-                }
-            }
-        }
-        if (kbSearched && !kbUsed) {
-            warnings.add("知识库未检索到相关素材，未使用知识库资料");
-        }
-
-        // 1.3 商品（渠道白名单校验）
-        if (dto.getGoodsCodes() != null && !dto.getGoodsCodes().isEmpty()) {
-            Set<String> whitelist = channelConfigGoodsService.listByChannel(channelCode).stream()
-                    .map(ChannelConfigGoods::getGoodsCode).collect(Collectors.toSet());
-            material.append("【商品素材】\n");
+        if (dto.getGoodsCodes() != null) {
             for (String goodsCode : dto.getGoodsCodes()) {
-                if (!whitelist.contains(goodsCode)) {
-                    throw new BusinessException(ErrorCode.BUSINESS, "商品不在可购范围: " + goodsCode);
-                }
-                GoodsInfoVO g = goodsInfoService.getDetail(goodsCode);
-                selectedGoodsNames.add(g.getGoodsName());
-                material.append("- ").append(g.getGoodsName())
-                        .append(g.getSummary() == null ? "" : "：" + g.getSummary())
-                        .append("；价格 ")
-                        .append(g.getSalePrice() == null ? "面议" : g.getSalePrice() + (g.getPriceUnit() == null ? "" : " " + g.getPriceUnit()))
-                        .append('\n');
+                selectedGoodsNames.add(goodsInfoService.getDetail(goodsCode).getGoodsName());
             }
-            material.append('\n');
-            materialCount++;
-        }
-
-        if (materialCount == 0) {
-            warnings.add("未提供任何素材，生成内容可能失真，请结合知识库核对后使用");
         }
 
         // ---------- 2. 拼 prompt 并调用 ----------
-        String userPrompt = buildUserPrompt(dto, formInstruction, styleInstruction, material.toString());
+        String userPrompt = buildUserPrompt(dto, formInstruction, styleInstruction, material);
         String apiKey = requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员");
         String apiHost = requireConfig("llm.api-host", "AI 网关未配置，请联系管理员");
         String model = StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus");
@@ -277,7 +174,7 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         String channelCode = ContextHolder.getChannelCode();
         // 素材：勾选文档名 + 商品名与卖点（轻量，不做 RAG 全文）
         StringBuilder material = new StringBuilder();
-        List<String> docNames = resolveKbFileNames(channelCode, dto == null ? null : dto.getKbFileIds());
+        List<String> docNames = materialAssembler.resolveKbFileNames(channelCode, dto == null ? null : dto.getKbFileIds());
         if (!docNames.isEmpty()) {
             material.append("【知识库文档】").append(String.join("、", docNames)).append('\n');
         }
@@ -358,18 +255,6 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
                 .filter(s -> s.length() >= 8 && s.length() <= 60)
                 .limit(5)
                 .toList();
-    }
-
-    /** MY:{id} 参考范文：本人内容（非本人自动 NOT_FOUND，防越权） */
-    private AgentContentVO loadMyContent(String refContentCode) {
-        String idStr = StrUtil.removePrefix(refContentCode, "MY:");
-        long id;
-        try {
-            id = Long.parseLong(idStr);
-        } catch (NumberFormatException e) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "我的内容范文格式错误");
-        }
-        return agentContentService.getDetail(id);
     }
 
     /** 阶段回调（listener 为空时忽略，非流式零开销） */
@@ -493,60 +378,13 @@ public class AiContentGenerateServiceImpl implements AiContentGenerateService {
         return errors;
     }
 
-    /** 参考范文渠道可见性校验（appType=agent 且已配置） */
-    private ContentInfoVO loadVisibleContent(String channelCode, String contentCode) {
-        List<String> codes = channelConfigContentService.listByChannel(channelCode).stream()
-                .filter(c -> "agent".equals(c.getAppType()))
-                .map(ChannelConfigContent::getContentCode)
-                .filter(c -> c != null && !c.isEmpty())
-                .collect(Collectors.toList());
-        if (!codes.contains(contentCode)) {
-            throw new BusinessException(ErrorCode.BUSINESS, "参考内容不在当前渠道可配置范围");
-        }
-        ContentInfoVO vo = contentInfoService.getDetail(contentCode);
-        if (vo == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "参考内容不存在");
-        }
-        return vo;
-    }
-
-    /** 勾选文档 fileId → 文件名（跨可见库查列表映射） */
-    private List<String> resolveKbFileNames(String channelCode, List<String> fileIds) {
-        if (fileIds == null || fileIds.isEmpty()) {
-            return List.of();
-        }
-        Set<String> target = Set.copyOf(fileIds);
-        List<String> names = new ArrayList<>();
-        for (KnowledgeRepoVO repo : knowledgeRepoService.listForAgent(channelCode)) {
-            if (StrUtil.isBlank(repo.getIndexId())) {
-                continue;
-            }
-            knowledgeRepoService.listDocuments(repo.getId(), 1, 100, null, null).stream()
-                    .filter(d -> d.getFileId() != null && target.contains(d.getFileId()))
-                    .forEach(d -> names.add(d.getFileName()));
-        }
-        return names;
-    }
-
-    /** 指定仓库内、被勾选的文档 ID 列表（跨库勾选时按归属分库检索） */
-    private List<String> resolveKbDocIdsInRepo(Long repoId, List<KnowledgeRepoVO> repos, List<String> fileIds) {
-        if (fileIds == null || fileIds.isEmpty()) {
-            return List.of();
-        }
-        Set<String> target = Set.copyOf(fileIds);
-        return knowledgeRepoService.listDocuments(repoId, 1, 100, null, null).stream()
-                .map(com.dayan.knowledge.vo.KnowledgeDocVO::getFileId)
-                .filter(id -> id != null && target.contains(id))
-                .collect(Collectors.toList());
-    }
-
     /** HTML 去标签（正文素材用，保留纯文本） */
     private String stripHtml(String html) {
         if (html == null) {
             return "";
         }
         String text = html.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
-        return StrUtil.maxLength(text, REF_CONTENT_MAX);
+        return StrUtil.maxLength(text, AiMaterialAssembler.REF_CONTENT_MAX);
     }
 
     private String requireConfig(String key, String message) {
