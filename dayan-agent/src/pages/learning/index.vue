@@ -11,6 +11,18 @@
       </view>
     </view>
 
+    <!-- ===== 平台课程入口 ===== -->
+    <view class="course-entry dy-clickable" @click="goCourses">
+      <view class="entry-left">
+        <text class="entry-title">平台课程</text>
+        <text class="entry-sub">讲师亲授 · 体系化课程</text>
+      </view>
+      <view class="entry-right">
+        <text v-if="courseCount > 0" class="entry-count">{{ courseCount }} 门</text>
+        <text class="entry-arrow">›</text>
+      </view>
+    </view>
+
     <!-- ===== Tab 切换 ===== -->
     <view class="tabs">
       <view
@@ -94,6 +106,7 @@
 import { ref, computed } from 'vue';
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import { getLearningContents } from '@/api/learning';
+import { getCourses } from '@/api/course';
 import { LearningCategory } from '@/types';
 import type { LearningContent } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
@@ -115,6 +128,21 @@ const activeTab = ref<TabDef['key']>('video');
 const items = ref<LearningContent[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
+
+/** 平台课程入口：课程总数 */
+const courseCount = ref(0);
+
+async function loadCourseCount() {
+  try {
+    courseCount.value = (await getCourses()).length;
+  } catch {
+    courseCount.value = 0;
+  }
+}
+
+function goCourses() {
+  uni.navigateTo({ url: '/pages/learning/courses/index' });
+}
 
 const currentTab = computed(() => tabs.find((t) => t.key === activeTab.value) || tabs[0]);
 const currentTabLabel = computed(() => currentTab.value.label);
@@ -184,6 +212,7 @@ function onCourseClick(item: LearningContent) {
 // 每次进入页面刷新当前分类
 onShow(() => {
   loadList();
+  loadCourseCount();
 });
 
 onPullDownRefresh(async () => {
@@ -248,6 +277,69 @@ onPullDownRefresh(async () => {
   font-size: 44rpx;
   font-weight: bold;
   color: #fff;
+}
+
+/* ===== 平台课程入口（白底卡 + 品牌色点缀，避免与 banner 渐变重复） ===== */
+.course-entry {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg $spacing-xl;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  transition: transform 0.15s ease;
+}
+
+.course-entry:active {
+  transform: scale(0.99);
+}
+
+/* 左侧品牌色竖条 */
+.course-entry::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8rpx;
+  background: $gradient-blue;
+}
+
+.entry-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.entry-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: $text-secondary;
+}
+
+.entry-right {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.entry-count {
+  font-size: 24rpx;
+  color: $brand-primary;
+  background: $brand-primary-light;
+  border-radius: 999rpx;
+  padding: 4rpx 16rpx;
+}
+
+.entry-arrow {
+  font-size: 40rpx;
+  color: $text-placeholder;
 }
 
 /* ===== Tab 切换 ===== */
