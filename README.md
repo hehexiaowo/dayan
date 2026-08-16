@@ -81,11 +81,14 @@ docker compose -f docker/docker-compose.yml up -d --build
 
 ## 测试账号与关键配置
 
-| 端 | 账号 | 说明 |
-|---|---|---|
-| Admin | admin / admin123 | http://localhost:8080 |
-| Agent | 手机号 13900000001（渠道 CH00001，验证码登录） | Mock 短信返回 devCode（`system_config` 未接真实短信商） |
-| 渠道 | 见 `db/migration/seed/` 渠道种子 | channel 端默认账号同种子 |
+| 端 | 账号 | 登录方式 | 说明 |
+|---|---|---|---|
+| Admin | admin / admin123 | 账号密码 | http://localhost:8080 |
+| Channel | ch001 / admin123 | 账号密码 | http://localhost:8081，渠道 CH00001 |
+| Agent | 手机号 13900000001（渠道 CH00001） | 验证码登录 或 密码 admin123 | 密码登录 identifier 用手机号 |
+| Client | 13900000001 / 123456 | 密码登录（identifier=手机号 + channelCode=CH00001） | http://localhost:8083，对应客户端 CL0000000001 |
+
+> 密码均为 BCrypt 哈希实测验证（2026-08-16）。验证码登录走 Mock 短信（`system_config` 未接真实短信商时，`/auth/sms/send` 响应 `data.devCode` 即验证码，60 秒冷却）。
 
 - **AI 凭据**：`system_config` → `llm` 分组（api-key/api-host/access-key 等，admin 系统配置页填写；文生图与对话共用 api-key）
 - **知识库**：admin 系统管理→知识仓库（平台库 + 每渠道一库），上传文档后需建库（百炼索引）
