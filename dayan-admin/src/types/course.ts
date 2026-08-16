@@ -21,17 +21,33 @@ export const COURSE_TYPE_OPTIONS = [
   { label: '混合课程', value: CourseType.MIXED }
 ] as const
 
-/** 课程上下架状态：0=下架 1=上架 */
+/** 课程状态（DDL 5 态）：0=草稿 1=待上架 2=已上架 3=已下架 4=已结课 */
 export enum CourseStatus {
-  OFFLINE = 0,
-  ONLINE = 1
+  DRAFT = 0,
+  PENDING = 1,
+  ONLINE = 2,
+  OFFLINE = 3,
+  FINISHED = 4,
 }
 
-/** 课程上下架状态选项 */
+/** 课程状态选项（DDL 5 态） */
 export const COURSE_STATUS_OPTIONS = [
-  { label: '下架', value: CourseStatus.OFFLINE },
-  { label: '上架', value: CourseStatus.ONLINE }
+  { label: '草稿', value: CourseStatus.DRAFT },
+  { label: '待上架', value: CourseStatus.PENDING },
+  { label: '已上架', value: CourseStatus.ONLINE },
+  { label: '已下架', value: CourseStatus.OFFLINE },
+  { label: '已结课', value: CourseStatus.FINISHED }
 ] as const
+
+/** 状态 el-tag type 映射 */
+export function courseStatusTagType(status?: number): 'info' | 'warning' | 'success' | 'danger' {
+  switch (status) {
+    case CourseStatus.ONLINE: return 'success'
+    case CourseStatus.PENDING: return 'warning'
+    case CourseStatus.FINISHED: return 'danger'
+    default: return 'info'
+  }
+}
 
 /**
  * 课程信息实体（后端 CourseInfoVO）。
@@ -93,7 +109,7 @@ export interface CourseInfo {
   courseEndDate?: string
   /** 排序号 */
   sortOrder?: number
-  /** 上下架状态：0=下架 1=上架 */
+  /** 状态：0=草稿 1=待上架 2=已上架 3=已下架 4=已结课 */
   courseStatus?: CourseStatus
   /** 备注 */
   remark?: string

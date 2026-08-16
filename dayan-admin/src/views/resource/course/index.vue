@@ -17,7 +17,8 @@ import {
   CourseType,
   COURSE_TYPE_OPTIONS,
   CourseStatus,
-  COURSE_STATUS_OPTIONS
+  COURSE_STATUS_OPTIONS,
+  courseStatusTagType
 } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { useDictOptions } from '@/composables/useDict'
@@ -89,6 +90,8 @@ function defaultForm(): CourseInfo {
     videoUrl: '',
     courseDescription: '',
     targetAudience: '',
+    courseOutline: '',
+    learningObjectives: '',
     lecturerCode: '',
     totalClass: 0,
     totalDuration: 0,
@@ -107,6 +110,45 @@ function defaultForm(): CourseInfo {
 
 const form = reactive<CourseInfo>(defaultForm())
 
+/** 课程大纲动态表单模型（提交时序列化进 form.courseOutline） */
+interface OutlineChapterModel {
+  title: string
+  lessons: { title: string; duration?: number }[]
+}
+const outlineChapters = ref<OutlineChapterModel[]>([])
+
+/** JSON → 动态表单（空/坏 JSON 容错为空数组） */
+function parseOutline(raw?: string): OutlineChapterModel[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((ch: any) => ch && typeof ch.title === 'string' && Array.isArray(ch.lessons))
+      .map((ch: any) => ({
+        title: ch.title,
+        lessons: ch.lessons
+          .filter((ls: any) => ls && typeof ls.title === 'string')
+          .map((ls: any) => ({ title: ls.title, duration: ls.duration ?? undefined }))
+      }))
+  } catch {
+    return []
+  }
+}
+
+/** 动态表单 → JSON（过滤空标题项） */
+function serializeOutline(): string {
+  const chapters = outlineChapters.value
+    .map((ch) => ({
+      title: ch.title.trim(),
+      lessons: ch.lessons
+        .filter((ls) => ls.title.trim())
+        .map((ls) => ({ title: ls.title.trim(), ...(ls.duration ? { duration: ls.duration } : {}) }))
+    }))
+    .filter((ch) => ch.title && ch.lessons.length)
+  return chapters.length ? JSON.stringify(chapters) : ''
+}
+
 const rules: FormRules<CourseInfo> = {
   courseName: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
   courseType: [{ required: true, message: '请选择课程类型', trigger: 'change' }],
@@ -121,6 +163,7 @@ function resetForm() {
 function openCreate() {
   dialogType.value = 'create'
   resetForm()
+  outlineChapters.value = []
   dialogVisible.value = true
 }
 
@@ -137,6 +180,8 @@ function openEdit(row: CourseInfo) {
     videoUrl: row.videoUrl ?? '',
     courseDescription: row.courseDescription ?? '',
     targetAudience: row.targetAudience ?? '',
+    courseOutline: row.courseOutline ?? '',
+    learningObjectives: row.learningObjectives ?? '',
     lecturerCode: row.lecturerCode ?? '',
     totalClass: row.totalClass ?? 0,
     totalDuration: row.totalDuration ?? 0,
@@ -151,6 +196,7 @@ function openEdit(row: CourseInfo) {
     sortOrder: row.sortOrder ?? 0,
     remark: row.remark ?? ''
   })
+  outlineChapters.value = parseOutline(row.courseOutline)
   dialogVisible.value = true
 }
 
@@ -161,6 +207,9 @@ async function handleSubmit() {
   } catch {
     return
   }
+
+  form.courseOutline = serializeOutline()
+  form.learningObjectives = form.learningObjectives?.trim() || ''
 
   submitLoading.value = true
   try {
@@ -307,8 +356,8 @@ onMounted(() => {
         <el-table-column prop="salesCount" label="销量" width="90" align="center" />
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.courseStatus === CourseStatus.ONLINE ? 'success' : 'info'">
-              {{ row.courseStatus === CourseStatus.ONLINE ? '上架' : '下架' }}
+            <el-tag :type="courseStatusTagType(row.courseStatus)">
+              {{ COURSE_STATUS_OPTIONS.find((o) => o.value === row.courseStatus)?.label ?? '未知' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -317,7 +366,7 @@ onMounted(() => {
             <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button
-              v-if="row.courseStatus === CourseStatus.OFFLINE"
+              v-if="row.courseStatus !== CourseStatus.ONLINE && row.courseStatus !== CourseStatus.FINISHED"
               link
               type="success"
               size="small"
@@ -402,7 +451,7 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="课程视频">
+            <el-form-item label="宣传视频">
               <FileUploader v-model="form.videoUrl" type="video" module="course" />
             </el-form-item>
           </el-col>
@@ -418,7 +467,37 @@ onMounted(() => {
           </el-col>
           <el-col :span="24">
             <el-form-item label="目标人群">
-              <el-input v-model="form.targetAudience" placeholder="目标人群" />
+              <el-input v-model="form.targetAudience" maxlength="200" placeholder="如：入行 1-3 年的保险代理人" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="学习目标">
+              <el-input
+                v-model="form.learningObjectives"
+                type="textarea"
+                :rows="3"
+                maxlength="500"
+                placeholder="每行一个目标，如：&#10;独立完成年金险需求分析&#10;掌握 5 类高频异议处理"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="课程大纲">
+              <div class="outline-editor">
+                <div v-for="(ch, ci) in outlineChapters" :key="ci" class="outline-chapter">
+                  <div class="outline-chapter-head">
+                    <el-input v-model="ch.title" placeholder="章节标题（如：第一章 需求挖掘）" maxlength="50" style="flex: 1" />
+                    <el-button link type="danger" @click="outlineChapters.splice(ci, 1)">删章节</el-button>
+                  </div>
+                  <div v-for="(ls, li) in ch.lessons" :key="li" class="outline-lesson">
+                    <el-input v-model="ls.title" placeholder="课次标题" maxlength="100" style="flex: 1" />
+                    <el-input-number v-model="ls.duration" :min="0" :max="600" placeholder="分钟" controls-position="right" style="width: 110px" />
+                    <el-button link type="danger" @click="ch.lessons.splice(li, 1)">删</el-button>
+                  </div>
+                  <el-button link type="primary" size="small" @click="ch.lessons.push({ title: '', duration: undefined })">+ 添加课次</el-button>
+                </div>
+                <el-button link type="primary" @click="outlineChapters.push({ title: '', lessons: [{ title: '', duration: undefined }] })">+ 添加章节</el-button>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -538,5 +617,26 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.outline-editor {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.outline-chapter {
+  padding: 8px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.outline-chapter-head,
+.outline-lesson {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>
