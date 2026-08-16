@@ -1,0 +1,17 @@
+package com.dayan.agent.vo;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+/** AI 创作列表项 */
+@Data
+public class AiProjectListVO {
+    private Long id;
+    private String purpose;
+    private Integer contentType;
+    private String topic;
+    private String selectedTitle;
+    private String status;
+    private LocalDateTime updatedAt;
+}
