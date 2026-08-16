@@ -9,6 +9,7 @@ import com.dayan.agent.dto.AiTitleRegenDTO;
 import com.dayan.agent.service.AiCreationPipelineService;
 import com.dayan.agent.service.AiCreationProjectService;
 import com.dayan.agent.service.AiGenerateProgressListener;
+import com.dayan.agent.service.AiImageProgressListener;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
@@ -185,5 +186,87 @@ public class AgentAiCreationController {
     @PostMapping("/{id}/revise")
     public R<AiProjectVO> revise(@PathVariable Long id, @RequestBody @Valid AiReviseDTO dto) {
         return R.ok(pipelineService.revise(id, dto));
+    }
+
+    @Operation(summary = "生成配图（SSE：逐张进度）")
+    @PostMapping("/{id}/images/stream")
+    public SseEmitter imagesStream(@PathVariable Long id) {
+        SseEmitter emitter = new SseEmitter(300_000L);
+        final AtomicBoolean cancelled = new AtomicBoolean(false);
+        emitter.onCompletion(() -> cancelled.set(true));
+        emitter.onTimeout(() -> {
+            cancelled.set(true);
+            emitter.complete();
+        });
+        AiImageProgressListener listener = new AiImageProgressListener() {
+            @Override
+            public void onStage(String stage, String message) {
+                if (cancelled.get()) {
+                    return;
+                }
+                try {
+                    emitter.send(SseEmitter.event().name("stage")
+                            .data(java.util.Map.of("stage", stage, "message", message), MediaType.APPLICATION_JSON));
+                } catch (Exception e) {
+                    log.debug("SSE stage 发送失败: {}", e.getMessage());
+                }
+            }
+
+            @Override
+            public void onImage(String placeholder, String state, String url, String error) {
+                if (cancelled.get()) {
+                    return;
+                }
+                java.util.Map<String, Object> data = new java.util.HashMap<>();
+                data.put("placeholder", placeholder);
+                data.put("state", state);
+                data.put("url", url);
+                data.put("error", error);
+                try {
+                    emitter.send(SseEmitter.event().name("image").data(data, MediaType.APPLICATION_JSON));
+                } catch (Exception e) {
+                    log.debug("SSE image 发送失败: {}", e.getMessage());
+                }
+            }
+        };
+        // 虚拟线程恢复登录上下文（同 body/stream 模式，防租户拦截器误判）
+        final String ctxChannelCode = ContextHolder.getChannelCode();
+        final String ctxAccountCode = ContextHolder.getAccountCode();
+        final String ctxAccountType = ContextHolder.getAccountType();
+        final String ctxAccountName = ContextHolder.getAccountName();
+        Thread.ofVirtual().name("ai-images-stream-" + id).start(() -> {
+            ContextHolder.setChannelCode(ctxChannelCode);
+            ContextHolder.setAccountCode(ctxAccountCode);
+            ContextHolder.setAccountType(ctxAccountType);
+            ContextHolder.setAccountName(ctxAccountName);
+            try {
+                AiProjectVO result = pipelineService.imagesStream(id, listener);
+                emitter.send(SseEmitter.event().name("done").data(result, MediaType.APPLICATION_JSON));
+                emitter.complete();
+            } catch (Exception e) {
+                String msg = e instanceof BusinessException be ? be.getMessage() : "配图失败，请稍后重试";
+                log.warn("AI 配图失败 projectId={}: {}", id, e.getMessage());
+                try {
+                    emitter.send(SseEmitter.event().name("error")
+                            .data(java.util.Map.of("message", msg), MediaType.APPLICATION_JSON));
+                } catch (Exception ignored) {
+                    // 客户端已断开
+                }
+                emitter.complete();
+            }
+        });
+        return emitter;
+    }
+
+    @Operation(summary = "图文 HTML 成品预览")
+    @GetMapping("/{id}/preview")
+    public R<String> preview(@PathVariable Long id) {
+        return R.ok(pipelineService.previewHtml(id));
+    }
+
+    @Operation(summary = "保存到内容中心")
+    @PostMapping("/{id}/save")
+    public R<Long> save(@PathVariable Long id) {
+        return R.ok(pipelineService.saveToContent(id));
     }
 }

@@ -2,6 +2,7 @@ package com.dayan.agent.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.dayan.agent.dto.AgentContentCreateDTO;
 import com.dayan.agent.dto.AiOutlineConfirmDTO;
 import com.dayan.agent.dto.AiOutlineRegenDTO;
 import com.dayan.agent.dto.AiReviseDTO;
@@ -10,25 +11,33 @@ import com.dayan.agent.dto.AiTitleRegenDTO;
 import com.dayan.agent.entity.AiCreationProject;
 import com.dayan.agent.model.AiProjectPhase;
 import com.dayan.agent.model.AiPurpose;
+import com.dayan.agent.service.AgentContentService;
 import com.dayan.agent.service.AiCreationProjectService;
 import com.dayan.agent.service.AiCreationPipelineService;
 import com.dayan.agent.service.AiGenerateProgressListener;
+import com.dayan.agent.service.AiImageProgressListener;
 import com.dayan.agent.service.AiMaterialAssembler;
 import com.dayan.agent.util.AiPrompts;
 import com.dayan.agent.util.LlmJson;
 import com.dayan.agent.vo.*;
 import com.dayan.common.aliyun.bailian.BailianChatClient;
+import com.dayan.common.aliyun.dashscope.DashScopeImageClient;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
+import com.dayan.common.oss.service.StorageService;
 import com.dayan.goods.service.GoodsInfoService;
 import com.dayan.system.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 六阶段流水线编排。阶段温度：digest 0.2 / strategy 0.7 / titles 0.7 / outline 0.5 /
@@ -49,6 +58,11 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
     private static final double AUDIT_TEMPERATURE = 0.2;
     private static final double POLISH_TEMPERATURE = 0.5;
     private static final double REVISE_TEMPERATURE = 0.3;
+
+    /** 单张配图轮询上限 */
+    private static final long IMAGE_POLL_TIMEOUT_MS = 90_000L;
+    /** 正文配图占位符：[AI_IMAGE_COVER] / [AI_IMAGE_1..N] */
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[AI_IMAGE_[A-Z0-9_]+]");
 
     /** 生成后自检禁语清单（与 system.md 合规红线一致） */
     private static final List<String> BANNED_PHRASES = List.of(
@@ -75,7 +89,10 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
     private final AiMaterialAssembler materialAssembler;
     private final SystemConfigService systemConfigService;
     private final GoodsInfoService goodsInfoService;
+    private final StorageService storageService;
+    private final AgentContentService agentContentService;
     private final BailianChatClient bailianChatClient = new BailianChatClient();
+    private final DashScopeImageClient imageClient = new DashScopeImageClient();
 
     @Override
     public AiProjectVO digest(Long id) {
@@ -351,6 +368,275 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
         }
         projectService.updateById(p);
         return projectService.toVO(p);
+    }
+
+    @Override
+    public AiProjectVO imagesStream(Long id, AiImageProgressListener listener) {
+        AiCreationProject p = requirePhase(id, AiProjectPhase.BODY_DONE, AiProjectPhase.IMAGES_DONE);
+        List<String> placeholders = extractPlaceholders(p);
+        if (placeholders.isEmpty()) {
+            throw new BusinessException(ErrorCode.BUSINESS, "正文没有配图位，无需生成配图");
+        }
+        String apiKey = requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员");
+        String imageModel = StrUtil.blankToDefault(getConfig("llm.image-model"), "qwen-image-plus");
+        String apiBase = StrUtil.blankToDefault(getConfig("llm.image-api-base"), "https://dashscope.aliyuncs.com");
+        List<String> warnings = new ArrayList<>();
+        if (StrUtil.isNotBlank(p.getWarnings())) {
+            try {
+                warnings.addAll(JSONUtil.toList(JSONUtil.parseArray(p.getWarnings()), String.class));
+            } catch (Exception ignored) {
+                // 旧 warnings 格式异常时丢弃，避免阻塞配图
+            }
+        }
+        // 初始化配图结果（保留 prompt 供降级清单）
+        List<AiImageVO> images = new ArrayList<>();
+        for (String ph : placeholders) {
+            AiImageVO img = new AiImageVO();
+            img.setPlaceholder(ph);
+            AiOutlineVO.AiImageSpec spec = specOf(p, ph);
+            img.setSize(spec == null ? defaultSize(p.getContentType(), ph)
+                    : StrUtil.blankToDefault(spec.getSize(), defaultSize(p.getContentType(), ph)));
+            if (spec != null) {
+                img.setPrompt(spec.getPrompt());
+                img.setPromptZh(spec.getImagePromptZh());
+            }
+            img.setStatus("pending");
+            images.add(img);
+        }
+        p.setImages(JSONUtil.toJsonStr(images));
+        projectService.updateById(p);
+        notifyImageStage(listener, "images", "开始生成 " + placeholders.size() + " 张配图…");
+        int consecutiveFailures = 0;
+        int success = 0;
+        for (AiImageVO img : images) {
+            if (consecutiveFailures >= 2) {
+                img.setStatus("skipped");
+                continue;
+            }
+            String prompt = StrUtil.blankToDefault(img.getPrompt(),
+                    "Warm lifestyle photograph, elderly care concept related to: " + safeAscii(img.getPromptZh())
+                            + ", single subject, shallow depth of field");
+            img.setStatus("generating");
+            fireImage(listener, img.getPlaceholder(), "generating", null, null);
+            try {
+                String taskId = imageClient.submit(apiKey, apiBase, imageModel, prompt, img.getSize());
+                String url = imageClient.pollImageUrl(apiKey, apiBase, taskId, IMAGE_POLL_TIMEOUT_MS);
+                byte[] bytes = imageClient.download(url);
+                String fileKey = storageService.upload("ai-creation", p.getChannelCode(),
+                        new ByteArrayInputStream(bytes), bytes.length, "image/png",
+                        img.getPlaceholder().replaceAll("[^A-Za-z0-9_]", "").toLowerCase() + ".png");
+                img.setFileKey(fileKey);
+                img.setUrl("/agent-api/v1/files/preview/" + fileKey);
+                img.setStatus("done");
+                success++;
+                consecutiveFailures = 0;
+                fireImage(listener, img.getPlaceholder(), "done", img.getUrl(), null);
+            } catch (Exception e) {
+                consecutiveFailures++;
+                img.setStatus("failed");
+                img.setError(e.getMessage());
+                fireImage(listener, img.getPlaceholder(), "failed", null, e.getMessage());
+                log.warn("AI 配图单张失败 projectId={} placeholder={}: {}", id, img.getPlaceholder(), e.getMessage());
+                if (consecutiveFailures >= 2) {
+                    warnings.add("配图连续失败，已降级为 prompt 清单（见配图卡片的中文描述），请自行出图");
+                }
+            }
+            p.setImages(JSONUtil.toJsonStr(images));
+            projectService.updateById(p); // 逐张落库，中断可续看结果
+        }
+        if (success > 0) {
+            p.setStatus(AiProjectPhase.IMAGES_DONE);
+        } else {
+            warnings.add("配图全部失败，可重试或使用 prompt 清单自行出图");
+        }
+        p.setWarnings(warnings.isEmpty() ? null : JSONUtil.toJsonStr(warnings));
+        projectService.updateById(p);
+        notifyImageStage(listener, "done", "配图完成（成功 " + success + "/" + placeholders.size() + "）");
+        return projectService.toVO(p);
+    }
+
+    @Override
+    public String previewHtml(Long id) {
+        AiCreationProject p = projectService.requireOwned(id);
+        if (StrUtil.isBlank(p.getBody())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "正文尚未生成");
+        }
+        String body = finalizeBody(p);
+        String title = StrUtil.blankToDefault(p.getSelectedTitle(), "AI 生成图文");
+        boolean htmlBody = Integer.valueOf(1).equals(p.getContentType());
+        String content;
+        if (htmlBody) {
+            content = body;
+        } else {
+            content = "<p>" + htmlEscape(body).replace("\n", "<br/>") + "</p>";
+        }
+        return """
+                <!DOCTYPE html>
+                <html lang="zh-CN">
+                <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1">
+                <title>%s</title>
+                <style>
+                  body { background:#f5f5f5; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; color:#333; line-height:1.8; margin:0; }
+                  .aip { max-width:677px; margin:20px auto; background:#fff; padding:30px 24px 60px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+                  .aip h1 { font-size:22px; line-height:1.5; margin:0 8px 16px; text-align:center; }
+                  .aip img { width:100%%; border-radius:6px; margin:20px 0 8px; box-shadow:0 1px 4px rgba(0,0,0,.1); }
+                  .aip p { font-size:16px; margin:0 0 18px; text-align:justify; }
+                  .aip h2 { font-size:18px; margin:32px 0 12px; }
+                  .aip strong { color:#1a1a1a; }
+                </style>
+                </head>
+                <body>
+                <div class="aip">
+                <h1>%s</h1>
+                %s
+                </div>
+                </body>
+                </html>
+                """.formatted(htmlEscape(title), htmlEscape(title), content);
+    }
+
+    @Override
+    public Long saveToContent(Long id) {
+        AiCreationProject p = requirePhase(id, AiProjectPhase.IMAGES_DONE, AiProjectPhase.BODY_DONE);
+        if (StrUtil.isBlank(p.getBody())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "正文尚未生成");
+        }
+        if (countPlaceholders(p.getBody()) > 0 && !AiProjectPhase.IMAGES_DONE.equals(p.getStatus())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "正文含配图位，请先完成配图（或处理失败降级）再保存");
+        }
+        AiMaterialRefsVO refs = refs(p);
+        AgentContentCreateDTO dto = new AgentContentCreateDTO();
+        dto.setTitle(p.getSelectedTitle());
+        dto.setContentType(p.getContentType());
+        dto.setContentBody(finalizeBody(p));
+        dto.setStyleCode(p.getStyleCode());
+        dto.setAudience(p.getAudience());
+        dto.setPurpose(p.getPurpose());
+        dto.setRefContentCode(refs.getRefContentCode());
+        if (refs.getKbFileIds() != null && !refs.getKbFileIds().isEmpty()) {
+            List<String> names = materialAssembler.resolveKbFileNames(p.getChannelCode(), refs.getKbFileIds());
+            List<Map<String, String>> files = new ArrayList<>();
+            for (int i = 0; i < refs.getKbFileIds().size(); i++) {
+                Map<String, String> f = new LinkedHashMap<>();
+                f.put("fileId", refs.getKbFileIds().get(i));
+                f.put("fileName", i < names.size() ? names.get(i) : refs.getKbFileIds().get(i));
+                files.add(f);
+            }
+            dto.setRefKbFiles(JSONUtil.toJsonStr(files));
+        }
+        if (refs.getGoodsCodes() != null && !refs.getGoodsCodes().isEmpty()) {
+            dto.setRefGoodsCodes(JSONUtil.toJsonStr(refs.getGoodsCodes()));
+        }
+        // 封面取已生成的 cover 图
+        if (StrUtil.isNotBlank(p.getImages())) {
+            JSONUtil.toList(JSONUtil.parseArray(p.getImages()), AiImageVO.class).stream()
+                    .filter(i -> "[AI_IMAGE_COVER]".equals(i.getPlaceholder()) && "done".equals(i.getStatus())
+                            && StrUtil.isNotBlank(i.getFileKey()))
+                    .findFirst().ifPresent(i -> dto.setCoverImage(i.getFileKey()));
+        }
+        Long contentId = agentContentService.create(dto);
+        p.setStatus(AiProjectPhase.SAVED);
+        projectService.updateById(p);
+        return contentId;
+    }
+
+    // ---------- 配图阶段工具 ----------
+
+    /** 正文占位符（有序去重）；contentType=3 无正文占位符 → 取 outline.coverImage（有 prompt 才算） */
+    List<String> extractPlaceholders(AiCreationProject p) {
+        List<String> list = new ArrayList<>();
+        if (StrUtil.isNotBlank(p.getBody())) {
+            Matcher m = PLACEHOLDER_PATTERN.matcher(p.getBody());
+            while (m.find()) {
+                if (!list.contains(m.group())) list.add(m.group());
+            }
+        }
+        if (list.isEmpty() && Integer.valueOf(3).equals(p.getContentType())) {
+            AiOutlineVO outline = StrUtil.isBlank(p.getOutline()) ? null : JSONUtil.toBean(p.getOutline(), AiOutlineVO.class);
+            if (outline != null && outline.getCoverImage() != null
+                    && StrUtil.isNotBlank(outline.getCoverImage().getPrompt())) {
+                list.add("[AI_IMAGE_COVER]");
+            }
+        }
+        return list;
+    }
+
+    int countPlaceholders(String body) {
+        if (body == null) return 0;
+        int c = 0;
+        Matcher m = PLACEHOLDER_PATTERN.matcher(body);
+        while (m.find()) c++;
+        return c;
+    }
+
+    /** 占位符 → 大纲配图规格（COVER→coverImage；N→第 N 个带 imageInsertion 的节点） */
+    AiOutlineVO.AiImageSpec specOf(AiCreationProject p, String placeholder) {
+        if (StrUtil.isBlank(p.getOutline())) return null;
+        AiOutlineVO outline = JSONUtil.toBean(p.getOutline(), AiOutlineVO.class);
+        if ("[AI_IMAGE_COVER]".equals(placeholder)) {
+            return outline.getCoverImage();
+        }
+        List<AiOutlineVO.AiOutlineNode> withImage = outline.getNodes() == null ? List.of()
+                : outline.getNodes().stream().filter(n -> n.getImageInsertion() != null).toList();
+        Matcher m = Pattern.compile("\\[AI_IMAGE_(\\d+)]").matcher(placeholder);
+        if (m.matches()) {
+            int n = Integer.parseInt(m.group(1));
+            return n >= 1 && n <= withImage.size() ? withImage.get(n - 1).getImageInsertion() : null;
+        }
+        return null;
+    }
+
+    String defaultSize(Integer contentType, String placeholder) {
+        if ("[AI_IMAGE_COVER]".equals(placeholder)) {
+            return Integer.valueOf(4).equals(contentType) ? "1080*1440" : "1024*1024";
+        }
+        return "1280*720";
+    }
+
+    /** 正文占位符 → <img>（done 的图）/ 剔除（失败/未生成）；朋友圈等无图形态原样返回 */
+    String finalizeBody(AiCreationProject p) {
+        String body = StrUtil.nullToEmpty(p.getBody());
+        if (countPlaceholders(body) == 0 || StrUtil.isBlank(p.getImages())) {
+            return body.replaceAll(Pattern.quote("[AI_IMAGE_COVER]") + "|" + PLACEHOLDER_PATTERN.pattern(), "");
+        }
+        Map<String, AiImageVO> map = new LinkedHashMap<>();
+        for (AiImageVO img : JSONUtil.toList(JSONUtil.parseArray(p.getImages()), AiImageVO.class)) {
+            map.put(img.getPlaceholder(), img);
+        }
+        Matcher m = PLACEHOLDER_PATTERN.matcher(body);
+        StringBuilder out = new StringBuilder();
+        while (m.find()) {
+            String ph = m.group();
+            AiImageVO img = map.get(ph);
+            String replacement = "";
+            if (img != null && "done".equals(img.getStatus()) && StrUtil.isNotBlank(img.getUrl())) {
+                replacement = "[AI_IMAGE_COVER]".equals(ph)
+                        ? "<img class=\"aip-cover\" src=\"" + img.getUrl() + "\" alt=\"封面\">"
+                        : "<img class=\"aip-img\" src=\"" + img.getUrl() + "\" alt=\"插图\">";
+            }
+            m.appendReplacement(out, Matcher.quoteReplacement(replacement));
+        }
+        m.appendTail(out);
+        return out.toString();
+    }
+
+    String htmlEscape(String s) {
+        return s == null ? "" : s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    /** 中文场景描述转 ASCII（降级 prompt 用，非 ASCII 全部折叠为空格） */
+    String safeAscii(String zh) {
+        return zh == null ? "senior care warm scene" : zh.replaceAll("[^\\x20-\\x7E]", " ").trim();
+    }
+
+    private void notifyImageStage(AiImageProgressListener l, String stage, String message) {
+        if (l != null) l.onStage(stage, message);
+    }
+
+    private void fireImage(AiImageProgressListener l, String ph, String state, String url, String error) {
+        if (l != null) l.onImage(ph, state, url, error);
     }
 
     // ---------- 正文阶段私有工具 ----------

@@ -27,4 +27,10 @@ public interface AiCreationPipelineService {
     AiProjectVO bodyStream(Long id, AiGenerateProgressListener listener);
     /** 段落勘误（最小化修订，不改文风） */
     AiProjectVO revise(Long id, AiReviseDTO dto);
+    /** 逐占位符生成配图（DashScope→MinIO），≥1 成功 → IMAGES_DONE；连续 2 失败降级 prompt 清单 */
+    AiProjectVO imagesStream(Long id, AiImageProgressListener listener);
+    /** 图文 HTML 成品（占位符→图片 URL；未生成/失败的占位符剔除） */
+    String previewHtml(Long id);
+    /** 保存到内容中心（写 agent_content，含 purpose），→ SAVED，返回内容 id */
+    Long saveToContent(Long id);
 }

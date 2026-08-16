@@ -47,4 +47,8 @@ public class AgentContentCreateDTO {
 
     /** 目标读者（children/elder/general，可空） */
     private String audience;
+
+    /** 文章目的（product/park/science，可空） */
+    @Size(max = 32, message = "文章目的非法")
+    private String purpose;
 }
