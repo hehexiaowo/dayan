@@ -170,7 +170,12 @@ const outlineChapters = computed<CourseOutlineChapter[]>(() => {
 });
 
 async function loadDetail() {
-  if (!courseCode.value) return;
+  if (!courseCode.value) {
+    // 无课程编码（深链参数缺失）：直接落空态，避免卡死 loading
+    loading.value = false;
+    course.value = null;
+    return;
+  }
   loading.value = true;
   try {
     course.value = await getCourseDetail(courseCode.value);

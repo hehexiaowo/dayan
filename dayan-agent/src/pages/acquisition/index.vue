@@ -1,357 +1,163 @@
 <template>
   <view class="page dy-safe-bottom">
-    <!-- ===== 上半部分：获客工具区 ===== -->
-    <view class="top-section">
-      <!-- 搜索栏 -->
-      <view class="search-bar">
-        <view class="search-input-wrap">
-          <text class="search-icon">搜</text>
-          <input
-            v-model="keyword"
-            class="search-input"
-            placeholder="搜索客户名/手机号"
-            placeholder-class="search-placeholder"
-            confirm-type="search"
-            @confirm="onSearch"
-          />
-          <text v-if="keyword" class="search-clear" @click="keyword = ''">×</text>
-        </view>
-        <button class="btn-search" size="mini" @click="onSearch">搜索</button>
-      </view>
+    <!-- 渐变 header（与展业中心一致） -->
+    <view class="header">
+      <text class="header-title">获客工具</text>
+      <text class="header-sub">内容获客、线索管理、AI 创作</text>
+    </view>
 
-      <!-- 获客工具 -->
-      <view class="tools-card">
-        <view class="tools-header">
-          <text class="tools-title">获客工具</text>
-          <view class="actions">
-            <view class="btn-action btn-share dy-clickable" @click="onShareCode">
-              <text class="btn-action-text">分享获客码</text>
-            </view>
-          </view>
+    <!-- ===== 获客工具（每行 4 个菜单卡） ===== -->
+    <view class="tools-card">
+      <view class="tools-title">获客工具</view>
+      <view class="tools-grid">
+        <view class="tool-item dy-clickable" @click="onTool('lead')">
+          <DyIconBlock text="线" color="blue" size="md" />
+          <text class="tool-label">线索管理</text>
         </view>
-        <view class="tools-grid">
-          <view class="tool-item dy-clickable" @click="onTool('content')">
-            <DyIconBlock text="文" color="green" size="md" shape="circle" />
-            <text class="tool-label">内容获客</text>
-          </view>
-          <view class="tool-item dy-clickable" @click="onTool('tools')">
-            <DyIconBlock text="具" color="blue" size="md" shape="circle" />
-            <text class="tool-label">工具获客</text>
-          </view>
-          <view class="tool-item dy-clickable" @click="onTool('poster')">
-            <DyIconBlock text="海" color="orange" size="md" shape="circle" />
-            <text class="tool-label">营销海报</text>
-          </view>
-          <view class="tool-item dy-clickable" @click="onTool('card')">
-            <DyIconBlock text="名" color="blue" size="md" shape="circle" />
-            <text class="tool-label">电子名片</text>
-          </view>
+        <view class="tool-item dy-clickable" @click="onTool('content')">
+          <DyIconBlock text="文" color="green" size="md" />
+          <text class="tool-label">内容获客</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('tools')">
+          <DyIconBlock text="具" color="blue" size="md" />
+          <text class="tool-label">工具获客</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('poster')">
+          <DyIconBlock text="海" color="orange" size="md" />
+          <text class="tool-label">营销海报</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('card')">
+          <DyIconBlock text="名" color="blue" size="md" />
+          <text class="tool-label">电子名片</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('ai')">
+          <DyIconBlock text="AI" color="red" size="md" />
+          <text class="tool-label">AI 创作</text>
         </view>
       </view>
     </view>
 
-    <!-- ===== 下半部分：线索清单区 ===== -->
-    <view class="bottom-section">
-      <!-- 线索池（待认领访客线索） -->
-      <view v-if="poolLeads.length" class="pool-section">
-        <view class="list-header">
-          <text class="list-title">线索池</text>
-          <text class="list-count">{{ poolLeads.length }} 条待认领</text>
-        </view>
-        <view
-          v-for="item in poolLeads"
-          :key="item.leadCode"
-          class="card pool-card"
-        >
-          <view class="card-left">
-            <image
-              v-if="item.wxAvatar"
-              :src="item.wxAvatar"
-              mode="aspectFill"
-              class="card-avatar-img"
-            />
-            <DyIconBlock
-              v-else
-              :text="poolName(item).charAt(0) || '?'"
-              color="gray"
-              size="sm"
-              shape="circle"
-            />
-          </view>
-          <view class="card-main">
-            <view class="card-row-top">
-              <text class="card-name">{{ poolName(item) }}</text>
-            </view>
-            <view class="card-row-mid">
-              <text v-if="item.phone" class="card-phone">{{ item.phone }}</text>
-              <text v-else class="card-phone muted">未留手机号</text>
-            </view>
-            <view class="card-row-bottom">
-              <template v-if="item.lastInteractType">
-                <view class="trace-pill" :class="tracePillClass(item.lastInteractType)">
-                  <text class="trace-pill-text">{{ traceTypeText(item.lastInteractType) }}</text>
-                </view>
-                <text class="card-meta-sep">·</text>
-              </template>
-              <text class="card-meta">{{ item.interactCount || 0 }}次互动</text>
-              <text v-if="item.lastInteractTime || item.createdAt" class="card-meta-sep">·</text>
-              <text v-if="item.lastInteractTime || item.createdAt" class="card-meta">{{ formatTime(item.lastInteractTime || item.createdAt, true) }}</text>
-            </view>
-          </view>
-          <view class="claim-btn dy-clickable" @click.stop="onClaim(item)">
-            <text class="claim-btn-text">认领</text>
-          </view>
+    <!-- ===== 今日热点 ===== -->
+    <view class="hot-section">
+      <view class="section-head">
+        <text class="section-title">今日热点</text>
+        <view class="section-actions">
+          <text class="section-more dy-clickable" @click="onTool('content')">内容</text>
+          <text class="section-more-sep">·</text>
+          <text class="section-more dy-clickable" @click="onTool('poster')">海报</text>
         </view>
       </view>
 
-      <!-- 线索标题 + 统计 -->
-      <view class="list-header">
-        <text class="list-title">线索清单</text>
-        <text class="list-count">共 {{ leads.length }} 条</text>
-      </view>
+      <!-- 骨架屏 -->
+      <template v-if="hotLoading">
+        <DySkeleton v-for="i in 2" :key="i" :rows="2" avatar card />
+      </template>
 
-      <!-- 状态筛选 Tab -->
-      <view class="status-tabs">
-        <view
-          v-for="tab in statusTabs"
-          :key="tab.key"
-          class="status-tab dy-clickable"
-          :class="{ active: activeTab === tab.key }"
-          @click="activeTab = tab.key"
-        >
-          <text class="status-tab-text">{{ tab.label }}</text>
-          <text v-if="tab.count > 0" class="status-tab-count">{{ tab.count }}</text>
-        </view>
-      </view>
-
-      <!-- 线索列表 -->
-      <view class="list-body">
-        <!-- 加载骨架屏 -->
-        <template v-if="loading && !leads.length">
-          <DySkeleton v-for="i in 3" :key="i" :rows="2" avatar />
-        </template>
-
-        <!-- 加载错误态 -->
-        <DyEmpty
-          v-else-if="loadError"
-          text="加载失败，请检查网络后重试"
-          icon="!"
-          color="gray"
-          action-text="重新加载"
-          @action="loadList"
-        />
-
-        <!-- 空状态 -->
-        <DyEmpty
-          v-else-if="!filteredLeads.length"
-          :text="emptyText"
-          icon="线"
-          color="blue"
-          :action-text="activeTab === 'all' && !keyword ? '新增线索' : ''"
-          @action="onAdd"
-        />
-
-        <!-- 线索卡片 -->
-        <view v-else>
+      <!-- 内容热点（横向滑动） -->
+      <scroll-view v-if="hotContents.length" scroll-x class="hot-scroll" :show-scrollbar="false">
+        <view class="hot-row">
           <view
-            v-for="lead in filteredLeads"
-            :key="lead.id"
-            class="card dy-clickable"
-            @click="onLeadClick(lead)"
+            v-for="article in hotContents"
+            :key="article.contentCode"
+            class="hot-item dy-clickable"
+            @click="goContent(article.contentCode)"
           >
-            <view class="card-left">
+            <view class="hot-cover">
               <image
-                v-if="lead.wxAvatar"
-                :src="lead.wxAvatar"
+                v-if="formatFileUrl(article.coverImage)"
+                :src="formatFileUrl(article.coverImage)"
                 mode="aspectFill"
-                class="card-avatar-img"
+                class="hot-img"
               />
-              <DyIconBlock
-                v-else
-                :text="leadName(lead).charAt(0) || '?'"
-                :color="avatarColor(lead.leadStatus)"
-                size="sm"
-                shape="circle"
-              />
+              <view v-else class="hot-placeholder">
+                <text class="hot-char">{{ (article.title || '?').charAt(0) }}</text>
+              </view>
+              <text v-if="article.viewCount != null" class="hot-views">{{ formatCount(article.viewCount) }}阅</text>
             </view>
-            <view class="card-main">
-              <!-- 第 1 行：姓名 + 客户状态 -->
-              <view class="card-row-top">
-                <text class="card-name">{{ leadName(lead) }}</text>
-                <view class="card-status" :class="statusClass(lead.leadStatus)">
-                  {{ statusText(lead.leadStatus) }}
-                </view>
-              </view>
-              <!-- 第 2 行：手机号 -->
-              <view class="card-row-mid">
-                <text v-if="lead.phone" class="card-phone">{{ lead.phone }}</text>
-                <text v-else class="card-phone muted">未留手机号</text>
-              </view>
-              <!-- 第 3 行：最后互动类型 · 互动次数 · 最后互动时间 -->
-              <view class="card-row-bottom">
-                <template v-if="lead.lastTraceType">
-                  <view
-                    class="trace-pill"
-                    :class="tracePillClass(lead.lastTraceType)"
-                  >
-                    <text class="trace-pill-text">{{ traceTypeText(lead.lastTraceType) }}</text>
-                  </view>
-                  <text class="card-meta-sep">·</text>
-                </template>
-                <text class="card-meta">{{ lead.traceCount || 0 }}次互动</text>
-                <text v-if="lead.lastTraceTime || lead.createdAt" class="card-meta-sep">·</text>
-                <text v-if="lead.lastTraceTime || lead.createdAt" class="card-meta">{{ formatTime(lead.lastTraceTime || lead.createdAt, true) }}</text>
-              </view>
-            </view>
+            <text class="hot-name">{{ article.title }}</text>
           </view>
         </view>
-      </view>
-    </view>
+      </scroll-view>
 
-    <!-- 悬浮按钮 -->
-    <view class="fab dy-clickable" @click="onAdd">
-      <text class="fab-icon">+</text>
+      <!-- 海报热点（横向滑动） -->
+      <scroll-view v-if="hotPosters.length" scroll-x class="hot-scroll" :show-scrollbar="false">
+        <view class="hot-row">
+          <view
+            v-for="tpl in hotPosters"
+            :key="tpl.templateCode"
+            class="hot-item dy-clickable"
+            @click="goPoster(tpl.templateCode)"
+          >
+            <view class="hot-cover">
+              <image
+                :src="formatFileUrl(tpl.coverImage)"
+                mode="aspectFill"
+                class="hot-img"
+              />
+            </view>
+            <text class="hot-name">{{ tpl.title }}</text>
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- 空状态 -->
+      <DyEmpty v-if="!hotLoading && !hotContents.length && !hotPosters.length" text="暂无热点内容" icon="热" color="orange" />
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { onPullDownRefresh, onShow } from '@dcloudio/uni-app';
-import { getLeads, getLeadPool, claimLead } from '@/api/lead';
-import { LeadStatus } from '@/types';
-import type { Lead, LeadPoolItem } from '@/types';
-import { statusText, statusClass, avatarColor, traceTypeText, formatTime } from '@/utils/lead';
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
+import { getContentList } from '@/api/content';
+import { getPosterTemplates } from '@/api/poster';
+import { formatFileUrl } from '@/utils/file';
+import type { ContentArticle } from '@/types';
+import type { PosterTemplate } from '@/api/poster';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
-const keyword = ref('');
-const leads = ref<Lead[]>([]);
-const loading = ref(false);
-const loadError = ref(false);
+/**
+ * 获客中心首页（tab 页）。
+ *
+ * - 风格与展业中心统一：渐变 header + 整行功能卡；
+ * - 「今日热点」独立区块：最新/最热内容（前 4）+ 海报模板（前 2），横向滑动；
+ * - 线索清单/搜索已拆至独立「线索管理」页（个人中心「线索记录」同入口）。
+ */
 
-/** 当前选中的 Tab key，'all' = 全部 */
-const activeTab = ref<string>('all');
+const hotLoading = ref(false);
+const hotContents = ref<ContentArticle[]>([]);
+const hotPosters = ref<PosterTemplate[]>([]);
 
-/** Tab key → 线索状态映射（all = 不限） */
-const tabStatusMap: Record<string, LeadStatus[] | undefined> = {
-  all: undefined,
-  lead: [LeadStatus.NEW, LeadStatus.FOLLOWING],
-  intent: [LeadStatus.INTENDED],
-  convert: [LeadStatus.CONVERTED],
-  abandon: [LeadStatus.LOST],
-};
-
-/** 状态筛选 Tab 定义 */
-const statusTabs = computed(() => [
-  { key: 'all', label: '全部', count: leads.value.length },
-  { key: 'lead', label: '线索', count: countByStatuses(LeadStatus.NEW, LeadStatus.FOLLOWING) },
-  { key: 'intent', label: '意向', count: countByStatus(LeadStatus.INTENDED) },
-  { key: 'convert', label: '转化', count: countByStatus(LeadStatus.CONVERTED) },
-  { key: 'abandon', label: '流失', count: countByStatus(LeadStatus.LOST) },
-]);
-
-/** 按当前 Tab + 关键字过滤的线索列表 */
-const filteredLeads = computed(() => {
-  const kw = keyword.value.trim();
-  let list = leads.value;
-  const statuses = tabStatusMap[activeTab.value];
-  if (statuses) list = list.filter((l) => statuses.some((s) => s === l.leadStatus));
-  if (kw) list = list.filter((l) => (l.name || '').includes(kw) || (l.phone || '').includes(kw));
-  return list;
-});
-
-/** 空状态文案 */
-const emptyText = computed(() => {
-  if (activeTab.value === 'all') return '暂无线索';
-  const tab = statusTabs.value.find((t) => t.key === activeTab.value);
-  return `暂无${tab?.label || ''}线索`;
-});
-
-function countByStatus(status: LeadStatus): number {
-  return leads.value.filter((l) => l.leadStatus === status).length;
-}
-
-function countByStatuses(...statuses: LeadStatus[]): number {
-  return leads.value.filter((l) => statuses.some((s) => s === l.leadStatus)).length;
-}
-
-/** 线索显示名称：name > wxNickname > "匿名访客" */
-function leadName(lead: Lead): string {
-  return lead.name || lead.wxNickname || '匿名访客';
-}
-
-/** 互动类型标签配色（与详情页圆点配色一致：内容蓝/工具绿/海报橙） */
-function tracePillClass(type?: number): string {
-  switch (type) {
-    case 1: return 'pill-content';
-    case 2: return 'pill-tool';
-    case 3: return 'pill-poster';
-    default: return 'pill-default';
-  }
-}
-
-async function loadList() {
-  loading.value = true;
-  loadError.value = false;
+async function loadHot() {
+  hotLoading.value = true;
   try {
-    // 一次性加载全部线索（不分状态、不带关键字），筛选 + 搜索均走客户端
-    const res = await getLeads({
-      size: 999,
-    });
-    leads.value = res?.records || [];
-  } catch (e) {
-    loadError.value = true;
+    // 内容：取最新/推荐前 4（后端按 sortOrder + 浏览量排序）
+    const res = await getContentList({ current: 1, size: 4 });
+    hotContents.value = res?.records || [];
+    // 海报：取前 2
+    const posters = await getPosterTemplates();
+    hotPosters.value = (posters || []).slice(0, 2);
+  } catch {
+    hotContents.value = [];
+    hotPosters.value = [];
   } finally {
-    loading.value = false;
+    hotLoading.value = false;
   }
 }
 
-// ---------- 线索池（待认领） ----------
-const poolLeads = ref<LeadPoolItem[]>([]);
-
-/** 线索池展示名：name > wxNickname > 匿名访客 */
-function poolName(item: LeadPoolItem): string {
-  return item.name || item.wxNickname || '匿名访客';
+function formatCount(n: number): string {
+  if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+  return String(n);
 }
 
-async function loadPool() {
-  try {
-    // 只取前 5 条待认领线索做入口展示，失败静默（不阻塞主列表）
-    const res = await getLeadPool({ current: 1, size: 5 });
-    poolLeads.value = res?.records || [];
-  } catch (e) {
-    poolLeads.value = [];
-  }
+function goContent(contentCode: string) {
+  uni.navigateTo({ url: `/pages/acquisition/content/detail?code=${contentCode}` });
 }
 
-async function onClaim(item: LeadPoolItem) {
-  const confirmed = await new Promise<boolean>((resolve) => {
-    uni.showModal({
-      title: '认领线索',
-      content: `确定认领「${poolName(item)}」吗？认领后将进入你的线索清单。`,
-      success: (res) => resolve(!!res.confirm),
-      fail: () => resolve(false),
-    });
-  });
-  if (!confirmed) return;
-  try {
-    await claimLead(item.leadCode);
-    uni.showToast({ title: '认领成功', icon: 'success' });
-    await Promise.all([loadPool(), loadList()]);
-  } catch (e: any) {
-    uni.showToast({ title: e?.message || '认领失败，可能已被他人认领', icon: 'none' });
-    loadPool();
-  }
-}
-
-function onSearch() {
-  loadList();
-}
-
-function onAdd() {
-  uni.navigateTo({ url: '/pages/acquisition/lead/form' });
+function goPoster(templateCode: string) {
+  uni.navigateTo({ url: `/pages/acquisition/poster/detail?code=${templateCode}` });
 }
 
 function onShareCode() {
@@ -359,6 +165,10 @@ function onShareCode() {
 }
 
 function onTool(type: string) {
+  if (type === 'lead') {
+    uni.navigateTo({ url: '/pages/acquisition/lead/index' });
+    return;
+  }
   if (type === 'content') {
     uni.navigateTo({ url: '/pages/acquisition/content/index' });
     return;
@@ -371,6 +181,10 @@ function onTool(type: string) {
     uni.navigateTo({ url: '/pages/acquisition/tools/index' });
     return;
   }
+  if (type === 'ai') {
+    uni.navigateTo({ url: '/pages/acquisition/ai-generate/index' });
+    return;
+  }
   if (type === 'poster') {
     uni.navigateTo({ url: '/pages/acquisition/poster/index' });
     return;
@@ -378,366 +192,159 @@ function onTool(type: string) {
   uni.showToast({ title: '功能开发中', icon: 'none' });
 }
 
-function onLeadClick(lead: Lead) {
-  uni.navigateTo({ url: '/pages/acquisition/lead/detail?id=' + lead.id });
-}
-
-// 每次进入/返回页面统一刷新（首次加载、状态变更、新增、删除、认领后同步）
 onShow(() => {
-  loadList();
-  loadPool();
-});
-
-onPullDownRefresh(async () => {
-  try {
-    await Promise.all([loadList(), loadPool()]);
-  } finally {
-    uni.stopPullDownRefresh();
-  }
+  loadHot();
 });
 </script>
 
 <style lang="scss" scoped>
 
 .page {
+  padding: $spacing-md $spacing-md 60rpx;
   min-height: 100vh;
   background: $bg-page;
-  display: flex;
-  flex-direction: column;
 }
 
-/* ========== 上半部分：获客工具区 ========== */
-.top-section {
+/* ===== 渐变 header（与展业中心一致） ===== */
+.header {
   background: $gradient-blue;
-  padding: $spacing-md $spacing-md $spacing-lg;
+  border-radius: $radius-lg;
+  padding: $spacing-xl $spacing-lg;
+  margin-bottom: $spacing-md;
 }
-
-/* 搜索栏 */
-.search-bar {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
+.header-title {
+  display: block;
+  font-size: 38rpx;
+  font-weight: bold;
+  color: #fff;
 }
-.search-input-wrap {
-  flex: 1;
-  position: relative;
-}
-.search-icon {
-  position: absolute;
-  left: 24rpx;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.7);
-  z-index: 1;
-}
-.search-input {
-  width: 100%;
-  height: $control-height-sm;
-  border: none;
-  border-radius: $radius-md;
-  padding: 0 20rpx 0 56rpx;
-  font-size: 28rpx;
-  background: rgba(255, 255, 255, 0.9);
-  color: $text-primary;
-  box-sizing: border-box;
-}
-.search-placeholder {
-  color: $text-placeholder;
-}
-.search-clear {
-  position: absolute;
-  right: 20rpx;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 36rpx;
-  color: $text-placeholder;
-  padding: 0 12rpx;
-  z-index: 1;
-}
-.btn-search {
-  background: #fff;
-  color: $brand-primary;
+.header-sub {
+  display: block;
+  margin-top: $spacing-sm;
   font-size: 26rpx;
-  padding: 0 28rpx;
-  height: $control-height-sm;
-  line-height: $control-height-sm;
-  border-radius: $radius-md;
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-/* 获客工具卡片 */
+/* ===== 获客工具（每行 4 个菜单卡） ===== */
 .tools-card {
   background: $bg-card;
   border-radius: $radius-lg;
   padding: $spacing-lg $spacing-md;
-  margin-top: $spacing-md;
+  margin-bottom: $spacing-md;
   box-shadow: $shadow-card;
 }
-.tools-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: $spacing-md;
-}
 .tools-title {
+  display: block;
   font-size: 32rpx;
   font-weight: bold;
   color: $text-primary;
-}
-.actions {
-  display: flex;
-  gap: $spacing-sm;
-}
-.btn-action {
-  background: $brand-primary-light;
-  border-radius: $radius-sm;
-  padding: 8rpx 20rpx;
-}
-.btn-action-text {
-  font-size: 24rpx;
-  color: $brand-primary;
+  margin-bottom: $spacing-lg;
 }
 .tools-grid {
-  display: flex;
-  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  row-gap: $spacing-lg;
 }
 .tool-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: $spacing-sm;
 }
 .tool-label {
-  margin-top: $spacing-sm;
   font-size: 24rpx;
   color: $text-regular;
 }
 
-/* ========== 下半部分：线索清单区 ========== */
-.bottom-section {
-  flex: 1;
-  background: $bg-page;
-  border-radius: $radius-lg $radius-lg 0 0;
-  margin-top: -$spacing-sm;
-  padding: $spacing-lg $spacing-md 0;
-  position: relative;
-  z-index: 1;
+/* ===== 今日热点 ===== */
+.hot-section {
+  background: $bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg $spacing-md;
+  margin-top: $spacing-lg;
+  box-shadow: $shadow-card;
 }
-
-/* 列表头 */
-.list-header {
+.section-head {
   display: flex;
-  align-items: baseline;
-  gap: $spacing-sm;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: $spacing-md;
 }
-.list-title {
+.section-title {
   font-size: 32rpx;
   font-weight: bold;
   color: $text-primary;
 }
-.list-count {
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+.section-more {
   font-size: 24rpx;
   color: $text-secondary;
 }
-
-/* 状态筛选 Tab */
-.status-tabs {
-  display: flex;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  white-space: nowrap;
+.section-more-sep {
+  font-size: 24rpx;
+  color: $text-placeholder;
+}
+.hot-scroll {
   margin-bottom: $spacing-md;
-  border-bottom: 1rpx solid $border-light;
-  padding-bottom: $spacing-sm;
-  gap: $spacing-xs;
 }
-.status-tab {
+.hot-scroll:last-of-type {
+  margin-bottom: 0;
+}
+.hot-row {
   display: inline-flex;
-  align-items: center;
-  gap: 6rpx;
-  padding: 12rpx 24rpx;
-  border-radius: $radius-md;
-  flex-shrink: 0;
-  transition: all $transition-base;
+  gap: $spacing-md;
+  padding: 4rpx;
 }
-.status-tab-text {
-  font-size: 26rpx;
-  color: $text-regular;
-}
-.status-tab-count {
-  font-size: 20rpx;
-  color: $text-placeholder;
-  background: $border-light;
-  border-radius: 16rpx;
-  padding: 2rpx 10rpx;
-  line-height: 1.4;
-}
-.status-tab.active {
-  background: $brand-primary-light;
-  .status-tab-text {
-    color: $brand-primary;
-    font-weight: bold;
-  }
-  .status-tab-count {
-    background: $brand-primary;
-    color: #fff;
-  }
-}
-
-/* 列表区 */
-.list-body {
-  min-height: 300rpx;
-}
-
-/* 线索卡片 */
-.card {
-  display: flex;
-  align-items: center;
-  background: $bg-card;
-  border-radius: $radius-md;
-  padding: $spacing-md $spacing-lg;
-  margin-bottom: $spacing-sm;
-  box-shadow: $shadow-card;
-}
-.card-left {
-  flex-shrink: 0;
-  margin-right: $spacing-md;
-}
-.card-avatar-img {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 50%;
-}
-.card-main {
-  flex: 1;
-  min-width: 0;
-}
-.card-row-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.card-row-mid {
-  margin-top: 8rpx;
-}
-.card-phone {
-  font-size: 26rpx;
-  color: $text-regular;
-}
-.card-phone.muted {
-  color: $text-placeholder;
-}
-.card-row-bottom {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6rpx;
-  margin-top: 8rpx;
-}
-.card-name {
-  font-size: 30rpx;
-  font-weight: bold;
-  color: $text-primary;
-}
-/* 互动类型小标签 */
-.trace-pill {
-  padding: 2rpx 12rpx;
-  border-radius: 6rpx;
+.hot-item {
+  width: 220rpx;
   flex-shrink: 0;
 }
-.trace-pill-text {
-  font-size: 20rpx;
-}
-.pill-content {
-  background: $brand-primary-light;
-  .trace-pill-text { color: $brand-primary; }
-}
-.pill-tool {
-  background: $brand-success-light;
-  .trace-pill-text { color: $brand-success; }
-}
-.pill-poster {
+.hot-cover {
+  position: relative;
+  width: 220rpx;
+  height: 150rpx;
+  border-radius: $radius-sm;
+  overflow: hidden;
   background: $brand-warning-light;
-  .trace-pill-text { color: $brand-warning; }
 }
-.pill-default {
-  background: $brand-info-light;
-  .trace-pill-text { color: $brand-info; }
+.hot-img {
+  width: 100%;
+  height: 100%;
 }
-/* 底部元信息（次数/时间） */
-.card-meta {
-  font-size: 22rpx;
-  color: $text-secondary;
-}
-.card-meta-sep {
-  font-size: 22rpx;
-  color: $text-placeholder;
-}
-.card-status {
-  font-size: 22rpx;
-  padding: 4rpx 16rpx;
-  border-radius: 20rpx;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-.st-new {
-  background: $brand-primary-light;
-  color: $brand-primary;
-}
-.st-following {
-  background: $brand-warning-light;
-  color: $brand-warning;
-}
-.st-converted {
-  background: $brand-success-light;
-  color: $brand-success;
-}
-.st-intended {
-  background: $brand-error-light;
-  color: $brand-error;
-}
-.st-lost {
-  background: $brand-info-light;
-  color: $brand-info;
-}
-
-/* 悬浮按钮 */
-.fab {
-  position: fixed;
-  right: 40rpx;
-  bottom: 160rpx;
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 50%;
-  background: $gradient-blue;
+.hot-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: $shadow-fab;
-  z-index: 100;
+  background: $gradient-orange;
 }
-.fab-icon {
-  color: #fff;
+.hot-char {
   font-size: 56rpx;
-  font-weight: 300;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.9);
 }
-
-/* ========== 线索池 ========== */
-.pool-section {
-  margin-bottom: $spacing-md;
-}
-.pool-card {
-  border: 1rpx dashed $brand-primary;
-}
-.claim-btn {
-  flex-shrink: 0;
-  background: $brand-primary;
-  border-radius: $radius-md;
-  padding: 12rpx 28rpx;
-}
-.claim-btn-text {
-  font-size: 24rpx;
+.hot-views {
+  position: absolute;
+  right: 8rpx;
+  bottom: 8rpx;
+  font-size: 18rpx;
   color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6rpx;
+  padding: 2rpx 8rpx;
+}
+.hot-name {
+  display: block;
+  margin-top: $spacing-xs;
+  font-size: 24rpx;
+  color: $text-regular;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

@@ -50,6 +50,11 @@
 
     <!-- 菜单卡片 -->
     <view class="menu-card">
+      <view class="menu-item dy-clickable" @click="goLeadRecords">
+        <DyIconBlock text="线" color="blue" size="sm" shape="circle" />
+        <text class="menu-label">线索记录</text>
+        <text class="menu-arrow">›</text>
+      </view>
       <view class="menu-item dy-clickable" @click="goMyContents">
         <DyIconBlock text="创" color="blue" size="sm" shape="circle" />
         <text class="menu-label">我的内容</text>
@@ -151,7 +156,7 @@ function goView() {
   uni.navigateTo({ url: '/pages/profile/view' });
 }
 function goLeads() {
-  uni.switchTab({ url: '/pages/acquisition/index' });
+  uni.navigateTo({ url: '/pages/acquisition/lead/index' });
 }
 function goEquityDepot() {
   uni.showToast({ title: '权益仓库开发中', icon: 'none' });
@@ -165,6 +170,11 @@ function goAbout() {
 function goMyContents() {
   uni.navigateTo({ url: '/pages/acquisition/content/mine' })
 }
+
+function goLeadRecords() {
+  uni.navigateTo({ url: '/pages/acquisition/lead/index' })
+}
+
 function onTodo(name: string) {
   uni.showToast({ title: `${name}（开发中）`, icon: 'none' });
 }

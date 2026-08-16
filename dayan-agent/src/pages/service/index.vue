@@ -1,5 +1,11 @@
 <template>
   <view class="page dy-safe-bottom">
+    <!-- 渐变 header（与其他 tab 页统一） -->
+    <view class="header">
+      <text class="header-title">我的权益</text>
+      <text class="header-sub">查询卡号、激活码、绑定码</text>
+    </view>
+
     <!-- 搜索栏 -->
     <view class="toolbar">
       <view class="search">
@@ -263,6 +269,26 @@ onPullDownRefresh(async () => {
   padding: $spacing-md $spacing-md 140rpx;
   min-height: 100vh;
   background: $bg-page;
+}
+
+/* 渐变 header（与其他 tab 页统一） */
+.header {
+  background: $gradient-blue;
+  border-radius: $radius-lg;
+  padding: $spacing-xl $spacing-lg;
+  margin-bottom: $spacing-md;
+}
+.header-title {
+  display: block;
+  font-size: 38rpx;
+  font-weight: bold;
+  color: #fff;
+}
+.header-sub {
+  display: block;
+  margin-top: $spacing-sm;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* 搜索栏 */

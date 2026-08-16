@@ -187,7 +187,13 @@ function formatTime(timeStr?: string): string {
 }
 
 async function loadDetail() {
-  if (!sceneCode.value) return;
+  if (!sceneCode.value) {
+    // 无场景编码（深链参数缺失）：直接落空态，避免卡死 loading
+    loading.value = false;
+    loadError.value = false;
+    scene.value = null;
+    return;
+  }
   loading.value = true;
   loadError.value = false;
   try {

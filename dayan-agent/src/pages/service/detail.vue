@@ -182,7 +182,13 @@ const shouldShowCode = computed(() => {
 });
 
 async function loadDetail() {
-  if (!equityCode.value) return;
+  if (!equityCode.value) {
+    // 无权益编码（深链参数缺失）：直接落空态，避免卡死 loading
+    loading.value = false;
+    loadError.value = false;
+    detail.value = null;
+    return;
+  }
   loading.value = true;
   loadError.value = false;
   try {

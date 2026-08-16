@@ -26,6 +26,17 @@ page {
   -webkit-font-smoothing: antialiased;
 }
 
+/* 隐藏桌面浏览器预览时的原生滚动条（真机本就是叠加式不可见），保持滚动功能 */
+::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+html {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+}
+
 /* 全局点击优化 */
 view,
 text {
