@@ -232,6 +232,64 @@ export interface LearningContent {
   createdAt?: string;
 }
 
+/** 课程大纲章节（courseInfo.courseOutline JSON 解析结果） */
+export interface CourseOutlineChapter {
+  title: string;
+  lessons: { title: string; duration?: number }[];
+}
+
+/** 课程讲师简要信息（课程详情聚合） */
+export interface CourseLecturerBrief {
+  lecturerCode?: string;
+  lecturerName?: string;
+  avatar?: string;
+  title?: string;
+  organization?: string;
+  introduction?: string;
+}
+
+/** 平台课程（后端 CourseAgentVO） */
+export interface Course {
+  id?: string;
+  courseCode: string;
+  courseName: string;
+  /** 1=线上录播 2=线上直播 3=线下课程 4=混合课程 */
+  courseType: number;
+  categoryCode?: string;
+  coverImage?: string;
+  courseDescription?: string;
+  courseOutline?: string;
+  targetAudience?: string;
+  learningObjectives?: string;
+  lecturerCode?: string;
+  lecturerName?: string;
+  lecturer?: CourseLecturerBrief;
+  totalClass?: number;
+  totalDuration?: number;
+  validDays?: number;
+  originalPrice?: number;
+  salePrice?: number;
+  currentStudents?: number;
+  maxStudents?: number;
+  viewCount?: number;
+  salesCount?: number;
+  ratingAvg?: number;
+  /** 0=否 1=是 */
+  isFree?: number;
+  isRecommend?: number;
+  courseStartDate?: string;
+  courseEndDate?: string;
+  sortOrder?: number;
+}
+
+/** 课程类型选项（对齐后端 courseType） */
+export const COURSE_TYPE_LABELS: Record<number, string> = {
+  1: '线上录播',
+  2: '线上直播',
+  3: '线下课程',
+  4: '混合课程',
+};
+
 /** 客户类型：1 本人 / 2 家属 / 3 老人 */
 export enum ClientType {
   SELF = 1,
