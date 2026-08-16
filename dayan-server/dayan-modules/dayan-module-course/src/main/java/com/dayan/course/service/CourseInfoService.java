@@ -4,6 +4,7 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.course.dto.CourseInfoCreateDTO;
 import com.dayan.course.dto.CourseInfoQueryDTO;
 import com.dayan.course.dto.CourseInfoUpdateDTO;
+import com.dayan.course.vo.CourseAgentVO;
 import com.dayan.course.vo.CourseInfoVO;
 
 import java.util.List;
@@ -33,4 +34,10 @@ public interface CourseInfoService {
 
     /** 下架（courseStatus: 1→0） */
     void offline(String courseCode);
+
+    /** Agent 端：上架课程列表（courseType 可空），按 sort_order DESC → created_at DESC */
+    List<CourseAgentVO> listPublished(Integer courseType);
+
+    /** Agent 端：上架课程详情（仅上架可访问；view_count +1；聚合讲师简要信息） */
+    CourseAgentVO getPublishedDetail(String courseCode);
 }

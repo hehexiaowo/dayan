@@ -10,8 +10,11 @@ import com.dayan.course.dto.CourseInfoCreateDTO;
 import com.dayan.course.dto.CourseInfoQueryDTO;
 import com.dayan.course.dto.CourseInfoUpdateDTO;
 import com.dayan.course.entity.CourseInfo;
+import com.dayan.course.entity.CourseLecturer;
 import com.dayan.course.mapper.CourseInfoMapper;
+import com.dayan.course.mapper.CourseLecturerMapper;
 import com.dayan.course.service.CourseInfoService;
+import com.dayan.course.vo.CourseAgentVO;
 import com.dayan.course.vo.CourseInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 课程信息服务实现。
@@ -45,6 +51,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     private static final int STATUS_FINISHED = 4;
 
     private final CourseInfoMapper courseInfoMapper;
+    private final CourseLecturerMapper courseLecturerMapper;
     private final SequenceProvider sequenceProvider;
 
     @Override
@@ -273,5 +280,109 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         return vo;
+    }
+
+    // ====== Agent 端只读 ======
+
+    @Override
+    public List<CourseAgentVO> listPublished(Integer courseType) {
+        LambdaQueryWrapper<CourseInfo> wrapper = new LambdaQueryWrapper<CourseInfo>()
+                .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
+                .eq(courseType != null, CourseInfo::getCourseType, courseType)
+                .orderByDesc(CourseInfo::getSortOrder)
+                .orderByDesc(CourseInfo::getCreatedAt);
+        List<CourseInfo> courses = courseInfoMapper.selectList(wrapper);
+        if (courses.isEmpty()) {
+            return List.of();
+        }
+        // 批量取讲师名（一对一，量小）
+        Map<String, String> nameMap = lecturerNameMap(courses.stream()
+                .map(CourseInfo::getLecturerCode).filter(Objects::nonNull).toList());
+        return courses.stream().map(c -> {
+            CourseAgentVO vo = toAgentVO(c);
+            vo.setLecturerName(nameMap.get(c.getLecturerCode()));
+            return vo;
+        }).toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CourseAgentVO getPublishedDetail(String courseCode) {
+        CourseInfo course = requireCourse(courseCode);
+        if (course.getCourseStatus() == null || course.getCourseStatus() != STATUS_ONLINE) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "课程不存在或未上架: " + courseCode);
+        }
+        // 浏览量 +1（最小字段更新，避免并发覆盖其他字段）
+        CourseInfo bump = new CourseInfo();
+        bump.setId(course.getId());
+        bump.setViewCount((course.getViewCount() == null ? 0 : course.getViewCount()) + 1);
+        courseInfoMapper.updateById(bump);
+        course.setViewCount(bump.getViewCount());
+
+        CourseAgentVO vo = toAgentVO(course);
+        if (course.getLecturerCode() != null) {
+            CourseLecturer l = courseLecturerMapper.selectOne(
+                    new LambdaQueryWrapper<CourseLecturer>()
+                            .eq(CourseLecturer::getLecturerCode, course.getLecturerCode())
+                            .last("LIMIT 1"));
+            if (l != null) {
+                vo.setLecturerName(l.getLecturerName());
+                CourseAgentVO.LecturerBrief brief = new CourseAgentVO.LecturerBrief();
+                brief.setLecturerCode(l.getLecturerCode());
+                brief.setLecturerName(l.getLecturerName());
+                brief.setAvatar(l.getAvatar());
+                brief.setTitle(l.getTitle());
+                brief.setOrganization(l.getOrganization());
+                brief.setIntroduction(l.getIntroduction());
+                vo.setLecturer(brief);
+            }
+        }
+        return vo;
+    }
+
+    /** CourseInfo → CourseAgentVO（不含讲师；调用方自行填充） */
+    private CourseAgentVO toAgentVO(CourseInfo e) {
+        CourseAgentVO vo = new CourseAgentVO();
+        vo.setCourseCode(e.getCourseCode());
+        vo.setCourseName(e.getCourseName());
+        vo.setCourseType(e.getCourseType());
+        vo.setCategoryCode(e.getCategoryCode());
+        vo.setCoverImage(e.getCoverImage());
+        vo.setCourseDescription(e.getCourseDescription());
+        vo.setCourseOutline(e.getCourseOutline());
+        vo.setTargetAudience(e.getTargetAudience());
+        vo.setLearningObjectives(e.getLearningObjectives());
+        vo.setLecturerCode(e.getLecturerCode());
+        vo.setTotalClass(e.getTotalClass());
+        vo.setTotalDuration(e.getTotalDuration());
+        vo.setValidDays(e.getValidDays());
+        vo.setOriginalPrice(e.getOriginalPrice());
+        vo.setSalePrice(e.getSalePrice());
+        vo.setCurrentStudents(e.getCurrentStudents());
+        vo.setMaxStudents(e.getMaxStudents());
+        vo.setViewCount(e.getViewCount());
+        vo.setSalesCount(e.getSalesCount());
+        vo.setRatingAvg(e.getRatingAvg());
+        vo.setIsFree(e.getIsFree());
+        vo.setIsRecommend(e.getIsRecommend());
+        vo.setCourseStartDate(e.getCourseStartDate());
+        vo.setCourseEndDate(e.getCourseEndDate());
+        vo.setSortOrder(e.getSortOrder());
+        vo.setCourseStatus(e.getCourseStatus());
+        return vo;
+    }
+
+    /** 批量查讲师编码→姓名 */
+    private Map<String, String> lecturerNameMap(List<String> lecturerCodes) {
+        if (lecturerCodes.isEmpty()) {
+            return Map.of();
+        }
+        return courseLecturerMapper.selectList(new LambdaQueryWrapper<CourseLecturer>()
+                        .in(CourseLecturer::getLecturerCode, lecturerCodes))
+                .stream()
+                .collect(Collectors.toMap(
+                        CourseLecturer::getLecturerCode,
+                        CourseLecturer::getLecturerName,
+                        (a, b) -> a));
     }
 }
