@@ -1,6 +1,9 @@
 package com.dayan.agent.controller.agent;
 
 import com.dayan.agent.dto.AiProjectCreateDTO;
+import com.dayan.agent.dto.AiStrategyConfirmDTO;
+import com.dayan.agent.dto.AiTitleRegenDTO;
+import com.dayan.agent.service.AiCreationPipelineService;
 import com.dayan.agent.service.AiCreationProjectService;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class AgentAiCreationController {
 
     private final AiCreationProjectService projectService;
+    private final AiCreationPipelineService pipelineService;
 
     @Operation(summary = "创建创作项目")
     @PostMapping
@@ -50,5 +54,29 @@ public class AgentAiCreationController {
     public R<Void> delete(@PathVariable Long id) {
         projectService.delete(id);
         return R.ok();
+    }
+
+    @Operation(summary = "重跑素材消化")
+    @PostMapping("/{id}/digest")
+    public R<AiProjectVO> digest(@PathVariable Long id) {
+        return R.ok(pipelineService.digest(id));
+    }
+
+    @Operation(summary = "生成策略+5标题")
+    @PostMapping("/{id}/strategy")
+    public R<AiProjectVO> strategy(@PathVariable Long id) {
+        return R.ok(pipelineService.strategy(id));
+    }
+
+    @Operation(summary = "带反馈重出标题（策略锁定）")
+    @PostMapping("/{id}/titles/regenerate")
+    public R<AiProjectVO> regenTitles(@PathVariable Long id, @RequestBody(required = false) AiTitleRegenDTO dto) {
+        return R.ok(pipelineService.regenerateTitles(id, dto));
+    }
+
+    @Operation(summary = "锁定策略+选定标题")
+    @PostMapping("/{id}/strategy/confirm")
+    public R<AiProjectVO> confirmStrategy(@PathVariable Long id, @RequestBody @Valid AiStrategyConfirmDTO dto) {
+        return R.ok(pipelineService.confirmStrategy(id, dto));
     }
 }
