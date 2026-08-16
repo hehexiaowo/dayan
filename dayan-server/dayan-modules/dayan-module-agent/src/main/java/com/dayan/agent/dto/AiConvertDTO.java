@@ -21,10 +21,10 @@ public class AiConvertDTO {
     @NotBlank(message = "正文不能为空")
     private String contentBody;
 
-    /** 目标形态（1=图文 2=朋友圈 3=视频脚本） */
+    /** 目标形态（1=图文 2=朋友圈 3=视频脚本 4=小红书） */
     @NotNull(message = "目标形态必选")
-    @Min(value = 1, message = "目标形态取值 1-3")
-    @Max(value = 3, message = "目标形态取值 1-3")
+    @Min(value = 1, message = "目标形态取值 1-4")
+    @Max(value = 4, message = "目标形态取值 1-4")
     private Integer targetContentType;
 
     /** 风格档位（可空，缺省沿用原稿风格） */

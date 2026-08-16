@@ -25,8 +25,8 @@ public class AgentContentCreateDTO {
 
     /** 形态（1=图文 2=朋友圈 3=视频脚本） */
     @NotNull(message = "内容形态必选")
-    @Min(value = 1, message = "内容形态取值 1-3")
-    @Max(value = 3, message = "内容形态取值 1-3")
+    @Min(value = 1, message = "内容形态取值 1-4")
+    @Max(value = 4, message = "内容形态取值 1-4")
     private Integer contentType;
 
     /** 正文（图文=HTML；朋友圈=纯文本；脚本=结构化文本） */
