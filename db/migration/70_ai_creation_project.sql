@@ -40,16 +40,31 @@ CREATE TABLE IF NOT EXISTS `ai_creation_project` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI 创作项目（六阶段流水线）';
 
 -- ---------- system_config：llm 文生图配置（key 与 llm.api-key 共用 DashScope API-Key）----------
--- 列清单与幂等风格照抄 63_knowledge_repo.sql（本表实际列为 config_name/description，无 remark）
+-- 列清单按 63_knowledge_repo.sql 实际列（本表无 remark 列）。
+-- 幂等用 NOT EXISTS 而非 63 的 ODKU：唯一键 uk_group_key_env_scope 含 NULL 的
+-- organ_code/user_code，MySQL 唯一索引视 NULL 互不相等，ODKU 永不触发（实测会插重复行）。
 INSERT INTO `system_config`
   (`config_group`, `config_key`, `config_value`, `value_type`, `env`, `scope`,
    `config_name`, `description`, `is_secret`, `is_runtime`, `sort_order`,
    `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
-VALUES
-  ('llm', 'llm.image-model', 'qwen-image-plus', 'string', 'prod', 'global',
+SELECT 'llm', 'llm.image-model', 'qwen-image-plus', 'string', 'prod', 'global',
    'AI 配图模型名', 'AI 配图模型名（DashScope 文生图，与 llm.api-key 共用凭据）', 0, 1, 80,
-   NOW(), NOW(), 'system', 'system', 0),
-  ('llm', 'llm.image-api-base', 'https://dashscope.aliyuncs.com', 'string', 'prod', 'global',
+   NOW(), NOW(), 'system', 'system', 0
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `system_config`
+    WHERE `config_group`='llm' AND `config_key`='llm.image-model'
+      AND `env`='prod' AND `scope`='global'
+      AND `organ_code` IS NULL AND `user_code` IS NULL);
+
+INSERT INTO `system_config`
+  (`config_group`, `config_key`, `config_value`, `value_type`, `env`, `scope`,
+   `config_name`, `description`, `is_secret`, `is_runtime`, `sort_order`,
+   `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+SELECT 'llm', 'llm.image-api-base', 'https://dashscope.aliyuncs.com', 'string', 'prod', 'global',
    'DashScope 文生图 API 基地址', 'DashScope 文生图 API 基地址（文生图接口域名前缀）', 0, 1, 90,
-   NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+   NOW(), NOW(), 'system', 'system', 0
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `system_config`
+    WHERE `config_group`='llm' AND `config_key`='llm.image-api-base'
+      AND `env`='prod' AND `scope`='global'
+      AND `organ_code` IS NULL AND `user_code` IS NULL);
