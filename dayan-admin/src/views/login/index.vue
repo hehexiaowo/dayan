@@ -95,12 +95,12 @@ async function handleLogin() {
       <div class="brand-content">
         <!-- Logo 区（真实品牌 logo） -->
         <div class="brand-logo">
-          <img src="/dayan_logo.png" alt="大雁养老" class="brand-logo__img" />
+          <img src="/dayan_logo.png" alt="大雁核心" class="brand-logo__img" />
         </div>
 
         <!-- 标语 -->
         <div class="brand-slogan">
-          <h1 class="brand-slogan__title">智慧养老运营平台</h1>
+          <h1 class="brand-slogan__title">大雁核心</h1>
           <p class="brand-slogan__desc">
             机构管理 · 权益运营 · 管家服务 · 渠道分销<br />
             全链路数字化解决方案
@@ -125,7 +125,7 @@ async function handleLogin() {
       </div>
 
       <div class="brand-footer">
-        © {{ new Date().getFullYear() }} 大雁养老 · All Rights Reserved
+        © {{ new Date().getFullYear() }} 大雁核心 · All Rights Reserved
       </div>
     </div>
 

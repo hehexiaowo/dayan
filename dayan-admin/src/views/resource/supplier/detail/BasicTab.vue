@@ -18,6 +18,8 @@ import {
   SUPPLIER_AUDIT_STATUS_OPTIONS
 } from '@/types/supplier'
 import type { SupplierInfo } from '@/types/supplier'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
   /** 供应商编码（从详情页路由 prop 带入） */
@@ -72,6 +74,19 @@ function formatDate(s?: string): string {
   return s.length >= 10 ? s.slice(0, 10) : s
 }
 
+/** 金额格式：千分位 + 两位小数。 */
+function formatAmount(v?: number): string {
+  return v != null
+    ? Number(v).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '--'
+}
+
+/** 所在地区：省/市/区编码拼接展示（跳过空值）。 */
+function regionLabel(p?: string, c?: string, d?: string): string {
+  const parts = [p, c, d].filter((x) => x != null && x !== '')
+  return parts.length > 0 ? parts.join('/') : '--'
+}
+
 // ---------- 编辑弹窗 ----------
 const dialogVisible = ref(false)
 const submitLoading = ref(false)
@@ -96,6 +111,13 @@ const form = reactive<SupplierInfo>({
   contactPhone: '',
   contactEmail: '',
   logoUrl: '',
+  licenseImage: '',
+  qualificationImage: '',
+  bankName: '',
+  bankAccount: '',
+  bankAccountName: '',
+  cooperationStartDate: '',
+  cooperationEndDate: '',
   description: '',
   commissionRate: undefined,
   sortOrder: 0,
@@ -128,6 +150,13 @@ function openEdit() {
     contactPhone: supplierInfo.value.contactPhone ?? '',
     contactEmail: supplierInfo.value.contactEmail ?? '',
     logoUrl: supplierInfo.value.logoUrl ?? '',
+    licenseImage: supplierInfo.value.licenseImage ?? '',
+    qualificationImage: supplierInfo.value.qualificationImage ?? '',
+    bankName: supplierInfo.value.bankName ?? '',
+    bankAccount: supplierInfo.value.bankAccount ?? '',
+    bankAccountName: supplierInfo.value.bankAccountName ?? '',
+    cooperationStartDate: supplierInfo.value.cooperationStartDate ?? '',
+    cooperationEndDate: supplierInfo.value.cooperationEndDate ?? '',
     description: supplierInfo.value.description ?? '',
     commissionRate: supplierInfo.value.commissionRate,
     sortOrder: supplierInfo.value.sortOrder ?? 0,
@@ -163,7 +192,9 @@ defineExpose({ loadDetail })
   <div v-loading="loading">
     <template v-if="supplierInfo">
       <div class="basic-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
@@ -175,6 +206,10 @@ defineExpose({ loadDetail })
         </el-descriptions-item>
         <el-descriptions-item label="统一信用代码">{{ supplierInfo.unifiedCreditCode ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="法定代表人">{{ supplierInfo.legalPerson ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="注册资本">{{ formatAmount(supplierInfo.registeredCapital) }} 万元</el-descriptions-item>
+        <el-descriptions-item label="成立日期">{{ formatDate(supplierInfo.establishDate) }}</el-descriptions-item>
+        <el-descriptions-item label="营业执照号">{{ supplierInfo.businessLicenseNo ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="所在地区">{{ regionLabel(supplierInfo.provinceCode, supplierInfo.cityCode, supplierInfo.districtCode) }}</el-descriptions-item>
         <el-descriptions-item label="联系人">{{ supplierInfo.contactPerson ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ supplierInfo.contactPhone ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="佣金比例">
@@ -193,6 +228,42 @@ defineExpose({ loadDetail })
         <el-descriptions-item label="排序号">{{ supplierInfo.sortOrder ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="联系邮箱" :span="3">{{ supplierInfo.contactEmail ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="详细地址" :span="3">{{ supplierInfo.address ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="Logo" :span="3">
+          <el-image
+            v-if="supplierInfo.logoUrl"
+            :src="formatFileUrl(supplierInfo.logoUrl)"
+            :preview-src-list="[formatFileUrl(supplierInfo.logoUrl)]"
+            fit="cover"
+            style="width: 80px; height: 80px"
+          />
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="营业执照图片" :span="3">
+          <el-image
+            v-if="supplierInfo.licenseImage"
+            :src="formatFileUrl(supplierInfo.licenseImage)"
+            :preview-src-list="[formatFileUrl(supplierInfo.licenseImage)]"
+            fit="cover"
+            style="width: 80px; height: 80px"
+          />
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="资质证书图片" :span="3">
+          <el-image
+            v-if="supplierInfo.qualificationImage"
+            :src="formatFileUrl(supplierInfo.qualificationImage)"
+            :preview-src-list="[formatFileUrl(supplierInfo.qualificationImage)]"
+            fit="cover"
+            style="width: 80px; height: 80px"
+          />
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="开户银行">{{ supplierInfo.bankName ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="银行账号">{{ supplierInfo.bankAccount ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="银行户名">{{ supplierInfo.bankAccountName ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="合作周期" :span="3">
+          {{ formatDate(supplierInfo.cooperationStartDate) }} ~ {{ formatDate(supplierInfo.cooperationEndDate) }}
+        </el-descriptions-item>
         <el-descriptions-item label="经营范围" :span="3">{{ supplierInfo.businessScope ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="描述" :span="3">{{ supplierInfo.description ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ formatDate(supplierInfo.createdAt) }}</el-descriptions-item>
@@ -260,7 +331,13 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="12">
             <el-form-item label="成立日期">
-              <el-input v-model="form.establishDate" placeholder="yyyy-MM-dd" maxlength="20" />
+              <el-date-picker
+                v-model="form.establishDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -268,7 +345,7 @@ defineExpose({ loadDetail })
               <el-input-number
                 v-model="form.commissionRate"
                 :min="0"
-                :max="100"
+                :max="9.99"
                 :precision="2"
                 controls-position="right"
                 style="width: 100%"
@@ -301,6 +378,53 @@ defineExpose({ loadDetail })
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="营业执照图片">
+              <FileUploader v-model="form.licenseImage" type="image" module="supplier" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="资质证书图片">
+              <FileUploader v-model="form.qualificationImage" type="image" module="supplier" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="开户银行">
+              <el-input v-model="form.bankName" placeholder="开户银行" maxlength="100" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="银行账号">
+              <el-input v-model="form.bankAccount" placeholder="银行账号（提交后由后端加密存储）" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="银行户名">
+              <el-input v-model="form.bankAccountName" placeholder="银行户名" maxlength="100" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="合作开始日期">
+              <el-date-picker
+                v-model="form.cooperationStartDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="合作结束日期">
+              <el-date-picker
+                v-model="form.cooperationEndDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="排序号">
               <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
             </el-form-item>
@@ -327,6 +451,16 @@ defineExpose({ loadDetail })
 
 <style scoped>
 .basic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 </style>

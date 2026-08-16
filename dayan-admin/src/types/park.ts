@@ -31,21 +31,27 @@ export const PARK_OPERATE_STATUS_OPTIONS = [
   { label: '暂停营业', value: ParkOperateStatus.SUSPENDED }
 ] as const
 
-/** 大雁等级选项（dayanLevel 字段） */
+/** 大雁等级选项（dayanLevel 字段，DDL：1=S, 2=A, 3=B, 4=C, 5=D, 6=E） */
 export const DAYAN_LEVEL_OPTIONS = [
-  { label: '普通', value: 0 },
-  { label: '一级', value: 1 },
-  { label: '二级', value: 2 },
-  { label: '三级', value: 3 },
-  { label: '五级', value: 5 }
+  { label: 'S级', value: 1 },
+  { label: 'A级', value: 2 },
+  { label: 'B级', value: 3 },
+  { label: 'C级', value: 4 },
+  { label: 'D级', value: 5 },
+  { label: 'E级', value: 6 }
 ] as const
 
-/** 能力类型选项（abilityType 字段） */
+/** 能力类型选项（abilityType 字段，DDL：1=CCRC, 2=综合性养老院, 3=养老公寓CB, 4=认知症照护机构, 5=社区嵌入式CC, 6=居家照护HC, 7=护理院NH, 8=活力长者社区AC, 9=敬老院） */
 export const ABILITY_TYPE_OPTIONS = [
-  { label: '自理', value: 1 },
-  { label: '半自理', value: 2 },
-  { label: '不能自理', value: 3 },
-  { label: '综合', value: 4 }
+  { label: 'CCRC', value: 1 },
+  { label: '综合性养老院', value: 2 },
+  { label: '养老公寓CB', value: 3 },
+  { label: '认知症照护机构', value: 4 },
+  { label: '社区嵌入式CC', value: 5 },
+  { label: '居家照护HC', value: 6 },
+  { label: '护理院NH', value: 7 },
+  { label: '活力长者社区AC', value: 8 },
+  { label: '敬老院', value: 9 }
 ] as const
 
 /** 网络归属选项（networkTags 字段，多选） */
@@ -55,12 +61,14 @@ export const NETWORK_TAG_OPTIONS = [
   { label: '旅游短居', value: 'sojourn' }
 ] as const
 
-/** 性质类型选项（natureType 字段） */
+/** 性质类型选项（natureType 字段，DDL：1=公办, 2=民办, 3=险资背景, 4=集团旗下, 5=房产旗下, 6=公办民营） */
 export const NATURE_TYPE_OPTIONS = [
   { label: '公办', value: 1 },
   { label: '民办', value: 2 },
-  { label: '公建民营', value: 3 },
-  { label: '合资', value: 4 }
+  { label: '险资背景', value: 3 },
+  { label: '集团旗下', value: 4 },
+  { label: '房产旗下', value: 5 },
+  { label: '公办民营', value: 6 }
 ] as const
 
 /** 合同期限选项（contractPeriod 字段） */
@@ -106,7 +114,7 @@ export interface ParkInfo {
   brandIntroduction?: string
   /** 品牌 logo URL */
   brandLogo?: string
-  /** 能力类型：1自理/2半自理/3不能自理/4综合 */
+  /** 能力类型：1=CCRC, 2=综合性养老院, 3=养老公寓CB, 4=认知症照护机构, 5=社区嵌入式CC, 6=居家照护HC, 7=护理院NH, 8=活力长者社区AC, 9=敬老院 */
   abilityType?: number
   /** 网络归属（多选：vital=活力长居/care=照护长居/sojourn=旅游短居） */
   networkTags?: string[]
@@ -116,7 +124,7 @@ export interface ParkInfo {
   careConfig?: string
   /** 旅游短居展示配置JSON */
   sojournConfig?: string
-  /** 性质类型：1公办/2民办/3公建民营/4合资 */
+  /** 性质类型：1公办/2民办/3险资背景/4集团旗下/5房产旗下/6公办民营 */
   natureType?: number
   /** 特色标签 */
   specialtyTag?: string
@@ -136,10 +144,10 @@ export interface ParkInfo {
   district?: string
   /** 详细地址 */
   address?: string
-  /** 经度（字符串） */
-  longitude?: string
-  /** 纬度（字符串） */
-  latitude?: string
+  /** 经度（后端 BigDecimal，前端提交 number；空值不传） */
+  longitude?: number
+  /** 纬度（后端 BigDecimal，前端提交 number；空值不传） */
+  latitude?: number
   /** 服务热线 */
   serviceHotline?: string
   /** 基地简介 */
@@ -204,6 +212,12 @@ export interface ParkInfo {
   subScript?: string
   /** 开业时间 */
   openingTime?: string
+  /** 上架时间 */
+  onlineTime?: string
+  /** 下架时间 */
+  offlineTime?: string
+  /** 加入平台时间 */
+  addPlatformTime?: string
   /** 浏览次数 */
   viewCount?: number
   /** 收藏次数 */
@@ -746,11 +760,11 @@ export const CARE_LEVEL_OPTIONS = [
   { label: '生活自理', value: 5 }
 ] as const
 
-/** 餐饮-餐食方案（meal_plan）：1=三餐..4=自选 */
+/** 餐饮-餐食方案（meal_plan）：1=三餐, 2=三餐两点, 3=三餐三点, 4=自选 */
 export const MEAL_PLAN_OPTIONS = [
-  { label: '方案一', value: 1 },
-  { label: '方案二', value: 2 },
-  { label: '方案三', value: 3 },
+  { label: '三餐', value: 1 },
+  { label: '三餐两点', value: 2 },
+  { label: '三餐三点', value: 3 },
   { label: '自选', value: 4 }
 ] as const
 

@@ -103,6 +103,22 @@ export interface SupplierInfo {
   contactEmail?: string
   /** Logo URL */
   logoUrl?: string
+  /** 营业执照图片 URL */
+  licenseImage?: string
+  /** 资质证书图片 URL */
+  qualificationImage?: string
+  /** 开户银行 */
+  bankName?: string
+  /** 银行账号（后端加密存储；展示以服务端返回为准，可能脱敏） */
+  bankAccount?: string
+  /** 银行户名 */
+  bankAccountName?: string
+  /** 下属机构数量 */
+  parkCount?: number
+  /** 合作开始日期（yyyy-MM-dd） */
+  cooperationStartDate?: string
+  /** 合作结束日期（yyyy-MM-dd） */
+  cooperationEndDate?: string
   /** 描述 */
   description?: string
   /** 默认佣金比例 */

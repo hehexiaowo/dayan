@@ -34,7 +34,7 @@ public class SystemAuthLogRecorder implements AuthLogRecorder {
     public void recordLogin(String accountType, String accountCode, String accountName,
                             String loginType, String identity, boolean success, String failReason) {
         try {
-            SystemLogEntry entry = newEntry(accountType, accountCode, accountName, "login");
+            SystemLogEntry entry = newEntry(accountType, accountCode, accountName, actionOfLoginType(loginType));
             entry.setActionDescription("登录" + (success ? "成功" : "失败"));
             entry.setRequestParams(buildContent(loginType, identity));
             entry.setResultStatus(success ? 1 : 0);
@@ -48,12 +48,29 @@ public class SystemAuthLogRecorder implements AuthLogRecorder {
     @Override
     public void recordLogout(String accountType, String accountCode, String accountName) {
         try {
-            SystemLogEntry entry = newEntry(accountType, accountCode, accountName, "logout");
+            SystemLogEntry entry = newEntry(accountType, accountCode, accountName, "登出");
             entry.setActionDescription("登出");
             entry.setResultStatus(1);
             router.save(entry);
         } catch (Exception e) {
             log.warn("登出日志记录失败: accountType={}, accountCode={}, err={}", accountType, accountCode, e.getMessage());
+        }
+    }
+
+    /** loginType → 动作文案（区分登录方式；未知类型兜底"登录"） */
+    private String actionOfLoginType(String loginType) {
+        if (loginType == null) {
+            return "登录";
+        }
+        switch (loginType) {
+            case "password":
+                return "密码登录";
+            case "sms":
+                return "验证码登录";
+            case "wx":
+                return "微信认证";
+            default:
+                return "登录";
         }
     }
 

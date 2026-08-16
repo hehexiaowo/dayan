@@ -43,7 +43,7 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
       remove: (id) => deleteButlerSkill(id)
     },
     {
-      initialQuery: { skillName: '', proficiency: undefined, isCertified: undefined },
+      initialQuery: { skillName: '', isCertified: undefined },
       idKey: 'id',
       fixedParams: { butlerCode: props.butlerCode }
     }
@@ -162,25 +162,22 @@ defineExpose({ loadPage })
 <template>
   <div class="skill-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="技能名称">
-        <el-input v-model="query.skillName" placeholder="技能名称" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="熟练度">
-        <el-select v-model="query.proficiency" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in SKILL_PROFICIENCY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="是否持证">
-        <el-select v-model="query.isCertified" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in IS_CERTIFIED_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.skillName"
+        placeholder="技能名称"
+        clearable
+        style="width: 150px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.isCertified" placeholder="是否持证" clearable style="width: 120px">
+        <el-option v-for="o in IS_CERTIFIED_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增技能</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增技能</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="skillCode" label="技能编码" min-width="140" show-overflow-tooltip />
@@ -299,6 +296,19 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .skill-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

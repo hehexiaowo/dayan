@@ -110,6 +110,7 @@ function defaultForm(): MessageTemplate {
     title: '',
     content: '',
     variables: '',
+    channelConfig: '',
     fallbackChannelType: undefined,
     channelCode: '',
     status: 1,
@@ -180,11 +181,25 @@ async function handleSubmit() {
   await inst.validate()
   submitLoading.value = true
   try {
+    // 渠道差异配置为 JSON 字符串：提交前校验，非法 JSON 直接拦截
+    if (form.channelConfig && form.channelConfig.trim()) {
+      try {
+        JSON.parse(form.channelConfig)
+      } catch {
+        ElMessage.error('渠道差异配置不是合法的 JSON，请检查格式')
+        return
+      }
+    }
+    const payload: MessageTemplate = { ...form }
+    // 渠道编码留空 = 平台通用模板（后端 channel_code NULL）：新增时避免提交空串
+    if (dialogMode.value === 'create' && !payload.channelCode?.trim()) {
+      delete payload.channelCode
+    }
     if (dialogMode.value === 'create') {
-      await createMessageTemplate({ ...form })
+      await createMessageTemplate(payload)
       ElMessage.success('新增成功')
     } else {
-      await updateMessageTemplate(editingId.value!, { ...form })
+      await updateMessageTemplate(editingId.value!, payload)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -220,7 +235,8 @@ onMounted(loadData)
 
 <template>
   <div class="msg-template-page">
-    <el-card shadow="never">
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
       <div class="toolbar">
         <el-input
           v-model="query.templateCode"
@@ -245,12 +261,21 @@ onMounted(loadData)
         <el-select v-model="query.status" placeholder="状态" clearable style="width: 100px">
           <el-option v-for="o in TEMPLATE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
-        <el-button type="primary" @click="handleSearch">查询</el-button>
-        <el-button @click="handleReset">重置</el-button>
         <div class="toolbar-actions">
-          <el-button v-permission="'system:msg-tpl:create'" type="primary" @click="openCreate">新增模板</el-button>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
         </div>
       </div>
+    </el-card>
+
+    <!-- 列表 -->
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">消息模板列表</span>
+          <el-button v-permission="'system:msg-tpl:create'" type="primary" :icon="'Plus'" @click="openCreate">新增模板</el-button>
+        </div>
+      </template>
 
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="templateCode" label="模板编码" min-width="170" show-overflow-tooltip>
@@ -397,6 +422,21 @@ onMounted(loadData)
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="渠道编码">
+              <span class="text-muted">{{ form.channelCode || '留空 = 平台通用模板' }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="渠道差异配置">
+              <el-input
+                v-model="form.channelConfig"
+                type="textarea"
+                :rows="3"
+                placeholder='JSON 格式，各渠道专属参数，如 {"signName":"签名","templateId":"SMS_123"}（留空=无差异配置）'
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="排序号">
               <el-input-number v-model="form.sortOrder" :min="0" controls-position="right" style="width: 100%" />
             </el-form-item>
@@ -425,6 +465,28 @@ onMounted(loadData)
 
 <style scoped lang="scss">
 .msg-template-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
+    }
+  }
+
+  .search-card {
+    :deep(.el-card__body) {
+      padding-bottom: 2px;
+    }
+  }
+
   .toolbar {
     display: flex;
     flex-wrap: wrap;

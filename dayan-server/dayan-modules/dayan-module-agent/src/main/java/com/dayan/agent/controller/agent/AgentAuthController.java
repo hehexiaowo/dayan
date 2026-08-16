@@ -10,7 +10,6 @@ import com.dayan.agent.vo.AgentLoginVO;
 import com.dayan.agent.vo.ChannelOptionVO;
 import com.dayan.agent.vo.SmsSendVO;
 import com.dayan.common.core.resp.R;
-import com.dayan.common.log.operation.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -50,7 +49,6 @@ public class AgentAuthController {
     // ==================== 密码登录 ====================
 
     @Operation(summary = "密码登录")
-    @OperationLog(module = "认证", action = "登录", maskFields = "password")
     @PostMapping("/login")
     public R<AgentLoginVO> login(@RequestBody @Valid AgentLoginDTO dto) {
         return R.ok(agentAuthService.login(dto));
@@ -65,7 +63,6 @@ public class AgentAuthController {
     }
 
     @Operation(summary = "验证码登录")
-    @OperationLog(module = "认证", action = "验证码登录")
     @PostMapping("/sms/login")
     public R<AgentLoginVO> smsLogin(@RequestBody @Valid SmsLoginDTO dto) {
         return R.ok(agentAuthService.smsLogin(dto));
@@ -74,7 +71,6 @@ public class AgentAuthController {
     // ==================== 微信登录 ====================
 
     @Operation(summary = "微信授权登录")
-    @OperationLog(module = "认证", action = "微信登录")
     @PostMapping("/wx/login")
     public R<AgentLoginVO> wxLogin(@RequestBody @Valid WxLoginDTO dto) {
         return R.ok(agentAuthService.wxLogin(dto.getCode(), dto.getChannelCode()));

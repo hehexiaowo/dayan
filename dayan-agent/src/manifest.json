@@ -1,7 +1,7 @@
 {
-  "name": "大雁养老代理人",
+  "name": "养老宝典",
   "appid": "__UNI__DAYAN_AGENT",
-  "description": "大雁养老 Agent 代理人端",
+  "description": "养老宝典 Agent 代理人端",
   "versionName": "1.0.0",
   "versionCode": 100,
   "transformPx": false,
@@ -22,7 +22,7 @@
     "usingComponents": true
   },
   "h5": {
-    "title": "大雁养老代理人",
+    "title": "养老宝典",
     "router": { "mode": "hash", "base": "./" },
     "devServer": { "port": 5182, "https": false }
   },

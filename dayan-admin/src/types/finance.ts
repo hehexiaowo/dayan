@@ -89,7 +89,11 @@ export interface FinanceBill {
   adjustAmount?: number
   /** 最终结算金额 */
   finalAmount?: number
-  /** 关联流水 ID 列表（JSON 数组字符串） */
+  /**
+   * 关联流水 ID 列表。
+   * VO 返回 JSON 数组字符串（表列 flow_ids TEXT，如 "[1,2,3]"）；
+   * 注意入参不同：GenerateBillDTO.flowIds 为 List<Long>，提交时须传 number[]（见 api/finance.ts）。
+   */
   flowIds?: string
   /** 结算方式 */
   settlementMethod?: SettlementMethod

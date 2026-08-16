@@ -7,7 +7,12 @@ import {
   type SystemLogQuery,
   LOG_SOURCE_OPTIONS,
   RESULT_STATUS_OPTIONS,
-  resultStatusLabel
+  resultStatusLabel,
+  logSourceLabel,
+  logModuleLabel,
+  logActionLabel,
+  logAccountTypeLabel,
+  logTargetTypeLabel
 } from '@/types/log'
 import { formatDateTime } from '@/utils/format'
 
@@ -127,8 +132,8 @@ onMounted(() => {
 
 <template>
   <div class="log-page">
-    <el-card shadow="never">
-      <!-- 搜索栏 -->
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
       <div class="toolbar">
         <el-select
           v-model="query.source"
@@ -145,7 +150,7 @@ onMounted(() => {
         </el-select>
         <el-input
           v-model="query.module"
-          placeholder="模块（auth 为登录登出）"
+          placeholder="模块（如 认证/渠道管理/订单管理）"
           clearable
           style="width: 180px"
         />
@@ -184,8 +189,16 @@ onMounted(() => {
           <el-button @click="handleReset">重置</el-button>
         </div>
       </div>
+    </el-card>
 
-      <!-- 列表 -->
+    <!-- 列表 -->
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">系统日志</span>
+        </div>
+      </template>
+
       <el-table
         v-loading="loading"
         :data="tableData"
@@ -194,25 +207,31 @@ onMounted(() => {
         empty-text="暂无日志数据"
       >
         <el-table-column label="操作时间" min-width="160">
-          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+          <template #default="{ row }">
+            <span class="nowrap-value">{{ formatDateTime(row.createdAt) }}</span>
+          </template>
         </el-table-column>
-        <el-table-column prop="module" label="模块" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="action" label="动作" min-width="120" show-overflow-tooltip />
+        <el-table-column label="模块" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ logModuleLabel(row.module) }}</template>
+        </el-table-column>
+        <el-table-column label="动作" min-width="120" show-overflow-tooltip>
+          <template #default="{ row }">{{ logActionLabel(row.action) }}</template>
+        </el-table-column>
         <el-table-column label="操作人" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">{{ operatorDisplay(row) }}</template>
         </el-table-column>
         <el-table-column prop="ipAddress" label="IP" min-width="140" show-overflow-tooltip />
-        <el-table-column label="耗时" width="100" align="center">
+        <el-table-column label="耗时" width="110" align="center">
           <template #default="{ row }">{{ row.duration != null ? row.duration + 'ms' : '—' }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="80" align="center">
+        <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.resultStatus)" size="small">
               {{ resultStatusLabel(row.resultStatus) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="90" align="center" fixed="right">
+        <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="openDetail(row)">详情</el-button>
           </template>
@@ -241,25 +260,34 @@ onMounted(() => {
       width="760px"
       destroy-on-close
     >
-      <el-descriptions v-if="detailRow" :column="2" border>
-        <el-descriptions-item label="操作时间">{{ formatDateTime(detailRow.createdAt) }}</el-descriptions-item>
+      <el-descriptions v-if="detailRow" :column="2" border label-width="110px">
+        <el-descriptions-item label="操作时间">
+          <span class="nowrap-value">{{ formatDateTime(detailRow.createdAt) }}</span>
+        </el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="statusTagType(detailRow.resultStatus)" size="small">
             {{ resultStatusLabel(detailRow.resultStatus) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="模块">{{ detailRow.module || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="动作">{{ detailRow.action || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="来源（端口）">{{ logSourceLabel(query.source) }}</el-descriptions-item>
+        <el-descriptions-item label="响应状态码">{{ detailRow.responseCode ?? '—' }}</el-descriptions-item>
+        <el-descriptions-item label="模块">{{ logModuleLabel(detailRow.module) }}</el-descriptions-item>
+        <el-descriptions-item label="动作">{{ logActionLabel(detailRow.action) }}</el-descriptions-item>
+        <el-descriptions-item label="操作描述">{{ detailRow.actionDescription || '—' }}</el-descriptions-item>
         <el-descriptions-item label="请求方法">{{ detailRow.requestMethod || '—' }}</el-descriptions-item>
         <el-descriptions-item label="耗时">{{ detailRow.duration != null ? detailRow.duration + 'ms' : '—' }}</el-descriptions-item>
         <el-descriptions-item label="请求 URL" :span="2">{{ detailRow.requestUrl || '—' }}</el-descriptions-item>
         <el-descriptions-item label="操作人">{{ operatorDisplay(detailRow) }}</el-descriptions-item>
-        <el-descriptions-item label="账号类型">{{ detailRow.accountType || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="账号类型">{{ logAccountTypeLabel(detailRow.accountType) }}</el-descriptions-item>
+        <el-descriptions-item label="操作对象">{{ logTargetTypeLabel(detailRow.targetType) }}</el-descriptions-item>
+        <el-descriptions-item label="对象编码">{{ detailRow.targetCode || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="对象描述" :span="2">{{ detailRow.targetDescription || '—' }}</el-descriptions-item>
         <el-descriptions-item label="IP 地址">{{ detailRow.ipAddress || '—' }}</el-descriptions-item>
         <el-descriptions-item label="IP 归属地">{{ detailRow.ipLocation || '—' }}</el-descriptions-item>
         <el-descriptions-item label="设备类型">{{ detailRow.deviceType || '—' }}</el-descriptions-item>
         <el-descriptions-item label="操作系统">{{ detailRow.os || '—' }}</el-descriptions-item>
         <el-descriptions-item label="浏览器">{{ detailRow.browser || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="User-Agent" :span="2">{{ detailRow.userAgent || '—' }}</el-descriptions-item>
         <el-descriptions-item label="traceId" :span="2">{{ detailRow.traceId || '—' }}</el-descriptions-item>
         <el-descriptions-item label="错误信息" :span="2">
           <pre class="json-box">{{ detailRow.errorMsg || '—' }}</pre>
@@ -281,6 +309,43 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .log-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
+    }
+  }
+
+  .search-card {
+    :deep(.el-card__body) {
+      padding-bottom: 2px;
+    }
+  }
+
+  // 表头标题单行展示，避免窄列被压缩后换行
+  :deep(.el-table th .cell) {
+    white-space: nowrap;
+  }
+
+  // 详情弹窗字段标签单行，避免长标签（响应状态码/IP 归属地等）换行
+  :deep(.el-descriptions__label) {
+    white-space: nowrap;
+  }
+
+  // 时间戳等短值单行展示，避免内容列被压缩时换行
+  .nowrap-value {
+    white-space: nowrap;
+  }
+
   .toolbar {
     display: flex;
     flex-wrap: wrap;

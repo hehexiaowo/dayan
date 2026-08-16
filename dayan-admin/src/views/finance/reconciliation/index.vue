@@ -265,40 +265,42 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="对账编号">
-          <el-input v-model="query.reconCode" placeholder="对账编号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="对账类型">
-          <el-select v-model="query.reconType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in RECON_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="对象编码">
-          <el-input v-model="query.targetCode" placeholder="对象编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="对账结果">
-          <el-select v-model="query.reconResult" placeholder="全部" clearable style="width: 110px">
-            <el-option v-for="o in RECON_RESULT_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in RECON_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.reconCode"
+          placeholder="对账编号"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.reconType" placeholder="对账类型" clearable style="width: 130px">
+          <el-option v-for="o in RECON_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-input
+          v-model="query.targetCode"
+          placeholder="对象编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.reconResult" placeholder="对账结果" clearable style="width: 120px">
+          <el-option v-for="o in RECON_RESULT_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in RECON_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>对账管理列表</span>
+          <span class="card-title">对账管理列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增对账</el-button>
         </div>
       </template>
@@ -476,13 +478,14 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <!-- 差异由后端计算（我方-对方），创建时不允许手填，固定 0 -->
             <el-form-item label="差异订单数">
-              <el-input-number v-model="createForm.diffCount" :min="0" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="createForm.diffCount" :min="0" disabled controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="差异金额">
-              <el-input-number v-model="createForm.diffAmount" :precision="2" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="createForm.diffAmount" :precision="2" disabled controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -548,9 +551,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -560,9 +571,21 @@ loadPage()
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

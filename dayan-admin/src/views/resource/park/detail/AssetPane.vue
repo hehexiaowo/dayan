@@ -179,6 +179,7 @@ const form = reactive<SystemAsset>({
   fileSize: undefined,
   width: undefined,
   height: undefined,
+  isCover: 0,
   coverUrl: '',
   duration: undefined,
   fileFormat: '',
@@ -226,6 +227,7 @@ function resetForm() {
     fileSize: undefined,
     width: undefined,
     height: undefined,
+    isCover: 0,
     coverUrl: '',
     duration: undefined,
     fileFormat: '',
@@ -316,46 +318,46 @@ defineExpose({ loadPage })
 
 <template>
   <div class="asset-pane">
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="素材类型">
-        <el-select v-model="query.assetType" placeholder="全部" clearable style="width: 110px">
-          <el-option v-for="o in ASSET_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item v-if="!refType1" label="类型1">
-        <el-select v-model="query.refType1" placeholder="全部" clearable style="width: 130px" @change="onQueryRefType1Change">
+    <div class="toolbar">
+      <el-select v-model="query.assetType" placeholder="素材类型" clearable style="width: 110px">
+        <el-option v-for="o in ASSET_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="category-filter">
+        <el-select
+          v-if="!refType1"
+          v-model="query.refType1"
+          placeholder="一级分类"
+          clearable
+          style="width: 130px"
+          @change="onQueryRefType1Change"
+        >
           <el-option v-for="o in refType1Items" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
-      </el-form-item>
-      <el-form-item v-if="!refCode" label="关联编码">
-        <el-input v-model="query.refCode" placeholder="机构/商品等编码" clearable style="width: 150px" @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="名称">
-        <el-input v-model="query.keyword" placeholder="名称/URL 关键字" clearable style="width: 160px" @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="类型2">
-        <el-select v-model="query.refType2" placeholder="全部（按类型1 关联分组）" clearable style="width: 150px">
+        <el-select
+          v-model="query.refType2"
+          placeholder="二级分类"
+          clearable
+          style="width: 150px"
+        >
           <el-option-group v-for="g in queryType2Groups" :key="g.label" :label="g.label">
             <el-option v-for="d in g.items" :key="d.dictCode" :label="d.dictName" :value="d.dictCode" />
           </el-option-group>
         </el-select>
-      </el-form-item>
-      <el-form-item label="存储">
-        <el-select v-model="query.storageType" placeholder="全部" clearable style="width: 110px">
-          <el-option v-for="o in STORAGE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 110px">
-          <el-option label="显示" :value="1" />
-          <el-option label="隐藏" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+      </div>
+      <el-input v-if="!refCode" v-model="query.refCode" placeholder="关联编码" clearable style="width: 150px" @keyup.enter="handleSearch" />
+      <el-input v-model="query.keyword" placeholder="名称/URL 关键字" clearable style="width: 160px" @keyup.enter="handleSearch" />
+      <el-select v-model="query.storageType" placeholder="存储方式" clearable style="width: 110px">
+        <el-option v-for="o in STORAGE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 110px">
+        <el-option label="显示" :value="1" />
+        <el-option label="隐藏" :value="0" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增素材</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增素材</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <!-- 预览：图片/VR 缩略图；视频/文档无预览 -->
@@ -373,48 +375,53 @@ defineExpose({ loadPage })
         </template>
       </el-table-column>
 
-      <el-table-column label="素材类型" width="90" align="center">
+      <el-table-column label="素材类型" width="110" align="center">
         <template #default="{ row }">
           <el-tag size="small" :type="mediaTagType(row.assetType)">{{ assetTypeLabel(row.assetType) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="assetName" label="名称" min-width="150" show-overflow-tooltip />
-      <el-table-column v-if="!refType1" label="类型1" width="100" align="center">
+      <el-table-column prop="assetName" label="名称" min-width="150" show-overflow-tooltip>
+        <template #default="{ row }">
+          <el-tag v-if="row.isCover === 1" type="success" size="small" class="cover-tag">封面</el-tag>
+          {{ row.assetName }}
+        </template>
+      </el-table-column>
+      <el-table-column v-if="!refType1" label="类型1" width="110" align="center">
         <template #default="{ row }">
           <el-tag size="small" :type="row.refType1 === 'park' ? 'success' : 'info'">
             {{ type1Label(row.refType1) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="类型2" width="110" align="center">
+      <el-table-column label="类型2" width="120" align="center">
         <template #default="{ row }">{{ refType2Label(refType2Options, row.refType2) }}</template>
       </el-table-column>
-      <el-table-column prop="refCode" label="关联编码" width="110" align="center" show-overflow-tooltip>
+      <el-table-column prop="refCode" label="关联编码" width="120" align="center" show-overflow-tooltip>
         <template #default="{ row }">{{ row.refCode || '—' }}</template>
       </el-table-column>
-      <el-table-column label="存储" width="90" align="center">
+      <el-table-column label="存储" width="100" align="center">
         <template #default="{ row }">
           <el-tag size="small" :type="row.storageType === 2 ? 'warning' : 'info'">
             {{ storageTypeLabel(row.storageType) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="尺寸" width="110" align="center">
+      <el-table-column label="尺寸" width="120" align="center">
         <template #default="{ row }">
           <span v-if="row.width || row.height">{{ row.width }}×{{ row.height }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column prop="fileSize" label="大小" width="100" align="right">
+      <el-table-column prop="fileSize" label="大小" width="110" align="right">
         <template #default="{ row }">{{ fileSizeLabel(row.fileSize) }}</template>
       </el-table-column>
-      <el-table-column prop="sortOrder" label="排序" width="70" align="center" />
-      <el-table-column prop="status" label="状态" width="85" align="center">
+      <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
+      <el-table-column prop="status" label="状态" width="95" align="center">
         <template #default="{ row }">
           <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="创建时间" width="110" align="center">
+      <el-table-column prop="createdAt" label="创建时间" width="120" align="center">
         <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
       </el-table-column>
       <el-table-column label="操作" width="140" fixed="right">
@@ -514,6 +521,11 @@ defineExpose({ loadPage })
                 <el-input-number v-model="form.height" :min="0" controls-position="right" style="width: 100%" />
               </el-form-item>
             </el-col>
+            <el-col :span="12">
+              <el-form-item label="设为封面">
+                <el-switch v-model="form.isCover" :active-value="1" :inactive-value="0" />
+              </el-form-item>
+            </el-col>
           </template>
 
           <!-- 视频专属 -->
@@ -595,10 +607,38 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .asset-pane {
+  // 表头标题单行展示，避免窄列被压缩后换行
+  :deep(.el-table th .cell) {
+    white-space: nowrap;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
+
+  .category-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
+  }
+  .cover-tag {
+    margin-right: 4px;
   }
 }
 </style>

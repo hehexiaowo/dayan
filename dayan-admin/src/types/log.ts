@@ -9,17 +9,156 @@
 /** 日志来源（四端） */
 export type LogSource = 'organ' | 'channel' | 'agent' | 'client'
 
-/** 日志来源选项 */
+/** 日志来源选项（四端系统命名：大雁核心/渠道核心/养老宝典/雁栖康养） */
 export const LOG_SOURCE_OPTIONS: { label: string; value: LogSource }[] = [
-  { label: '管理后台', value: 'organ' },
-  { label: '渠道端', value: 'channel' },
-  { label: '代理人端', value: 'agent' },
-  { label: '客户端', value: 'client' }
+  { label: '大雁核心', value: 'organ' },
+  { label: '渠道核心', value: 'channel' },
+  { label: '养老宝典', value: 'agent' },
+  { label: '雁栖康养', value: 'client' }
 ]
 
 /** 日志来源标签文案 */
 export function logSourceLabel(source?: string): string {
   return LOG_SOURCE_OPTIONS.find(o => o.value === source)?.label ?? String(source ?? '')
+}
+
+/**
+ * 操作模块英文 → 中文映射。
+ * 存量日志 module 中英文混杂（切面早期写英文、现写中文），展示层统一为中文；
+ * 未覆盖的英文值回退原样显示。
+ */
+const MODULE_ALIASES: Record<string, string> = {
+  auth: '认证',
+  equity: '权益管理',
+  order: '订单管理',
+  goods: '商品管理',
+  park: '机构管理',
+  scene: '场景管理',
+  content: '内容管理',
+  course: '课程管理',
+  channel: '渠道管理',
+  client: '客户管理',
+  agent: '代理人管理',
+  finance: '财务管理',
+  supplier: '供应商管理',
+  distributor: '分销商管理',
+  lead: '线索管理',
+  butler: '管家管理',
+  session: '服务会话',
+  knowledge: '知识库',
+  message: '消息管理',
+  dict: '字典管理',
+  menu: '菜单管理',
+  role: '角色管理',
+  account: '账号管理',
+  employee: '员工管理',
+  organ: '机构管理',
+  config: '系统配置',
+  log: '日志管理',
+  statemachine: '状态机',
+  asset: '素材管理',
+  upload: '文件上传'
+}
+
+/** 模块展示：中文原样返回，英文按映射转中文，未知回退原值 */
+export function logModuleLabel(module?: string): string {
+  if (!module) return '—'
+  return MODULE_ALIASES[module] ?? module
+}
+
+/**
+ * 操作动作英文 → 中文映射（同 module，展示层统一）。
+ */
+const ACTION_ALIASES: Record<string, string> = {
+  login: '登录',
+  logout: '登出',
+  create: '新增',
+  update: '修改',
+  delete: '删除',
+  audit: '审核',
+  export: '导出',
+  import: '导入',
+  shelf: '上架',
+  unshelf: '下架',
+  submit: '提交审核',
+  assign: '分配',
+  save: '保存',
+  authorize: '授权',
+  reset: '重置',
+  cancel: '取消',
+  confirm: '确认',
+  upload: '上传',
+  download: '下载',
+  activate: '激活',
+  outbound: '出库',
+  stockin: '入库',
+  change: '变更',
+  rollback: '回滚',
+  sync: '同步',
+  publish: '发布',
+  revoke: '撤回',
+  bind: '绑定',
+  unbind: '解绑'
+}
+
+/** 动作展示：中文原样返回，英文按映射转中文，未知回退原值 */
+export function logActionLabel(action?: string): string {
+  if (!action) return '—'
+  return ACTION_ALIASES[action] ?? action
+}
+
+/**
+ * 账号类型英文 → 中文映射（详情"账号类型"展示统一，四端按系统命名）。
+ */
+const ACCOUNT_TYPE_ALIASES: Record<string, string> = {
+  admin: '大雁核心',
+  system: '系统',
+  supplier: '供应商',
+  distributor: '分销商',
+  channel: '渠道核心',
+  agent: '养老宝典',
+  client: '雁栖康养',
+  unknown: '未知'
+}
+
+/** 账号类型展示：未知回退原值 */
+export function logAccountTypeLabel(type?: string): string {
+  if (!type) return '—'
+  return ACCOUNT_TYPE_ALIASES[type] ?? type
+}
+
+/**
+ * 操作对象类型英文 → 中文映射（详情"操作对象"展示统一）。
+ */
+const TARGET_TYPE_ALIASES: Record<string, string> = {
+  account: '账号',
+  channel_info: '渠道',
+  client_info: '客户',
+  agent_info: '代理人',
+  equity_depot: '权益仓库',
+  equity_batch: '权益批次',
+  order_equity: '权益订单',
+  order_scene: '场景订单',
+  order_course: '课程订单',
+  order_sojourn: '旅居订单',
+  goods_info: '商品',
+  park_info: '养老机构',
+  scene_info: '场景',
+  content_info: '内容',
+  course_info: '课程',
+  supplier_info: '供应商',
+  distributor_info: '分销商',
+  butler_info: '管家',
+  service_session: '服务会话',
+  system_dict: '字典',
+  system_message: '消息',
+  system_config: '系统配置'
+}
+
+/** 操作对象类型展示：未知回退原值 */
+export function logTargetTypeLabel(type?: string): string {
+  if (!type) return '—'
+  return TARGET_TYPE_ALIASES[type] ?? type
 }
 
 /**

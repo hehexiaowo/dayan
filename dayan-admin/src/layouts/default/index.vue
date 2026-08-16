@@ -17,7 +17,7 @@ const userName = computed(() => userStore.userInfo?.realName || userStore.userIn
 const avatarUrl = computed(() => userStore.userInfo?.avatar || '')
 
 // 顶部/侧边标题
-const systemTitle = '大雁养老运营后台'
+const systemTitle = '大雁核心'
 
 /** 动态菜单树（来自后端，permissionStore 加载后填充） */
 const menuTree = computed(() => permissionStore.menus)
@@ -44,7 +44,7 @@ async function handleLogout() {
 <template>
   <el-container class="layout-root">
     <!-- 侧边栏 -->
-    <el-aside :width="isCollapse ? '64px' : '220px'" class="layout-aside">
+    <el-aside :width="isCollapse ? '64px' : '200px'" class="layout-aside">
       <div class="logo">
         <span v-if="!isCollapse" class="logo-text">{{ systemTitle }}</span>
         <span v-else class="logo-text">大雁</span>

@@ -70,8 +70,12 @@ const form = reactive<ClientAddress>({
 })
 
 const rules: FormRules<ClientAddress> = {
-  detailAddress: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
-  receiverPhone: [{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }]
+  receiverName: [{ required: true, message: '请输入收件人姓名', trigger: 'blur' }],
+  receiverPhone: [
+    { required: true, message: '请输入联系电话', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
+  ],
+  detailAddress: [{ required: true, message: '请输入详细地址', trigger: 'blur' }]
 }
 
 function resetForm() {
@@ -181,8 +185,10 @@ defineExpose({ loadList })
 <template>
   <div class="address-tab">
     <div class="toolbar">
-      <el-button type="primary" :icon="'Plus'" @click="openCreate">新增地址</el-button>
       <span class="limit-tip">单客户地址上限 {{ ADDRESS_LIMIT }} 条</span>
+      <div class="toolbar-actions">
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增地址</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -235,7 +241,7 @@ defineExpose({ loadList })
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="收件人">
+            <el-form-item label="收件人" prop="receiverName">
               <el-input v-model="form.receiverName" placeholder="收件人姓名" maxlength="50" />
             </el-form-item>
           </el-col>
@@ -288,9 +294,16 @@ defineExpose({ loadList })
 .address-tab {
   .toolbar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
     margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
   }
   .limit-tip {
     font-size: 12px;

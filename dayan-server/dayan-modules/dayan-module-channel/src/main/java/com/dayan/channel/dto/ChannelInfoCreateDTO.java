@@ -21,7 +21,7 @@ public class ChannelInfoCreateDTO {
     @Size(max = 50)
     private String shortName;
 
-    /** 渠道类型：1=平台, 2=渠道商, 3=分销商 等 */
+    /** 渠道类型（企业类型）：1=保险公司, 2=银行机构, 3=保险中介, 4=其他企业 */
     private Integer channelType;
 
     /** 上级渠道编码，为空表示顶级 */

@@ -471,6 +471,9 @@ onMounted(load)
         display: flex;
         align-items: center;
         gap: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #1f2329;
 
         .card-name {
           font-weight: 600;

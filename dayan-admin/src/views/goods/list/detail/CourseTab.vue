@@ -98,7 +98,9 @@ const form = reactive<GoodsCourse>({
 })
 
 const rules: FormRules<GoodsCourse> = {
-  courseCode: [{ required: true, message: '请输入课程编码', trigger: 'blur' }]
+  courseCode: [{ required: true, message: '请输入课程编码', trigger: 'blur' }],
+  // sku_price DDL NOT NULL
+  skuPrice: [{ required: true, message: '请输入 SKU 价格', trigger: 'blur' }]
 }
 
 function resetForm() {
@@ -172,38 +174,32 @@ async function handleDeleteRow(row: GoodsCourse) {
 <template>
   <div class="sku-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="规格名称">
-        <el-input
-          v-model="query.skuName"
-          placeholder="规格名称"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="课程编码">
-        <el-input
-          v-model="query.courseCode"
-          placeholder="课程编码"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="课程类型">
-        <el-select v-model="query.courseType" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="o in COURSE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in SKU_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.skuName"
+        placeholder="规格名称"
+        clearable
+        style="width: 150px"
+        @keyup.enter="handleSearch"
+      />
+      <el-input
+        v-model="query.courseCode"
+        placeholder="课程编码"
+        clearable
+        style="width: 140px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.courseType" placeholder="课程类型" clearable style="width: 140px">
+        <el-option v-for="o in COURSE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in SKU_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增课程配置</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增课程配置</el-button>
+      </div>
+    </div>
 
     <!-- 主表格 -->
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -291,7 +287,7 @@ async function handleDeleteRow(row: GoodsCourse) {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="SKU 价格">
+            <el-form-item label="SKU 价格" prop="skuPrice">
               <el-input-number v-model="form.skuPrice" :min="0" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
@@ -336,6 +332,19 @@ async function handleDeleteRow(row: GoodsCourse) {
 
 <style scoped lang="scss">
 .sku-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

@@ -107,7 +107,8 @@ const rules: FormRules<SceneItemPrice> = {
   sceneItemCode: [{ required: true, message: '请选择关联项目', trigger: 'change' }],
   priceType: [{ required: true, message: '请选择定价类型', trigger: 'change' }],
   originalPrice: [{ required: true, message: '请输入原价', trigger: 'blur' }],
-  salePrice: [{ required: true, message: '请输入售价', trigger: 'blur' }]
+  salePrice: [{ required: true, message: '请输入售价', trigger: 'blur' }],
+  effectiveDate: [{ required: true, message: '请选择生效日期', trigger: 'change' }]
 }
 
 function resetForm() {
@@ -201,22 +202,18 @@ defineExpose({ loadPage })
 <template>
   <div class="price-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="定价类型">
-        <el-select v-model="query.priceType" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="o in SCENE_PRICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in COMMON_ENABLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-select v-model="query.priceType" placeholder="定价类型" clearable style="width: 140px">
+        <el-option v-for="o in SCENE_PRICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in COMMON_ENABLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增价格</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增价格</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column label="关联项目" min-width="180" show-overflow-tooltip>
@@ -342,7 +339,7 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="生效日期">
+            <el-form-item label="生效日期" prop="effectiveDate">
               <el-date-picker
                 v-model="form.effectiveDate"
                 type="date"
@@ -379,6 +376,19 @@ defineExpose({ loadPage })
 </template>
 
 <style scoped>
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;

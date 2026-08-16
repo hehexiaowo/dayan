@@ -88,8 +88,25 @@ const form = reactive<ServiceEvaluation>({
   status: 1
 })
 
+/** 4 维评分必填校验（后端 @Min(1)@Max(5)，前端卡 ≥1） */
+function rateRequired(
+  _rule: unknown,
+  value: number | undefined,
+  callback: (error?: string | Error) => void
+) {
+  if (value == null || value < 1) {
+    callback(new Error('请评分（1-5 星）'))
+  } else {
+    callback()
+  }
+}
+
 const rules: FormRules<ServiceEvaluation> = {
-  content: [{ required: true, message: '请输入评价内容', trigger: 'blur' }]
+  content: [{ required: true, message: '请输入评价内容', trigger: 'blur' }],
+  attitudeRating: [{ validator: rateRequired, trigger: 'change' }],
+  professionalRating: [{ validator: rateRequired, trigger: 'change' }],
+  responsivenessRating: [{ validator: rateRequired, trigger: 'change' }],
+  satisfactionRating: [{ validator: rateRequired, trigger: 'change' }]
 }
 
 /** imageUrls：后端是 string（JSON 数组），FileUploader 多图用 string[] */
@@ -206,8 +223,10 @@ defineExpose({ loadEvaluation })
     <!-- 已有评价：只读卡片 + 编辑/删除 -->
     <template v-if="evaluation">
       <div class="eval-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑评价</el-button>
-        <el-button type="danger" :icon="'Delete'" @click="handleDelete">删除评价</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑评价</el-button>
+          <el-button type="danger" :icon="'Delete'" @click="handleDelete">删除评价</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
@@ -256,16 +275,16 @@ defineExpose({ loadEvaluation })
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-form-item label="服务态度">
+        <el-form-item label="服务态度" prop="attitudeRating">
           <el-rate v-model="form.attitudeRating" />
         </el-form-item>
-        <el-form-item label="专业度">
+        <el-form-item label="专业度" prop="professionalRating">
           <el-rate v-model="form.professionalRating" />
         </el-form-item>
-        <el-form-item label="响应速度">
+        <el-form-item label="响应速度" prop="responsivenessRating">
           <el-rate v-model="form.responsivenessRating" />
         </el-form-item>
-        <el-form-item label="满意度">
+        <el-form-item label="满意度" prop="satisfactionRating">
           <el-rate v-model="form.satisfactionRating" />
         </el-form-item>
         <el-form-item label="评价内容" prop="content">
@@ -298,8 +317,16 @@ defineExpose({ loadEvaluation })
 
 <style scoped>
 .eval-toolbar {
-  margin-bottom: 16px;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 </style>

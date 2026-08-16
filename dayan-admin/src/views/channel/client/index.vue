@@ -22,6 +22,7 @@ import {
 } from '@/types/client'
 import { buildChannelTree, type ChannelInfo } from '@/types/channel'
 import RegionSelect from '@/components/RegionSelect.vue'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 客户管理页。
@@ -214,7 +215,9 @@ async function handleSubmit() {
       await createClient(form)
       ElMessage.success('新增成功')
     } else if (form.clientCode) {
-      await updateClient(form.clientCode, form)
+      // channelCode 由后端登录上下文填充，ClientInfoUpdateDTO 无该字段，编辑提交前剔除
+      const { channelCode, ...payload } = form
+      await updateClient(form.clientCode, payload)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -262,12 +265,10 @@ function clientLevelLabel(l?: number): string {
 
 function clientLevelTagType(l?: number): 'success' | 'warning' | 'danger' | 'info' {
   switch (l) {
-    case ClientLevel.DIAMOND:
+    case ClientLevel.SVIP:
       return 'danger'
-    case ClientLevel.GOLD:
+    case ClientLevel.VIP:
       return 'warning'
-    case ClientLevel.SILVER:
-      return 'success'
     case ClientLevel.NORMAL:
     default:
       return 'info'
@@ -289,57 +290,43 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="所属渠道">
-          <el-tree-select
-            v-model="query.channelCode"
-            :data="channelTree"
-            :props="{ label: 'fullName', value: 'channelCode', children: 'children' }"
-            check-strictly
-            clearable
-            placeholder="全部渠道"
-            style="width: 200px"
-          />
-        </el-form-item>
-        <el-form-item label="姓名">
-          <el-input v-model="query.fullName" placeholder="客户姓名" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="性别">
-          <el-select v-model="query.gender" placeholder="全部" clearable style="width: 110px">
-            <el-option v-for="o in GENDER_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="等级">
-          <el-select v-model="query.clientLevel" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in CLIENT_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="VIP">
-          <el-select v-model="query.isVip" placeholder="全部" clearable style="width: 110px">
-            <el-option v-for="o in VIP_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in CLIENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-tree-select
+          v-model="query.channelCode"
+          :data="channelTree"
+          :props="{ label: 'fullName', value: 'channelCode', children: 'children' }"
+          check-strictly
+          clearable
+          placeholder="所属渠道"
+          style="width: 200px"
+        />
+        <el-input v-model="query.fullName" placeholder="客户姓名" clearable style="width: 140px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.phone" placeholder="手机号" clearable style="width: 140px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.gender" placeholder="性别" clearable style="width: 110px">
+          <el-option v-for="o in GENDER_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.clientLevel" placeholder="等级" clearable style="width: 120px">
+          <el-option v-for="o in CLIENT_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.isVip" placeholder="VIP" clearable style="width: 110px">
+          <el-option v-for="o in VIP_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in CLIENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增客户</el-button>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>客户列表</span>
-          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增客户</el-button>
+          <span class="card-title">客户列表</span>
         </div>
       </template>
 
@@ -417,13 +404,20 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="头像">
+              <FileUploader v-model="form.avatar" type="image" module="client" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="所属渠道">
+              <!-- channelCode 后端取登录上下文填充，UpdateDTO 无此字段，编辑时只读 -->
               <el-tree-select
                 v-model="form.channelCode"
                 :data="channelTree"
                 :props="{ label: 'fullName', value: 'channelCode', children: 'children' }"
                 check-strictly
                 clearable
+                :disabled="dialogType === 'edit'"
                 placeholder="选择渠道"
                 style="width: 100%"
               />
@@ -532,10 +526,30 @@ onMounted(() => {
   }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
 }
 
 .pagination-wrap {

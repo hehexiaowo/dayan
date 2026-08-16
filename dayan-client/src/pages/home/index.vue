@@ -8,8 +8,8 @@
       </view>
       <view class="banner">
         <view class="banner-placeholder">
-          <view class="banner-logo">大雁</view>
-          <text class="banner-text">大雁养老 · 安心托付</text>
+          <view class="banner-logo">雁栖</view>
+          <text class="banner-text">雁栖康养 · 安心托付</text>
           <text class="banner-sub">您的养老权益管家</text>
         </view>
       </view>

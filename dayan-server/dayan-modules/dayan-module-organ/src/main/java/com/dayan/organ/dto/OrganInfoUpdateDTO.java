@@ -3,6 +3,7 @@ package com.dayan.organ.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 组织更新入参（organCode 不可改，由路径参数提供）。
@@ -16,6 +17,7 @@ public class OrganInfoUpdateDTO {
     private String unifiedCreditCode;
     private String legalPerson;
     private BigDecimal registeredCapital;
+    private LocalDate establishDate;
     private String businessScope;
     private String provinceCode;
     private String cityCode;

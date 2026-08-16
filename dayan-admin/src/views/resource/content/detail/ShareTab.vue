@@ -11,6 +11,13 @@ import {
 import type { ContentRecordShare, ContentRecordShareQuery } from '@/types/content'
 import { ShareChannel, SHARE_CHANNEL_OPTIONS } from '@/types/content'
 
+/** 分享者类型（对齐 DDL sharer_type：agent/client/butler） */
+const SHARER_TYPE_OPTIONS = [
+  { label: '代理人', value: 'agent' },
+  { label: '客户', value: 'client' },
+  { label: '管家', value: 'butler' }
+] as const
+
 /**
  * 分享记录 tab（按 contentCode 分组）。
  * 注意：后端 update 仅回填 clickCount/convertCount，其余字段编辑后会被忽略。
@@ -94,6 +101,8 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialogType.value === 'create') {
+      // shareTime 为空时置 undefined（后端默认当前时间），避免空串反序列化 400
+      if (!form.shareTime) form.shareTime = undefined
       await createContentRecordShare(form)
       ElMessage.success('新增成功')
     } else if (form.id) {
@@ -128,11 +137,13 @@ loadPage()
 
 <template>
   <div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 12px">
-      <el-select v-model="query.shareChannel" placeholder="全部渠道" clearable style="width: 160px" @change="handleSearch">
+    <div class="toolbar">
+      <el-select v-model="query.shareChannel" placeholder="分享渠道" clearable style="width: 160px" @change="handleSearch">
         <el-option v-for="o in SHARE_CHANNEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
       </el-select>
-      <el-button type="primary" :icon="'Plus'" @click="openCreate">新增分享记录</el-button>
+      <div class="toolbar-actions">
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增分享记录</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -190,6 +201,13 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="分享人类型">
+              <el-select v-model="form.sharerType" :disabled="dialogType === 'edit'" clearable placeholder="选择分享人类型" style="width: 100%">
+                <el-option v-for="o in SHARER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="分享者编码">
               <el-input v-model="form.sharerCode" :disabled="dialogType === 'edit'" />
             </el-form-item>
@@ -205,12 +223,12 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="点击数">
+            <el-form-item label="点击数" v-if="dialogType === 'edit'">
               <el-input-number v-model="form.clickCount" :min="0" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="转化数">
+            <el-form-item label="转化数" v-if="dialogType === 'edit'">
               <el-input-number v-model="form.convertCount" :min="0" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
@@ -223,3 +241,19 @@ loadPage()
     </el-dialog>
   </div>
 </template>
+
+<style scoped lang="scss">
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+</style>

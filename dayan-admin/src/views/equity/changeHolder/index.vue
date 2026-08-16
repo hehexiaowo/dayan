@@ -94,30 +94,36 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="权益编码">
-          <el-input v-model="query.equityCode" placeholder="权益编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="更换状态">
-          <el-select v-model="query.changeStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in CHANGE_HOLDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="操作人编码">
-          <el-input v-model="query.operatorCode" placeholder="操作人编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.equityCode"
+          placeholder="权益编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.changeStatus" placeholder="更换状态" clearable style="width: 140px">
+          <el-option v-for="o in CHANGE_HOLDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-input
+          v-model="query.operatorCode"
+          placeholder="操作人编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>权益更换权益人记录列表</span>
+          <span class="card-title">权益更换权益人记录列表</span>
         </div>
       </template>
 
@@ -214,9 +220,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -226,9 +240,21 @@ loadPage()
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

@@ -110,7 +110,9 @@ const form = reactive<GoodsScene>({
 // parkCode DDL NOT NULL 但 DTO 无 @NotBlank——前端 rules 强制必填避免 DB 报错
 const rules: FormRules<GoodsScene> = {
   sceneCode: [{ required: true, message: '请输入场景编码', trigger: 'blur' }],
-  parkCode: [{ required: true, message: '请输入园区编码', trigger: 'blur' }]
+  parkCode: [{ required: true, message: '请输入园区编码', trigger: 'blur' }],
+  // sku_price DDL NOT NULL
+  skuPrice: [{ required: true, message: '请输入 SKU 价格', trigger: 'blur' }]
 }
 
 function resetForm() {
@@ -185,33 +187,29 @@ async function handleDeleteRow(row: GoodsScene) {
 <template>
   <div class="sku-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="规格名称">
-        <el-input
-          v-model="query.skuName"
-          placeholder="规格名称"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="场景编码">
-        <el-input
-          v-model="query.sceneCode"
-          placeholder="场景编码"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in SKU_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.skuName"
+        placeholder="规格名称"
+        clearable
+        style="width: 150px"
+        @keyup.enter="handleSearch"
+      />
+      <el-input
+        v-model="query.sceneCode"
+        placeholder="场景编码"
+        clearable
+        style="width: 140px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in SKU_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增场景配置</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增场景配置</el-button>
+      </div>
+    </div>
 
     <!-- 主表格 -->
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -302,7 +300,7 @@ async function handleDeleteRow(row: GoodsScene) {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="SKU 价格">
+            <el-form-item label="SKU 价格" prop="skuPrice">
               <el-input-number v-model="form.skuPrice" :min="0" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
@@ -312,8 +310,9 @@ async function handleDeleteRow(row: GoodsScene) {
             </el-form-item>
           </el-col>
           <el-col :span="8">
+            <!-- duration_hours DDL DECIMAL(4,1) -->
             <el-form-item label="时长(小时)">
-              <el-input-number v-model="form.durationHours" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="form.durationHours" :min="0" :precision="1" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -351,6 +350,19 @@ async function handleDeleteRow(row: GoodsScene) {
 
 <style scoped lang="scss">
 .sku-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

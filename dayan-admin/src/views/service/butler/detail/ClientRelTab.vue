@@ -120,18 +120,15 @@ defineExpose({ loadList })
 <template>
   <div class="client-rel-tab">
     <!-- 搜索/工具栏 -->
-    <el-form :inline="true" @submit.prevent>
-      <el-form-item label="状态">
-        <!-- 简单的状态说明（数据量小，前端不做筛选） -->
-        <el-tag v-for="o in CLIENT_REL_STATUS_OPTIONS" :key="o.value" :type="clientRelStatusTagType(o.value)" size="small" class="mr-8">
-          {{ o.label }}
-        </el-tag>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-tag v-for="o in CLIENT_REL_STATUS_OPTIONS" :key="o.value" :type="clientRelStatusTagType(o.value)" size="small" class="mr-8">
+        {{ o.label }}
+      </el-tag>
+      <div class="toolbar-actions">
         <el-button :icon="'Refresh'" @click="loadList">刷新</el-button>
         <el-button type="primary" :icon="'Plus'" @click="openCreate">绑定客户</el-button>
-      </el-form-item>
-    </el-form>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="clientCode" label="客户编码" min-width="160" show-overflow-tooltip />
@@ -211,6 +208,19 @@ defineExpose({ loadList })
 
 <style scoped lang="scss">
 .client-rel-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .mr-8 {
     margin-right: 8px;
   }

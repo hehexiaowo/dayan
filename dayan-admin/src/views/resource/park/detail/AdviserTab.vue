@@ -162,27 +162,27 @@ defineExpose({ loadPage })
 
 <template>
   <div class="adviser-tab">
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="顾问姓名">
-        <el-input v-model="query.adviserName" placeholder="顾问姓名" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="是否首席">
-        <el-select v-model="query.isPrimary" placeholder="全部" clearable style="width: 120px">
-          <el-option label="首席" :value="1" />
-          <el-option label="普通" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="启用" :value="1" />
-          <el-option label="停用" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.adviserName"
+        placeholder="顾问姓名"
+        clearable
+        style="width: 160px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.isPrimary" placeholder="是否首席" clearable style="width: 120px">
+        <el-option label="首席" :value="1" />
+        <el-option label="普通" :value="0" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option label="启用" :value="1" />
+        <el-option label="停用" :value="0" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增顾问</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增顾问</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="adviserName" label="顾问姓名" min-width="140" show-overflow-tooltip />
@@ -290,6 +290,19 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .adviser-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

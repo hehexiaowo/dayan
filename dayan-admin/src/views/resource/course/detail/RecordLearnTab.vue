@@ -149,11 +149,13 @@ loadPage()
 
 <template>
   <div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 12px">
-      <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 160px" @change="handleSearch">
+    <div class="toolbar">
+      <el-select v-model="query.status" placeholder="学习状态" clearable style="width: 160px" @change="handleSearch">
         <el-option v-for="o in LEARN_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
       </el-select>
-      <el-button type="primary" :icon="'Plus'" @click="openCreate">新增学习记录</el-button>
+      <div class="toolbar-actions">
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增学习记录</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -202,6 +204,13 @@ loadPage()
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-alert
+          v-if="dialogType === 'create'"
+          type="info"
+          :closable="false"
+          title="学习进度、完成状态、评分由系统自动计算，保存后自动更新"
+          style="margin-bottom: 12px"
+        />
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="学员姓名" prop="learnerName">
@@ -215,12 +224,12 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="客户编码">
-              <el-input v-model="form.clientCode" />
+              <el-input v-model="form.clientCode" :disabled="dialogType === 'edit'" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="代理人编码">
-              <el-input v-model="form.agentCode" />
+              <el-input v-model="form.agentCode" :disabled="dialogType === 'edit'" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -234,7 +243,7 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="进度(%)">
+            <el-form-item label="进度(%)" v-if="dialogType === 'edit'">
               <el-input-number v-model="form.learnProgress" :min="0" :max="100" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
@@ -251,13 +260,13 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="是否完成">
+            <el-form-item label="是否完成" v-if="dialogType === 'edit'">
               <el-switch :model-value="form.isCompleted === 1" @change="(v: boolean) => (form.isCompleted = v ? 1 : 0)" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="评分">
-              <el-input-number v-model="form.rating" :min="0" :max="5" controls-position="right" style="width: 100%" />
+            <el-form-item label="评分" v-if="dialogType === 'edit'">
+              <el-input-number v-model="form.rating" :min="1" :max="5" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -269,3 +278,19 @@ loadPage()
     </el-dialog>
   </div>
 </template>
+
+<style scoped lang="scss">
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+</style>

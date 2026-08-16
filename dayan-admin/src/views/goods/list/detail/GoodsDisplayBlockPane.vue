@@ -194,28 +194,24 @@ defineExpose({ loadPage })
 
 <template>
   <div class="display-block-pane">
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="板块类型">
-        <el-select v-model="query.blockType" placeholder="全部" clearable style="width: 160px">
-          <el-option
-            v-for="opt in GOODS_DISPLAY_BLOCK_TYPE_OPTIONS"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="显示" :value="1" />
-          <el-option label="隐藏" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-select v-model="query.blockType" placeholder="板块类型" clearable style="width: 160px">
+        <el-option
+          v-for="opt in GOODS_DISPLAY_BLOCK_TYPE_OPTIONS"
+          :key="opt.value"
+          :label="opt.label"
+          :value="opt.value"
+        />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option label="显示" :value="1" />
+        <el-option label="隐藏" :value="0" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增板块</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增板块</el-button>
+      </div>
+    </div>
 
     <el-alert type="info" :closable="false" style="margin-bottom: 12px">
       展示板块用于 C/Agent 端商品详情页：每个板块 = 类型 + 标题 + 正文 + 配图，渲染为详情页的一个 tab。
@@ -380,6 +376,19 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .display-block-pane {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

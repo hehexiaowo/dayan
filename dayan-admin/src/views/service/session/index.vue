@@ -15,6 +15,7 @@ import type { ButlerInfo, ServiceSession, ServiceSessionQuery } from '@/types/se
 import {
   SessionStatus,
   SESSION_STATUS_OPTIONS,
+  SESSION_PRIORITY_OPTIONS,
   SERVICE_TYPE_OPTIONS
 } from '@/types/service'
 
@@ -28,11 +29,11 @@ import {
  * - 操作列按钮按 sessionStatus 动态显示当前可执行的事件。
  *
  * 会话状态（service_session.session_status）：
- *   0待受理 / 1已受理 / 2需求提交 / 3方案确认 / 4服务中 / 5已完成 / 6已取消。
+ *   1待分配 / 2待收集 / 3方案中 / 4安排中 / 5服务中 / 6已完成 / 7已取消。
  *
  * 状态机事件（ServiceSessionEvent）：
- *   assign_butler(0→1) / submit_demand(1→2) / confirm_solution(2→3) /
- *   reject_solution(3→2) / start_service(3→4) / finish(4→5) / cancel(0|1|4→6)。
+ *   assign_butler(1→2) / submit_demand(2→3) / confirm_solution(3→4) /
+ *   reject_solution(3→2) / start_service(4→5) / finish(5→6) / cancel(1|2|5→7)。
  */
 
 const {
@@ -85,6 +86,9 @@ const form = reactive<ServiceSession>({
   serviceTitle: '',
   serviceDescription: '',
   priority: undefined,
+  parkCode: '',
+  agentCode: '',
+  channelCode: '',
   remark: ''
 })
 
@@ -98,6 +102,9 @@ function openEdit(row: ServiceSession) {
   form.serviceTitle = row.serviceTitle ?? ''
   form.serviceDescription = row.serviceDescription ?? ''
   form.priority = row.priority
+  form.parkCode = row.parkCode ?? ''
+  form.agentCode = row.agentCode ?? ''
+  form.channelCode = row.channelCode ?? ''
   form.remark = row.remark ?? ''
   dialogVisible.value = true
 }
@@ -115,6 +122,9 @@ async function handleSubmit() {
       serviceTitle: form.serviceTitle,
       serviceDescription: form.serviceDescription,
       priority: form.priority,
+      parkCode: form.parkCode,
+      agentCode: form.agentCode,
+      channelCode: form.channelCode,
       remark: form.remark
     })
     ElMessage.success('修改成功')
@@ -215,32 +225,23 @@ async function handleAssignSubmit() {
   }
 }
 
-/** 取消会话（cancel: 0|1|4→6）：收集关闭原因。 */
+/** 取消会话（cancel: 1|2|5→7）：收集关闭原因（后端 transition 暂不落库 closeReason）。 */
 async function handleCancelSession(row: ServiceSession) {
   if (!row.sessionCode) return
-  let closeReason: string
   try {
-    const { value } = await ElMessageBox.prompt('请输入取消原因（可选）', '取消会话', {
+    // 原因暂仅作收集，后端 UpdateDTO/transition 均不支持回填 closeReason
+    await ElMessageBox.prompt('请输入取消原因（可选）', '取消会话', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       inputPlaceholder: '关闭原因',
       inputType: 'textarea'
     })
-    closeReason = value?.trim() ?? ''
   } catch {
     return
   }
   actionLoading.value = true
   try {
     await transitionSession(row.sessionCode, 'cancel')
-    // closeReason 通过 update 回填（cancel 事件后端写 closeReason/closeTime）
-    if (closeReason) {
-      try {
-        await updateSession(row.sessionCode, { closeReason })
-      } catch {
-        // 忽略 closeReason 回填失败
-      }
-    }
     ElMessage.success('已取消会话')
     loadPage()
   } finally {
@@ -259,7 +260,7 @@ function sessionStatusLabel(s?: number): string {
   return found ? found.label : s != null ? String(s) : '--'
 }
 
-/** 会话状态 el-tag type：0待受理info / 1已受理warning / 2需求primary / 3方案primary / 4服务warning / 5完成success / 6取消info。 */
+/** 会话状态 el-tag type：1待分配info / 2待收集warning / 3方案中primary / 4安排中primary / 5服务中warning / 6已完成success / 7已取消info。 */
 function sessionStatusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   switch (status) {
     case SessionStatus.COMPLETED:
@@ -284,41 +285,53 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="会话编码">
-          <el-input v-model="query.sessionCode" placeholder="会话编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="权益编码">
-          <el-input v-model="query.equityCode" placeholder="权益编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="客户编码">
-          <el-input v-model="query.clientCode" placeholder="客户编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="管家编码">
-          <el-input v-model="query.butlerCode" placeholder="管家编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="服务类型">
-          <el-select v-model="query.serviceType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in SERVICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="会话状态">
-          <el-select v-model="query.sessionStatus" placeholder="全部" clearable style="width: 130px">
-            <el-option v-for="o in SESSION_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.sessionCode"
+          placeholder="会话编码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.equityCode"
+          placeholder="权益编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.clientCode"
+          placeholder="客户编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.butlerCode"
+          placeholder="管家编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.serviceType" placeholder="服务类型" clearable style="width: 140px">
+          <el-option v-for="o in SERVICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.sessionStatus" placeholder="会话状态" clearable style="width: 130px">
+          <el-option v-for="o in SESSION_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>服务会话列表</span>
+          <span class="card-title">服务会话列表</span>
         </div>
       </template>
 
@@ -452,7 +465,18 @@ loadPage()
           <el-input v-model="form.serviceDescription" type="textarea" :rows="3" placeholder="服务描述" />
         </el-form-item>
         <el-form-item label="优先级">
-          <el-input-number v-model="form.priority" :min="0" :max="999" controls-position="right" />
+          <el-select v-model="form.priority" placeholder="请选择" clearable style="width: 100%">
+            <el-option v-for="o in SESSION_PRIORITY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="机构编码">
+          <el-input v-model="form.parkCode" placeholder="养老机构编码（可选）" maxlength="64" />
+        </el-form-item>
+        <el-form-item label="代理人编码">
+          <el-input v-model="form.agentCode" placeholder="代理人编码（可选）" maxlength="64" />
+        </el-form-item>
+        <el-form-item label="渠道编码">
+          <el-input v-model="form.channelCode" placeholder="渠道编码（可选）" maxlength="50" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="内部备注（可选）" />
@@ -502,9 +526,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -514,9 +546,21 @@ loadPage()
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

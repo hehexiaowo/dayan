@@ -5,6 +5,8 @@ import { useCrud } from '@/composables/useCrud'
 import { pageOrgans, createOrgan, updateOrgan, deleteOrgan } from '@/api/organ'
 import type { Organ, OrganQuery } from '@/types/organ'
 import { OrganStatus, ORGAN_STATUS_OPTIONS, ORGAN_TYPE_OPTIONS } from '@/types/organ'
+import RegionSelect from '@/components/RegionSelect.vue'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 机构管理页。
@@ -44,8 +46,18 @@ const form = reactive<Organ>({
   organType: 1,
   unifiedCreditCode: '',
   legalPerson: '',
+  registeredCapital: undefined,
+  establishDate: '',
+  businessScope: '',
+  provinceCode: '',
+  cityCode: '',
+  districtCode: '',
   contactPerson: '',
   contactPhone: '',
+  contactEmail: '',
+  logoUrl: '',
+  website: '',
+  description: '',
   address: '',
   status: OrganStatus.ENABLED,
   sortOrder: 0,
@@ -65,8 +77,18 @@ function resetForm() {
     organType: 1,
     unifiedCreditCode: '',
     legalPerson: '',
+    registeredCapital: undefined,
+    establishDate: '',
+    businessScope: '',
+    provinceCode: '',
+    cityCode: '',
+    districtCode: '',
     contactPerson: '',
     contactPhone: '',
+    contactEmail: '',
+    logoUrl: '',
+    website: '',
+    description: '',
     address: '',
     status: OrganStatus.ENABLED,
     sortOrder: 0,
@@ -90,8 +112,18 @@ function openEdit(row: Organ) {
     organType: row.organType,
     unifiedCreditCode: row.unifiedCreditCode,
     legalPerson: row.legalPerson,
+    registeredCapital: row.registeredCapital,
+    establishDate: row.establishDate,
+    businessScope: row.businessScope,
+    provinceCode: row.provinceCode,
+    cityCode: row.cityCode,
+    districtCode: row.districtCode,
     contactPerson: row.contactPerson,
     contactPhone: row.contactPhone,
+    contactEmail: row.contactEmail,
+    logoUrl: row.logoUrl,
+    website: row.website,
+    description: row.description,
     address: row.address,
     status: row.status,
     sortOrder: row.sortOrder,
@@ -152,35 +184,27 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="机构编码">
-          <el-input v-model="query.organCode" placeholder="机构编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="机构全称">
-          <el-input v-model="query.fullName" placeholder="机构全称" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="类型">
-          <el-select v-model="query.organType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in ORGAN_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in ORGAN_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.organCode" placeholder="机构编码" clearable style="width: 150px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.fullName" placeholder="机构全称" clearable style="width: 180px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.organType" placeholder="类型" clearable style="width: 140px">
+          <el-option v-for="o in ORGAN_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in ORGAN_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>机构列表</span>
+          <span class="card-title">机构列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增机构</el-button>
         </div>
       </template>
@@ -281,6 +305,63 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="注册资本">
+              <el-input-number
+                v-model="form.registeredCapital"
+                :min="0"
+                :precision="2"
+                controls-position="right"
+                placeholder="万元"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="成立日期">
+              <el-date-picker
+                v-model="form.establishDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="联系邮箱">
+              <el-input v-model="form.contactEmail" placeholder="联系邮箱" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="官网">
+              <el-input v-model="form.website" placeholder="官网地址" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Logo">
+              <FileUploader v-model="form.logoUrl" type="image" module="organ" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="所在地区">
+              <RegionSelect
+                v-model:province-code="form.provinceCode"
+                v-model:city-code="form.cityCode"
+                v-model:district-code="form.districtCode"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="经营范围">
+              <el-input v-model="form.businessScope" type="textarea" :rows="3" placeholder="经营范围" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="机构简介">
+              <el-input v-model="form.description" type="textarea" :rows="2" placeholder="机构简介" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" style="width: 100%">
                 <el-option v-for="o in ORGAN_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
@@ -325,10 +406,30 @@ loadPage()
   }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
 }
 
 .pagination-wrap {

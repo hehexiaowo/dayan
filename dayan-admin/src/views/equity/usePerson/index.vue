@@ -238,34 +238,44 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="权益编码">
-          <el-input v-model="query.equityCode" placeholder="权益编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="持有人编码">
-          <el-input v-model="query.clientCode" placeholder="持有人编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="使用人姓名">
-          <el-input v-model="query.usePersonName" placeholder="使用人姓名" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="是否默认">
-          <el-select v-model="query.isDefaultHolder" placeholder="全部" clearable style="width: 120px">
-            <el-option label="是" :value="1" />
-            <el-option label="否" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.equityCode"
+          placeholder="权益编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.clientCode"
+          placeholder="持有人编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.usePersonName"
+          placeholder="使用人姓名"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.isDefaultHolder" placeholder="是否默认" clearable style="width: 120px">
+          <el-option label="是" :value="1" />
+          <el-option label="否" :value="0" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>权益人员列表</span>
+          <span class="card-title">权益人员列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增权益人员</el-button>
         </div>
       </template>
@@ -466,9 +476,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -476,6 +494,12 @@ loadPage()
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 
 .pagination-wrap {
@@ -488,5 +512,11 @@ loadPage()
   font-size: 12px;
   color: #999;
   line-height: 1.4;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

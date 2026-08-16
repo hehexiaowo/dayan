@@ -206,23 +206,17 @@ defineExpose({ loadPage })
 <template>
   <div class="account-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="用户名">
-        <el-input v-model="query.username" placeholder="用户名" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="手机号">
-        <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.accountStatus" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input v-model="query.username" placeholder="用户名" clearable style="width: 160px" @keyup.enter="handleSearch" />
+      <el-input v-model="query.phone" placeholder="手机号" clearable style="width: 140px" @keyup.enter="handleSearch" />
+      <el-select v-model="query.accountStatus" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增账号</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增账号</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="clientCode">
       <el-table-column prop="clientCode" label="客户编码" min-width="140" show-overflow-tooltip />
@@ -354,6 +348,20 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .account-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
+
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

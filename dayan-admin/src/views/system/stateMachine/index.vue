@@ -169,8 +169,8 @@ onMounted(() => {
 
 <template>
   <div class="sm-page">
-    <el-card shadow="never">
-      <!-- 搜索栏 -->
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
       <div class="toolbar">
         <el-input
           v-model="query.machineCode"
@@ -197,13 +197,19 @@ onMounted(() => {
             <el-icon><Search /></el-icon>查询
           </el-button>
           <el-button @click="handleReset">重置</el-button>
-          <el-button type="success" @click="openCreate">
-            <el-icon><Plus /></el-icon>新增规则
-          </el-button>
         </div>
       </div>
+    </el-card>
 
-      <!-- 列表 -->
+    <!-- 列表 -->
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">状态机规则</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增规则</el-button>
+        </div>
+      </template>
+
       <el-table
         v-loading="loading"
         :data="tableData"
@@ -408,6 +414,28 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .sm-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
+    }
+  }
+
+  .search-card {
+    :deep(.el-card__body) {
+      padding-bottom: 2px;
+    }
+  }
+
   .toolbar {
     display: flex;
     flex-wrap: wrap;

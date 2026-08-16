@@ -14,6 +14,8 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { getSession, updateSession } from '@/api/service'
 import {
   SESSION_STATUS_OPTIONS,
+  SESSION_PRIORITY_OPTIONS,
+  SESSION_SOURCE_TYPE_OPTIONS,
   SERVICE_TYPE_OPTIONS
 } from '@/types/service'
 import type { ServiceSession } from '@/types/service'
@@ -51,6 +53,11 @@ function sessionStatusLabel(v?: number): string {
   return found ? found.label : '--'
 }
 
+function sourceTypeLabel(v?: number): string {
+  const found = SESSION_SOURCE_TYPE_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : '--'
+}
+
 function formatDateTime(s?: string): string {
   if (!s) return '--'
   return s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s
@@ -66,6 +73,9 @@ const form = reactive<ServiceSession>({
   serviceTitle: '',
   serviceDescription: '',
   priority: undefined,
+  parkCode: '',
+  agentCode: '',
+  channelCode: '',
   remark: ''
 })
 
@@ -80,6 +90,9 @@ function openEdit() {
     serviceTitle: sessionInfo.value.serviceTitle ?? '',
     serviceDescription: sessionInfo.value.serviceDescription ?? '',
     priority: sessionInfo.value.priority,
+    parkCode: sessionInfo.value.parkCode ?? '',
+    agentCode: sessionInfo.value.agentCode ?? '',
+    channelCode: sessionInfo.value.channelCode ?? '',
     remark: sessionInfo.value.remark ?? ''
   })
   dialogVisible.value = true
@@ -99,6 +112,9 @@ async function handleSubmit() {
       serviceTitle: form.serviceTitle,
       serviceDescription: form.serviceDescription,
       priority: form.priority,
+      parkCode: form.parkCode,
+      agentCode: form.agentCode,
+      channelCode: form.channelCode,
       remark: form.remark
     })
     ElMessage.success('修改成功')
@@ -116,7 +132,9 @@ defineExpose({ loadDetail })
   <div v-loading="loading">
     <template v-if="sessionInfo">
       <div class="basic-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
@@ -137,7 +155,7 @@ defineExpose({ loadDetail })
         </el-descriptions-item>
         <el-descriptions-item label="代理人">{{ sessionInfo.agentCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="渠道">{{ sessionInfo.channelCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="来源类型">{{ sessionInfo.sourceType ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="来源类型">{{ sourceTypeLabel(sessionInfo.sourceType) }}</el-descriptions-item>
         <el-descriptions-item label="来源编码">{{ sessionInfo.sourceCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="子状态">{{ sessionInfo.subStatus || '--' }}</el-descriptions-item>
         <el-descriptions-item label="服务描述" :span="3">{{ sessionInfo.serviceDescription || '--' }}</el-descriptions-item>
@@ -173,7 +191,18 @@ defineExpose({ loadDetail })
           <el-input v-model="form.serviceDescription" type="textarea" :rows="3" placeholder="服务描述" />
         </el-form-item>
         <el-form-item label="优先级">
-          <el-input-number v-model="form.priority" :min="0" :max="999" controls-position="right" />
+          <el-select v-model="form.priority" placeholder="请选择" clearable style="width: 100%">
+            <el-option v-for="o in SESSION_PRIORITY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="机构编码">
+          <el-input v-model="form.parkCode" placeholder="养老机构编码（可选）" maxlength="64" />
+        </el-form-item>
+        <el-form-item label="代理人编码">
+          <el-input v-model="form.agentCode" placeholder="代理人编码（可选）" maxlength="64" />
+        </el-form-item>
+        <el-form-item label="渠道编码">
+          <el-input v-model="form.channelCode" placeholder="渠道编码（可选）" maxlength="50" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="内部备注（可选）" />
@@ -189,6 +218,16 @@ defineExpose({ loadDetail })
 
 <style scoped>
 .basic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 </style>

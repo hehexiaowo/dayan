@@ -92,7 +92,7 @@ export interface ContentInfo {
   sortOrder?: number
   /** 内容状态：0草稿/1待审/2通过/3拒绝/4下线 */
   contentStatus?: ContentStatus
-  /** 审核状态：0待审/1通过/2驳回 */
+  /** 审核状态：0未审核/2通过/3驳回 */
   auditStatus?: number
   remark?: string
   createdAt?: string

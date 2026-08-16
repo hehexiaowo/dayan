@@ -80,31 +80,29 @@ function displayName(row: LeadInfo): string {
 <template>
   <div class="page-container">
     <!-- 搜索栏 -->
-    <el-card shadow="never">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="渠道">
-          <el-select v-model="query.channelCode" placeholder="全部渠道" clearable filterable style="width: 180px">
-            <el-option
-              v-for="c in channelOptions"
-              :key="c.channelCode"
-              :label="c.shortName || c.fullName"
-              :value="c.channelCode"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关键字">
-          <el-input v-model="query.keyword" placeholder="姓名 / 手机号 / 微信昵称" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item>
-          <el-checkbox v-model="query.onlyWithPhone">仅看已留资</el-checkbox>
-        </el-form-item>
-        <el-form-item>
-          <el-checkbox v-model="query.excludeClaimed">排除已认领</el-checkbox>
-        </el-form-item>
-        <el-form-item>
+    <el-card shadow="never" class="search-card">
+      <div class="toolbar">
+        <el-select v-model="query.channelCode" placeholder="渠道" clearable filterable style="width: 180px">
+          <el-option
+            v-for="c in channelOptions"
+            :key="c.channelCode"
+            :label="c.shortName || c.fullName"
+            :value="c.channelCode"
+          />
+        </el-select>
+        <el-input
+          v-model="query.keyword"
+          placeholder="姓名 / 手机号 / 微信昵称"
+          clearable
+          style="width: 220px"
+          @keyup.enter="handleSearch"
+        />
+        <el-checkbox v-model="query.onlyWithPhone">仅看已留资</el-checkbox>
+        <el-checkbox v-model="query.excludeClaimed">排除已认领</el-checkbox>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
@@ -207,6 +205,24 @@ function displayName(row: LeadInfo): string {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 .pagination-wrap {
   display: flex;

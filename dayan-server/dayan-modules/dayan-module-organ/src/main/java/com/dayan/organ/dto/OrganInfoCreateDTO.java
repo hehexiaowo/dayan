@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 组织创建入参。
@@ -27,6 +28,7 @@ public class OrganInfoCreateDTO {
 
     private String legalPerson;
     private BigDecimal registeredCapital;
+    private LocalDate establishDate;
     private String businessScope;
     private String provinceCode;
     private String cityCode;

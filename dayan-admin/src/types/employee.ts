@@ -4,18 +4,21 @@
  * 字段对齐后端 com.dayan.organ.entity.OrganEmployee。
  */
 
-/** 员工状态：1在职 0离职 */
+/** 员工状态：0=离职 1=在职 2=试用期（对齐 DDL organ_employee.employee_status） */
 export enum EmployeeStatus {
+  /** 离职 */
+  RESIGNED = 0,
   /** 在职 */
   ACTIVE = 1,
-  /** 离职 */
-  RESIGNED = 0
+  /** 试用期 */
+  PROBATION = 2
 }
 
 /** 员工状态选项 */
 export const EMPLOYEE_STATUS_OPTIONS = [
+  { label: '离职', value: EmployeeStatus.RESIGNED },
   { label: '在职', value: EmployeeStatus.ACTIVE },
-  { label: '离职', value: EmployeeStatus.RESIGNED }
+  { label: '试用期', value: EmployeeStatus.PROBATION }
 ] as const
 
 /**
@@ -49,7 +52,7 @@ export interface Employee {
   leaveDate?: string
   /** 头像地址 */
   avatar?: string
-  /** 员工状态：1在职 0离职 */
+  /** 员工状态：0=离职 1=在职 2=试用期 */
   employeeStatus: EmployeeStatus
   /** 备注 */
   remark?: string

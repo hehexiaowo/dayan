@@ -49,7 +49,8 @@ export function generateBill(data: {
   commissionAmount?: number
   refundAmount?: number
   adjustAmount?: number
-  flowIds?: string
+  /** 关联流水 ID 列表（后端 GenerateBillDTO.flowIds 为 List<Long>，传数字数组） */
+  flowIds?: number[]
   settlementMethod?: number
   bankInfo?: string
   remark?: string

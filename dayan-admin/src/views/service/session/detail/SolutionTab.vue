@@ -34,6 +34,8 @@ import type { ServiceEquitySolution, ServiceEquitySolutionQuery } from '@/types/
 
 const props = defineProps<{
   sessionCode: string
+  /** 会话客户编码（从会话详情带入，新增时回填，客户端不可改） */
+  clientCode?: string
 }>()
 
 // ---------- 列表（useCrud，主键 solutionCode） ----------
@@ -124,6 +126,8 @@ function openCreate() {
   dialogMode.value = 'create'
   resetForm()
   form.sessionCode = props.sessionCode
+  // clientCode 由会话详情带入（否则新增提交空串被后端 400 拒绝）
+  form.clientCode = props.clientCode ?? ''
   dialogVisible.value = true
 }
 
@@ -257,27 +261,21 @@ defineExpose({ loadPage })
 <template>
   <div class="solution-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="方案类型">
-        <el-select v-model="query.solutionType" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in SOLUTION_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="接受状态">
-        <el-select v-model="query.isAccepted" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in SOLUTION_IS_ACCEPTED_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="方案状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in SOLUTION_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-select v-model="query.solutionType" placeholder="方案类型" clearable style="width: 120px">
+        <el-option v-for="o in SOLUTION_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.isAccepted" placeholder="接受状态" clearable style="width: 120px">
+        <el-option v-for="o in SOLUTION_IS_ACCEPTED_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="方案状态" clearable style="width: 120px">
+        <el-option v-for="o in SOLUTION_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增方案</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增方案</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="solutionCode">
       <el-table-column prop="solutionCode" label="方案编码" min-width="150" show-overflow-tooltip />
@@ -350,6 +348,11 @@ defineExpose({ loadPage })
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="客户编码">
+              <el-input v-model="form.clientCode" disabled placeholder="会话客户编码" />
+            </el-form-item>
+          </el-col>
           <el-col v-if="dialogMode === 'edit'" :span="12">
             <el-form-item label="方案编码">
               <el-input v-model="form.solutionCode" disabled />
@@ -362,8 +365,10 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="关联需求" prop="demandCode">
+              <!-- 编辑时 demandCode 不可改（UpdateDTO 不含 demandCode） -->
               <el-input
                 v-model="form.demandCode"
+                :disabled="dialogMode === 'edit'"
                 placeholder="需求编码（必填，关联本会话需求）"
                 maxlength="50"
               />
@@ -502,6 +507,19 @@ defineExpose({ loadPage })
 </template>
 
 <style scoped>
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;

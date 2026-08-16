@@ -17,7 +17,8 @@ import { AuditStatus, AUDIT_STATUS_OPTIONS } from '@/types/scene'
 /**
  * 商品类型：1=权益商品 / 2=场景商品 / 3=课程商品 / 4=旅游短居商品（对齐 DDL）。
  *
- * 创建后不可改（UpdateDTO 无此字段）；按该值互斥决定详情页显示哪个 SKU 子表。
+ * UpdateDTO 含该字段，可编辑（后端约束：对应 SKU 子表全空时才允许改类型，非空时报错）；
+ * 按该值互斥决定详情页显示哪个 SKU 子表。
  */
 export enum GoodsType {
   /** 权益商品 */
@@ -80,7 +81,7 @@ export { AUDIT_STATUS_OPTIONS as GOODS_AUDIT_STATUS_OPTIONS }
  * 商品信息实体（后端 GoodsInfo，表 goods_info）。
  *
  * 主键：物理 id（自增），业务键 goodsCode（服务端 CodeGenerator 生成 `GD`+5 位，新增表单不含）。
- * 只读字段（UpdateDTO 不含）：id / goodsCode / goodsType / salesCount / viewCount / collectCount / createdAt。
+ * 只读字段（UpdateDTO 不含）：id / goodsCode / salesCount / viewCount / collectCount / createdAt。
  */
 export interface GoodsInfo {
   id?: number
@@ -90,7 +91,7 @@ export interface GoodsInfo {
   goodsName: string
   /** 商品简称 */
   goodsShortName?: string
-  /** 商品类型：1权益/2场景/3课程/4旅游短居（创建后不可改） */
+  /** 商品类型：1权益/2场景/3课程/4旅游短居（可编辑，SKU 子表全空时才允许变更） */
   goodsType?: number
   /** 分类编码 */
   categoryCode?: string

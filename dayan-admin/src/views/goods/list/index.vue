@@ -104,11 +104,13 @@ const form = reactive<GoodsInfo>({
   costPrice: undefined,
   priceUnit: '',
   stock: undefined,
+  saleStartTime: '',
+  saleEndTime: '',
   isHot: 0,
   isNew: 0,
   isRecommend: 0,
   sortOrder: 0,
-  goodsStatus: GoodsStatus.DRAFT,
+  auditStatus: undefined,
   remark: ''
 })
 
@@ -153,11 +155,13 @@ function resetForm() {
     costPrice: undefined,
     priceUnit: '',
     stock: undefined,
+    saleStartTime: '',
+    saleEndTime: '',
     isHot: 0,
     isNew: 0,
     isRecommend: 0,
     sortOrder: 0,
-    goodsStatus: GoodsStatus.DRAFT,
+    auditStatus: undefined,
     remark: ''
   })
 }
@@ -187,11 +191,13 @@ function fillForm(detail: GoodsInfo) {
     costPrice: detail.costPrice,
     priceUnit: detail.priceUnit ?? '',
     stock: detail.stock,
+    saleStartTime: detail.saleStartTime ?? '',
+    saleEndTime: detail.saleEndTime ?? '',
     isHot: detail.isHot ?? 0,
     isNew: detail.isNew ?? 0,
     isRecommend: detail.isRecommend ?? 0,
     sortOrder: detail.sortOrder ?? 0,
-    goodsStatus: detail.goodsStatus ?? GoodsStatus.DRAFT,
+    auditStatus: detail.auditStatus,
     remark: detail.remark ?? ''
   })
 }
@@ -386,50 +392,42 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="商品编码">
-          <el-input
-            v-model="query.goodsCode"
-            placeholder="商品编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="商品名称">
-          <el-input
-            v-model="query.goodsName"
-            placeholder="商品名称关键字"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="商品类型">
-          <el-select v-model="query.goodsType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="商品状态">
-          <el-select v-model="query.goodsStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in GOODS_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="审核状态">
-          <el-select v-model="query.auditStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in GOODS_AUDIT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.goodsCode"
+          placeholder="商品编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.goodsName"
+          placeholder="商品名称"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.goodsType" placeholder="商品类型" clearable style="width: 120px">
+          <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.goodsStatus" placeholder="商品状态" clearable style="width: 120px">
+          <el-option v-for="o in GOODS_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.auditStatus" placeholder="审核状态" clearable style="width: 120px">
+          <el-option v-for="o in GOODS_AUDIT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>商品列表</span>
+          <span class="card-title">商品列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增商品</el-button>
         </div>
       </template>
@@ -584,7 +582,8 @@ loadPage()
           </el-col>
           <el-col :span="8">
             <el-form-item label="库存">
-              <el-input-number v-model="form.stock" :min="0" :max="9999999" controls-position="right" style="width: 100%" />
+              <!-- DDL stock：-1=不限 -->
+              <el-input-number v-model="form.stock" :min="-1" :max="9999999" placeholder="-1=不限" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -623,9 +622,32 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="商品状态">
-              <el-select v-model="form.goodsStatus" placeholder="商品状态" style="width: 100%">
-                <el-option v-for="o in GOODS_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+            <!-- 开售/结束时间（对齐 DDL sale_start_time/sale_end_time） -->
+            <el-form-item label="开售时间">
+              <el-date-picker
+                v-model="form.saleStartTime"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                placeholder="选择开售时间"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="结束时间">
+              <el-date-picker
+                v-model="form.saleEndTime"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                placeholder="选择结束时间"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="审核状态">
+              <el-select v-model="form.auditStatus" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="o in GOODS_AUDIT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -661,9 +683,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -673,9 +703,21 @@ loadPage()
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

@@ -8,6 +8,7 @@
 - **AI 能力**：阿里云百炼 qwen-plus（OpenAI 兼容网关，SSE 流式）· 百炼知识库 RAG · DashScope qwen-image-plus 文生图 · 凭据存 `system_config`（llm 分组，admin 系统配置页填写）
 - **文件存储**：MinIO（`dayan-common-oss`，StorageService 抽象，DB 存纯 key，`/v1/files/preview/**` 代理展示）
 - **前端**：dayan-admin / dayan-channel（Vue 3 + TypeScript + Element Plus）· dayan-agent / dayan-client（uni-app Vue3 H5/小程序，自研 Dy* 组件，无第三方 UI 库）
+  - **四端系统命名**：大雁核心（admin 运营后台）· 渠道核心（channel 渠道后台）· 养老宝典（agent 代理人端）· 雁栖康养（client 客户端）
 - **基础设施**：Docker · Docker Compose · GitHub Actions（CI + GHCR 镜像推送）
 
 ## 项目结构

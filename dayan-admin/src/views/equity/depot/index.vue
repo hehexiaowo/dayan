@@ -1,36 +1,24 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
-import {
-  pageDepots,
-  getDepot,
-  updateDepot,
-  deleteDepot,
-  transitionDepot
-} from '@/api/equity'
+import { pageDepots, transitionDepot } from '@/api/equity'
 import type { EquityDepot, EquityDepotQuery } from '@/types/equity'
-import {
-  EquityStatus,
-  CarrierType,
-  EQUITY_STATUS_OPTIONS,
-  CARRIER_TYPE_OPTIONS
-} from '@/types/equity'
+import { EquityStatus, EQUITY_STATUS_OPTIONS, CARRIER_TYPE_OPTIONS } from '@/types/equity'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 权益仓库管理页（核心链路，最复杂）。
  *
  * 第一版简化：
- * - 标准 CRUD（搜索 + 表格 + 分页 + 编辑弹窗，无新增——equityCode 服务端生成，权益卡由批次生产/入库产生）；
+ * - 列表 + 分页 + 操作列事件流转（无新增——equityCode 服务端生成，权益卡由批次生产/入库产生；无编辑/删除——后端无 PUT/DELETE 端点）；
  * - 业务端点（stock-in / outbound / activate / void）统一走 transition 通用方法
  *   （POST /transition?equityCode=&event=，event 名：stock-in / outbound / activate / void）；
  * - 操作列按钮按 equityStatus 动态显示：
- *   - status=0(待入库): 入库
- *   - status=1(在库): 出库
- *   - status=2(已出库): 激活
- *   - 任意状态（非已作废）: 作废
+ *   - status=0(库存中): 出库
+ *   - status=1(已出库): 激活
+ *   - status=0/1(库存中/已出库): 作废
  *
- * equityStatus：0待入库/1在库/2已出库/3已激活/4已使用/5已过期/6已作废/7变更中。
+ * equityStatus：0=库存中/1=已出库/2=已激活/3=使用中/4=已完成/5=已过期/6=已作废/7=更换权益人中。
  */
 
 const {
@@ -59,109 +47,6 @@ const {
   }
 )
 
-// ---------- 编辑弹窗 ----------
-const dialogVisible = ref(false)
-const submitLoading = ref(false)
-const formRef = ref<FormInstance>()
-
-/**
- * 编辑表单：取 15 个核心字段（equityCode 服务端生成，仅展示不可编辑）。
- */
-const form = reactive<EquityDepot>({
-  equityCode: undefined,
-  equityNo: '',
-  goodsCode: '',
-  batchCode: '',
-  channelCode: '',
-  agentCode: '',
-  clientCode: '',
-  carrierType: CarrierType.EQUITY_CARD,
-  equityStatus: EquityStatus.STOCK,
-  activateCode: '',
-  logisticsNo: '',
-  remark: ''
-})
-
-const rules: FormRules<EquityDepot> = {
-  equityNo: [{ required: true, message: '请输入权益卡号', trigger: 'blur' }],
-  goodsCode: [{ required: true, message: '请输入关联商品编码', trigger: 'blur' }]
-}
-
-function resetForm() {
-  Object.assign(form, {
-    equityCode: undefined,
-    equityNo: '',
-    goodsCode: '',
-    batchCode: '',
-    channelCode: '',
-    agentCode: '',
-    clientCode: '',
-    carrierType: CarrierType.EQUITY_CARD,
-    equityStatus: EquityStatus.STOCK,
-    activateCode: '',
-    logisticsNo: '',
-    remark: ''
-  })
-}
-
-async function openEdit(row: EquityDepot) {
-  if (!row.equityCode) return
-  resetForm()
-  try {
-    const detail = await getDepot(row.equityCode)
-    Object.assign(form, {
-      equityCode: detail.equityCode,
-      equityNo: detail.equityNo ?? '',
-      goodsCode: detail.goodsCode ?? '',
-      batchCode: detail.batchCode ?? '',
-      channelCode: detail.channelCode ?? '',
-      agentCode: detail.agentCode ?? '',
-      clientCode: detail.clientCode ?? '',
-      carrierType: detail.carrierType ?? CarrierType.EQUITY_CARD,
-      equityStatus: detail.equityStatus ?? EquityStatus.STOCK,
-      activateCode: detail.activateCode ?? '',
-      logisticsNo: detail.logisticsNo ?? '',
-      remark: detail.remark ?? ''
-    })
-  } catch {
-    Object.assign(form, {
-      equityCode: row.equityCode,
-      equityNo: row.equityNo ?? '',
-      goodsCode: row.goodsCode ?? '',
-      batchCode: row.batchCode ?? '',
-      channelCode: row.channelCode ?? '',
-      agentCode: row.agentCode ?? '',
-      clientCode: row.clientCode ?? '',
-      carrierType: row.carrierType ?? CarrierType.EQUITY_CARD,
-      equityStatus: row.equityStatus ?? EquityStatus.STOCK,
-      activateCode: row.activateCode ?? '',
-      logisticsNo: row.logisticsNo ?? '',
-      remark: row.remark ?? ''
-    })
-  }
-  dialogVisible.value = true
-}
-
-async function handleSubmit() {
-  if (!formRef.value) return
-  try {
-    await formRef.value.validate()
-  } catch {
-    return
-  }
-  if (!form.equityCode) return
-
-  submitLoading.value = true
-  try {
-    await updateDepot(form.equityCode, form)
-    ElMessage.success('修改成功')
-    dialogVisible.value = false
-    loadPage()
-  } finally {
-    submitLoading.value = false
-  }
-}
-
 function handleReset() {
   query.equityCode = ''
   query.equityNo = ''
@@ -173,18 +58,6 @@ function handleReset() {
   query.carrierType = undefined
   query.equityStatus = undefined
   handleSearch()
-}
-
-async function handleDeleteRow(row: EquityDepot) {
-  if (!row.equityCode) return
-  await ElMessageBox.confirm(`确定删除权益卡「${row.equityNo ?? row.equityCode}」吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-  await deleteDepot(row.equityCode)
-  ElMessage.success('删除成功')
-  loadPage()
 }
 
 // ---------- 状态机流转（第一版统一走 transition） ----------
@@ -251,50 +124,74 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="权益编码">
-          <el-input v-model="query.equityCode" placeholder="权益编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="卡号">
-          <el-input v-model="query.equityNo" placeholder="权益卡号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="商品编码">
-          <el-input v-model="query.goodsCode" placeholder="商品编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="批次编码">
-          <el-input v-model="query.batchCode" placeholder="批次编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="渠道编码">
-          <el-input v-model="query.channelCode" placeholder="渠道编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="代理人">
-          <el-input v-model="query.agentCode" placeholder="代理人编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="客户">
-          <el-input v-model="query.clientCode" placeholder="客户编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="载体类型">
-          <el-select v-model="query.carrierType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in CARRIER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="权益状态">
-          <el-select v-model="query.equityStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in EQUITY_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.equityCode"
+          placeholder="权益编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.equityNo"
+          placeholder="权益卡号"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.goodsCode"
+          placeholder="商品编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.batchCode"
+          placeholder="批次编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.channelCode"
+          placeholder="渠道编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.agentCode"
+          placeholder="代理人编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.clientCode"
+          placeholder="客户编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.carrierType" placeholder="载体类型" clearable style="width: 130px">
+          <el-option v-for="o in CARRIER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.equityStatus" placeholder="权益状态" clearable style="width: 130px">
+          <el-option v-for="o in EQUITY_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>权益仓库列表</span>
+          <span class="card-title">权益仓库列表</span>
           <!-- 提示：权益卡由批次生产/入库产生，无手动新增入口 -->
           <el-tooltip content="权益卡由批次入库生成，无手动新增入口" placement="left">
             <el-icon class="hint-icon"><InfoFilled /></el-icon>
@@ -322,8 +219,12 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="activateTime" label="激活时间" width="160" align="center" />
-        <el-table-column prop="expireTime" label="过期时间" width="160" align="center" />
+        <el-table-column prop="activateTime" label="激活时间" width="160" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.activateTime) }}</template>
+        </el-table-column>
+        <el-table-column prop="expireTime" label="过期时间" width="160" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.expireTime) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <!-- 出库：库存中(0) → 已出库(1) -->
@@ -356,8 +257,6 @@ loadPage()
             >
               作废
             </el-button>
-            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -375,87 +274,6 @@ loadPage()
         />
       </div>
     </el-card>
-
-    <!-- 编辑弹窗（无新增，equityCode 服务端生成） -->
-    <el-dialog
-      v-model="dialogVisible"
-      title="编辑权益卡"
-      width="820px"
-      :close-on-click-modal="false"
-    >
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-row :gutter="16">
-          <el-col :span="24">
-            <el-form-item label="权益编码">
-              <el-input :model-value="form.equityCode" disabled placeholder="服务端生成" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="权益卡号" prop="equityNo">
-              <el-input v-model="form.equityNo" placeholder="权益卡号" maxlength="64" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="商品编码" prop="goodsCode">
-              <el-input v-model="form.goodsCode" placeholder="商品编码" maxlength="50" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="批次编码">
-              <el-input v-model="form.batchCode" placeholder="批次编码" maxlength="50" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="载体类型">
-              <el-select v-model="form.carrierType" placeholder="载体类型" style="width: 100%">
-                <el-option v-for="o in CARRIER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="权益状态">
-              <el-select v-model="form.equityStatus" placeholder="权益状态" style="width: 100%">
-                <el-option v-for="o in EQUITY_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="渠道编码">
-              <el-input v-model="form.channelCode" placeholder="分配渠道" maxlength="50" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="代理人">
-              <el-input v-model="form.agentCode" placeholder="分配代理人" maxlength="50" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="客户">
-              <el-input v-model="form.clientCode" placeholder="领取客户" maxlength="50" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="激活码">
-              <el-input v-model="form.activateCode" placeholder="激活码" maxlength="64" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="物流单号">
-              <el-input v-model="form.logisticsNo" placeholder="物流单号" maxlength="64" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="备注">
-              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注（可选）" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -466,9 +284,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -476,6 +302,12 @@ loadPage()
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 
 .hint-icon {
@@ -488,5 +320,11 @@ loadPage()
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

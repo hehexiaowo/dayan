@@ -23,11 +23,11 @@ const avatarUrl = computed(() => formatFileUrl(userStore.userInfo?.avatar))
  * 后端 /channel-infos/current 返回 shortName；取不到时回退固定文案。
  * layout 常驻只挂载一次，此处取一次即可，无需进 store。
  */
-const channelTitle = ref('渠道后台')
+const channelTitle = ref('渠道核心')
 onMounted(async () => {
   try {
     const current = await getChannelInfoCurrent()
-    channelTitle.value = current?.shortName ? `${current.shortName}渠道后台` : '渠道后台'
+    channelTitle.value = current?.shortName ? `${current.shortName}渠道核心` : '渠道核心'
   } catch (err) {
     // 接口未实现或鉴权失败时降级：保持默认文案
     console.warn('[layout] 获取当前渠道简称失败:', err)
@@ -61,7 +61,7 @@ async function handleLogout() {
 <template>
   <el-container class="layout-root">
     <!-- 侧边栏 -->
-    <el-aside :width="isCollapse ? '64px' : '220px'" class="layout-aside">
+    <el-aside :width="isCollapse ? '64px' : '200px'" class="layout-aside">
       <div class="logo">
         <span v-if="!isCollapse" class="logo-text">{{ channelTitle }}</span>
         <span v-else class="logo-text">渠道</span>

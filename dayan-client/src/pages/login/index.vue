@@ -3,7 +3,7 @@
     <!-- 品牌区（绿色品牌渐变） -->
     <view class="brand-section">
       <view class="brand-logo">
-        <text class="brand-title">大雁养老</text>
+        <text class="brand-title">雁栖康养</text>
         <text class="brand-subtitle">客户端 · 养老权益管家</text>
       </view>
     </view>
@@ -214,7 +214,7 @@
 
     <!-- 底部版权 -->
     <view class="footer">
-      <text class="footer-text">大雁养老 · 安心托付您的养老权益</text>
+      <text class="footer-text">雁栖康养 · 安心托付您的养老权益</text>
     </view>
   </view>
 </template>

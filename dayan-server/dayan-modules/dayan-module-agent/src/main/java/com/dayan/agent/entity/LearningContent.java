@@ -32,7 +32,7 @@ public class LearningContent extends BaseEntity {
     /** 摘要 */
     private String summary;
 
-    /** 分类 1=视频课程 2=图文课程 3=雁鸣中国 */
+    /** 分类 1=渠道课程 2=外部课程 3=雁鸣中国 */
     private Integer category;
 
     /** 讲师/作者/来源 */

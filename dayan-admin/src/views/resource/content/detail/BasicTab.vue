@@ -108,6 +108,11 @@ onMounted(() => {
               <el-input v-model="form.title" maxlength="200" show-word-limit />
             </el-form-item>
           </el-col>
+          <el-col :span="24">
+            <el-form-item label="副标题">
+              <el-input v-model="form.subtitle" maxlength="200" show-word-limit />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="内容类型">
               <el-select v-model="form.contentType" style="width: 100%">
@@ -140,6 +145,11 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="24">
+            <el-form-item label="来源链接">
+              <el-input v-model="form.sourceUrl" placeholder="转载来源 URL（可选）" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
             <el-form-item label="适用业态">
               <el-checkbox-group v-model="networkTagsArr">
                 <el-checkbox v-for="o in NETWORK_TYPE_OPTIONS" :key="o.value" :value="o.value">
@@ -157,6 +167,16 @@ onMounted(() => {
           <el-col :span="12">
             <el-form-item label="推荐">
               <el-switch :model-value="form.isRecommend === 1" @change="(v: boolean) => (form.isRecommend = v ? 1 : 0)" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="允许评论">
+              <el-switch :model-value="form.isComment === 1" @change="(v: boolean) => (form.isComment = v ? 1 : 0)" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="排序号">
+              <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

@@ -3,6 +3,7 @@ package com.dayan.park.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -78,6 +79,9 @@ public class ParkInfoUpdateDTO {
     private BigDecimal depositAmount;
     private String depositDescription;
     private Integer contractPeriod;
+
+    /** 开业时间 */
+    private LocalDateTime openingTime;
 
     private Integer sortOrder;
     private Integer isHot;

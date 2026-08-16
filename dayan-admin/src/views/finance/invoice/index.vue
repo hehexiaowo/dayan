@@ -434,58 +434,47 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="发票编码">
-          <el-input
-            v-model="query.invoiceCode"
-            placeholder="发票编码"
-            clearable
-            @keyup.enter="handleSearch"
+      <div class="toolbar">
+        <el-input
+          v-model="query.invoiceCode"
+          placeholder="发票编码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.invoiceType" placeholder="发票类型" clearable style="width: 160px">
+          <el-option v-for="o in INVOICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.invoiceStatus" placeholder="发票状态" clearable style="width: 130px">
+          <el-option
+            v-for="o in INVOICE_STATUS_OPTIONS"
+            :key="o.value"
+            :label="o.label"
+            :value="o.value"
           />
-        </el-form-item>
-        <el-form-item label="发票类型">
-          <el-select v-model="query.invoiceType" placeholder="全部" clearable style="width: 180px">
-            <el-option v-for="o in INVOICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="发票状态">
-          <el-select v-model="query.invoiceStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option
-              v-for="o in INVOICE_STATUS_OPTIONS"
-              :key="o.value"
-              :label="o.label"
-              :value="o.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="申请方类型">
-          <el-input
-            v-model="query.applicantType"
-            placeholder="channel/agent/client"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="发票号码">
-          <el-input
-            v-model="query.invoiceNo"
-            placeholder="税务发票号码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item>
+        </el-select>
+        <el-select v-model="query.applicantType" placeholder="申请方类型" clearable style="width: 140px">
+          <el-option v-for="o in APPLICANT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-input
+          v-model="query.invoiceNo"
+          placeholder="税务发票号码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>发票列表</span>
+          <span class="card-title">发票列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">申请开票</el-button>
         </div>
       </template>
@@ -939,9 +928,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -949,6 +946,12 @@ loadPage()
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 
 .pagination-wrap {
@@ -966,5 +969,11 @@ loadPage()
   color: #909399;
   font-size: 12px;
   line-height: 1.4;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

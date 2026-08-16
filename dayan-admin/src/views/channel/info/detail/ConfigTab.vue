@@ -235,8 +235,8 @@ function handleSubTabChange(name: string | number) {
       <el-tab-pane label="内容配置" name="content">
         <div class="sub-toolbar">
           <span class="count">共 {{ contentList.length }} 条</span>
-          <div>
-            <el-button type="primary" :icon="'Plus'" size="small" @click="addContentRow">新增行</el-button>
+          <div class="sub-toolbar-actions">
+            <el-button type="primary" :icon="'Plus'" @click="addContentRow">新增行</el-button>
             <el-button :icon="'Delete'" size="small" @click="clearAll('content')">清空</el-button>
             <el-button type="success" :icon="'Check'" size="small" :loading="contentSaving" @click="saveContent">
               保存配置
@@ -312,8 +312,8 @@ function handleSubTabChange(name: string | number) {
       <el-tab-pane label="场景配置" name="scene">
         <div class="sub-toolbar">
           <span class="count">共 {{ sceneList.length }} 条</span>
-          <div>
-            <el-button type="primary" :icon="'Plus'" size="small" @click="addSceneRow">新增行</el-button>
+          <div class="sub-toolbar-actions">
+            <el-button type="primary" :icon="'Plus'" @click="addSceneRow">新增行</el-button>
             <el-button :icon="'Delete'" size="small" @click="clearAll('scene')">清空</el-button>
             <el-button type="success" :icon="'Check'" size="small" :loading="sceneSaving" @click="saveScene">
               保存配置
@@ -378,8 +378,8 @@ function handleSubTabChange(name: string | number) {
       <el-tab-pane label="商品配置" name="goods">
         <div class="sub-toolbar">
           <span class="count">共 {{ goodsList.length }} 条</span>
-          <div>
-            <el-button type="primary" :icon="'Plus'" size="small" @click="addGoodsRow">新增行</el-button>
+          <div class="sub-toolbar-actions">
+            <el-button type="primary" :icon="'Plus'" @click="addGoodsRow">新增行</el-button>
             <el-button :icon="'Delete'" size="small" @click="clearAll('goods')">清空</el-button>
             <el-button type="success" :icon="'Check'" size="small" :loading="goodsSaving" @click="saveGoods">
               保存配置
@@ -457,12 +457,18 @@ function handleSubTabChange(name: string | number) {
 .config-tab {
   .sub-toolbar {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
     align-items: center;
+    gap: 8px;
     margin-bottom: 12px;
     .count {
       color: var(--el-text-color-secondary);
       font-size: 13px;
+    }
+    .sub-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
     }
   }
 }

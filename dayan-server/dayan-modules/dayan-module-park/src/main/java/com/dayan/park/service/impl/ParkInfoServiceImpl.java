@@ -235,6 +235,7 @@ public class ParkInfoServiceImpl implements ParkInfoService {
         if (dto.getDepositAmount() != null) update.setDepositAmount(dto.getDepositAmount());
         if (dto.getDepositDescription() != null) update.setDepositDescription(dto.getDepositDescription());
         if (dto.getContractPeriod() != null) update.setContractPeriod(dto.getContractPeriod());
+        if (dto.getOpeningTime() != null) update.setOpeningTime(dto.getOpeningTime());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getIsHot() != null) update.setIsHot(dto.getIsHot());
         if (dto.getSubScript() != null) update.setSubScript(dto.getSubScript());

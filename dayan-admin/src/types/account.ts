@@ -7,15 +7,20 @@
  * 列表与详情展示一律不返回这些字段。
  */
 
-/** 账号状态：1启用 0禁用 */
+/** 账号状态：0=锁定 1=正常 2=禁用（对齐 DDL organ_account.account_status） */
 export enum AccountStatus {
-  ENABLED = 1,
-  DISABLED = 0
+  /** 锁定 */
+  LOCKED = 0,
+  /** 正常 */
+  NORMAL = 1,
+  /** 禁用 */
+  DISABLED = 2
 }
 
 /** 账号状态选项 */
 export const ACCOUNT_STATUS_OPTIONS = [
-  { label: '启用', value: AccountStatus.ENABLED },
+  { label: '锁定', value: AccountStatus.LOCKED },
+  { label: '正常', value: AccountStatus.NORMAL },
   { label: '禁用', value: AccountStatus.DISABLED }
 ] as const
 
@@ -68,7 +73,7 @@ export interface Account {
   loginCount?: number
   /** 密码更新时间 */
   pwdUpdateTime?: string
-  /** 账号状态：1启用 0禁用 */
+  /** 账号状态：0=锁定 1=正常 2=禁用 */
   accountStatus: AccountStatus
   /** 是否超管：1是 0否 */
   isAdmin?: number

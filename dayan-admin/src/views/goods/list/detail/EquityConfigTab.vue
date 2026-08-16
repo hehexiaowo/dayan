@@ -267,7 +267,7 @@ onMounted(() => {
     <el-card shadow="never" class="config-card">
       <template #header>
         <div class="card-header">
-          <span>权益配置</span>
+          <span class="card-title">权益配置</span>
           <el-tag v-if="configExists" size="small" type="success">已配置</el-tag>
           <el-tag v-else size="small" type="info">未配置</el-tag>
         </div>
@@ -361,8 +361,8 @@ onMounted(() => {
     <el-card shadow="never" class="rel-card">
       <template #header>
         <div class="card-header">
-          <span>服务项目组合</span>
-          <el-button type="primary" size="small" :icon="'Plus'" @click="addRelRow">添加服务项目</el-button>
+          <span class="card-title">服务项目组合</span>
+          <el-button type="primary" :icon="'Plus'" @click="addRelRow">添加服务项目</el-button>
         </div>
       </template>
 
@@ -379,7 +379,7 @@ onMounted(() => {
                   <el-checkbox v-model="row.admissionDiscount" :true-value="1" :false-value="0">优惠入住权/旅居优惠权</el-checkbox>
                   <template v-if="row.admissionDiscount === 1">
                     <span class="inline-label">门市价折扣</span>
-                    <el-input-number v-model="row.discountRate" :min="1" :max="100" :precision="1" size="small" controls-position="right" style="width: 120px" />
+                    <el-input-number v-model="row.discountRate" :min="1" :max="99.99" :precision="1" size="small" controls-position="right" style="width: 120px" />
                     <span class="inline-label-sub">（{{ row.discountRate ? (row.discountRate / 10) + ' 折' : '未定' }}，如 90 = 9折）</span>
                   </template>
                 </el-space>
@@ -527,6 +527,11 @@ onMounted(() => {
     align-items: center;
     gap: 8px;
     justify-content: space-between;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
   }
   .field-hint {
     font-size: 12px;

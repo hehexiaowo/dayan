@@ -23,6 +23,19 @@ import { formatDateTime, formatDate } from '@/utils/format'
  * - 方向：1 应收 / 2 应付。
  */
 
+// ---------------- 对象类型 / 业务类型 选项（DDL finance_account 注释） ----------------
+const ACCOUNT_TYPE_OPTIONS = [
+  { label: '渠道（channel）', value: 'channel' },
+  { label: '供应商（supplier）', value: 'supplier' },
+  { label: '代理人（agent）', value: 'agent' }
+] as const
+
+const BIZ_TYPE_OPTIONS = [
+  { label: '权益采购（equity_purchase）', value: 'equity_purchase' },
+  { label: '场景费（scene_fee）', value: 'scene_fee' },
+  { label: '服务费（service_fee）', value: 'service_fee' }
+] as const
+
 // ---------------- 分页 / 搜索 ----------------
 const {
   loading,
@@ -81,10 +94,10 @@ const form = reactive({
 
 const rules: FormRules<typeof form> = {
   direction: [{ required: true, message: '请选择账目方向', trigger: 'change' }],
-  accountType: [{ required: true, message: '请输入对象类型', trigger: 'blur' }],
+  accountType: [{ required: true, message: '请选择对象类型', trigger: 'change' }],
   targetCode: [{ required: true, message: '请输入对象编码', trigger: 'blur' }],
   targetName: [{ required: true, message: '请输入对象名称', trigger: 'blur' }],
-  bizType: [{ required: true, message: '请输入业务类型', trigger: 'blur' }],
+  bizType: [{ required: true, message: '请选择业务类型', trigger: 'change' }],
   totalAmount: [{ required: true, message: '请输入总额', trigger: 'blur' }]
 }
 
@@ -261,88 +274,77 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="账目编号">
-          <el-input
-            v-model="query.accountCode"
-            placeholder="账目编号"
-            clearable
-            @keyup.enter="handleSearch"
+      <div class="toolbar">
+        <el-input
+          v-model="query.accountCode"
+          placeholder="账目编号"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.direction" placeholder="账目方向" clearable style="width: 130px">
+          <el-option
+            v-for="o in ACCOUNT_DIRECTION_OPTIONS"
+            :key="o.value"
+            :label="o.label"
+            :value="o.value"
           />
-        </el-form-item>
-        <el-form-item label="账目方向">
-          <el-select v-model="query.direction" placeholder="全部" clearable style="width: 140px">
-            <el-option
-              v-for="o in ACCOUNT_DIRECTION_OPTIONS"
-              :key="o.value"
-              :label="o.label"
-              :value="o.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="账目状态">
-          <el-select v-model="query.accountStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option
-              v-for="o in ACCOUNT_STATUS_OPTIONS"
-              :key="o.value"
-              :label="o.label"
-              :value="o.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="对象类型">
-          <el-input
-            v-model="query.accountType"
-            placeholder="channel/supplier/agent"
-            clearable
-            @keyup.enter="handleSearch"
+        </el-select>
+        <el-select v-model="query.accountStatus" placeholder="账目状态" clearable style="width: 130px">
+          <el-option
+            v-for="o in ACCOUNT_STATUS_OPTIONS"
+            :key="o.value"
+            :label="o.label"
+            :value="o.value"
           />
-        </el-form-item>
-        <el-form-item label="对象编码">
-          <el-input
-            v-model="query.targetCode"
-            placeholder="对象编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="业务类型">
-          <el-input
-            v-model="query.bizType"
-            placeholder="如 equity_purchase"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="业务编码">
-          <el-input
-            v-model="query.bizCode"
-            placeholder="业务编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="到期日期≤">
-          <el-date-picker
-            v-model="query.dueDateTo"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="到期日期"
-            style="width: 160px"
-          />
-        </el-form-item>
-        <el-form-item>
+        </el-select>
+        <el-input
+          v-model="query.accountType"
+          placeholder="对象类型 channel/supplier/agent"
+          clearable
+          style="width: 220px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.targetCode"
+          placeholder="对象编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.bizType"
+          placeholder="业务类型 如 equity_purchase"
+          clearable
+          style="width: 200px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.bizCode"
+          placeholder="业务编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-date-picker
+          v-model="query.dueDateTo"
+          type="date"
+          value-format="YYYY-MM-DD"
+          placeholder="到期日期≤"
+          style="width: 160px"
+        />
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>应收应付账目列表</span>
+          <span class="card-title">应收应付账目列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">创建账目</el-button>
         </div>
       </template>
@@ -460,7 +462,9 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="对象类型" prop="accountType">
-              <el-input v-model="form.accountType" placeholder="channel/supplier/agent" maxlength="50" />
+              <el-select v-model="form.accountType" placeholder="对象类型" style="width: 100%">
+                <el-option v-for="o in ACCOUNT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -486,7 +490,10 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="业务类型" prop="bizType">
-              <el-input v-model="form.bizType" placeholder="如 equity_purchase" maxlength="50" />
+              <!-- allow-create 兜底：后续可能新增业务类型 -->
+              <el-select v-model="form.bizType" placeholder="业务类型" filterable allow-create default-first-option style="width: 100%">
+                <el-option v-for="o in BIZ_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -606,9 +613,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -616,6 +631,12 @@ loadPage()
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 
 .pagination-wrap {
@@ -638,5 +659,11 @@ loadPage()
 .amount-danger {
   color: #f56c6c;
   font-weight: 600;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

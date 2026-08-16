@@ -45,11 +45,11 @@ VALUES
   ('agent_level', 'gold', '金牌', '3', 1, 2, 1, 0, '代理人等级-金牌', NOW(), NOW(), 'system', 'system', 0),
   ('agent_level', 'diamond', '钻石', '4', 1, 3, 1, 0, '代理人等级-钻石', NOW(), NOW(), 'system', 'system', 0),
 
-  -- 渠道类型
+  -- 渠道类型（企业类型）
   ('channel_type', 'insurance', '保险公司', '1', 1, 0, 1, 1, '渠道类型-保险公司', NOW(), NOW(), 'system', 'system', 0),
-  ('channel_type', 'bank', '银行', '2', 1, 1, 1, 0, '渠道类型-银行', NOW(), NOW(), 'system', 'system', 0),
-  ('channel_type', 'agent_org', '代理机构', '3', 1, 2, 1, 0, '渠道类型-代理机构', NOW(), NOW(), 'system', 'system', 0),
-  ('channel_type', 'other', '其他', '4', 1, 3, 1, 0, '渠道类型-其他', NOW(), NOW(), 'system', 'system', 0),
+  ('channel_type', 'bank', '银行机构', '2', 1, 1, 1, 0, '渠道类型-银行机构', NOW(), NOW(), 'system', 'system', 0),
+  ('channel_type', 'agent_org', '保险中介', '3', 1, 2, 1, 0, '渠道类型-保险中介', NOW(), NOW(), 'system', 'system', 0),
+  ('channel_type', 'other', '其他企业', '4', 1, 3, 1, 0, '渠道类型-其他企业', NOW(), NOW(), 'system', 'system', 0),
 
   -- 权益状态（8 态，对齐 EQUITY_SM）
   ('equity_status', 'stock', '库存中', '0', 1, 0, 1, 1, '权益状态-库存中', NOW(), NOW(), 'system', 'system', 0),

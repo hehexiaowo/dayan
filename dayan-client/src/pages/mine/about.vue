@@ -3,9 +3,9 @@
     <!-- 头部 -->
     <view class="hero">
       <view class="logo-circle">
-        <text class="logo-text">大雁</text>
+        <text class="logo-text">雁栖康养</text>
       </view>
-      <text class="app-name">大雁养老</text>
+      <text class="app-name">雁栖康养</text>
       <text class="app-version">客户端 v{{ version }}</text>
     </view>
 
@@ -13,7 +13,7 @@
     <view class="section-title">关于我们</view>
     <view class="card">
       <text class="intro-text">
-        大雁养老客户端，为家属提供一站式养老服务体验。在这里，您可以便捷地查询全国养老机构、预订旅游短居、管理专属权益、跟进服务进度，让长辈的晚年生活更安心、更舒心。
+        雁栖康养客户端，为家属提供一站式养老服务体验。在这里，您可以便捷地查询全国养老机构、预订旅游短居、管理专属权益、跟进服务进度，让长辈的晚年生活更安心、更舒心。
       </text>
     </view>
 
@@ -45,7 +45,7 @@
     </view>
 
     <view class="copyright">
-      <text class="copyright-text">© 2026 大雁养老服务</text>
+      <text class="copyright-text">© 2026 雁栖康养</text>
       <text class="copyright-sub">用心守护每一位长辈</text>
     </view>
   </view>

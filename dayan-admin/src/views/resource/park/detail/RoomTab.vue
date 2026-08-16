@@ -36,6 +36,7 @@ import {
 import {
   BILLING_CYCLE_OPTIONS,
   STAY_TYPE_OPTIONS,
+  ROOM_CATEGORY_OPTIONS,
   billingCycleLabel,
   roomCategoryLabel,
   stayTypeLabel
@@ -522,26 +523,23 @@ defineExpose({ loadPage })
 <template>
   <div class="room-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="房型名称">
-        <el-input
-          v-model="query.roomTypeName"
-          placeholder="房型名称"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="启用" :value="1" />
-          <el-option label="停售" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.roomTypeName"
+        placeholder="房型名称"
+        clearable
+        style="width: 160px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option label="启用" :value="1" />
+        <el-option label="停售" :value="0" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreateType(parkCode)">新增房型</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreateType(parkCode)">新增房型</el-button>
+      </div>
+    </div>
 
     <!-- 主表格（含展开行 price） -->
     <el-table
@@ -718,6 +716,13 @@ defineExpose({ loadPage })
             <el-form-item label="居住类型">
               <el-select v-model="typeForm.stayType" placeholder="请选择" style="width: 100%">
                 <el-option v-for="o in STAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="房间类别">
+              <el-select v-model="typeForm.roomCategory" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="o in ROOM_CATEGORY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -971,6 +976,19 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .room-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

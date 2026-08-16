@@ -43,8 +43,8 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
 
     /** 渠道编码前缀 */
     private static final String CODE_PREFIX = "CH";
-    /** 默认渠道类型 */
-    private static final int DEFAULT_CHANNEL_TYPE = 2;
+    /** 默认渠道类型（企业类型）：1=保险公司 */
+    private static final int DEFAULT_CHANNEL_TYPE = 1;
 
     private final ChannelInfoMapper channelInfoMapper;
     private final CodeGenerator codeGenerator;
@@ -169,8 +169,9 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         entity.setAgentCount(0);
         entity.setTotalOrderAmount(java.math.BigDecimal.ZERO);
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
-        entity.setStatus(1);
+        entity.setStatus(0);
         entity.setAuditStatus(0);
+        entity.setCanManage(dto.getCanManage() == null ? 0 : dto.getCanManage());
         entity.setRemark(dto.getRemark());
 
         channelInfoMapper.insert(entity);
@@ -238,6 +239,7 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         if (dto.getFeatureConfig() != null) update.setFeatureConfig(dto.getFeatureConfig());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
         if (dto.getAuditStatus() != null) update.setAuditStatus(dto.getAuditStatus());
+        if (dto.getCanManage() != null) update.setCanManage(dto.getCanManage());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
 
@@ -272,6 +274,10 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         ChannelInfo update = new ChannelInfo();
         update.setId(existing.getId());
         update.setAuditStatus(auditStatus);
+        // 审核通过后联动合作状态：0=待审核 → 1=合作中（驳回保持待审核）
+        if (auditStatus == 1 && (existing.getStatus() == null || existing.getStatus() == 0)) {
+            update.setStatus(1);
+        }
         channelInfoMapper.updateById(update);
         log.info("渠道审核完成: channelCode={}, auditStatus={}", dto.getChannelCode(), auditStatus);
     }

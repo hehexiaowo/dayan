@@ -1,7 +1,6 @@
 package com.dayan.organ.controller.admin;
 
 import com.dayan.common.core.resp.R;
-import com.dayan.common.log.operation.OperationLog;
 import com.dayan.organ.dto.AuthLoginDTO;
 import com.dayan.organ.service.AdminAuthService;
 import com.dayan.organ.vo.AuthLoginVO;
@@ -25,7 +24,6 @@ public class AdminAuthController {
     private final AdminAuthService adminAuthService;
 
     @Operation(summary = "登录")
-    @OperationLog(module = "认证", action = "登录", maskFields = "password")
     @PostMapping("/login")
     public R<AuthLoginVO> login(@RequestBody @Valid AuthLoginDTO dto) {
         return R.ok(adminAuthService.login(dto));

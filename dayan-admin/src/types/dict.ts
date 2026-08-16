@@ -42,9 +42,10 @@ export interface SystemDict {
 }
 
 /**
- * 字典类型预设（fallback）。
+ * 字典类型预设（fallback，覆盖库内现有全部类型）。
  * 运行时以 listDictTypes() 接口返回为准（动态加载真实存在的类型）；
- * 此处仅作接口不可用时的兜底，避免左侧菜单空白。
+ * 此处仅作接口不可用时的兜底，避免左侧菜单空白；
+ * 同时作为类型中文名映射（dictTypeLabel），未覆盖的类型回退显示英文。
  */
 export const DICT_TYPE_OPTIONS = [
   { label: '性别', value: 'gender' },
@@ -52,6 +53,25 @@ export const DICT_TYPE_OPTIONS = [
   { label: '通用状态', value: 'common_status' },
   { label: '账户状态', value: 'account_status' },
   { label: '业务状态', value: 'biz_status' },
+  { label: '渠道类型', value: 'channel_type' },
+  { label: '客户等级', value: 'client_level' },
+  { label: '代理人等级', value: 'agent_level' },
+  { label: '权益状态', value: 'equity_status' },
+  { label: '订单状态', value: 'order_status' },
+  { label: '机构状态', value: 'park_status' },
+  { label: '养老网络类型', value: 'network_type' },
   { label: '内容分类', value: 'content_category' },
-  { label: '素材细分分类', value: 'asset_ref_type2' }
+  { label: '课程分类', value: 'course_category' },
+  { label: '学习内容分类', value: 'learning_category' },
+  { label: '素材一级分类', value: 'asset_ref_type1' },
+  { label: '素材二级分类', value: 'asset_ref_type2' },
+  { label: '与权益人关系', value: 'relation_with_holder' },
+  { label: 'VR 服务商', value: 'vr_provider' }
 ] as const
+
+/** 字典类型中文名（未覆盖的类型返回英文原值） */
+export function dictTypeLabel(type: string | undefined): string {
+  if (!type) return '--'
+  const found = DICT_TYPE_OPTIONS.find((o) => o.value === type)
+  return found ? found.label : type
+}

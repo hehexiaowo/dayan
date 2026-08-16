@@ -229,7 +229,9 @@ async function handleSubmit() {
       await createAgent(form)
       ElMessage.success('新增成功')
     } else if (form.agentCode) {
-      await updateAgent(form.agentCode, form)
+      // channelCode 由后端登录上下文填充，AgentInfoUpdateDTO 无该字段，编辑提交前剔除
+      const { channelCode, ...payload } = form
+      await updateAgent(form.agentCode, payload)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
@@ -285,52 +287,40 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="所属渠道">
-          <el-tree-select
-            v-model="query.channelCode"
-            :data="channelTree"
-            :props="{ label: 'fullName', value: 'channelCode', children: 'children' }"
-            check-strictly
-            clearable
-            placeholder="全部渠道"
-            style="width: 200px"
-          />
-        </el-form-item>
-        <el-form-item label="姓名">
-          <el-input v-model="query.fullName" placeholder="姓名" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="等级">
-          <el-select v-model="query.agentLevel" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in AGENT_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="认证">
-          <el-select v-model="query.isCertified" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in CERTIFIED_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in AGENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-tree-select
+          v-model="query.channelCode"
+          :data="channelTree"
+          :props="{ label: 'fullName', value: 'channelCode', children: 'children' }"
+          check-strictly
+          clearable
+          placeholder="所属渠道"
+          style="width: 200px"
+        />
+        <el-input v-model="query.fullName" placeholder="姓名" clearable style="width: 140px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.phone" placeholder="手机号" clearable style="width: 140px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.agentLevel" placeholder="等级" clearable style="width: 120px">
+          <el-option v-for="o in AGENT_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.isCertified" placeholder="认证" clearable style="width: 120px">
+          <el-option v-for="o in CERTIFIED_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in AGENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增代理人</el-button>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>代理人列表</span>
-          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增代理人</el-button>
+          <span class="card-title">代理人列表</span>
         </div>
       </template>
 
@@ -433,12 +423,14 @@ onMounted(() => {
           </el-col>
           <el-col :span="12">
             <el-form-item label="所属渠道">
+              <!-- channelCode 后端取登录上下文填充，UpdateDTO 无此字段，编辑时只读 -->
               <el-tree-select
                 v-model="form.channelCode"
                 :data="channelTree"
                 :props="{ label: 'fullName', value: 'channelCode', children: 'children' }"
                 check-strictly
                 clearable
+                :disabled="dialogType === 'edit'"
                 placeholder="选择渠道"
                 style="width: 100%"
               />
@@ -542,10 +534,30 @@ onMounted(() => {
   }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
 }
 
 .pagination-wrap {

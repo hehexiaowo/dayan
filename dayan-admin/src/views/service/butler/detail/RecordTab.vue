@@ -165,25 +165,25 @@ defineExpose({ loadPage })
 <template>
   <div class="record-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="客户编码">
-        <el-input v-model="query.clientCode" placeholder="客户编码" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="服务类型">
-        <el-select v-model="query.serviceType" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="o in BUTLER_SERVICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in SERVICE_RECORD_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.clientCode"
+        placeholder="客户编码"
+        clearable
+        style="width: 150px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.serviceType" placeholder="服务类型" clearable style="width: 140px">
+        <el-option v-for="o in BUTLER_SERVICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in SERVICE_RECORD_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增记录</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增记录</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="clientCode" label="客户编码" min-width="140" show-overflow-tooltip />
@@ -245,11 +245,13 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="客户" prop="clientCode">
+              <!-- 编辑时 clientCode 不可改（update 不含 clientCode，参考 RatingTab 做法） -->
               <el-select
                 v-model="form.clientCode"
                 filterable
                 remote
                 clearable
+                :disabled="dialogMode === 'edit'"
                 :remote-method="searchClients"
                 :loading="clientLoading"
                 placeholder="输入客户姓名搜索"
@@ -318,6 +320,19 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .record-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

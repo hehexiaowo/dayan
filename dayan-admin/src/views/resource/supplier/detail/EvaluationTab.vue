@@ -78,7 +78,8 @@ const form = reactive<SupplierEvaluation>({
 })
 
 const rules: FormRules<SupplierEvaluation> = {
-  evalPeriod: [{ required: true, message: '请输入评价周期，如 2026Q3', trigger: 'blur' }]
+  evalPeriod: [{ required: true, message: '请输入评价周期，如 2026Q3', trigger: 'blur' }],
+  evalDate: [{ required: true, message: '请选择评价日期', trigger: 'change' }]
 }
 
 function resetForm() {
@@ -114,6 +115,9 @@ function openEdit(row: SupplierEvaluation) {
   dialogMode.value = 'edit'
   resetForm()
   Object.assign(form, row)
+  // totalScore / scoreLevel 由后端按三科评分与投诉率自动重算，编辑回填旧值会覆盖重算逻辑，提交前剔除
+  delete form.totalScore
+  delete form.scoreLevel
   dialogVisible.value = true
 }
 
@@ -183,31 +187,29 @@ defineExpose({ loadPage })
 
 <template>
   <div class="evaluation-tab">
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="评价周期">
-        <el-input v-model="query.evalPeriod" placeholder="如 2026Q3" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="评价类型">
-        <el-select v-model="query.evalType" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="o in EVALUATION_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="等级">
-        <el-select v-model="query.scoreLevel" placeholder="全部" clearable style="width: 100px">
-          <el-option v-for="o in SCORE_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="已提交" :value="1" />
-          <el-option label="草稿" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.evalPeriod"
+        placeholder="评价周期（如 2026Q3）"
+        clearable
+        style="width: 180px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.evalType" placeholder="评价类型" clearable style="width: 140px">
+        <el-option v-for="o in EVALUATION_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.scoreLevel" placeholder="等级" clearable style="width: 100px">
+        <el-option v-for="o in SCORE_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option label="已提交" :value="1" />
+        <el-option label="草稿" :value="0" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增评价</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增评价</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="evalPeriod" label="评价周期" width="100" align="center" />
@@ -337,7 +339,7 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="评价日期">
+            <el-form-item label="评价日期" prop="evalDate">
               <el-date-picker v-model="form.evalDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" />
             </el-form-item>
           </el-col>
@@ -366,6 +368,19 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .evaluation-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

@@ -97,6 +97,8 @@ const form = reactive<SceneInfo>({
   address: '',
   sceneDescription: '',
   coverImage: '',
+  imageUrls: '',
+  videoUrl: '',
   capacity: undefined,
   durationHours: undefined,
   minPerson: undefined,
@@ -114,8 +116,30 @@ const form = reactive<SceneInfo>({
 
 const rules: FormRules<SceneInfo> = {
   sceneName: [{ required: true, message: '请输入场景名称', trigger: 'blur' }],
-  sceneType: [{ required: true, message: '请选择场景类型', trigger: 'change' }]
+  sceneType: [{ required: true, message: '请选择场景类型', trigger: 'change' }],
+  parkCode: [{ required: true, message: '请选择关联机构', trigger: 'change' }],
+  provinceCode: [{ required: true, message: '请输入省级编码', trigger: 'blur' }],
+  cityCode: [{ required: true, message: '请输入市级编码', trigger: 'blur' }],
+  districtCode: [{ required: true, message: '请输入区县编码', trigger: 'blur' }]
 }
+
+/** imageUrls：后端是 string（JSON 数组，兼容逗号分隔存量），FileUploader 多图用 string[] */
+const imageUrlsModel = computed<string[]>({
+  get() {
+    const raw = form.imageUrls
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    form.imageUrls = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
 
 function resetForm() {
   Object.assign(form, {
@@ -129,6 +153,8 @@ function resetForm() {
     address: '',
     sceneDescription: '',
     coverImage: '',
+    imageUrls: '',
+    videoUrl: '',
     capacity: undefined,
     durationHours: undefined,
     minPerson: undefined,
@@ -168,6 +194,8 @@ async function openEdit(row: SceneInfo) {
       address: detail.address ?? '',
       sceneDescription: detail.sceneDescription ?? '',
       coverImage: detail.coverImage ?? '',
+      imageUrls: detail.imageUrls ?? '',
+      videoUrl: detail.videoUrl ?? '',
       capacity: detail.capacity,
       durationHours: detail.durationHours,
       minPerson: detail.minPerson,
@@ -195,6 +223,8 @@ async function openEdit(row: SceneInfo) {
       address: row.address ?? '',
       sceneDescription: row.sceneDescription ?? '',
       coverImage: row.coverImage ?? '',
+      imageUrls: row.imageUrls ?? '',
+      videoUrl: row.videoUrl ?? '',
       capacity: row.capacity,
       durationHours: row.durationHours,
       minPerson: row.minPerson,
@@ -425,42 +455,40 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="场景名称">
-          <el-input v-model="query.sceneName" placeholder="场景名称关键字" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="场景类型">
-          <el-select v-model="query.sceneType" placeholder="全部" clearable style="width: 160px">
-            <el-option v-for="o in SCENE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="场景状态">
-          <el-select v-model="query.sceneStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in SCENE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="机构">
-          <el-select v-model="query.parkCode" placeholder="全部机构" clearable filterable style="width: 200px">
-            <el-option
-              v-for="p in parkOptions"
-              :key="p.parkCode"
-              :label="p.fullName || p.shortName || p.parkCode"
-              :value="p.parkCode!"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.sceneName"
+          placeholder="场景名称"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.sceneType" placeholder="场景类型" clearable style="width: 140px">
+          <el-option v-for="o in SCENE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.sceneStatus" placeholder="场景状态" clearable style="width: 130px">
+          <el-option v-for="o in SCENE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.parkCode" placeholder="机构" clearable filterable style="width: 200px">
+          <el-option
+            v-for="p in parkOptions"
+            :key="p.parkCode"
+            :label="p.fullName || p.shortName || p.parkCode"
+            :value="p.parkCode!"
+          />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>场景列表</span>
+          <span class="card-title">场景列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增场景</el-button>
         </div>
       </template>
@@ -596,7 +624,7 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="关联机构">
+            <el-form-item label="关联机构" prop="parkCode">
               <el-select v-model="form.parkCode" placeholder="选择养老机构" clearable filterable style="width: 100%">
                 <el-option
                   v-for="p in parkOptions"
@@ -608,17 +636,17 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="省级编码">
+            <el-form-item label="省级编码" prop="provinceCode">
               <el-input v-model="form.provinceCode" placeholder="省级编码" maxlength="20" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="市级编码">
+            <el-form-item label="市级编码" prop="cityCode">
               <el-input v-model="form.cityCode" placeholder="市级编码" maxlength="20" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="区县编码">
+            <el-form-item label="区县编码" prop="districtCode">
               <el-input v-model="form.districtCode" placeholder="区县编码" maxlength="20" />
             </el-form-item>
           </el-col>
@@ -637,6 +665,16 @@ onMounted(() => {
               <FileUploader v-model="form.coverImage" type="image" module="scene" />
             </el-form-item>
           </el-col>
+          <el-col :span="24">
+            <el-form-item label="图集">
+              <FileUploader v-model="imageUrlsModel" type="image" multiple module="scene" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="视频链接">
+              <el-input v-model="form.videoUrl" placeholder="宣传视频 URL" maxlength="500" />
+            </el-form-item>
+          </el-col>
           <el-col :span="8">
             <el-form-item label="容量">
               <el-input-number v-model="form.capacity" :min="0" :max="999999" controls-position="right" style="width: 100%" />
@@ -644,7 +682,7 @@ onMounted(() => {
           </el-col>
           <el-col :span="8">
             <el-form-item label="时长(小时)">
-              <el-input-number v-model="form.durationHours" :min="0" :max="9999" :precision="2" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="form.durationHours" :min="0" :max="9999" :precision="1" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -741,9 +779,17 @@ onMounted(() => {
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -753,9 +799,21 @@ onMounted(() => {
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

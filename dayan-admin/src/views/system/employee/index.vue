@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -9,9 +9,14 @@ import {
   deleteEmployee
 } from '@/api/employee'
 import { listDepartments } from '@/api/department'
+import { listAllOrgans } from '@/api/organ'
+import { pageAccounts } from '@/api/account'
 import type { Employee, EmployeeQuery } from '@/types/employee'
 import { EmployeeStatus, EMPLOYEE_STATUS_OPTIONS } from '@/types/employee'
 import { buildDepartmentTree, type Department } from '@/types/department'
+import type { OrganSimple } from '@/types/organ'
+import type { Account } from '@/types/account'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 员工管理页。
@@ -50,6 +55,32 @@ async function loadDeptTree() {
   }
 }
 
+// ---------- 机构 / 账号数据源（表单下拉） ----------
+const organOptions = ref<OrganSimple[]>([])
+const accountOptions = ref<Account[]>([])
+
+async function loadOrgans() {
+  try {
+    organOptions.value = await listAllOrgans()
+  } catch {
+    organOptions.value = []
+  }
+}
+
+/** 按机构加载账号列表（供「关联账号」下拉选择） */
+async function loadAccounts(organCode: string) {
+  if (!organCode) {
+    accountOptions.value = []
+    return
+  }
+  try {
+    const res = await pageAccounts({ organCode, current: 1, size: 1000 })
+    accountOptions.value = res.records
+  } catch {
+    accountOptions.value = []
+  }
+}
+
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
 const dialogType = ref<'create' | 'edit'>('create')
@@ -73,6 +104,13 @@ const form = reactive<Employee>({
   employeeStatus: EmployeeStatus.ACTIVE,
   remark: ''
 })
+
+/** 表单切换机构时重载账号选项（含初始回显） */
+watch(
+  () => form.organCode,
+  (code) => loadAccounts(code || ''),
+  { immediate: true }
+)
 
 const rules: FormRules<Employee> = {
   organCode: [{ required: true, message: '请输入机构编码', trigger: 'blur' }],
@@ -194,8 +232,21 @@ function genderText(v?: number) {
   return '未知'
 }
 
+/** 员工状态文案（0=离职 1=在职 2=试用期） */
+function employeeStatusLabel(v?: number): string {
+  return EMPLOYEE_STATUS_OPTIONS.find((o) => o.value === v)?.label ?? String(v ?? '')
+}
+
+/** 员工状态 tag 类型：0离职=info 1在职=success 2试用期=warning */
+function employeeStatusTagType(v?: number): 'success' | 'warning' | 'info' {
+  if (v === EmployeeStatus.ACTIVE) return 'success'
+  if (v === EmployeeStatus.PROBATION) return 'warning'
+  return 'info'
+}
+
 onMounted(() => {
   loadDeptTree()
+  loadOrgans()
   loadPage()
 })
 </script>
@@ -204,44 +255,34 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="机构">
-          <el-input v-model="query.organCode" placeholder="机构编码" clearable />
-        </el-form-item>
-        <el-form-item label="部门">
-          <el-tree-select
-            v-model="query.deptCode"
-            :data="deptTree"
-            :props="{ label: 'deptName', value: 'deptCode', children: 'children' }"
-            check-strictly
-            clearable
-            placeholder="全部部门"
-            style="width: 180px"
-          />
-        </el-form-item>
-        <el-form-item label="姓名">
-          <el-input v-model="query.realName" placeholder="真实姓名" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.employeeStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in EMPLOYEE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.organCode" placeholder="机构编码" clearable style="width: 150px" @keyup.enter="handleSearch" />
+        <el-tree-select
+          v-model="query.deptCode"
+          :data="deptTree"
+          :props="{ label: 'deptName', value: 'deptCode', children: 'children' }"
+          check-strictly
+          clearable
+          placeholder="部门"
+          style="width: 180px"
+        />
+        <el-input v-model="query.realName" placeholder="真实姓名" clearable style="width: 150px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.phone" placeholder="手机号" clearable style="width: 150px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.employeeStatus" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in EMPLOYEE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>员工列表</span>
+          <span class="card-title">员工列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增员工</el-button>
         </div>
       </template>
@@ -259,8 +300,8 @@ onMounted(() => {
         <el-table-column prop="entryDate" label="入职日期" width="120" />
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.employeeStatus === 1 ? 'success' : 'info'">
-              {{ row.employeeStatus === 1 ? '在职' : '离职' }}
+            <el-tag :type="employeeStatusTagType(row.employeeStatus)">
+              {{ employeeStatusLabel(row.employeeStatus) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -297,7 +338,14 @@ onMounted(() => {
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="机构编码" prop="organCode">
-              <el-input v-model="form.organCode" placeholder="机构编码" />
+              <el-select v-model="form.organCode" placeholder="请选择机构" filterable style="width: 100%">
+                <el-option
+                  v-for="o in organOptions"
+                  :key="o.organCode"
+                  :label="o.fullName || o.shortName || o.organCode"
+                  :value="o.organCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -320,7 +368,21 @@ onMounted(() => {
           </el-col>
           <el-col :span="12">
             <el-form-item label="关联账号">
-              <el-input v-model="form.accountCode" placeholder="账号编码（可选）" />
+              <el-select
+                v-model="form.accountCode"
+                filterable
+                clearable
+                :disabled="!form.organCode"
+                :placeholder="form.organCode ? '请选择账号（可选）' : '请先选择机构'"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="a in accountOptions"
+                  :key="a.accountCode!"
+                  :label="`${a.accountCode}（${a.realName || a.username}）`"
+                  :value="a.accountCode!"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -345,6 +407,11 @@ onMounted(() => {
           <el-col :span="12">
             <el-form-item label="邮箱" prop="email">
               <el-input v-model="form.email" placeholder="邮箱" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="头像">
+              <FileUploader v-model="form.avatar" type="image" module="employee" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -404,10 +471,30 @@ onMounted(() => {
   }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
 }
 
 .pagination-wrap {

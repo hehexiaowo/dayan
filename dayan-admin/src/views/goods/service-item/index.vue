@@ -125,6 +125,15 @@ async function openEdit(row: ServiceItem) {
 
 async function handleSubmit() {
   await formRef.value?.validate()
+  // coveredItems（费用权益补贴明细）以 JSON 数组提交，提交前校验格式；为空放行
+  if (form.coveredItems && form.coveredItems.trim()) {
+    try {
+      JSON.parse(form.coveredItems)
+    } catch {
+      ElMessage.error('JSON 格式错误，请检查补贴明细')
+      return
+    }
+  }
   submitLoading.value = true
   try {
     if (dialogType.value === 'create') {
@@ -160,46 +169,50 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card class="search-card" shadow="never">
-      <el-form :inline="true" :model="query" @keyup.enter="handleSearch">
-        <el-form-item label="项目编码">
-          <el-input v-model="query.itemCode" placeholder="项目编码" clearable />
-        </el-form-item>
-        <el-form-item label="项目名称">
-          <el-input v-model="query.itemName" placeholder="项目名称" clearable />
-        </el-form-item>
-        <el-form-item label="项目大类">
-          <el-select v-model="query.itemCategory" placeholder="全部" clearable style="width: 140px">
-            <el-option
-              v-for="opt in ITEM_CATEGORY_OPTIONS"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option
-              v-for="opt in COMMON_STATUS_OPTIONS"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.itemCode"
+          placeholder="项目编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.itemName"
+          placeholder="项目名称"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.itemCategory" placeholder="项目大类" clearable style="width: 140px">
+          <el-option
+            v-for="opt in ITEM_CATEGORY_OPTIONS"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option
+            v-for="opt in COMMON_STATUS_OPTIONS"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>服务项目列表</span>
-          <el-button type="primary" @click="openCreate">新建项目</el-button>
+          <span class="card-title">服务项目列表</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新建项目</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" row-key="itemCode" border>
@@ -379,13 +392,28 @@ loadPage()
 .page-container {
   padding: 16px;
 }
-.search-card {
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 .pagination-wrap {
   margin-top: 16px;
@@ -396,5 +424,11 @@ loadPage()
   font-size: 12px;
   color: #999;
   line-height: 1.4;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

@@ -8,7 +8,7 @@ import {
   updateDict,
   deleteDict
 } from '@/api/dict'
-import { DICT_TYPE_OPTIONS, type SystemDict } from '@/types/dict'
+import { DICT_TYPE_OPTIONS, dictTypeLabel, type SystemDict } from '@/types/dict'
 
 /**
  * 字典管理页（统一单表 system_dict，54 迁移合并原通用/业务双字典）。
@@ -83,6 +83,7 @@ function defaultForm(): SystemDict {
     sortOrder: 0,
     icon: null,
     cssClass: null,
+    extra: null,
     status: 1,
     isDefault: 0,
     remark: null
@@ -118,6 +119,15 @@ async function handleSubmit() {
   }
   submitLoading.value = true
   try {
+    // 扩展属性为 JSON 字符串：提交前校验，非法 JSON 直接提示
+    if (form.extra && form.extra.trim()) {
+      try {
+        JSON.parse(form.extra)
+      } catch {
+        ElMessage.error('扩展属性不是合法的 JSON，请检查格式')
+        return
+      }
+    }
     if (dialogMode.value === 'create') {
       await createDict(form)
       ElMessage.success('新增成功')
@@ -164,7 +174,8 @@ onMounted(() => {
           </template>
           <el-menu :default-active="currentType" class="type-menu" @select="handleTypeChange">
             <el-menu-item v-for="t in dictTypes" :key="t" :index="t">
-              {{ t }}
+              <span class="type-name">{{ dictTypeLabel(t) }}</span>
+              <span class="type-code">{{ t }}</span>
             </el-menu-item>
           </el-menu>
         </el-card>
@@ -175,8 +186,8 @@ onMounted(() => {
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
-              <span class="card-title">字典项（{{ currentType }}）</span>
-              <el-button type="primary" size="small" @click="openCreate">新增字典项</el-button>
+              <span class="card-title">字典项（{{ dictTypeLabel(currentType) }}）</span>
+              <el-button type="primary" :icon="'Plus'" @click="openCreate">新增字典项</el-button>
             </div>
           </template>
 
@@ -237,7 +248,17 @@ onMounted(() => {
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="字典类型">
-              <el-input v-model="form.dictType" :disabled="dialogMode === 'edit'" />
+              <el-select
+                v-model="form.dictType"
+                :disabled="dialogMode === 'edit'"
+                filterable
+                style="width: 100%"
+              >
+                <el-option v-for="t in dictTypes" :key="t" :label="dictTypeLabel(t)" :value="t">
+                  <span class="type-name">{{ dictTypeLabel(t) }}</span>
+                  <span class="type-code">{{ t }}</span>
+                </el-option>
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -288,6 +309,26 @@ onMounted(() => {
               <el-switch v-model="form.isDefault" :active-value="1" :inactive-value="0" />
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="图标">
+              <el-input v-model="form.icon" placeholder="图标名（可选），如 User" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="CSS 类名">
+              <el-input v-model="form.cssClass" placeholder="CSS 类名（可选）" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="扩展属性">
+              <el-input
+                v-model="form.extra"
+                type="textarea"
+                :rows="2"
+                placeholder='JSON 格式，如 {"coverImage":"...","isVisible":1}（非法 JSON 提交会被拦截）'
+              />
+            </el-form-item>
+          </el-col>
           <el-col :span="24">
             <el-form-item label="备注">
               <el-input v-model="form.remark" type="textarea" :rows="2" />
@@ -327,6 +368,26 @@ onMounted(() => {
 
   .type-menu {
     border-right: none;
+
+    .el-menu-item {
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  .type-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .type-code {
+    flex-shrink: 0;
+    margin-left: 8px;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
   }
 
   .text-muted {

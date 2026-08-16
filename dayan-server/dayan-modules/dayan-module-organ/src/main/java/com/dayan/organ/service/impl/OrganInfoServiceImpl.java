@@ -75,6 +75,7 @@ public class OrganInfoServiceImpl implements OrganInfoService {
         entity.setUnifiedCreditCode(dto.getUnifiedCreditCode());
         entity.setLegalPerson(dto.getLegalPerson());
         entity.setRegisteredCapital(dto.getRegisteredCapital());
+        entity.setEstablishDate(dto.getEstablishDate());
         entity.setBusinessScope(dto.getBusinessScope());
         entity.setProvinceCode(dto.getProvinceCode());
         entity.setCityCode(dto.getCityCode());
@@ -105,6 +106,7 @@ public class OrganInfoServiceImpl implements OrganInfoService {
         if (dto.getUnifiedCreditCode() != null) update.setUnifiedCreditCode(dto.getUnifiedCreditCode());
         if (dto.getLegalPerson() != null) update.setLegalPerson(dto.getLegalPerson());
         if (dto.getRegisteredCapital() != null) update.setRegisteredCapital(dto.getRegisteredCapital());
+        if (dto.getEstablishDate() != null) update.setEstablishDate(dto.getEstablishDate());
         if (dto.getBusinessScope() != null) update.setBusinessScope(dto.getBusinessScope());
         if (dto.getProvinceCode() != null) update.setProvinceCode(dto.getProvinceCode());
         if (dto.getCityCode() != null) update.setCityCode(dto.getCityCode());

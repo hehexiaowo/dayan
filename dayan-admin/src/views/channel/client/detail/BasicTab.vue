@@ -5,7 +5,7 @@
  * 只读展示 ClientInfo 关键字段（el-descriptions），提供"编辑"按钮打开 el-dialog + el-form
  * 修改主表（提交 updateClient）。字段集与主列表页编辑表单一致。
  *
- * 枚举字段用 el-select + OPTIONS（status 3 态 / clientLevel 4 档 / gender / education / isVip）。
+ * 枚举字段用 el-select + OPTIONS（status 3 态 / clientLevel 3 档 / gender / education / isVip）。
  */
 import { reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
@@ -153,7 +153,9 @@ async function handleSubmit() {
   if (!form.clientCode) return
   submitLoading.value = true
   try {
-    await updateClient(form.clientCode, form)
+    // channelCode 由后端登录上下文填充，ClientInfoUpdateDTO 无该字段，提交前剔除
+    const { channelCode, ...payload } = form
+    await updateClient(form.clientCode, payload)
     ElMessage.success('修改成功')
     dialogVisible.value = false
     await loadDetail()
@@ -170,7 +172,9 @@ defineExpose({ loadDetail })
   <div v-loading="loading">
     <template v-if="clientInfo">
       <div class="basic-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
@@ -225,12 +229,14 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="12">
             <el-form-item label="所属渠道">
+              <!-- channelCode 后端取登录上下文填充，UpdateDTO 无此字段，只读展示 -->
               <el-tree-select
                 v-model="form.channelCode"
                 :data="channelTree"
                 :props="{ label: 'fullName', value: 'channelCode', children: 'children' }"
                 check-strictly
                 clearable
+                disabled
                 placeholder="选择渠道"
                 style="width: 100%"
               />
@@ -333,6 +339,16 @@ defineExpose({ loadDetail })
 
 <style scoped>
 .basic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 </style>

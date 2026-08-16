@@ -402,21 +402,23 @@ defineExpose({ loadPage })
 <template>
   <div class="care-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="照护名称">
-        <el-input v-model="query.careTypeName" placeholder="照护名称" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="启用" :value="1" />
-          <el-option label="停售" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.careTypeName"
+        placeholder="照护名称"
+        clearable
+        style="width: 160px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option label="启用" :value="1" />
+        <el-option label="停售" :value="0" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreateType">新增照护</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreateType">新增照护</el-button>
+      </div>
+    </div>
 
     <!-- 主表格 -->
     <el-table
@@ -747,6 +749,19 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .care-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

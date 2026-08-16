@@ -95,14 +95,14 @@ export const ORDER_SOURCE_OPTIONS = [
 /**
  * 支付方式（pay_type）。
  *
- * 1=微信 / 2=支付宝 / 3=余额 / 4=线下 / 5=混合支付。
+ * 1=微信 / 2=支付宝 / 3=银行转账 / 4=余额支付 / 5=线下支付。
  */
 export const PAY_TYPE_OPTIONS = [
   { label: '微信', value: 1 },
   { label: '支付宝', value: 2 },
-  { label: '余额', value: 3 },
-  { label: '线下', value: 4 },
-  { label: '混合支付', value: 5 }
+  { label: '银行转账', value: 3 },
+  { label: '余额支付', value: 4 },
+  { label: '线下支付', value: 5 }
 ] as const
 
 /**

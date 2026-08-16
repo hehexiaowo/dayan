@@ -8,7 +8,7 @@
  * 关键约束：
  * - 后端无 update 端点（收藏不可编辑，要改就先删再加）。
  * - 列表只展示，操作列只有"删除"。新增用 dialog。
- * - targetType 枚举后端无 @Schema 文档，暂用 el-input-number 兜底 + TODO。
+ * - targetType 按 DDL 09_client.sql 注释用 el-select（1=养老机构, 2=场景, 3=课程, 4=内容）。
  * - targetCode/targetName 必填。
  */
 import { reactive, ref, watch } from 'vue'
@@ -22,7 +22,7 @@ import { listAllOrgans } from '@/api/organ'
 import { listScenes } from '@/api/scene'
 import { listCourses } from '@/api/course'
 import { listContents } from '@/api/content'
-import { FAVORITE_TARGET_TYPE_OPTIONS } from '@/types/agent'
+import { FAVORITE_TARGET_TYPE_OPTIONS, favoriteTargetTypeLabel } from '@/types/agent'
 import type { ClientFavorite } from '@/types/client'
 
 const props = defineProps<{
@@ -66,8 +66,8 @@ const form = reactive<FavoriteForm>({
 })
 
 const rules: FormRules<ClientFavorite> = {
-  targetType: [{ required: true, message: '请输入收藏对象类型', trigger: 'blur' }],
-  targetCode: [{ required: true, message: '请输入收藏对象编码', trigger: 'blur' }]
+  targetType: [{ required: true, message: '请选择收藏对象类型', trigger: 'change' }],
+  targetCode: [{ required: true, message: '请输入收藏对象编码', trigger: 'change' }]
 }
 
 function resetForm() {
@@ -164,15 +164,14 @@ defineExpose({ loadList })
 <template>
   <div class="favorite-tab">
     <div class="toolbar">
-      <el-button type="primary" :icon="'Plus'" @click="openCreate">新增收藏</el-button>
+      <div class="toolbar-actions">
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增收藏</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="targetType" label="对象类型" width="110" align="center">
-        <template #default="{ row }">
-          <!-- TODO: targetType 枚举值待后端补 @Schema 文档后改为 select -->
-          {{ row.targetType != null ? row.targetType : '--' }}
-        </template>
+        <template #default="{ row }">{{ favoriteTargetTypeLabel(row.targetType) }}</template>
       </el-table-column>
       <el-table-column prop="targetCode" label="对象编码" min-width="160" show-overflow-tooltip />
       <el-table-column prop="targetName" label="对象名称" min-width="180" show-overflow-tooltip />
@@ -241,6 +240,16 @@ defineExpose({ loadList })
 .favorite-tab {
   .toolbar {
     margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
   }
 }
 </style>

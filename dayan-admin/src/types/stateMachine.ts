@@ -19,8 +19,8 @@ export const STATE_MACHINE_BIZ_TYPE_OPTIONS = [
  *
  * 一条记录 = 状态机的一个「迁移规则」（fromState --event--> toState）。
  * fromState/toState 为 Integer（DDL TINYINT），对应业务状态枚举值。
- * fromSubState/toSubState/conditionExpr/actionBean 为高级字段，
- * 接口保留类型对齐，但 Admin 表单不暴露（DB 列可空）。
+ * fromSubState/toSubState/conditionExpr/actionBean 为高级字段（DB 列可空），
+ * 表单高级配置区已暴露这 4 个字段（可空填写）。
  */
 export interface SystemStateMachine {
   id?: number
@@ -34,21 +34,21 @@ export interface SystemStateMachine {
   fromState: number
   /** 起始状态名称 */
   fromStateName: string
-  /** 起始子状态值（高级字段，表单不暴露） */
+  /** 起始子状态值（高级字段，可空） */
   fromSubState?: string | null
   /** 目标状态码（Integer，业务状态枚举值） */
   toState: number
   /** 目标状态名称 */
   toStateName: string
-  /** 目标子状态值（高级字段，表单不暴露） */
+  /** 目标子状态值（高级字段，可空） */
   toSubState?: string | null
   /** 触发事件编码（如 pay/cancel） */
   eventCode: string
   /** 触发事件名称 */
   eventName: string
-  /** 流转条件表达式（高级字段，表单不暴露） */
+  /** 流转条件表达式（高级字段，可空） */
   conditionExpr?: string | null
-  /** 流转执行器 bean 名（高级字段，表单不暴露） */
+  /** 流转执行器 bean 名（高级字段，可空） */
   actionBean?: string | null
   /** 排序号 */
   sortOrder: number

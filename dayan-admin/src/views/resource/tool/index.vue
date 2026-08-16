@@ -170,28 +170,28 @@ function visibleScopeLabel(scope?: string): string {
 <template>
   <div class="page-container">
     <!-- 搜索栏 -->
-    <el-card shadow="never">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="工具名称">
-          <el-input v-model="query.toolName" placeholder="工具名称关键字" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="工具类型">
-          <el-select v-model="query.toolType" placeholder="全部" clearable style="width: 130px">
-            <el-option v-for="o in TOOL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 110px">
-            <el-option v-for="o in COMMON_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+    <el-card shadow="never" class="search-card">
+      <div class="toolbar">
+        <el-input
+          v-model="query.toolName"
+          placeholder="工具名称"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.toolType" placeholder="工具类型" clearable style="width: 130px">
+          <el-option v-for="o in TOOL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 110px">
+          <el-option v-for="o in COMMON_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button v-permission="'tool:info:create'" type="primary" :icon="'Plus'" @click="openCreate">
             新增工具
           </el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
@@ -337,9 +337,27 @@ function visibleScopeLabel(scope?: string): string {
   flex-direction: column;
   gap: 16px;
 }
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

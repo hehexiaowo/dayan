@@ -6,7 +6,8 @@
  *
  * 关键约束：
  * - 主键自增 id。
- * - careLevel 后端无 @Schema 枚举文档，暂用 el-input-number 兜底 + TODO。
+ * - careLevel 按 DDL 09_client.sql 注释用 el-select（1=特级, 2=一级, 3=二级, 4=三级, 5=自理）。
+ * - status 为 3 态（0=评估中, 1=已完成, 2=已过期），新增默认 0。
  * - butlerCode/butlerFullName 关联管家，无 options 文档用 input 兜底。
  * - 偏好类字段（careTypePreference/livingPreference/foodPreference/areaPreference）用 el-input；
  *   长文本（parkRecommendations/evalResult/specialRequirements）用 textarea。
@@ -62,6 +63,23 @@ async function loadButlers() {
 }
 onMounted(loadButlers)
 
+// ---------- 枚举选项（按 DDL 09_client.sql 注释） ----------
+/** 建议照护等级：1=特级, 2=一级, 3=二级, 4=三级, 5=自理 */
+const CARE_LEVEL_OPTIONS = [
+  { label: '特级', value: 1 },
+  { label: '一级', value: 2 },
+  { label: '二级', value: 3 },
+  { label: '三级', value: 4 },
+  { label: '自理', value: 5 }
+] as const
+
+/** 状态：0=评估中, 1=已完成, 2=已过期 */
+const CARE_STATUS_OPTIONS = [
+  { label: '评估中', value: 0 },
+  { label: '已完成', value: 1 },
+  { label: '已过期', value: 2 }
+] as const
+
 // ---------- 新增/编辑弹窗 ----------
 const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
@@ -85,7 +103,7 @@ const form = reactive<ClientCareNeed>({
   expectedCheckinDate: '',
   parkRecommendations: '',
   evalResult: '',
-  status: 1,
+  status: 0,
   remark: ''
 })
 
@@ -109,7 +127,7 @@ function resetForm() {
     expectedCheckinDate: '',
     parkRecommendations: '',
     evalResult: '',
-    status: 1,
+    status: 0,
     remark: ''
   })
 }
@@ -174,10 +192,17 @@ async function handleDelete(row: ClientCareNeed) {
 
 // ---------- 辅助渲染 ----------
 function statusLabel(v?: number): string {
-  return v === 1 ? '启用' : '停用'
+  const found = CARE_STATUS_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : v != null ? String(v) : '--'
 }
-function statusTagType(v?: number): 'success' | 'info' {
-  return v === 1 ? 'success' : 'info'
+function statusTagType(v?: number): 'success' | 'warning' | 'info' {
+  if (v === 0) return 'warning'
+  if (v === 1) return 'success'
+  return 'info'
+}
+function careLevelLabel(v?: number): string {
+  const found = CARE_LEVEL_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : v != null ? String(v) : '--'
 }
 function formatDate(s?: string): string {
   if (!s) return '--'
@@ -190,22 +215,18 @@ defineExpose({ loadPage })
 <template>
   <div class="care-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="照护等级">
-        <!-- TODO: careLevel 枚举值待后端补 @Schema 文档后改为 select -->
-        <el-input-number v-model="query.careLevel" :min="0" controls-position="right" style="width: 140px" />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="启用" :value="1" />
-          <el-option label="停用" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-select v-model="query.careLevel" placeholder="照护等级" clearable style="width: 140px">
+        <el-option v-for="o in CARE_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in CARE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增评估</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增评估</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="evalDate" label="评估日期" width="120" align="center">
@@ -215,7 +236,7 @@ defineExpose({ loadPage })
         <template #default="{ row }">{{ row.butlerFullName || row.butlerCode || '--' }}</template>
       </el-table-column>
       <el-table-column prop="careLevel" label="照护等级" width="100" align="center">
-        <template #default="{ row }">{{ row.careLevel != null ? row.careLevel : '--' }}</template>
+        <template #default="{ row }">{{ careLevelLabel(row.careLevel) }}</template>
       </el-table-column>
       <el-table-column prop="careTypePreference" label="照护类型偏好" min-width="140" show-overflow-tooltip />
       <el-table-column label="预算" width="140" align="right">
@@ -279,9 +300,10 @@ defineExpose({ loadPage })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <!-- TODO: careLevel 枚举值待后端补 @Schema 文档后改为 select -->
             <el-form-item label="照护等级">
-              <el-input-number v-model="form.careLevel" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.careLevel" placeholder="选择照护等级" clearable style="width: 100%">
+                <el-option v-for="o in CARE_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -344,10 +366,9 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="状态">
-              <el-radio-group v-model="form.status">
-                <el-radio :value="1">启用</el-radio>
-                <el-radio :value="0">停用</el-radio>
-              </el-radio-group>
+              <el-select v-model="form.status" placeholder="状态" style="width: 100%">
+                <el-option v-for="o in CARE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -382,6 +403,20 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .care-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
+
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

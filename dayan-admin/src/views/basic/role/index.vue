@@ -270,40 +270,32 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="机构">
-          <el-select v-model="query.organCode" placeholder="全部机构" clearable filterable style="width: 200px">
-            <el-option
-              v-for="o in organOptions"
-              :key="o.organCode"
-              :label="o.fullName || o.shortName || o.organCode"
-              :value="o.organCode"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="角色名">
-          <el-input v-model="query.roleName" placeholder="角色名称" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="角色编码">
-          <el-input v-model="query.roleCode" placeholder="角色编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in ROLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-select v-model="query.organCode" placeholder="机构" clearable filterable style="width: 200px">
+          <el-option
+            v-for="o in organOptions"
+            :key="o.organCode"
+            :label="o.fullName || o.shortName || o.organCode"
+            :value="o.organCode"
+          />
+        </el-select>
+        <el-input v-model="query.roleName" placeholder="角色名称" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.roleCode" placeholder="角色编码" clearable style="width: 150px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in ROLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>角色列表</span>
+          <span class="card-title">角色列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增角色</el-button>
         </div>
       </template>
@@ -454,10 +446,30 @@ loadPage()
   }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
 }
 
 .pagination-wrap {

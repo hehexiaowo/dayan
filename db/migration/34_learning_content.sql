@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS learning_content (
   content_code VARCHAR(50) NOT NULL COMMENT '内容编码 LC+yyyyMMdd+seq',
   title       VARCHAR(200) NOT NULL COMMENT '标题',
   summary     VARCHAR(500) DEFAULT NULL COMMENT '摘要',
-  category    TINYINT      NOT NULL COMMENT '分类 1=视频课程 2=图文课程 3=雁鸣中国',
+  category    TINYINT      NOT NULL COMMENT '分类 1=渠道课程 2=外部课程 3=雁鸣中国',
   author      VARCHAR(100) DEFAULT NULL COMMENT '讲师/作者/来源',
   duration    VARCHAR(20)  DEFAULT NULL COMMENT '时长（视频 28:30 / 图文 约15分钟）',
   body        TEXT         COMMENT '正文（详情页用，列表不返回）',

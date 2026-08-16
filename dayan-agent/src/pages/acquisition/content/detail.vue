@@ -361,7 +361,7 @@ async function generatePoster() {
  *  │ │                  │QR │ ││
  *  │ │  长按识别阅读全文  └───┘ ││
  *  └─┴──────────────────────────┴┘
- *  │   大雁养老 · 专业养老服务平台  │  Footer
+ *  │   养老宝典 · 专业养老服务平台  │  Footer
  *  └────────────────────────────┘
  */
 async function drawPoster(): Promise<string> {
@@ -532,7 +532,7 @@ async function drawPoster(): Promise<string> {
   // ===== 7. 品牌页脚 =====
   ctx.textAlign = 'center';
   ctx.font = 'bold 20px sans-serif';
-  const brandText = '大雁养老';
+  const brandText = '养老宝典';
   const subText = ' · 专业养老服务平台';
   const brandW = ctx.measureText(brandText).width;
   ctx.font = '20px sans-serif';
@@ -603,7 +603,7 @@ function drawCoverPlaceholder(ctx: CanvasRenderingContext2D, W: number, H: numbe
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 36px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('大雁养老', W / 2, H / 2 - 6);
+  ctx.fillText('养老宝典', W / 2, H / 2 - 6);
   ctx.font = '20px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.75)';
   ctx.fillText('专业养老服务平台', W / 2, H / 2 + 28);

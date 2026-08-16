@@ -4,21 +4,24 @@
  * 字段对齐后端 com.dayan.system.entity.SystemMenu。
  */
 
-/** 菜单类型 */
+/** 菜单类型：1=目录 2=菜单 3=按钮 4=接口（对齐 DDL system_menu.menu_type） */
 export enum MenuType {
   /** 目录 */
   DIRECTORY = 1,
   /** 菜单 */
   MENU = 2,
   /** 按钮 */
-  BUTTON = 3
+  BUTTON = 3,
+  /** 接口 */
+  API = 4
 }
 
 /** 菜单类型选项 */
 export const MENU_TYPE_OPTIONS = [
   { label: '目录', value: MenuType.DIRECTORY },
   { label: '菜单', value: MenuType.MENU },
-  { label: '按钮', value: MenuType.BUTTON }
+  { label: '按钮', value: MenuType.BUTTON },
+  { label: '接口', value: MenuType.API }
 ] as const
 
 /** 所属端 */
@@ -45,7 +48,7 @@ export interface Menu {
   menuName: string
   /** 父菜单编码（顶级为 null/空） */
   parentCode: string | null
-  /** 菜单类型：1目录 2菜单 3按钮 */
+  /** 菜单类型：1目录 2菜单 3按钮 4接口 */
   menuType: MenuType
   /** 路由路径（如 /basic/account） */
   path: string | null

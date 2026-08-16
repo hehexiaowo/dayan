@@ -163,9 +163,11 @@ defineExpose({ loadList })
   <div class="share-tab">
     <!-- 工具栏 -->
     <div class="toolbar">
-      <el-button :icon="'Refresh'" @click="loadList">刷新</el-button>
-      <el-button type="primary" :icon="'Plus'" @click="openCreate">新增分享记录</el-button>
       <span class="tip">分享记录只增不改不删；shareCode/浏览次数/分享时间由服务端记录。</span>
+      <div class="toolbar-actions">
+        <el-button :icon="'Refresh'" @click="loadList">刷新</el-button>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增分享记录</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -263,12 +265,17 @@ defineExpose({ loadList })
   .toolbar {
     margin-bottom: 16px;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     .tip {
       color: var(--el-text-color-secondary);
       font-size: 13px;
-      margin-left: 8px;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
     }
   }
 }

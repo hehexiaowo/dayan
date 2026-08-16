@@ -172,30 +172,25 @@ defineExpose({ loadPage })
 <template>
   <div class="item-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="项目名称">
-        <el-input
-          v-model="query.itemName"
-          placeholder="项目名称"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="项目类型">
-        <el-select v-model="query.itemType" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="o in SCENE_ITEM_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in COMMON_ENABLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.itemName"
+        placeholder="项目名称"
+        clearable
+        style="width: 160px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.itemType" placeholder="项目类型" clearable style="width: 140px">
+        <el-option v-for="o in SCENE_ITEM_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in COMMON_ENABLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增项目</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增项目</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="itemCode" label="项目编码" min-width="140" show-overflow-tooltip />
@@ -317,6 +312,19 @@ defineExpose({ loadPage })
 </template>
 
 <style scoped>
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;

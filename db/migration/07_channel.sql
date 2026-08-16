@@ -18,7 +18,7 @@ CREATE TABLE `channel_info` (
   `channel_code` VARCHAR(50) NOT NULL COMMENT '渠道编码（CH+5位数字）',
   `full_name` VARCHAR(200) NOT NULL COMMENT '渠道名称',
   `short_name` VARCHAR(50) DEFAULT NULL COMMENT '简称',
-  `channel_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '渠道类型（1=保险公司总部, 2=保险公司分公司, 3=保险支公司, 4=银行, 5=其他金融机构）',
+  `channel_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '渠道类型-企业类型（1=保险公司, 2=银行机构, 3=保险中介, 4=其他企业）',
   `parent_code` VARCHAR(50) DEFAULT NULL COMMENT '上级渠道编码（用于上下级关系）',
   `ancestors` VARCHAR(500) DEFAULT NULL COMMENT '祖级列表',
   `level` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '层级（1=一级, 2=二级, 3=三级）',

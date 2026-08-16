@@ -36,7 +36,6 @@ const {
   {
     initialQuery: {
       orderCode: '',
-      orderType: undefined,
       channelCode: '',
       agentCode: '',
       distributorCode: '',
@@ -52,7 +51,6 @@ const {
 
 function handleReset() {
   query.orderCode = ''
-  query.orderType = undefined
   query.channelCode = ''
   query.agentCode = ''
   query.distributorCode = ''
@@ -163,58 +161,73 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="订单编号">
-          <el-input v-model="query.orderCode" placeholder="订单编号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="订单类型">
-          <el-input v-model="query.orderType" placeholder="订单类型" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="渠道编码">
-          <el-input v-model="query.channelCode" placeholder="渠道编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="代理人编码">
-          <el-input v-model="query.agentCode" placeholder="代理人编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="分销商编码">
-          <el-input v-model="query.distributorCode" placeholder="分销商编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="客户编码">
-          <el-input v-model="query.clientCode" placeholder="客户编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="课程编码">
-          <el-input v-model="query.courseCode" placeholder="课程编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="订单状态">
-          <el-select v-model="query.orderStatus" placeholder="全部" clearable style="width: 130px">
-            <el-option v-for="o in COURSE_ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="支付方式">
-          <el-select v-model="query.payType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in COURSE_PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.orderCode"
+          placeholder="订单编号"
+          clearable
+          style="width: 170px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.channelCode"
+          placeholder="渠道编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.agentCode"
+          placeholder="代理人编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.distributorCode"
+          placeholder="分销商编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.clientCode"
+          placeholder="客户编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.courseCode"
+          placeholder="课程编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.orderStatus" placeholder="订单状态" clearable style="width: 130px">
+          <el-option v-for="o in COURSE_ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.payType" placeholder="支付方式" clearable style="width: 120px">
+          <el-option v-for="o in COURSE_PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>课程订单列表</span>
+          <span class="card-title">课程订单列表</span>
         </div>
       </template>
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="orderCode">
         <el-table-column prop="orderCode" label="订单编号" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="orderType" label="订单类型" width="100" align="center">
-          <template #default="{ row }">{{ row.orderType ?? '--' }}</template>
-        </el-table-column>
+        <el-table-column label="订单类型" width="100" align="center">课程订单</el-table-column>
         <el-table-column prop="channelFullName" label="渠道" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">{{ row.channelFullName || row.channelCode || '--' }}</template>
         </el-table-column>
@@ -280,7 +293,7 @@ loadPage()
     <el-dialog v-model="detailVisible" title="课程订单详情" width="780px" :close-on-click-modal="false">
       <el-descriptions :column="2" border>
         <el-descriptions-item label="订单编号">{{ detail.orderCode }}</el-descriptions-item>
-        <el-descriptions-item label="订单类型">{{ detail.orderType ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="订单类型">课程订单</el-descriptions-item>
         <el-descriptions-item label="渠道">{{ detail.channelFullName || detail.channelCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="代理人">{{ detail.agentFullName || detail.agentCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="分销商">{{ detail.distributorFullName || detail.distributorCode || '--' }}</el-descriptions-item>
@@ -342,9 +355,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -354,9 +375,21 @@ loadPage()
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

@@ -169,30 +169,25 @@ defineExpose({ loadPage })
 <template>
   <div class="resource-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="资源名称">
-        <el-input
-          v-model="query.resourceName"
-          placeholder="资源名称"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="资源类型">
-        <el-select v-model="query.resourceType" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="o in SCENE_RESOURCE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in COMMON_ENABLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.resourceName"
+        placeholder="资源名称"
+        clearable
+        style="width: 160px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.resourceType" placeholder="资源类型" clearable style="width: 140px">
+        <el-option v-for="o in SCENE_RESOURCE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in COMMON_ENABLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增资源</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增资源</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="resourceName" label="资源名称" min-width="160" show-overflow-tooltip />
@@ -212,7 +207,7 @@ defineExpose({ loadPage })
       </el-table-column>
       <el-table-column prop="isProvided" label="是否提供" width="100" align="center">
         <template #default="{ row }">
-          <el-tag v-if="row.isProvided === 1" type="success" size="small">平台提供</el-tag>
+          <el-tag v-if="row.isProvided === 1" type="success" size="small">机构提供</el-tag>
           <el-tag v-else type="info" size="small">需自备</el-tag>
         </template>
       </el-table-column>
@@ -270,7 +265,7 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="8">
             <el-form-item label="数量">
-              <el-input-number v-model="form.quantity" :min="0" :max="999999" :precision="2" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="form.quantity" :min="0" :max="999999" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -292,7 +287,7 @@ defineExpose({ loadPage })
           <el-col :span="12">
             <el-form-item label="是否提供">
               <el-radio-group v-model="form.isProvided">
-                <el-radio :value="1">平台提供</el-radio>
+                <el-radio :value="1">机构提供</el-radio>
                 <el-radio :value="0">需自备</el-radio>
               </el-radio-group>
             </el-form-item>
@@ -325,6 +320,19 @@ defineExpose({ loadPage })
 </template>
 
 <style scoped>
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;

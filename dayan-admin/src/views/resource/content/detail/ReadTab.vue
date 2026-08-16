@@ -10,6 +10,18 @@ import type { ContentRecordRead, ContentRecordReadQuery, ContentReadStats } from
  */
 const props = defineProps<{ contentCode: string }>()
 
+/** 阅读来源映射（对齐 DDL read_source：1=自主浏览, 2=分享链接, 3=推荐, 4=搜索） */
+const READ_SOURCE_OPTIONS = [
+  { label: '自主浏览', value: 1 },
+  { label: '分享链接', value: 2 },
+  { label: '推荐', value: 3 },
+  { label: '搜索', value: 4 }
+] as const
+
+function readSourceLabel(v?: number) {
+  return READ_SOURCE_OPTIONS.find((o) => o.value === v)?.label ?? (v != null ? String(v) : '-')
+}
+
 const {
   loading,
   tableData,
@@ -79,7 +91,9 @@ onMounted(() => {
       <el-table-column prop="readerType" label="读者类型" width="110" />
       <el-table-column prop="readDuration" label="阅读时长(秒)" width="120" align="right" />
       <el-table-column prop="readProgress" label="进度(%)" width="100" align="right" />
-      <el-table-column prop="readSource" label="来源" width="90" align="center" />
+      <el-table-column prop="readSource" label="来源" width="90" align="center">
+        <template #default="{ row }">{{ readSourceLabel(row.readSource) }}</template>
+      </el-table-column>
       <el-table-column prop="deviceType" label="设备" width="110" show-overflow-tooltip />
       <el-table-column prop="ipAddress" label="IP" min-width="130" show-overflow-tooltip />
       <el-table-column prop="readTime" label="阅读时间" min-width="160" show-overflow-tooltip />

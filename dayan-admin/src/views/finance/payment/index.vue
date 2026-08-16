@@ -90,7 +90,9 @@ const createForm = reactive({
 const createRules: FormRules<typeof createForm> = {
   orderType: [{ required: true, message: '请选择订单类型', trigger: 'change' }],
   orderCode: [{ required: true, message: '请输入订单编号', trigger: 'blur' }],
-  payType: [{ required: true, message: '请选择支付方式', trigger: 'change' }]
+  payType: [{ required: true, message: '请选择支付方式', trigger: 'change' }],
+  // pay_amount DDL NOT NULL
+  payAmount: [{ required: true, message: '请输入支付金额', trigger: 'blur' }]
 }
 
 function openCreate() {
@@ -229,40 +231,42 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="支付流水号">
-          <el-input v-model="query.paymentCode" placeholder="支付流水号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="订单类型">
-          <el-select v-model="query.orderType" placeholder="全部" clearable style="width: 110px">
-            <el-option v-for="o in ORDER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="订单编号">
-          <el-input v-model="query.orderCode" placeholder="订单编号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="支付方式">
-          <el-select v-model="query.payType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="支付状态">
-          <el-select v-model="query.payStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in PAY_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.paymentCode"
+          placeholder="支付流水号"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.orderType" placeholder="订单类型" clearable style="width: 120px">
+          <el-option v-for="o in ORDER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-input
+          v-model="query.orderCode"
+          placeholder="订单编号"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.payType" placeholder="支付方式" clearable style="width: 130px">
+          <el-option v-for="o in PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.payStatus" placeholder="支付状态" clearable style="width: 130px">
+          <el-option v-for="o in PAY_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>支付记录列表</span>
+          <span class="card-title">支付记录列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增支付记录</el-button>
         </div>
       </template>
@@ -379,7 +383,7 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="支付金额">
+            <el-form-item label="支付金额" prop="payAmount">
               <el-input-number v-model="createForm.payAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
@@ -453,9 +457,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -465,9 +477,21 @@ loadPage()
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

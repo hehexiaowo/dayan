@@ -91,6 +91,13 @@ const form = reactive<SupplierInfo>({
   contactPhone: '',
   contactEmail: '',
   logoUrl: '',
+  licenseImage: '',
+  qualificationImage: '',
+  bankName: '',
+  bankAccount: '',
+  bankAccountName: '',
+  cooperationStartDate: '',
+  cooperationEndDate: '',
   description: '',
   commissionRate: undefined,
   status: undefined,
@@ -100,7 +107,8 @@ const form = reactive<SupplierInfo>({
 
 const rules: FormRules<SupplierInfo> = {
   fullName: [{ required: true, message: '请输入供应商全称', trigger: 'blur' }],
-  supplierType: [{ required: true, message: '请选择供应商类型', trigger: 'change' }]
+  supplierType: [{ required: true, message: '请选择供应商类型', trigger: 'change' }],
+  contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
 }
 
 function resetForm() {
@@ -123,6 +131,13 @@ function resetForm() {
     contactPhone: '',
     contactEmail: '',
     logoUrl: '',
+    licenseImage: '',
+    qualificationImage: '',
+    bankName: '',
+    bankAccount: '',
+    bankAccountName: '',
+    cooperationStartDate: '',
+    cooperationEndDate: '',
     description: '',
     commissionRate: undefined,
     status: undefined,
@@ -158,6 +173,13 @@ function fillForm(detail: SupplierInfo) {
     contactPhone: detail.contactPhone ?? '',
     contactEmail: detail.contactEmail ?? '',
     logoUrl: detail.logoUrl ?? '',
+    licenseImage: detail.licenseImage ?? '',
+    qualificationImage: detail.qualificationImage ?? '',
+    bankName: detail.bankName ?? '',
+    bankAccount: detail.bankAccount ?? '',
+    bankAccountName: detail.bankAccountName ?? '',
+    cooperationStartDate: detail.cooperationStartDate ?? '',
+    cooperationEndDate: detail.cooperationEndDate ?? '',
     description: detail.description ?? '',
     commissionRate: detail.commissionRate,
     status: detail.status,
@@ -319,50 +341,42 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="供应商编码">
-          <el-input
-            v-model="query.supplierCode"
-            placeholder="供应商编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="供应商全称">
-          <el-input
-            v-model="query.fullName"
-            placeholder="全称关键字"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="供应商类型">
-          <el-select v-model="query.supplierType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in SUPPLIER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in SUPPLIER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="审核状态">
-          <el-select v-model="query.auditStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in SUPPLIER_AUDIT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.supplierCode"
+          placeholder="供应商编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.fullName"
+          placeholder="供应商全称"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.supplierType" placeholder="供应商类型" clearable style="width: 140px">
+          <el-option v-for="o in SUPPLIER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in SUPPLIER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.auditStatus" placeholder="审核状态" clearable style="width: 120px">
+          <el-option v-for="o in SUPPLIER_AUDIT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>供应商列表</span>
+          <span class="card-title">供应商列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增供应商</el-button>
         </div>
       </template>
@@ -484,7 +498,13 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="成立日期">
-              <el-input v-model="form.establishDate" placeholder="yyyy-MM-dd" maxlength="20" />
+              <el-date-picker
+                v-model="form.establishDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -492,7 +512,7 @@ loadPage()
               <el-input-number
                 v-model="form.commissionRate"
                 :min="0"
-                :max="100"
+                :max="9.99"
                 :precision="2"
                 controls-position="right"
                 style="width: 100%"
@@ -530,7 +550,7 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="联系电话">
+            <el-form-item label="联系电话" prop="contactPhone">
               <el-input v-model="form.contactPhone" placeholder="联系电话" maxlength="20" />
             </el-form-item>
           </el-col>
@@ -542,6 +562,53 @@ loadPage()
           <el-col :span="12">
             <el-form-item label="Logo">
               <FileUploader v-model="form.logoUrl" type="image" module="supplier" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="营业执照图片">
+              <FileUploader v-model="form.licenseImage" type="image" module="supplier" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="资质证书图片">
+              <FileUploader v-model="form.qualificationImage" type="image" module="supplier" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="开户银行">
+              <el-input v-model="form.bankName" placeholder="开户银行" maxlength="100" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="银行账号">
+              <el-input v-model="form.bankAccount" placeholder="银行账号（提交后由后端加密存储）" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="银行户名">
+              <el-input v-model="form.bankAccountName" placeholder="银行户名" maxlength="100" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="合作开始日期">
+              <el-date-picker
+                v-model="form.cooperationStartDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="合作结束日期">
+              <el-date-picker
+                v-model="form.cooperationEndDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -598,9 +665,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -610,9 +685,21 @@ loadPage()
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

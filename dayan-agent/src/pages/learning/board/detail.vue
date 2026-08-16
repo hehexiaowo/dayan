@@ -39,7 +39,7 @@
 
       <!-- ===== 底部提示 ===== -->
       <view class="article-foot">
-        <text class="foot-text">内容来自大雁养老学习中心</text>
+        <text class="foot-text">内容来自养老宝典学习中心</text>
       </view>
     </template>
   </view>

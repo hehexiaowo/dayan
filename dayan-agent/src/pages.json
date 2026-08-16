@@ -27,7 +27,7 @@
     { "path": "pages/share/poster", "style": { "navigationBarTitleText": "营销海报分享" } },
     { "path": "pages/business/index", "style": { "navigationBarTitleText": "展业中心" } },
     { "path": "pages/learning/index", "style": { "navigationBarTitleText": "学习中心" } },
-    { "path": "pages/learning/courses/index", "style": { "navigationBarTitleText": "大雁课程", "enablePullDownRefresh": true } },
+    { "path": "pages/learning/courses/index", "style": { "navigationBarTitleText": "养老宝典课程", "enablePullDownRefresh": true } },
     { "path": "pages/learning/courses/detail", "style": { "navigationBarTitleText": "课程详情" } },
     { "path": "pages/learning/board/index", "style": { "navigationBarTitleText": "课程板块", "enablePullDownRefresh": true } },
     { "path": "pages/learning/board/detail", "style": { "navigationBarTitleText": "内容详情" } },
@@ -36,7 +36,7 @@
     { "path": "pages/profile/index", "style": { "navigationBarTitleText": "个人中心" } },
     { "path": "pages/profile/view", "style": { "navigationBarTitleText": "个人资料" } },
     { "path": "pages/profile/edit", "style": { "navigationBarTitleText": "编辑资料" } },
-    { "path": "pages/profile/about", "style": { "navigationBarTitleText": "关于大雁" } },
+    { "path": "pages/profile/about", "style": { "navigationBarTitleText": "关于养老宝典" } },
     {
       "path": "pages/business/park/index",
       "style": { "navigationBarTitleText": "服务网络" }
@@ -89,14 +89,14 @@
       "path": "pages/business/park/sojourn/detail",
       "style": { "navigationBarTitleText": "机构详情" }
     },
-    { "path": "pages/business/mall/index", "style": { "navigationBarTitleText": "大雁商城" } },
+    { "path": "pages/business/mall/index", "style": { "navigationBarTitleText": "养老宝典商城" } },
     { "path": "pages/business/mall/detail", "style": { "navigationBarTitleText": "商品详情" } },
     { "path": "pages/business/scene/index", "style": { "navigationBarTitleText": "场景活动" } },
     { "path": "pages/business/scene/detail", "style": { "navigationBarTitleText": "场景详情" } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "大雁养老",
+    "navigationBarTitleText": "养老宝典",
     "navigationBarBackgroundColor": "#409EFF",
     "backgroundColor": "#F8F8F8"
   },

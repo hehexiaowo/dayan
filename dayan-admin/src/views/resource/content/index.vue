@@ -25,6 +25,8 @@ import {
   SOURCE_TYPE_OPTIONS
 } from '@/types/content'
 import FileUploader from '@/components/FileUploader/index.vue'
+import RichEditor from '@/components/RichEditor/index.vue'
+import { NETWORK_TYPE_OPTIONS, networkTagsToList } from '@/types/park'
 
 /**
  * 内容素材管理页。
@@ -91,12 +93,16 @@ const form = reactive<ContentInfo>({
   sourceType: 1,
   sourceUrl: '',
   tags: '',
+  networkTags: '',
   isTop: 0,
   isRecommend: 0,
   isComment: 1,
   sortOrder: 0,
   remark: ''
 })
+
+/** 业态多选数组态：提交时 join 为 form.networkTags，回显时 split */
+const networkTagsArr = ref<string[]>([])
 
 const rules: FormRules<ContentInfo> = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
@@ -117,12 +123,14 @@ function resetForm() {
     sourceType: 1,
     sourceUrl: '',
     tags: '',
+    networkTags: '',
     isTop: 0,
     isRecommend: 0,
     isComment: 1,
     sortOrder: 0,
     remark: ''
   })
+  networkTagsArr.value = []
 }
 
 function openCreate() {
@@ -150,12 +158,14 @@ async function openEdit(row: ContentInfo) {
       sourceType: detail.sourceType ?? 1,
       sourceUrl: detail.sourceUrl ?? '',
       tags: detail.tags ?? '',
+      networkTags: detail.networkTags ?? '',
       isTop: detail.isTop ?? 0,
       isRecommend: detail.isRecommend ?? 0,
       isComment: detail.isComment ?? 1,
       sortOrder: detail.sortOrder ?? 0,
       remark: detail.remark ?? ''
     })
+    networkTagsArr.value = networkTagsToList(detail.networkTags)
   } catch {
     // 拉取详情失败时回退到行数据
     Object.assign(form, {
@@ -171,12 +181,14 @@ async function openEdit(row: ContentInfo) {
       sourceType: row.sourceType ?? 1,
       sourceUrl: row.sourceUrl ?? '',
       tags: row.tags ?? '',
+      networkTags: row.networkTags ?? '',
       isTop: row.isTop ?? 0,
       isRecommend: row.isRecommend ?? 0,
       isComment: row.isComment ?? 1,
       sortOrder: row.sortOrder ?? 0,
       remark: row.remark ?? ''
     })
+    networkTagsArr.value = networkTagsToList(row.networkTags)
   }
   dialogVisible.value = true
 }
@@ -191,6 +203,8 @@ async function handleSubmit() {
 
   submitLoading.value = true
   try {
+    // 勾选数组 → 逗号串（空串 = 全部业态）
+    form.networkTags = networkTagsArr.value.join(',')
     if (dialogType.value === 'create') {
       await createContent(form)
       ElMessage.success('新增成功')
@@ -339,42 +353,40 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="标题">
-          <el-input v-model="query.title" placeholder="标题关键字" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="内容类型">
-          <el-select v-model="query.contentType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in CONTENT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="内容状态">
-          <el-select v-model="query.contentStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in CONTENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="query.categoryCode" placeholder="全部分类" clearable filterable style="width: 180px">
-            <el-option
-              v-for="c in categoryOptions"
-              :key="c.dictCode"
-              :label="c.dictName"
-              :value="c.dictCode"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.title"
+          placeholder="标题"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.contentType" placeholder="内容类型" clearable style="width: 130px">
+          <el-option v-for="o in CONTENT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.contentStatus" placeholder="内容状态" clearable style="width: 130px">
+          <el-option v-for="o in CONTENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.categoryCode" placeholder="分类" clearable filterable style="width: 160px">
+          <el-option
+            v-for="c in categoryOptions"
+            :key="c.dictCode"
+            :label="c.dictName"
+            :value="c.dictCode"
+          />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>内容列表</span>
+          <span class="card-title">内容列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增内容</el-button>
         </div>
       </template>
@@ -510,6 +522,13 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :span="24">
+            <el-form-item label="适用业态">
+              <el-select v-model="networkTagsArr" multiple clearable placeholder="不选 = 全部业态展示" style="width: 100%">
+                <el-option v-for="o in NETWORK_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
             <el-form-item label="封面图">
               <FileUploader v-model="form.coverImage" type="image" module="content" />
             </el-form-item>
@@ -526,7 +545,15 @@ onMounted(() => {
           </el-col>
           <el-col :span="24">
             <el-form-item label="正文">
-              <el-input v-model="form.contentBody" type="textarea" :rows="6" placeholder="内容正文" />
+              <RichEditor
+                v-model="form.contentBody"
+                module="content"
+                register-asset
+                asset-ref-type1="content"
+                :asset-ref-code="form.contentCode"
+                asset-ref-type2="content"
+                placeholder="正文支持图文混排，插图自动上传并登记素材仓库"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -599,9 +626,17 @@ onMounted(() => {
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -611,9 +646,21 @@ onMounted(() => {
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

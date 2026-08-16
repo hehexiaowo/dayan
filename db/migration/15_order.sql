@@ -69,7 +69,7 @@ DROP TABLE IF EXISTS `order_scene`;
 CREATE TABLE `order_scene` (
   `id` BIGINT NOT NULL COMMENT '主键（雪花ID）',
   `order_code` VARCHAR(50) NOT NULL COMMENT '订单编号',
-  `order_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '订单类型（1=个人报名, 2=代理人代报, 3=团体报名）',
+  `order_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '订单类型（1=权益采购, 2=场景报名, 3=课程购买, 4=旅居预订）',
   `channel_code` VARCHAR(50) DEFAULT NULL COMMENT '渠道编码',
   `channel_full_name` VARCHAR(200) DEFAULT NULL COMMENT '渠道名称（快照）',
   `agent_code` VARCHAR(64) DEFAULT NULL COMMENT '代理人编码',
@@ -122,7 +122,7 @@ DROP TABLE IF EXISTS `order_course`;
 CREATE TABLE `order_course` (
   `id` BIGINT NOT NULL COMMENT '主键（雪花ID）',
   `order_code` VARCHAR(50) NOT NULL COMMENT '订单编号',
-  `order_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '订单类型（1=自主购买, 2=代理人代报, 3=权益兑换）',
+  `order_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '订单类型（1=权益采购, 2=场景报名, 3=课程购买, 4=旅居预订）',
   `channel_code` VARCHAR(50) DEFAULT NULL COMMENT '渠道编码',
   `channel_full_name` VARCHAR(200) DEFAULT NULL COMMENT '渠道名称（快照）',
   `agent_code` VARCHAR(64) DEFAULT NULL COMMENT '代理人编码',
@@ -169,7 +169,7 @@ DROP TABLE IF EXISTS `order_sojourn`;
 CREATE TABLE `order_sojourn` (
   `id` BIGINT NOT NULL COMMENT '主键（雪花ID）',
   `order_code` VARCHAR(50) NOT NULL COMMENT '订单编号',
-  `order_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '订单类型（1=自主预订, 2=代理人代订, 3=权益兑换）',
+  `order_type` TINYINT(2) NOT NULL DEFAULT 1 COMMENT '订单类型（1=权益采购, 2=场景报名, 3=课程购买, 4=旅居预订）',
   `channel_code` VARCHAR(50) DEFAULT NULL COMMENT '渠道编码',
   `channel_full_name` VARCHAR(200) DEFAULT NULL COMMENT '渠道名称（快照）',
   `agent_code` VARCHAR(64) DEFAULT NULL COMMENT '代理人编码',

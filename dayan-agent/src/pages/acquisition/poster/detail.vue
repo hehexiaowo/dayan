@@ -48,7 +48,7 @@
 
       <!-- 品牌页脚 -->
       <view class="brand-footer">
-        <text>大雁养老 · 专业养老服务平台</text>
+        <text>养老宝典 · 专业养老服务平台</text>
       </view>
     </template>
 
@@ -322,7 +322,7 @@ async function drawPoster(): Promise<string> {
   ctx.textAlign = 'center';
   ctx.font = 'bold 20px sans-serif';
   ctx.fillStyle = BRAND;
-  ctx.fillText('大雁养老', W / 2 - 50, H - 36);
+  ctx.fillText('养老宝典', W / 2 - 50, H - 36);
   ctx.font = '20px sans-serif';
   ctx.fillStyle = '#c0c4cc';
   ctx.fillText(' · 专业养老服务平台', W / 2 + 14, H - 36);
@@ -424,7 +424,7 @@ function drawCoverPlaceholder(ctx: CanvasRenderingContext2D, W: number, H: numbe
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 36px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('大雁养老', W / 2, H / 2 - 6);
+  ctx.fillText('养老宝典', W / 2, H / 2 - 6);
   ctx.font = '20px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.75)';
   ctx.fillText('专业养老服务平台', W / 2, H / 2 + 28);

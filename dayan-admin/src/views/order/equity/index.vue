@@ -111,6 +111,30 @@ async function handleCancelSubmit() {
 }
 
 // ---------- 辅助渲染 ----------
+/** 权益入库方式（order_equity.deliver_type）：1=批量入库 / 2=逐张入库 / 3=自动入库 */
+const DELIVER_TYPE_OPTIONS = [
+  { label: '批量入库', value: 1 },
+  { label: '逐张入库', value: 2 },
+  { label: '自动入库', value: 3 }
+] as const
+
+/** 发票状态（order_equity.invoice_status）：0=未申请 / 1=已申请 / 2=已开具 */
+const INVOICE_STATUS_OPTIONS = [
+  { label: '未申请', value: 0 },
+  { label: '已申请', value: 1 },
+  { label: '已开具', value: 2 }
+] as const
+
+function deliverTypeLabel(t?: number): string {
+  const found = DELIVER_TYPE_OPTIONS.find((o) => o.value === t)
+  return found ? found.label : t != null ? String(t) : '--'
+}
+
+function invoiceStatusLabel(s?: number): string {
+  const found = INVOICE_STATUS_OPTIONS.find((o) => o.value === s)
+  return found ? found.label : s != null ? String(s) : '--'
+}
+
 function orderSourceLabel(s?: number): string {
   const found = ORDER_SOURCE_OPTIONS.find((o) => o.value === s)
   return found ? found.label : s != null ? String(s) : '--'
@@ -165,49 +189,63 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="订单编号">
-          <el-input v-model="query.orderCode" placeholder="订单编号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="采购来源">
-          <el-select v-model="query.orderSource" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in ORDER_SOURCE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="渠道编码">
-          <el-input v-model="query.channelCode" placeholder="渠道编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="代理人编码">
-          <el-input v-model="query.agentCode" placeholder="代理人编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="分销商编码">
-          <el-input v-model="query.distributorCode" placeholder="分销商编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="商品编码">
-          <el-input v-model="query.goodsCode" placeholder="商品编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="订单状态">
-          <el-select v-model="query.orderStatus" placeholder="全部" clearable style="width: 130px">
-            <el-option v-for="o in EQUITY_ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="支付方式">
-          <el-select v-model="query.payType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.orderCode"
+          placeholder="订单编号"
+          clearable
+          style="width: 170px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.orderSource" placeholder="采购来源" clearable style="width: 140px">
+          <el-option v-for="o in ORDER_SOURCE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-input
+          v-model="query.channelCode"
+          placeholder="渠道编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.agentCode"
+          placeholder="代理人编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.distributorCode"
+          placeholder="分销商编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.goodsCode"
+          placeholder="商品编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.orderStatus" placeholder="订单状态" clearable style="width: 130px">
+          <el-option v-for="o in EQUITY_ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.payType" placeholder="支付方式" clearable style="width: 120px">
+          <el-option v-for="o in PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>权益订单列表</span>
+          <span class="card-title">权益订单列表</span>
         </div>
       </template>
 
@@ -293,11 +331,11 @@ loadPage()
         <el-descriptions-item label="支付方式">{{ payTypeLabel(detail.payType) }}</el-descriptions-item>
         <el-descriptions-item label="支付流水号">{{ detail.payTradeNo || '--' }}</el-descriptions-item>
         <el-descriptions-item label="支付时间">{{ formatDateTime(detail.payTime) }}</el-descriptions-item>
-        <el-descriptions-item label="入库方式">{{ detail.deliverType ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="入库方式">{{ deliverTypeLabel(detail.deliverType) }}</el-descriptions-item>
         <el-descriptions-item label="已入库数量">{{ detail.deliverCount ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="入库完成时间">{{ formatDateTime(detail.deliverTime) }}</el-descriptions-item>
         <el-descriptions-item label="过期时间">{{ formatDateTime(detail.expireTime) }}</el-descriptions-item>
-        <el-descriptions-item label="发票状态">{{ detail.invoiceStatus ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="发票状态">{{ invoiceStatusLabel(detail.invoiceStatus) }}</el-descriptions-item>
         <el-descriptions-item label="订单状态">
           <el-tag :type="orderStatusTagType(detail.orderStatus)">{{ orderStatusLabel(detail.orderStatus) }}</el-tag>
         </el-descriptions-item>
@@ -343,9 +381,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -355,9 +401,21 @@ loadPage()
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

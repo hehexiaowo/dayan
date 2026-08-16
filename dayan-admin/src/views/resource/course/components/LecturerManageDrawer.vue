@@ -313,6 +313,16 @@ loadPage()
               <el-input v-model="form.introduction" type="textarea" :rows="3" />
             </el-form-item>
           </el-col>
+          <el-col :span="24">
+            <el-form-item label="资质证书">
+              <el-input
+                v-model="form.certifications"
+                type="textarea"
+                :rows="3"
+                placeholder='JSON 数组格式，如 ["高级保险规划师","CPB 认证私人银行家"]'
+              />
+            </el-form-item>
+          </el-col>
         </el-row>
       </el-form>
       <template #footer>

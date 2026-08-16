@@ -127,7 +127,9 @@ defineExpose({ loadDetail })
   <div v-loading="loading">
     <template v-if="butlerInfo">
       <div class="basic-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
@@ -227,6 +229,16 @@ defineExpose({ loadDetail })
 
 <style scoped>
 .basic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 </style>

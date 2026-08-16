@@ -30,7 +30,7 @@ public class ChannelInfo extends BaseEntity {
     /** 简称 */
     private String shortName;
 
-    /** 渠道类型 */
+    /** 渠道类型（企业类型）：1=保险公司, 2=银行机构, 3=保险中介, 4=其他企业 */
     private Integer channelType;
 
     /** 上级渠道编码 */

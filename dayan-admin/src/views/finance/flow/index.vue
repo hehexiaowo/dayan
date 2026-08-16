@@ -271,67 +271,57 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="流水编号">
-          <el-input
-            v-model="query.flowCode"
-            placeholder="流水编号"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="流水类型">
-          <el-select v-model="query.flowType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in FLOW_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="业务类型">
-          <el-input
-            v-model="query.bizType"
-            placeholder="如 equity_order"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="账号类型">
-          <el-input
-            v-model="query.accountType"
-            placeholder="如 channel"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="账号编码">
-          <el-input
-            v-model="query.accountCode"
-            placeholder="账号编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="流水状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in FLOW_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="结算状态">
-          <el-select v-model="query.isSettled" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in SETTLED_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.flowCode"
+          placeholder="流水编号"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.flowType" placeholder="流水类型" clearable style="width: 130px">
+          <el-option v-for="o in FLOW_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-input
+          v-model="query.bizType"
+          placeholder="业务类型 如 equity_order"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.accountType"
+          placeholder="账号类型 如 channel"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.accountCode"
+          placeholder="账号编码"
+          clearable
+          style="width: 140px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.status" placeholder="流水状态" clearable style="width: 130px">
+          <el-option v-for="o in FLOW_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.isSettled" placeholder="结算状态" clearable style="width: 130px">
+          <el-option v-for="o in SETTLED_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>资金流水列表</span>
-          <el-button type="primary" plain :icon="'Plus'" @click="openCreate">记录流水</el-button>
+          <span class="card-title">资金流水列表</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">记录流水</el-button>
         </div>
       </template>
 
@@ -423,7 +413,7 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="业务类型" prop="bizType">
-              <el-select v-model="form.bizType" placeholder="选择或输入业务类型" filterable allow-create default-first-option style="width: 100%">
+              <el-select v-model="form.bizType" placeholder="选择业务类型" style="width: 100%">
                 <el-option v-for="o in BIZ_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
@@ -435,7 +425,7 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="账号类型" prop="accountType">
-              <el-select v-model="form.accountType" placeholder="选择或输入账号类型" filterable allow-create default-first-option style="width: 100%">
+              <el-select v-model="form.accountType" placeholder="选择账号类型" style="width: 100%">
                 <el-option v-for="o in ACCOUNT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
@@ -542,9 +532,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -552,6 +550,12 @@ loadPage()
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 
 .pagination-wrap {
@@ -579,5 +583,11 @@ loadPage()
 .amount-zero {
   color: #303133;
   font-weight: 600;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

@@ -3,9 +3,9 @@
     <!-- hero（蓝色品牌渐变） -->
     <view class="hero">
       <view class="logo-circle">
-        <text class="logo-text">大雁</text>
+        <text class="logo-text">养老宝典</text>
       </view>
-      <text class="app-name">大雁养老代理人</text>
+      <text class="app-name">养老宝典</text>
       <text class="version">v1.0.0</text>
     </view>
 
@@ -13,7 +13,7 @@
     <view class="section">
       <view class="section-title">关于我们</view>
       <view class="section-body">
-        <text class="intro">大雁养老代理人客户端，为养老行业从业者提供一站式展业工具。在这里，您可以查询全国养老机构、采购权益商品、分享内容获客、跟进客户线索，让养老服务事业更高效、更专业。</text>
+        <text class="intro">养老宝典客户端，为养老行业从业者提供一站式展业工具。在这里，您可以查询全国养老机构、采购权益商品、分享内容获客、跟进客户线索，让养老服务事业更高效、更专业。</text>
       </view>
     </view>
 
@@ -35,7 +35,7 @@
 
     <!-- 版权 -->
     <view class="copyright">
-      <text class="copyright-text">© 2026 大雁养老服务</text>
+      <text class="copyright-text">© 2026 养老宝典</text>
       <text class="copyright-slogan">专业守护，用心服务</text>
     </view>
   </view>

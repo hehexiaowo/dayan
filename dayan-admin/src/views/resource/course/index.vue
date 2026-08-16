@@ -303,47 +303,40 @@ onMounted(() => {
         <div class="tab-body">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="课程名称">
-          <el-input
-            v-model="query.courseName"
-            placeholder="课程名称"
-            clearable
-            @keyup.enter="handleSearch"
+      <div class="toolbar">
+        <el-input
+          v-model="query.courseName"
+          placeholder="课程名称"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.courseType" placeholder="课程类型" clearable style="width: 140px">
+          <el-option v-for="o in COURSE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.courseStatus" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in COURSE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.lecturerCode" placeholder="讲师" clearable filterable style="width: 180px">
+          <el-option
+            v-for="l in lecturerOptions"
+            :key="l.lecturerCode"
+            :label="l.lecturerName"
+            :value="l.lecturerCode!"
           />
-        </el-form-item>
-        <el-form-item label="课程类型">
-          <el-select v-model="query.courseType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in COURSE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.courseStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in COURSE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="讲师">
-          <el-select v-model="query.lecturerCode" placeholder="全部讲师" clearable filterable style="width: 180px">
-            <el-option
-              v-for="l in lecturerOptions"
-              :key="l.lecturerCode"
-              :label="l.lecturerName"
-              :value="l.lecturerCode!"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>课程列表</span>
+          <span class="card-title">课程列表</span>
           <div>
             <el-button :icon="'UserFilled'" @click="lecturerDrawerVisible = true">讲师管理</el-button>
             <el-button type="primary" :icon="'Plus'" @click="openCreate">新增课程</el-button>
@@ -648,9 +641,17 @@ onMounted(() => {
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -658,6 +659,12 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 
 .pagination-wrap {
@@ -685,5 +692,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

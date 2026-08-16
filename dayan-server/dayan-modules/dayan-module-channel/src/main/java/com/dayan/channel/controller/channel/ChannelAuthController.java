@@ -4,7 +4,6 @@ import com.dayan.channel.dto.AuthLoginDTO;
 import com.dayan.channel.service.ChannelAuthService;
 import com.dayan.channel.vo.AuthLoginVO;
 import com.dayan.common.core.resp.R;
-import com.dayan.common.log.operation.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,7 +24,6 @@ public class ChannelAuthController {
     private final ChannelAuthService channelAuthService;
 
     @Operation(summary = "登录")
-    @OperationLog(module = "认证", action = "登录", maskFields = "password")
     @PostMapping("/login")
     public R<AuthLoginVO> login(@RequestBody @Valid AuthLoginDTO dto) {
         return R.ok(channelAuthService.login(dto));

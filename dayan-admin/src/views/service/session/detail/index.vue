@@ -75,7 +75,7 @@ function sessionStatusLabel(s?: number): string {
   return found ? found.label : '--'
 }
 
-/** 会话状态 el-tag type：完成success / 进行中(服务中/需求/方案)primary / 待办warning / 取消info。 */
+/** 会话状态 el-tag type：完成success / 进行中(服务中/方案/安排)primary / 待办warning / 取消info。 */
 function sessionStatusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   switch (status) {
     case SessionStatus.COMPLETED:
@@ -133,10 +133,26 @@ const tabs = [
       <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name" lazy>
         <BasicTab v-if="t.name === 'basic'" :session-code="sessionCode" />
         <EvaluationTab v-else-if="t.name === 'evaluation'" :session-code="sessionCode" />
-        <DemandTab v-else-if="t.name === 'demand'" :session-code="sessionCode" />
-        <SolutionTab v-else-if="t.name === 'solution'" :session-code="sessionCode" />
-        <ArrangeTab v-else-if="t.name === 'arrange'" :session-code="sessionCode" />
-        <FollowupTab v-else-if="t.name === 'followup'" :session-code="sessionCode" />
+        <DemandTab
+          v-else-if="t.name === 'demand'"
+          :session-code="sessionCode"
+          :client-code="sessionInfo?.clientCode"
+        />
+        <SolutionTab
+          v-else-if="t.name === 'solution'"
+          :session-code="sessionCode"
+          :client-code="sessionInfo?.clientCode"
+        />
+        <ArrangeTab
+          v-else-if="t.name === 'arrange'"
+          :session-code="sessionCode"
+          :client-code="sessionInfo?.clientCode"
+        />
+        <FollowupTab
+          v-else-if="t.name === 'followup'"
+          :session-code="sessionCode"
+          :client-code="sessionInfo?.clientCode"
+        />
       </el-tab-pane>
     </el-tabs>
   </div>

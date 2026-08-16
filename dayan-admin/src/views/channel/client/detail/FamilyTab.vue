@@ -66,7 +66,9 @@ const form = reactive<ClientFamilyMember>({
 })
 
 const rules: FormRules<ClientFamilyMember> = {
-  memberName: [{ required: true, message: '请输入成员姓名', trigger: 'blur' }]
+  memberName: [{ required: true, message: '请输入成员姓名', trigger: 'blur' }],
+  relation: [{ required: true, message: '请输入与客户关系', trigger: 'blur' }],
+  phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
 }
 
 function resetForm() {
@@ -160,7 +162,9 @@ defineExpose({ loadList })
 <template>
   <div class="family-tab">
     <div class="toolbar">
-      <el-button type="primary" :icon="'Plus'" @click="openCreate">新增家庭成员</el-button>
+      <div class="toolbar-actions">
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增家庭成员</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -221,7 +225,7 @@ defineExpose({ loadList })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="关系">
+            <el-form-item label="关系" prop="relation">
               <el-input v-model="form.relation" placeholder="如 父亲/母亲/配偶" maxlength="50" />
             </el-form-item>
           </el-col>
@@ -238,7 +242,7 @@ defineExpose({ loadList })
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="手机号">
+            <el-form-item label="手机号" prop="phone">
               <el-input v-model="form.phone" placeholder="手机号" maxlength="20" />
             </el-form-item>
           </el-col>
@@ -303,6 +307,16 @@ defineExpose({ loadList })
 .family-tab {
   .toolbar {
     margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
   }
   .role-switches {
     display: flex;

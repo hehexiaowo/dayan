@@ -28,6 +28,8 @@ import {
 } from '@/types/agent'
 import type { AgentInfo } from '@/types/agent'
 import RegionSelect from '@/components/RegionSelect.vue'
+import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
   /** 代理人编码（从详情页路由 prop 带入） */
@@ -144,7 +146,9 @@ async function handleSubmit() {
   if (!form.agentCode) return
   submitLoading.value = true
   try {
-    await updateAgent(form.agentCode, form)
+    // channelCode 由后端登录上下文填充，AgentInfoUpdateDTO 无该字段，提交前剔除
+    const { channelCode, ...payload } = form
+    await updateAgent(form.agentCode, payload)
     ElMessage.success('修改成功')
     dialogVisible.value = false
     await loadDetail()
@@ -161,12 +165,24 @@ defineExpose({ loadDetail })
   <div v-loading="loading">
     <template v-if="agentInfo">
       <div class="basic-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
         <el-descriptions-item label="代理人编码">{{ agentInfo.agentCode ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="姓名">{{ agentInfo.fullName }}</el-descriptions-item>
+        <el-descriptions-item label="头像">
+          <el-image
+            v-if="agentInfo.avatar"
+            :src="formatFileUrl(agentInfo.avatar)"
+            :preview-src-list="[formatFileUrl(agentInfo.avatar)]"
+            fit="cover"
+            style="width: 48px; height: 48px; border-radius: 4px"
+          />
+          <span v-else>--</span>
+        </el-descriptions-item>
         <el-descriptions-item label="所属渠道">{{ agentInfo.channelCode ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="性别">
           {{ genderText(agentInfo.gender) }}
@@ -283,6 +299,11 @@ defineExpose({ loadDetail })
               <el-input v-model="form.licenseNo" placeholder="从业资格证号" maxlength="50" />
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="头像">
+              <FileUploader v-model="form.avatar" type="image" module="agent" />
+            </el-form-item>
+          </el-col>
           <el-col :span="24">
             <el-form-item label="所在地区">
               <RegionSelect
@@ -340,6 +361,16 @@ defineExpose({ loadDetail })
 
 <style scoped>
 .basic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 </style>

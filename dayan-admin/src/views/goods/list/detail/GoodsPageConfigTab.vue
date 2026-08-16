@@ -40,7 +40,7 @@
             v-model="pickerVisible"
             type="image"
             multiple
-            :limit="9"
+            :limit="12"
             ref-type1="goods"
             :ref-code="goodsCode"
             @select="onPicked"

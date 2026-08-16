@@ -161,9 +161,11 @@ defineExpose({ loadList })
   <div class="favorite-tab">
     <!-- 工具栏 -->
     <div class="toolbar">
-      <el-button :icon="'Refresh'" @click="loadList">刷新</el-button>
-      <el-button type="primary" :icon="'Plus'" @click="openCreate">新增收藏</el-button>
       <span class="tip">收藏为幂等 add（重复不报错）；无编辑，要改先删再加。</span>
+      <div class="toolbar-actions">
+        <el-button :icon="'Refresh'" @click="loadList">刷新</el-button>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增收藏</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -237,12 +239,17 @@ defineExpose({ loadList })
   .toolbar {
     margin-bottom: 16px;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     .tip {
       color: var(--el-text-color-secondary);
       font-size: 13px;
-      margin-left: 8px;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
     }
   }
 }

@@ -13,13 +13,13 @@ import type { PageQuery } from '@/types/common'
 /**
  * 管家等级（butler_info.butler_level）。
  *
- * 1=初级 / 2=中级 / 3=高级 / 4=专家。
+ * 1=初级 / 2=中级 / 3=高级 / 4=金牌。
  */
 export const BUTLER_LEVEL_OPTIONS = [
   { label: '初级', value: 1 },
   { label: '中级', value: 2 },
   { label: '高级', value: 3 },
-  { label: '专家', value: 4 }
+  { label: '金牌', value: 4 }
 ] as const
 
 /**
@@ -41,7 +41,7 @@ export interface ButlerInfo {
   organCode?: string
   /** 关联后台账号编码（organ_account.account_code，未开通为 null） */
   accountCode?: string
-  /** 管家等级：1初级/2中级/3高级/4专家 */
+  /** 管家等级：1初级/2中级/3高级/4金牌 */
   butlerLevel?: number
   /** 状态：1在职 / 0离职（以 DDL 为准，非启用/禁用） */
   status?: number
@@ -456,31 +456,31 @@ export interface ButlerRatingQuery extends PageQuery {
 /**
  * 服务会话状态（service_session.session_status）。
  *
- * 0=待受理 / 1=已受理 / 2=需求提交 / 3=方案确认 / 4=服务中 / 5=已完成 / 6=已取消。
+ * 1=待分配 / 2=待收集 / 3=方案中 / 4=安排中 / 5=服务中 / 6=已完成 / 7=已取消。
  */
 export enum SessionStatus {
-  /** 待受理 */
-  PENDING = 0,
-  /** 已受理 */
-  ACCEPTED = 1,
-  /** 需求提交 */
-  DEMAND_SUBMITTED = 2,
-  /** 方案确认 */
-  SOLUTION_CONFIRMED = 3,
+  /** 待分配 */
+  PENDING = 1,
+  /** 待收集 */
+  ACCEPTED = 2,
+  /** 方案中 */
+  DEMAND_SUBMITTED = 3,
+  /** 安排中 */
+  SOLUTION_CONFIRMED = 4,
   /** 服务中 */
-  IN_SERVICE = 4,
+  IN_SERVICE = 5,
   /** 已完成 */
-  COMPLETED = 5,
+  COMPLETED = 6,
   /** 已取消 */
-  CANCELLED = 6
+  CANCELLED = 7
 }
 
 /** 服务会话状态选项 */
 export const SESSION_STATUS_OPTIONS = [
-  { label: '待受理', value: SessionStatus.PENDING },
-  { label: '已受理', value: SessionStatus.ACCEPTED },
-  { label: '需求提交', value: SessionStatus.DEMAND_SUBMITTED },
-  { label: '方案确认', value: SessionStatus.SOLUTION_CONFIRMED },
+  { label: '待分配', value: SessionStatus.PENDING },
+  { label: '待收集', value: SessionStatus.ACCEPTED },
+  { label: '方案中', value: SessionStatus.DEMAND_SUBMITTED },
+  { label: '安排中', value: SessionStatus.SOLUTION_CONFIRMED },
   { label: '服务中', value: SessionStatus.IN_SERVICE },
   { label: '已完成', value: SessionStatus.COMPLETED },
   { label: '已取消', value: SessionStatus.CANCELLED }
@@ -500,6 +500,30 @@ export const SERVICE_TYPE_OPTIONS = [
 ] as const
 
 /**
+ * 会话优先级（service_session.priority）。
+ *
+ * 0=普通 / 1=优先 / 2=紧急 / 3=非常紧急。
+ */
+export const SESSION_PRIORITY_OPTIONS = [
+  { label: '普通', value: 0 },
+  { label: '优先', value: 1 },
+  { label: '紧急', value: 2 },
+  { label: '非常紧急', value: 3 }
+] as const
+
+/**
+ * 会话来源类型（service_session.source_type）。
+ *
+ * 1=权益触发 / 2=客户主动 / 3=代理人委托 / 4=管家发起。
+ */
+export const SESSION_SOURCE_TYPE_OPTIONS = [
+  { label: '权益触发', value: 1 },
+  { label: '客户主动', value: 2 },
+  { label: '代理人委托', value: 3 },
+  { label: '管家发起', value: 4 }
+] as const
+
+/**
  * 服务会话实体（后端 ServiceSessionVO）。
  */
 export interface ServiceSession {
@@ -508,6 +532,8 @@ export interface ServiceSession {
   sessionCode?: string
   /** 关联权益编码 */
   equityCode?: string
+  /** 服务项目编码（激活来源，ServiceSessionVO 返回） */
+  itemCode?: string
   /** 客户编码 */
   clientCode?: string
   /** 服务管家编码 */
@@ -544,6 +570,12 @@ export interface ServiceSession {
   totalDuration?: number
   /** 服务接触次数 */
   touchCount?: number
+  /** 最大使用次数（激活时从权益配额快照） */
+  maxUseCount?: number
+  /** 已使用次数 */
+  usedCount?: number
+  /** 配额周期：1=终身 / 2=年度 */
+  quotaType?: number
   /** 是否满意 */
   isSatisfied?: number
   /** 综合评分 */

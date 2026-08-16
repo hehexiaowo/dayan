@@ -101,7 +101,10 @@ const form = reactive<SupplierContract>({
 
 const rules: FormRules<SupplierContract> = {
   contractName: [{ required: true, message: '请输入合同名称', trigger: 'blur' }],
-  supplierCode: [{ required: true, message: '请输入供应商编码', trigger: 'blur' }]
+  supplierCode: [{ required: true, message: '请输入供应商编码', trigger: 'blur' }],
+  organCode: [{ required: true, message: '请输入机构编码', trigger: 'blur' }],
+  effectiveDate: [{ required: true, message: '请选择生效日期', trigger: 'change' }],
+  expireDate: [{ required: true, message: '请选择到期日期', trigger: 'change' }]
 }
 
 /** attachmentUrls：后端是 string（JSON 数组），FileUploader 多文件用 string[] */
@@ -333,38 +336,46 @@ const isEdit = computed(() => dialogMode.value === 'edit')
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="合同编码">
-          <el-input v-model="query.contractCode" placeholder="合同编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="合同名称">
-          <el-input v-model="query.contractName" placeholder="名称关键字" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="供应商编码">
-          <el-input v-model="query.supplierCode" placeholder="供应商编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="合同类型">
-          <el-select v-model="query.contractType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in CONTRACT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in CONTRACT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.contractCode"
+          placeholder="合同编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.contractName"
+          placeholder="合同名称"
+          clearable
+          style="width: 170px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.supplierCode"
+          placeholder="供应商编码"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.contractType" placeholder="合同类型" clearable style="width: 140px">
+          <el-option v-for="o in CONTRACT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in CONTRACT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>供应商合同列表</span>
+          <span class="card-title">供应商合同列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增合同</el-button>
         </div>
       </template>
@@ -446,8 +457,8 @@ const isEdit = computed(() => dialogMode.value === 'edit')
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="机构编码">
-              <el-input v-model="form.organCode" placeholder="机构编码（可选）" maxlength="50" />
+            <el-form-item label="机构编码" prop="organCode">
+              <el-input v-model="form.organCode" placeholder="机构编码" maxlength="50" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -468,12 +479,12 @@ const isEdit = computed(() => dialogMode.value === 'edit')
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="生效日期">
+            <el-form-item label="生效日期" prop="effectiveDate">
               <el-date-picker v-model="form.effectiveDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="到期日期">
+            <el-form-item label="到期日期" prop="expireDate">
               <el-date-picker v-model="form.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" />
             </el-form-item>
           </el-col>
@@ -489,7 +500,7 @@ const isEdit = computed(() => dialogMode.value === 'edit')
           </el-col>
           <el-col :span="8">
             <el-form-item label="佣金比例(%)">
-              <el-input-number v-model="form.commissionRate" :min="0" :max="100" :precision="2" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="form.commissionRate" :min="0" :max="9.99" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -542,9 +553,17 @@ const isEdit = computed(() => dialogMode.value === 'edit')
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -552,6 +571,12 @@ const isEdit = computed(() => dialogMode.value === 'edit')
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 
 .pagination-wrap {
@@ -564,5 +589,11 @@ const isEdit = computed(() => dialogMode.value === 'edit')
   margin-left: 8px;
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

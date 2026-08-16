@@ -131,8 +131,8 @@ const form = reactive<ParkInfo>({
   cityCode: '',
   districtCode: '',
   address: '',
-  longitude: '',
-  latitude: '',
+  longitude: undefined,
+  latitude: undefined,
   serviceHotline: '',
   baseDescription: '',
   totalArea: '',
@@ -153,6 +153,7 @@ const form = reactive<ParkInfo>({
   depositAmount: undefined,
   depositDescription: '',
   contractPeriod: undefined,
+  openingTime: undefined,
   isHot: undefined,
   subScript: '',
   sortOrder: 0,
@@ -189,8 +190,8 @@ function openEdit() {
     cityCode: d.cityCode ?? '',
     districtCode: d.districtCode ?? '',
     address: d.address ?? '',
-    longitude: d.longitude ?? '',
-    latitude: d.latitude ?? '',
+    longitude: d.longitude,
+    latitude: d.latitude,
     serviceHotline: d.serviceHotline ?? '',
     baseDescription: d.baseDescription ?? '',
     totalArea: d.totalArea ?? '',
@@ -211,6 +212,7 @@ function openEdit() {
     depositAmount: d.depositAmount,
     depositDescription: d.depositDescription ?? '',
     contractPeriod: d.contractPeriod,
+    openingTime: d.openingTime,
     isHot: d.isHot,
     subScript: d.subScript ?? '',
     sortOrder: d.sortOrder ?? 0,
@@ -295,7 +297,9 @@ defineExpose({ loadDetail, loadScore })
   <div v-loading="loading">
     <template v-if="parkInfo">
       <div class="basic-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border title="基础信息">
@@ -401,6 +405,9 @@ defineExpose({ loadDetail, loadScore })
         <el-descriptions-item label="首页角标">{{ subScriptLabel(parkInfo.subScript) }}</el-descriptions-item>
         <el-descriptions-item label="是否已发布">{{ parkInfo.isPublished === 1 ? '已发布' : '未发布' }}</el-descriptions-item>
         <el-descriptions-item label="开业时间">{{ formatDate(parkInfo.openingTime) }}</el-descriptions-item>
+        <el-descriptions-item label="上架时间">{{ formatDate(parkInfo.onlineTime) }}</el-descriptions-item>
+        <el-descriptions-item label="下架时间">{{ formatDate(parkInfo.offlineTime) }}</el-descriptions-item>
+        <el-descriptions-item label="加入平台时间">{{ formatDate(parkInfo.addPlatformTime) }}</el-descriptions-item>
         <el-descriptions-item label="浏览次数">{{ parkInfo.viewCount ?? 0 }}</el-descriptions-item>
         <el-descriptions-item label="收藏次数">{{ parkInfo.collectCount ?? 0 }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ formatDate(parkInfo.createdAt) }}</el-descriptions-item>
@@ -542,12 +549,30 @@ defineExpose({ loadDetail, loadScore })
           </el-col>
           <el-col :span="8">
             <el-form-item label="经度">
-              <el-input v-model="form.longitude" placeholder="如 116.310003" />
+              <el-input-number
+                v-model="form.longitude"
+                :min="-180"
+                :max="180"
+                :precision="6"
+                :step="0.000001"
+                controls-position="right"
+                placeholder="如 116.310003"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="纬度">
-              <el-input v-model="form.latitude" placeholder="如 39.991234" />
+              <el-input-number
+                v-model="form.latitude"
+                :min="-90"
+                :max="90"
+                :precision="6"
+                :step="0.000001"
+                controls-position="right"
+                placeholder="如 39.991234"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -678,6 +703,17 @@ defineExpose({ loadDetail, loadScore })
               <el-input-number v-model="form.sortOrder" :min="0" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
+          <el-col :span="8">
+            <el-form-item label="开业时间">
+              <el-date-picker
+                v-model="form.openingTime"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                placeholder="选择开业时间"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
           <el-col :span="24">
             <el-form-item label="基地简介">
               <RichEditor
@@ -765,7 +801,17 @@ defineExpose({ loadDetail, loadScore })
 
 <style scoped>
 .basic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 .mt16 {
   margin-top: 16px;

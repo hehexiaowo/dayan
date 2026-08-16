@@ -112,12 +112,21 @@ async function openDetail(row: MessageRecord) {
   }
 }
 
+/** 跳转链接类型文案：1=内部页面 2=外部链接 3=APP路由 */
+function linkTypeLabel(v?: number | null): string {
+  if (v === 1) return '内部页面'
+  if (v === 2) return '外部链接'
+  if (v === 3) return 'APP路由'
+  return '—'
+}
+
 onMounted(loadData)
 </script>
 
 <template>
   <div class="msg-record-page">
-    <el-card shadow="never">
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
       <div class="toolbar">
         <el-select v-model="query.bizType" placeholder="业务类型" clearable filterable style="width: 140px">
           <el-option v-for="o in BIZ_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
@@ -147,9 +156,20 @@ onMounted(loadData)
           value-format="YYYY-MM-DDTHH:mm:ss"
           style="width: 340px"
         />
-        <el-button type="primary" @click="handleSearch">查询</el-button>
-        <el-button @click="handleReset">重置</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </div>
       </div>
+    </el-card>
+
+    <!-- 列表 -->
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">消息记录</span>
+        </div>
+      </template>
 
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="messageCode" label="消息编码" min-width="160" show-overflow-tooltip>
@@ -256,6 +276,7 @@ onMounted(loadData)
           <el-descriptions-item label="过期时间">{{ formatDateTime(detailRow.expireTime) }}</el-descriptions-item>
           <el-descriptions-item label="重试次数">{{ detailRow.retryCount ?? 0 }}</el-descriptions-item>
           <el-descriptions-item label="跳转链接">{{ detailRow.linkUrl || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="链接类型">{{ linkTypeLabel(detailRow.linkType) }}</el-descriptions-item>
           <el-descriptions-item label="消息标题" :span="2">{{ detailRow.title || '—' }}</el-descriptions-item>
           <el-descriptions-item label="消息正文（渲染后）" :span="2">
             <div class="content-box">{{ detailRow.content }}</div>
@@ -274,12 +295,40 @@ onMounted(loadData)
 
 <style scoped lang="scss">
 .msg-record-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
+    }
+  }
+
+  .search-card {
+    :deep(.el-card__body) {
+      padding-bottom: 2px;
+    }
+  }
+
   .toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
   }
 
   .pager {

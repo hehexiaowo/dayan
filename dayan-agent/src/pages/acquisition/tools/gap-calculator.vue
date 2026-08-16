@@ -205,7 +205,7 @@
     <DyContactForm v-if="isShareMode" />
 
     <view v-if="isShareMode" class="brand-footer">
-      <text>大雁养老 · 专业养老服务平台</text>
+      <text>养老宝典 · 专业养老服务平台</text>
     </view>
   </view>
 </template>

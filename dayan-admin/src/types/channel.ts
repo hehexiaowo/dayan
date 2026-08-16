@@ -9,36 +9,56 @@
  */
 import type { PageQuery } from '@/types/common'
 
-/** 渠道类型：1=总代理 2=区域代理 3=城市代理 4=门店 */
+/** 渠道类型（企业类型）：1=保险公司 2=银行机构 3=保险中介 4=其他企业 */
 export enum ChannelType {
-  /** 总代理 */
-  GENERAL = 1,
-  /** 区域代理 */
-  REGION = 2,
-  /** 城市代理 */
-  CITY = 3,
-  /** 门店 */
-  STORE = 4
+  /** 保险公司 */
+  INSURANCE = 1,
+  /** 银行机构 */
+  BANK = 2,
+  /** 保险中介 */
+  INTERMEDIARY = 3,
+  /** 其他企业 */
+  ENTERPRISE = 4
 }
 
 /** 渠道类型选项 */
 export const CHANNEL_TYPE_OPTIONS = [
-  { label: '总代理', value: ChannelType.GENERAL },
-  { label: '区域代理', value: ChannelType.REGION },
-  { label: '城市代理', value: ChannelType.CITY },
-  { label: '门店', value: ChannelType.STORE }
+  { label: '保险公司', value: ChannelType.INSURANCE },
+  { label: '银行机构', value: ChannelType.BANK },
+  { label: '保险中介', value: ChannelType.INTERMEDIARY },
+  { label: '其他企业', value: ChannelType.ENTERPRISE }
 ] as const
 
-/** 渠道状态：1启用 0禁用 */
+/** 渠道状态（合作状态）：0=待审核 1=合作中 2=已暂停 3=已终止（DDL 权威） */
 export enum ChannelStatus {
-  ENABLED = 1,
-  DISABLED = 0
+  /** 待审核 */
+  PENDING = 0,
+  /** 合作中 */
+  COOPERATING = 1,
+  /** 已暂停 */
+  PAUSED = 2,
+  /** 已终止 */
+  TERMINATED = 3
 }
 
 /** 渠道状态选项 */
 export const CHANNEL_STATUS_OPTIONS = [
-  { label: '启用', value: ChannelStatus.ENABLED },
-  { label: '禁用', value: ChannelStatus.DISABLED }
+  { label: '待审核', value: ChannelStatus.PENDING },
+  { label: '合作中', value: ChannelStatus.COOPERATING },
+  { label: '已暂停', value: ChannelStatus.PAUSED },
+  { label: '已终止', value: ChannelStatus.TERMINATED }
+] as const
+
+/** 结算周期：1=月结 2=季结（DDL 权威） */
+export const CHANNEL_SETTLEMENT_CYCLE_OPTIONS = [
+  { label: '月结', value: 1 },
+  { label: '季结', value: 2 }
+] as const
+
+/** 管理配置能力：0=业务型（仅业务操作），1=管理型（可建删子渠道+配置app） */
+export const CHANNEL_CAN_MANAGE_OPTIONS = [
+  { label: '业务型', value: 0 },
+  { label: '管理型', value: 1 }
 ] as const
 
 /** 渠道审核状态：0待审 1通过 2驳回 */
@@ -66,7 +86,7 @@ export interface ChannelInfo {
   fullName: string
   /** 渠道简称 */
   shortName?: string
-  /** 渠道类型：1总代理 2区域代理 3城市代理 4门店 */
+  /** 渠道类型（企业类型）：1保险公司 2银行机构 3保险中介 4其他企业 */
   channelType?: ChannelType
   /** 上级渠道编码（树形关键字段，顶级为 null/空） */
   parentCode?: string | null
@@ -98,13 +118,21 @@ export interface ChannelInfo {
   description?: string
   /** 旗下代理人数量（统计字段） */
   agentCount?: number
+  /** 累计订单金额（统计字段） */
+  totalOrderAmount?: number
+  /** 合作开始日期 */
+  cooperationStartDate?: string
   /** 分销商编码 */
   distributorCode?: string
-  /** 结算周期 */
+  /** 结算周期：1=月结 2=季结 */
   settlementCycle?: number
+  /** 渠道功能开关配置（JSON 字符串） */
+  featureConfig?: string
+  /** 管理配置能力：0=业务型，1=管理型 */
+  canManage?: number
   /** 排序号 */
   sortOrder?: number
-  /** 状态：1启用 0禁用 */
+  /** 状态（合作状态）：0待审核 1合作中 2已暂停 3已终止 */
   status?: ChannelStatus
   /** 审核状态：0待审 1通过 2驳回 */
   auditStatus?: ChannelAuditStatus
@@ -130,7 +158,7 @@ export interface ChannelInfoQuery {
   fullName?: string
   /** 渠道类型 */
   channelType?: ChannelType
-  /** 状态：1启用 0禁用 */
+  /** 状态（合作状态）：0待审核 1合作中 2已暂停 3已终止 */
   status?: ChannelStatus
   /** 审核状态：0待审 1通过 2驳回 */
   auditStatus?: ChannelAuditStatus

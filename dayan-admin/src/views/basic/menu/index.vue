@@ -200,22 +200,29 @@ loadTree()
 
 <template>
   <div class="page-container">
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
+      <div class="toolbar">
+        <el-select
+          v-model="domainType"
+          placeholder="所属端"
+          style="width: 140px"
+          @change="handleDomainChange"
+        >
+          <el-option v-for="o in DOMAIN_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
+          <el-button :icon="'Refresh'" @click="loadTree">刷新</el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <div class="header-left">
-            <span class="header-title">菜单列表</span>
-            <el-select
-              v-model="domainType"
-              placeholder="所属端"
-              style="width: 140px; margin-left: 16px"
-              @change="handleDomainChange"
-            >
-              <el-option v-for="o in DOMAIN_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-            </el-select>
-          </div>
-          <div>
-            <el-button :icon="'Refresh'" @click="loadTree">刷新</el-button>
+          <span class="card-title">菜单列表</span>
+          <div class="header-actions">
             <el-button type="primary" :icon="'Plus'" @click="openCreate()">新增菜单</el-button>
           </div>
         </div>
@@ -395,14 +402,36 @@ loadTree()
   justify-content: space-between;
   align-items: center;
 
-  .header-left {
-    display: flex;
-    align-items: center;
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
+}
 
-    .header-title {
-      font-size: 16px;
-      font-weight: 500;
-    }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 </style>

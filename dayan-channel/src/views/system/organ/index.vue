@@ -104,14 +104,14 @@ const form = reactive<{
   channelCode: undefined,
   fullName: '',
   shortName: '',
-  channelType: ChannelType.STORE,
+  channelType: ChannelType.ENTERPRISE,
   parentCode: null,
   unifiedCreditCode: '',
   contactPerson: '',
   contactPhone: '',
   address: '',
   canManage: 0,
-  status: ChannelStatus.ENABLED
+  status: ChannelStatus.PENDING
 })
 
 // 注：不使用 FormRules<ChannelInfo>，避免 children 自引用导致循环类型推导
@@ -136,14 +136,14 @@ function resetForm() {
     channelCode: undefined,
     fullName: '',
     shortName: '',
-    channelType: ChannelType.STORE,
+    channelType: ChannelType.ENTERPRISE,
     parentCode: currentChannel.value.channelCode ?? null,
     unifiedCreditCode: '',
     contactPerson: '',
     contactPhone: '',
     address: '',
     canManage: 0,
-    status: ChannelStatus.ENABLED
+    status: ChannelStatus.PENDING
   })
 }
 
@@ -176,14 +176,14 @@ function openEdit(row: ChannelInfo) {
     channelCode: row.channelCode,
     fullName: row.fullName ?? '',
     shortName: row.shortName ?? '',
-    channelType: row.channelType ?? ChannelType.STORE,
+    channelType: row.channelType ?? ChannelType.ENTERPRISE,
     parentCode: row.parentCode ?? null,
     unifiedCreditCode: row.unifiedCreditCode ?? '',
     contactPerson: row.contactPerson ?? '',
     contactPhone: row.contactPhone ?? '',
     address: row.address ?? '',
     canManage: row.canManage ?? 0,
-    status: row.status ?? ChannelStatus.ENABLED
+    status: row.status ?? ChannelStatus.PENDING
   })
   dialogVisible.value = true
 }
@@ -249,13 +249,13 @@ function channelTypeLabel(t?: number): string {
 /** 渠道类型 tag 颜色 */
 function channelTypeTagType(t?: number): 'success' | 'warning' | 'danger' | 'info' {
   switch (t) {
-    case ChannelType.GENERAL:
+    case ChannelType.INSURANCE:
       return 'danger'
-    case ChannelType.REGION:
+    case ChannelType.BANK:
       return 'warning'
-    case ChannelType.CITY:
+    case ChannelType.INTERMEDIARY:
       return 'success'
-    case ChannelType.STORE:
+    case ChannelType.ENTERPRISE:
       return 'info'
     default:
       return 'info'
@@ -272,14 +272,26 @@ function canManageText(v?: number): string {
   return v === 1 ? '管理型' : '业务型'
 }
 
-/** 状态 tag 颜色：1 启用 success / 0 禁用 info */
-function statusTagType(v?: number): 'success' | 'info' {
-  return v === ChannelStatus.ENABLED ? 'success' : 'info'
+/** 状态 tag 颜色（DDL 四态：0待审核/1合作中/2已暂停/3已终止） */
+function statusTagType(v?: number): 'success' | 'warning' | 'danger' | 'info' {
+  switch (v) {
+    case ChannelStatus.PENDING:
+      return 'warning'
+    case ChannelStatus.COOPERATING:
+      return 'success'
+    case ChannelStatus.PAUSED:
+      return 'danger'
+    case ChannelStatus.TERMINATED:
+      return 'info'
+    default:
+      return 'info'
+  }
 }
 
 /** 状态文案 */
 function statusText(v?: number): string {
-  return v === ChannelStatus.ENABLED ? '启用' : '禁用'
+  const found = CHANNEL_STATUS_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : '--'
 }
 
 onMounted(() => {

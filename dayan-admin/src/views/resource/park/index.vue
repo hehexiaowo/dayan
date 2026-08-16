@@ -305,40 +305,44 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="机构名称">
-          <el-input v-model="query.fullName" placeholder="机构全称" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="城市">
-          <el-input v-model="query.cityCode" placeholder="城市名称/编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="运营状态">
-          <el-select v-model="query.operateStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in PARK_OPERATE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="供应商">
-          <el-select v-model="query.supplierCode" placeholder="全部供应商" clearable filterable style="width: 200px">
-            <el-option
-              v-for="s in supplierOptions"
-              :key="s.supplierCode"
-              :label="s.fullName || s.shortName || s.supplierCode"
-              :value="s.supplierCode!"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.fullName"
+          placeholder="机构名称"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.cityCode"
+          placeholder="城市名称/编码"
+          clearable
+          style="width: 170px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.operateStatus" placeholder="运营状态" clearable style="width: 140px">
+          <el-option v-for="o in PARK_OPERATE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.supplierCode" placeholder="供应商" clearable filterable style="width: 200px">
+          <el-option
+            v-for="s in supplierOptions"
+            :key="s.supplierCode"
+            :label="s.fullName || s.shortName || s.supplierCode"
+            :value="s.supplierCode!"
+          />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>机构列表</span>
+          <span class="card-title">机构列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增机构</el-button>
         </div>
       </template>
@@ -574,9 +578,17 @@ onMounted(() => {
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -586,9 +598,21 @@ onMounted(() => {
   align-items: center;
 }
 
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

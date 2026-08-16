@@ -3,7 +3,7 @@
     <!-- 品牌区 -->
     <view class="brand-section">
       <view class="brand-logo">
-        <text class="brand-title">大雁养老</text>
+        <text class="brand-title">养老宝典</text>
         <text class="brand-subtitle">代理人工作台</text>
       </view>
     </view>
@@ -214,7 +214,7 @@
 
     <!-- 底部版权 -->
     <view class="footer">
-      <text class="footer-text">大雁养老 · 专业养老服务平台</text>
+      <text class="footer-text">养老宝典 · 专业养老服务平台</text>
     </view>
   </view>
 </template>

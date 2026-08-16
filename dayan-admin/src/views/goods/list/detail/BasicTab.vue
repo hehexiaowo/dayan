@@ -23,7 +23,7 @@ import {
   goodsStatusTagType
 } from '@/types/goods'
 import type { GoodsInfo } from '@/types/goods'
-import { formatDate, formatDateTime } from '@/utils/format'
+import { formatDateTime } from '@/utils/format'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { formatFileUrl } from '@/utils/file'
 import { useDictOptions } from '@/composables/useDict'
@@ -179,7 +179,9 @@ defineExpose({ loadDetail })
   <div v-loading="loading">
     <template v-if="goodsInfo">
       <div class="basic-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
@@ -209,8 +211,8 @@ defineExpose({ loadDetail })
         <el-descriptions-item label="是否新品">{{ goodsInfo.isNew === 1 ? '是' : '否' }}</el-descriptions-item>
         <el-descriptions-item label="是否推荐">{{ goodsInfo.isRecommend === 1 ? '是' : '否' }}</el-descriptions-item>
         <el-descriptions-item label="排序号">{{ goodsInfo.sortOrder ?? 0 }}</el-descriptions-item>
-        <el-descriptions-item label="开售时间">{{ goodsInfo.saleStartTime ? formatDate(goodsInfo.saleStartTime) : '--' }}</el-descriptions-item>
-        <el-descriptions-item label="结束时间">{{ goodsInfo.saleEndTime ? formatDate(goodsInfo.saleEndTime) : '--' }}</el-descriptions-item>
+        <el-descriptions-item label="开售时间">{{ goodsInfo.saleStartTime ? formatDateTime(goodsInfo.saleStartTime) : '--' }}</el-descriptions-item>
+        <el-descriptions-item label="结束时间">{{ goodsInfo.saleEndTime ? formatDateTime(goodsInfo.saleEndTime) : '--' }}</el-descriptions-item>
         <el-descriptions-item label="封面图" :span="3">
           <el-image
             v-if="goodsInfo.coverImage"
@@ -395,7 +397,17 @@ defineExpose({ loadDetail })
 
 <style scoped>
 .basic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 /* 统一 el-descriptions 标签列宽（如"商品编码"/"销量（只读）"长短不一），固定宽度且不换行 */
 :deep(.el-descriptions__label) {

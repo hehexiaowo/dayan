@@ -15,15 +15,15 @@ export const CONFIG_VALUE_TYPE_OPTIONS = [
   { label: 'JSON', value: 'json' }
 ] as const
 
-/** 配置所属环境 */
-export type ConfigEnv = 'dev' | 'test' | 'prod' | 'all'
+/** 配置所属环境：dev/sit/uat/prod（对齐 DDL system_config.env） */
+export type ConfigEnv = 'dev' | 'sit' | 'uat' | 'prod'
 
 /** 配置环境选项 */
 export const CONFIG_ENV_OPTIONS = [
   { label: '开发', value: 'dev' },
-  { label: '测试', value: 'test' },
-  { label: '生产', value: 'prod' },
-  { label: '全部', value: 'all' }
+  { label: '集成测试', value: 'sit' },
+  { label: '验收测试', value: 'uat' },
+  { label: '生产', value: 'prod' }
 ] as const
 
 /** 配置作用域（后端 P1 仅实现 global：SystemConfigService 强制 scope=global） */
@@ -65,7 +65,7 @@ export interface SystemConfig {
   configValue: string
   /** 值类型：string/number/boolean/json */
   valueType: ConfigValueType
-  /** 环境：dev/test/prod/all */
+  /** 环境：dev/sit/uat/prod */
   env: ConfigEnv
   /** 作用域：system/organ/user */
   scope: ConfigScope

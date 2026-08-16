@@ -9,8 +9,8 @@
  * 关键约束：
  * - 后端无 update 端点，编辑用 POST（saveOrUpdate 语义）。
  * - lastAssessmentTime 由后端自动设为 now()，表单只读展示，不编辑。
- * - 枚举字段（bloodType/mobilityLevel/cognitiveLevel/mentalStatus/sleepQuality）后端无 @Schema 文档，
- *   暂用 el-input-number 兜底 + TODO 注释。
+ * - 枚举字段（bloodType/mobilityLevel/cognitiveLevel/mentalStatus/sleepQuality）按 DDL
+ *   09_client.sql 注释用 el-select（选项见下方本地常量）。
  * - height/weight/bloodSugar/healthScore 是 BigDecimal/数值，用 el-input-number（精度按需）。
  */
 import { reactive, ref } from 'vue'
@@ -136,6 +136,45 @@ async function handleDelete() {
   await loadProfile()
 }
 
+// ---------- 枚举选项（按 DDL 09_client.sql 注释） ----------
+/** 血型：1=A, 2=B, 3=AB, 4=O */
+const BLOOD_TYPE_OPTIONS = [
+  { label: 'A', value: 1 },
+  { label: 'B', value: 2 },
+  { label: 'AB', value: 3 },
+  { label: 'O', value: 4 }
+] as const
+
+/** 行动能力：1=完全自理, 2=部分自理, 3=需要协助, 4=完全依赖 */
+const MOBILITY_LEVEL_OPTIONS = [
+  { label: '完全自理', value: 1 },
+  { label: '部分自理', value: 2 },
+  { label: '需要协助', value: 3 },
+  { label: '完全依赖', value: 4 }
+] as const
+
+/** 认知能力：1=正常, 2=轻度障碍, 3=中度障碍, 4=重度障碍 */
+const COGNITIVE_LEVEL_OPTIONS = [
+  { label: '正常', value: 1 },
+  { label: '轻度障碍', value: 2 },
+  { label: '中度障碍', value: 3 },
+  { label: '重度障碍', value: 4 }
+] as const
+
+/** 心理状态：1=良好, 2=一般, 3=需关注 */
+const MENTAL_STATUS_OPTIONS = [
+  { label: '良好', value: 1 },
+  { label: '一般', value: 2 },
+  { label: '需关注', value: 3 }
+] as const
+
+/** 睡眠质量：1=良好, 2=一般, 3=较差 */
+const SLEEP_QUALITY_OPTIONS = [
+  { label: '良好', value: 1 },
+  { label: '一般', value: 2 },
+  { label: '较差', value: 3 }
+] as const
+
 // ---------- 辅助渲染 ----------
 function formatDateTime(s?: string): string {
   if (!s) return '--'
@@ -146,6 +185,12 @@ function numText(v?: number): string {
   return v != null ? String(v) : '--'
 }
 
+/** 选项查找 label（兼容数字直传） */
+function optionLabel(options: readonly { label: string; value: number }[], v?: number): string {
+  const found = options.find((o) => o.value === v)
+  return found ? found.label : v != null ? String(v) : '--'
+}
+
 defineExpose({ loadProfile })
 </script>
 
@@ -153,26 +198,23 @@ defineExpose({ loadProfile })
   <div v-loading="loading">
     <template v-if="profile">
       <div class="toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑健康档案</el-button>
-        <el-button type="danger" :icon="'Delete'" plain @click="handleDelete">删除档案</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑健康档案</el-button>
+          <el-button type="danger" :icon="'Delete'" plain @click="handleDelete">删除档案</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
         <el-descriptions-item label="身高(cm)">{{ numText(profile.height) }}</el-descriptions-item>
         <el-descriptions-item label="体重(kg)">{{ numText(profile.weight) }}</el-descriptions-item>
-        <!-- TODO: bloodType 枚举值待后端补 @Schema 文档后改为 select -->
-        <el-descriptions-item label="血型">{{ numText(profile.bloodType) }}</el-descriptions-item>
+        <el-descriptions-item label="血型">{{ optionLabel(BLOOD_TYPE_OPTIONS, profile.bloodType) }}</el-descriptions-item>
         <el-descriptions-item label="血压">{{ profile.bloodPressure || '--' }}</el-descriptions-item>
         <el-descriptions-item label="血糖">{{ numText(profile.bloodSugar) }}</el-descriptions-item>
         <el-descriptions-item label="心率">{{ numText(profile.heartRate) }}</el-descriptions-item>
-        <!-- TODO: mobilityLevel 枚举值待后端补 @Schema 文档后改为 select -->
-        <el-descriptions-item label="行动能力">{{ numText(profile.mobilityLevel) }}</el-descriptions-item>
-        <!-- TODO: cognitiveLevel 枚举值待后端补 @Schema 文档后改为 select -->
-        <el-descriptions-item label="认知等级">{{ numText(profile.cognitiveLevel) }}</el-descriptions-item>
-        <!-- TODO: mentalStatus 枚举值待后端补 @Schema 文档后改为 select -->
-        <el-descriptions-item label="精神状态">{{ numText(profile.mentalStatus) }}</el-descriptions-item>
-        <!-- TODO: sleepQuality 枚举值待后端补 @Schema 文档后改为 select -->
-        <el-descriptions-item label="睡眠质量">{{ numText(profile.sleepQuality) }}</el-descriptions-item>
+        <el-descriptions-item label="行动能力">{{ optionLabel(MOBILITY_LEVEL_OPTIONS, profile.mobilityLevel) }}</el-descriptions-item>
+        <el-descriptions-item label="认知等级">{{ optionLabel(COGNITIVE_LEVEL_OPTIONS, profile.cognitiveLevel) }}</el-descriptions-item>
+        <el-descriptions-item label="精神状态">{{ optionLabel(MENTAL_STATUS_OPTIONS, profile.mentalStatus) }}</el-descriptions-item>
+        <el-descriptions-item label="睡眠质量">{{ optionLabel(SLEEP_QUALITY_OPTIONS, profile.sleepQuality) }}</el-descriptions-item>
         <el-descriptions-item label="健康评分">{{ numText(profile.healthScore) }}</el-descriptions-item>
         <el-descriptions-item label="饮食偏好" :span="3">{{ profile.dietPreference || '--' }}</el-descriptions-item>
         <el-descriptions-item label="慢性病" :span="3">{{ profile.chronicDiseases || '--' }}</el-descriptions-item>
@@ -222,9 +264,10 @@ defineExpose({ loadProfile })
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <!-- TODO: bloodType 枚举值待后端补 @Schema 文档后改为 select -->
             <el-form-item label="血型">
-              <el-input-number v-model="form.bloodType" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.bloodType" placeholder="选择血型" clearable style="width: 100%">
+                <el-option v-for="o in BLOOD_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -243,27 +286,31 @@ defineExpose({ loadProfile })
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <!-- TODO: mobilityLevel 枚举值待后端补 @Schema 文档后改为 select -->
             <el-form-item label="行动能力">
-              <el-input-number v-model="form.mobilityLevel" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.mobilityLevel" placeholder="选择行动能力" clearable style="width: 100%">
+                <el-option v-for="o in MOBILITY_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <!-- TODO: cognitiveLevel 枚举值待后端补 @Schema 文档后改为 select -->
             <el-form-item label="认知等级">
-              <el-input-number v-model="form.cognitiveLevel" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.cognitiveLevel" placeholder="选择认知等级" clearable style="width: 100%">
+                <el-option v-for="o in COGNITIVE_LEVEL_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <!-- TODO: mentalStatus 枚举值待后端补 @Schema 文档后改为 select -->
             <el-form-item label="精神状态">
-              <el-input-number v-model="form.mentalStatus" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.mentalStatus" placeholder="选择精神状态" clearable style="width: 100%">
+                <el-option v-for="o in MENTAL_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <!-- TODO: sleepQuality 枚举值待后端补 @Schema 文档后改为 select -->
             <el-form-item label="睡眠质量">
-              <el-input-number v-model="form.sleepQuality" :min="0" controls-position="right" style="width: 100%" />
+              <el-select v-model="form.sleepQuality" placeholder="选择睡眠质量" clearable style="width: 100%">
+                <el-option v-for="o in SLEEP_QUALITY_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -333,8 +380,15 @@ defineExpose({ loadProfile })
 
 <style scoped>
 .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+}
+.toolbar .toolbar-actions {
   display: flex;
   gap: 8px;
+  margin-left: auto;
 }
 </style>

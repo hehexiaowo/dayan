@@ -172,33 +172,35 @@ async function handleDelete(row: KnowledgeRepo) {
 
 <template>
   <div class="knowledge-page">
-    <el-card shadow="never">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="仓库名称">
-          <el-input v-model="query.repoName" placeholder="模糊搜索" clearable style="width: 180px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="归属类型">
-          <el-select v-model="query.repoType" placeholder="全部" clearable style="width: 130px">
-            <el-option v-for="o in KNOWLEDGE_REPO_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="渠道">
-          <el-select v-model="query.channelCode" placeholder="全部" clearable filterable style="width: 200px">
-            <el-option v-for="c in channels" :key="c.channelCode" :label="c.fullName" :value="c.channelCode" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in KNOWLEDGE_REPO_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
+      <div class="toolbar">
+        <el-input v-model="query.repoName" placeholder="仓库名称" clearable style="width: 180px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.repoType" placeholder="归属类型" clearable style="width: 130px">
+          <el-option v-for="o in KNOWLEDGE_REPO_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.channelCode" placeholder="渠道" clearable filterable style="width: 200px">
+          <el-option v-for="c in channels" :key="c.channelCode" :label="c.fullName" :value="c.channelCode" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in KNOWLEDGE_REPO_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-          <el-button type="success" :icon="'Plus'" v-permission="'knowledge:repo:create'" @click="openCreate">
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 表格 -->
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">知识仓库列表</span>
+          <el-button type="primary" :icon="'Plus'" v-permission="'knowledge:repo:create'" @click="openCreate">
             新建知识仓库
           </el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </template>
 
       <el-alert type="info" :closable="false" style="margin-bottom: 12px">
         知识仓库与阿里云百炼知识库一一对应：平台级一个 + 每个渠道一个。文档与解析状态以百炼云端为准，本页实时同步展示。
@@ -307,6 +309,42 @@ async function handleDelete(row: KnowledgeRepo) {
 
 <style scoped lang="scss">
 .knowledge-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
+    }
+  }
+
+  .search-card {
+    :deep(.el-card__body) {
+      padding-bottom: 2px;
+    }
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
+
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

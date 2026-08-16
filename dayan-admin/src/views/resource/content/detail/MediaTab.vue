@@ -154,11 +154,11 @@ loadPage()
 
 <template>
   <div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 12px">
-      <el-select v-model="query.mediaType" placeholder="全部类型" clearable style="width: 160px" @change="handleSearch">
+    <div class="toolbar">
+      <el-select v-model="query.mediaType" placeholder="媒体类型" clearable style="width: 160px" @change="handleSearch">
         <el-option v-for="o in MEDIA_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
       </el-select>
-      <div>
+      <div class="toolbar-actions">
         <el-button type="danger" plain :icon="'Delete'" @click="handleClearAll">清空全部</el-button>
         <el-button type="primary" :icon="'Plus'" @click="openCreate">新增媒体</el-button>
       </div>
@@ -293,3 +293,19 @@ loadPage()
     </el-dialog>
   </div>
 </template>
+
+<style scoped lang="scss">
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+</style>

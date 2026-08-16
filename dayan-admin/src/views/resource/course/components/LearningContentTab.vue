@@ -115,6 +115,8 @@ async function handleSubmit() {
   }
   submitLoading.value = true
   try {
+    // publishTime 为空时置 undefined（后端默认当前时间），避免空串反序列化 400
+    if (!form.publishTime) form.publishTime = undefined
     if (dialogType.value === 'create') {
       await createLearningContent(form)
       ElMessage.success('新增成功')
@@ -157,27 +159,29 @@ loadPage()
 <template>
   <div class="tab-body">
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="标题">
-          <el-input v-model="query.title" placeholder="标题模糊搜索" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option label="上架" :value="1" />
-            <el-option label="下架" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.title"
+          placeholder="标题"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option label="上架" :value="1" />
+          <el-option label="下架" :value="0" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>{{ categoryLabel(props.category) }}列表</span>
+          <span class="card-title">{{ categoryLabel(props.category) }}列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增内容</el-button>
         </div>
       </template>
@@ -313,15 +317,28 @@ loadPage()
   flex-direction: column;
   gap: 16px;
 }
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 .badge-tag {
   margin-right: 6px;
@@ -330,5 +347,10 @@ loadPage()
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

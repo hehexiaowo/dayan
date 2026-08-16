@@ -8,12 +8,12 @@
  *
  * 枚举档位说明（重要）：
  * - ClientStatus 为 3 态（0禁用 / 1正常 / 2冻结），对齐 client_info.status DDL 注释。
- * - ClientLevel 为 4 档（普通/银卡/金卡/钻石）。DDL 注释写作"1普通 2VIP 3SVIP"系过时，
- *   以前端 4 档为准（与列表页一致）。
+ * - ClientLevel 为 3 档（1普通 / 2VIP / 3SVIP），对齐 client_info.client_level DDL 注释。
  *
- * 子表枚举字段（careLevel/targetType/bloodType/mobilityLevel/cognitiveLevel/mentalStatus/
- * sleepQuality/accountStatus 等）后端 VO 暂无 @Schema 文档，前端暂用 el-input-number 兜底，
- * 待后端补文档后改为 el-select（详见各 Tab 内 TODO 注释）。
+ * 子表枚举字段：bloodType/mobilityLevel/cognitiveLevel/mentalStatus/sleepQuality 已按
+ * 09_client.sql DDL 注释在前端 HealthTab 用 el-select 渲染（选项见该 Tab 本地常量）；
+ * careLevel（1=特级,2=一级,3=二级,4=三级,5=自理）、targetType（1=养老机构,2=场景,3=课程,
+ * 4=内容）同理在前端用 el-select（详见各 Tab）。
  */
 
 import type { PageQuery } from '@/types/common'
@@ -32,20 +32,18 @@ export const GENDER_OPTIONS = [
   { label: '女', value: Gender.FEMALE }
 ] as const
 
-/** 客户等级：1普通 2银卡 3金卡 4钻石 */
+/** 客户等级：1普通 2VIP 3SVIP */
 export enum ClientLevel {
   NORMAL = 1,
-  SILVER = 2,
-  GOLD = 3,
-  DIAMOND = 4
+  VIP = 2,
+  SVIP = 3
 }
 
 /** 客户等级选项 */
 export const CLIENT_LEVEL_OPTIONS = [
   { label: '普通', value: ClientLevel.NORMAL },
-  { label: '银卡', value: ClientLevel.SILVER },
-  { label: '金卡', value: ClientLevel.GOLD },
-  { label: '钻石', value: ClientLevel.DIAMOND }
+  { label: 'VIP', value: ClientLevel.VIP },
+  { label: 'SVIP', value: ClientLevel.SVIP }
 ] as const
 
 /** 客户状态：0禁用 1正常 2冻结 */
@@ -91,15 +89,13 @@ export function clientLevelLabel(v?: number): string {
   return found ? found.label : v != null ? String(v) : '--'
 }
 
-/** 客户等级 el-tag 配色。 */
+/** 客户等级 el-tag 配色：1普通=info，2VIP=warning，3SVIP=danger。 */
 export function clientLevelTagType(v?: number): 'success' | 'warning' | 'danger' | 'info' {
   switch (v) {
-    case ClientLevel.DIAMOND:
+    case ClientLevel.SVIP:
       return 'danger'
-    case ClientLevel.GOLD:
+    case ClientLevel.VIP:
       return 'warning'
-    case ClientLevel.SILVER:
-      return 'success'
     case ClientLevel.NORMAL:
     default:
       return 'info'
@@ -181,7 +177,7 @@ export interface ClientInfo {
   profession?: string
   /** 来源类型 */
   sourceType?: number
-  /** 客户等级：1普通 2银卡 3金卡 4钻石 */
+  /** 客户等级：1普通 2VIP 3SVIP */
   clientLevel?: ClientLevel
   /** 权益数量（统计字段） */
   equityCount?: number
@@ -355,7 +351,7 @@ export interface ClientHealthProfile {
   height?: number
   /** 体重(kg) */
   weight?: number
-  // TODO: bloodType 枚举值待后端补 @Schema 文档后改为 select
+  // 血型（1=A, 2=B, 3=AB, 4=O，HealthTab 用 el-select）
   /** 血型 */
   bloodType?: number
   /** 血压（如 120/80） */
@@ -374,18 +370,18 @@ export interface ClientHealthProfile {
   familyHistory?: string
   /** 当前用药信息（JSON 字符串） */
   medicationInfo?: string
-  // TODO: mobilityLevel 枚举值待后端补 @Schema 文档后改为 select
+  // 行动能力（1=完全自理, 2=部分自理, 3=需要协助, 4=完全依赖，HealthTab 用 el-select）
   /** 行动能力等级 */
   mobilityLevel?: number
-  // TODO: cognitiveLevel 枚举值待后端补 @Schema 文档后改为 select
+  // 认知能力（1=正常, 2=轻度障碍, 3=中度障碍, 4=重度障碍，HealthTab 用 el-select）
   /** 认知等级 */
   cognitiveLevel?: number
-  // TODO: mentalStatus 枚举值待后端补 @Schema 文档后改为 select
+  // 心理状态（1=良好, 2=一般, 3=需关注，HealthTab 用 el-select）
   /** 精神状态 */
   mentalStatus?: number
   /** 饮食偏好 */
   dietPreference?: string
-  // TODO: sleepQuality 枚举值待后端补 @Schema 文档后改为 select
+  // 睡眠质量（1=良好, 2=一般, 3=较差，HealthTab 用 el-select）
   /** 睡眠质量 */
   sleepQuality?: number
   /** 紧急联系人姓名 */
@@ -417,7 +413,7 @@ export interface ClientCareNeed {
   butlerFullName?: string
   /** 评估日期（yyyy-MM-dd） */
   evalDate?: string
-  // TODO: careLevel 枚举值待后端补 @Schema 文档后改为 select
+  // 建议照护等级（1=特级, 2=一级, 3=二级, 4=三级, 5=自理，CareTab 用 el-select）
   /** 照护等级 */
   careLevel?: number
   /** 照护类型偏好 */
@@ -440,7 +436,7 @@ export interface ClientCareNeed {
   parkRecommendations?: string
   /** 评估结果 */
   evalResult?: string
-  /** 状态：0禁用 1启用 */
+  /** 状态：0评估中 1已完成 2已过期 */
   status?: number
   /** 备注 */
   remark?: string
@@ -469,7 +465,7 @@ export interface ClientFavorite {
   id?: number
   /** 客户编码 */
   clientCode: string
-  // TODO: targetType 枚举值待后端补 @Schema 文档后改为 select
+  // 收藏对象类型（1=养老机构, 2=场景, 3=课程, 4=内容，FavoriteTab 用 el-select）
   /** 收藏对象类型 */
   targetType: number
   /** 收藏对象编码 */

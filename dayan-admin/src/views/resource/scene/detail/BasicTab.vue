@@ -8,7 +8,7 @@
  * 注：场景状态机（提交审核/上架/下架/满期等）在主列表页操作，本 tab 不重复放置状态机按钮。
  * imageUrls / highlight / notice 是 JSON 字符串或逗号分隔，编辑用 textarea 原文编辑（不做复杂解析）。
  */
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { getScene, updateScene } from '@/api/scene'
 import {
@@ -64,6 +64,18 @@ function formatDate(s?: string): string {
   return s.length >= 10 ? s.slice(0, 10) : s
 }
 
+/** 图集列表：兼容 JSON 数组字符串与逗号分隔两种存量格式。 */
+function imageUrlList(raw?: string): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+  } catch {
+    // 非 JSON，按逗号分隔
+  }
+  return raw.split(',').map((s) => s.trim()).filter(Boolean)
+}
+
 // ---------- 编辑弹窗 ----------
 const dialogVisible = ref(false)
 const submitLoading = ref(false)
@@ -80,6 +92,8 @@ const form = reactive<SceneInfo>({
   address: '',
   sceneDescription: '',
   coverImage: '',
+  imageUrls: '',
+  videoUrl: '',
   capacity: undefined,
   durationHours: undefined,
   minPerson: undefined,
@@ -100,6 +114,24 @@ const rules: FormRules<SceneInfo> = {
   sceneType: [{ required: true, message: '请选择场景类型', trigger: 'change' }]
 }
 
+/** imageUrls：后端是 string（JSON 数组，兼容逗号分隔存量），FileUploader 多图用 string[] */
+const imageUrlsModel = computed<string[]>({
+  get() {
+    const raw = form.imageUrls
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+    } catch {
+      // 非 JSON，按逗号分隔
+    }
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  },
+  set(val: string[]) {
+    form.imageUrls = val.length > 0 ? JSON.stringify(val) : ''
+  }
+})
+
 function openEdit() {
   if (!sceneInfo.value) return
   Object.assign(form, {
@@ -113,6 +145,8 @@ function openEdit() {
     address: sceneInfo.value.address ?? '',
     sceneDescription: sceneInfo.value.sceneDescription ?? '',
     coverImage: sceneInfo.value.coverImage ?? '',
+    imageUrls: sceneInfo.value.imageUrls ?? '',
+    videoUrl: sceneInfo.value.videoUrl ?? '',
     capacity: sceneInfo.value.capacity,
     durationHours: sceneInfo.value.durationHours,
     minPerson: sceneInfo.value.minPerson,
@@ -157,7 +191,9 @@ defineExpose({ loadDetail })
   <div v-loading="loading">
     <template v-if="sceneInfo">
       <div class="basic-toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑基本信息</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
@@ -196,6 +232,31 @@ defineExpose({ loadDetail })
             fit="cover"
             style="width: 80px; height: 80px"
           />
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="图集" :span="3">
+          <div v-if="imageUrlList(sceneInfo.imageUrls).length" class="image-list">
+            <el-image
+              v-for="(url, i) in imageUrlList(sceneInfo.imageUrls)"
+              :key="url"
+              :src="formatFileUrl(url)"
+              :preview-src-list="imageUrlList(sceneInfo.imageUrls).map(formatFileUrl)"
+              :initial-index="i"
+              fit="cover"
+              class="detail-img"
+            />
+          </div>
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="视频链接" :span="3">
+          <el-link
+            v-if="sceneInfo.videoUrl"
+            type="primary"
+            :href="formatFileUrl(sceneInfo.videoUrl)"
+            target="_blank"
+          >
+            {{ sceneInfo.videoUrl }}
+          </el-link>
           <span v-else>--</span>
         </el-descriptions-item>
         <el-descriptions-item label="活动亮点" :span="3">
@@ -277,6 +338,16 @@ defineExpose({ loadDetail })
               <FileUploader v-model="form.coverImage" type="image" module="scene" register-asset asset-ref-type1="scene" :asset-ref-code="props.sceneCode" asset-ref-type2="scene" />
             </el-form-item>
           </el-col>
+          <el-col :span="24">
+            <el-form-item label="图集">
+              <FileUploader v-model="imageUrlsModel" type="image" multiple module="scene" register-asset asset-ref-type1="scene" :asset-ref-code="props.sceneCode" asset-ref-type2="scene" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="视频链接">
+              <el-input v-model="form.videoUrl" placeholder="宣传视频 URL" maxlength="500" />
+            </el-form-item>
+          </el-col>
           <el-col :span="8">
             <el-form-item label="容量">
               <el-input-number v-model="form.capacity" :min="0" :max="999999" controls-position="right" style="width: 100%" />
@@ -284,7 +355,7 @@ defineExpose({ loadDetail })
           </el-col>
           <el-col :span="8">
             <el-form-item label="时长(小时)">
-              <el-input-number v-model="form.durationHours" :min="0" :max="9999" :precision="2" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="form.durationHours" :min="0" :max="9999" :precision="1" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -354,7 +425,17 @@ defineExpose({ loadDetail })
 
 <style scoped>
 .basic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 .url-cell {
   word-break: break-all;
@@ -363,5 +444,16 @@ defineExpose({ loadDetail })
 .multiline {
   white-space: pre-wrap;
   word-break: break-all;
+}
+.image-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.detail-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  border: 1px solid #ebeef5;
 }
 </style>

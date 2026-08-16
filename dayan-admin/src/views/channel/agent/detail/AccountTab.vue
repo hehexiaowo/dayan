@@ -195,9 +195,11 @@ defineExpose({ loadAccount })
     <!-- 有账号：展示详情 + 操作 -->
     <template v-if="account">
       <div class="toolbar">
-        <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑账号</el-button>
-        <el-button type="warning" :icon="'Key'" plain @click="handleResetPassword">重置密码</el-button>
-        <el-button type="danger" :icon="'Delete'" plain @click="handleDelete">删除账号</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="'Edit'" @click="openEdit">编辑账号</el-button>
+          <el-button type="warning" :icon="'Key'" plain @click="handleResetPassword">重置密码</el-button>
+          <el-button type="danger" :icon="'Delete'" plain @click="handleDelete">删除账号</el-button>
+        </div>
       </div>
 
       <el-descriptions :column="3" border>
@@ -316,8 +318,15 @@ defineExpose({ loadAccount })
 
 <style scoped>
 .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+}
+.toolbar .toolbar-actions {
   display: flex;
   gap: 8px;
+  margin-left: auto;
 }
 </style>

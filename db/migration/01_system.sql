@@ -339,7 +339,7 @@ CREATE TABLE `system_menu` (
   `is_visible` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否可见（0=隐藏, 1=显示）',
   `is_external` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否外链（0=否, 1=是）',
   `is_cache` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否缓存（0=否, 1=是）',
-  `domain_type` VARCHAR(30) NOT NULL COMMENT '所属域（organ/butler/supplier/channel）',
+  `domain_type` VARCHAR(30) NOT NULL COMMENT '应用端（admin/channel/agent/client）',
   `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '状态（0=禁用, 1=启用）',
   `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

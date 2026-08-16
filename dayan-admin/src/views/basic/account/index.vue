@@ -19,6 +19,7 @@ import type { OrganSimple } from '@/types/organ'
 import type { Role } from '@/types/role'
 import { AccountStatus, ACCOUNT_STATUS_OPTIONS, GENDER_OPTIONS } from '@/types/account'
 import { formatDateTime } from '@/utils/format'
+import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
  * 账号管理页。
@@ -62,7 +63,8 @@ const form = reactive<Account>({
   gender: 0,
   phone: '',
   email: '',
-  accountStatus: AccountStatus.ENABLED,
+  avatar: '',
+  accountStatus: AccountStatus.NORMAL,
   isAdmin: 0,
   remark: '',
   roleCodes: []
@@ -169,7 +171,8 @@ function resetForm() {
     gender: 0,
     phone: '',
     email: '',
-    accountStatus: AccountStatus.ENABLED,
+    avatar: '',
+    accountStatus: AccountStatus.NORMAL,
     isAdmin: 0,
     remark: '',
     roleCodes: []
@@ -195,6 +198,7 @@ async function openEdit(row: Account) {
     gender: row.gender,
     phone: row.phone,
     email: row.email,
+    avatar: row.avatar,
     accountStatus: row.accountStatus,
     isAdmin: row.isAdmin,
     remark: row.remark,
@@ -257,15 +261,15 @@ async function handleDeleteRow(row: Account) {
   loadPage()
 }
 
-/** 切换账号启用状态 */
+/** 切换账号状态（正常↔禁用；锁定态不提供切换开关） */
 async function handleStatusChange(row: Account) {
   if (!row.accountCode) return
   const nextStatus =
-    row.accountStatus === AccountStatus.ENABLED ? AccountStatus.DISABLED : AccountStatus.ENABLED
+    row.accountStatus === AccountStatus.NORMAL ? AccountStatus.DISABLED : AccountStatus.NORMAL
   try {
     await switchAccountStatus(row.accountCode, nextStatus)
     row.accountStatus = nextStatus
-    ElMessage.success(nextStatus === AccountStatus.ENABLED ? '已启用' : '已禁用')
+    ElMessage.success(nextStatus === AccountStatus.NORMAL ? '已恢复正常' : '已禁用')
   } catch {
     // 失败不改变状态（响应拦截器已报错）
   }
@@ -307,40 +311,32 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="机构">
-          <el-select v-model="query.organCode" placeholder="全部机构" clearable filterable style="width: 200px">
-            <el-option
-              v-for="o in organOptions"
-              :key="o.organCode"
-              :label="o.fullName || o.shortName || o.organCode"
-              :value="o.organCode"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="账号">
-          <el-input v-model="query.username" placeholder="登录账号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="姓名">
-          <el-input v-model="query.realName" placeholder="真实姓名" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.accountStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-select v-model="query.organCode" placeholder="机构" clearable filterable style="width: 200px">
+          <el-option
+            v-for="o in organOptions"
+            :key="o.organCode"
+            :label="o.fullName || o.shortName || o.organCode"
+            :value="o.organCode"
+          />
+        </el-select>
+        <el-input v-model="query.username" placeholder="登录账号" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.realName" placeholder="真实姓名" clearable style="width: 150px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.accountStatus" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>账号列表</span>
+          <span class="card-title">账号列表</span>
           <el-button v-permission="'organ:account:create'" type="primary" :icon="'Plus'" @click="openCreate">新增账号</el-button>
         </div>
       </template>
@@ -373,8 +369,10 @@ loadPage()
         </el-table-column>
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
+            <el-tag v-if="row.accountStatus === AccountStatus.LOCKED" type="warning" size="small">锁定</el-tag>
             <el-switch
-              :model-value="row.accountStatus === 1"
+              v-else
+              :model-value="row.accountStatus === AccountStatus.NORMAL"
               @change="handleStatusChange(row)"
             />
           </template>
@@ -476,6 +474,11 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="头像">
+              <FileUploader v-model="form.avatar" type="image" module="account" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="状态">
               <el-select v-model="form.accountStatus" style="width: 100%">
                 <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
@@ -515,10 +518,30 @@ loadPage()
   }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
 }
 
 .pagination-wrap {

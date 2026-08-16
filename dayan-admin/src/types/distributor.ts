@@ -5,24 +5,20 @@
  * DistributorInfoQueryDTO / DistributorInfoCreateDTO。
  */
 import type { PageQuery } from '@/types/common'
-import { CommonStatus } from '@/types/common'
 
 /**
- * 主体类型：1=企业 / 2=个体工商户 / 3=个人。
+ * 主体类型：1=企业 / 2=个人。
  */
 export enum SubjectType {
   /** 企业 */
   ENTERPRISE = 1,
-  /** 个体工商户 */
-  INDIVIDUAL = 2,
   /** 个人 */
-  PERSONAL = 3
+  PERSONAL = 2
 }
 
 /** 主体类型选项 */
 export const SUBJECT_TYPE_OPTIONS = [
   { label: '企业', value: SubjectType.ENTERPRISE },
-  { label: '个体工商户', value: SubjectType.INDIVIDUAL },
   { label: '个人', value: SubjectType.PERSONAL }
 ] as const
 
@@ -43,10 +39,26 @@ export const GENDER_OPTIONS = [
 ] as const
 
 /**
- * 启用/禁用状态（复用通用枚举）：1=启用 / 0=禁用。
+ * 分销商状态：0=待审核 / 1=已合作 / 2=已暂停 / 3=已终止。
  */
-export { CommonStatus as DistributorStatus }
-export { COMMON_STATUS_OPTIONS as DISTRIBUTOR_STATUS_OPTIONS } from '@/types/common'
+export enum DistributorStatus {
+  /** 待审核 */
+  PENDING = 0,
+  /** 已合作 */
+  COOPERATING = 1,
+  /** 已暂停 */
+  SUSPENDED = 2,
+  /** 已终止 */
+  TERMINATED = 3
+}
+
+/** 分销商状态选项 */
+export const DISTRIBUTOR_STATUS_OPTIONS = [
+  { label: '待审核', value: DistributorStatus.PENDING },
+  { label: '已合作', value: DistributorStatus.COOPERATING },
+  { label: '已暂停', value: DistributorStatus.SUSPENDED },
+  { label: '已终止', value: DistributorStatus.TERMINATED }
+] as const
 
 /**
  * 分销商信息实体（后端 DistributorInfo，表 distributor_info）。
@@ -61,7 +73,7 @@ export interface DistributorInfo {
   fullName: string
   /** 简称 */
   shortName?: string
-  /** 主体类型：1企业/2个体工商户/3个人 */
+  /** 主体类型：1企业/2个人 */
   subjectType?: number
   /** 统一社会信用代码 */
   unifiedCreditCode?: string
@@ -73,6 +85,8 @@ export interface DistributorInfo {
   registeredCapital?: number
   /** 成立日期（yyyy-MM-dd） */
   establishDate?: string
+  /** 身份证号（个人，加密存储） */
+  idCard?: string
   /** 性别：0未知/1男/2女 */
   gender?: number
   /** 联系电话 */
@@ -95,7 +109,7 @@ export interface DistributorInfo {
   bankAccount?: string
   /** 开户名 */
   bankAccountName?: string
-  /** 状态：1启用/0禁用 */
+  /** 状态：0待审核/1已合作/2已暂停/3已终止 */
   status?: number
   /** 排序号 */
   sortOrder?: number

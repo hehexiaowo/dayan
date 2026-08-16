@@ -28,9 +28,9 @@ import {
  * - 修改走 PUT query string（distributorCode=@RequestParam），与 content/info 一致。
  *
  * 状态约定：
- * - subjectType：1企业 / 2个体工商户 / 3个人
+ * - subjectType：1企业 / 2个人（个人主体时必填 idCard）
  * - gender：0未知 / 1男 / 2女
- * - status：1启用 / 0禁用
+ * - status：0待审核 / 1已合作 / 2已暂停 / 3已终止（新增默认待审核）
  */
 
 const {
@@ -70,6 +70,7 @@ const form = reactive<DistributorInfo>({
   businessLicenseNo: '',
   registeredCapital: undefined,
   establishDate: '',
+  idCard: '',
   gender: Gender.UNKNOWN,
   phone: '',
   contactPerson: '',
@@ -81,14 +82,16 @@ const form = reactive<DistributorInfo>({
   bankName: '',
   bankAccount: '',
   bankAccountName: '',
-  status: DistributorStatus.ENABLED,
+  status: DistributorStatus.PENDING,
   sortOrder: 0,
   remark: ''
 })
 
 const rules: FormRules<DistributorInfo> = {
   fullName: [{ required: true, message: '请输入分销商全称', trigger: 'blur' }],
-  subjectType: [{ required: true, message: '请选择主体类型', trigger: 'change' }]
+  subjectType: [{ required: true, message: '请选择主体类型', trigger: 'change' }],
+  // 仅个人主体时显示该表单项（v-if），企业主体不渲染即不校验
+  idCard: [{ required: true, message: '请输入身份证号', trigger: 'blur' }]
 }
 
 function resetForm() {
@@ -102,6 +105,7 @@ function resetForm() {
     businessLicenseNo: '',
     registeredCapital: undefined,
     establishDate: '',
+    idCard: '',
     gender: Gender.UNKNOWN,
     phone: '',
     contactPerson: '',
@@ -113,7 +117,7 @@ function resetForm() {
     bankName: '',
     bankAccount: '',
     bankAccountName: '',
-    status: DistributorStatus.ENABLED,
+    status: DistributorStatus.PENDING,
     sortOrder: 0,
     remark: ''
   })
@@ -137,6 +141,7 @@ function fillForm(detail: DistributorInfo) {
     businessLicenseNo: detail.businessLicenseNo ?? '',
     registeredCapital: detail.registeredCapital,
     establishDate: detail.establishDate ?? '',
+    idCard: detail.idCard ?? '',
     gender: detail.gender ?? Gender.UNKNOWN,
     phone: detail.phone ?? '',
     contactPerson: detail.contactPerson ?? '',
@@ -148,7 +153,7 @@ function fillForm(detail: DistributorInfo) {
     bankName: detail.bankName ?? '',
     bankAccount: detail.bankAccount ?? '',
     bankAccountName: detail.bankAccountName ?? '',
-    status: detail.status ?? DistributorStatus.ENABLED,
+    status: detail.status ?? DistributorStatus.PENDING,
     sortOrder: detail.sortOrder ?? 0,
     remark: detail.remark ?? ''
   })
@@ -223,9 +228,19 @@ function statusLabel(s?: number): string {
   return found ? found.label : s != null ? String(s) : '--'
 }
 
-/** 根据启用状态返回 el-tag type：启用 success / 禁用 info。 */
-function statusTagType(status?: number): 'success' | 'info' {
-  return status === DistributorStatus.ENABLED ? 'success' : 'info'
+/** 根据状态返回 el-tag type：0待审核=warning / 1已合作=success / 2已暂停=danger / 3已终止=info。 */
+function statusTagType(status?: number): 'success' | 'warning' | 'danger' | 'info' {
+  switch (status) {
+    case DistributorStatus.COOPERATING:
+      return 'success'
+    case DistributorStatus.PENDING:
+      return 'warning'
+    case DistributorStatus.SUSPENDED:
+      return 'danger'
+    case DistributorStatus.TERMINATED:
+    default:
+      return 'info'
+  }
 }
 
 /** 注册资本显示（万元兜底）。 */
@@ -242,46 +257,40 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="分销商编码">
-          <el-input
-            v-model="query.distributorCode"
-            placeholder="分销商编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="分销商全称">
-          <el-input
-            v-model="query.fullName"
-            placeholder="全称关键字"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="主体类型">
-          <el-select v-model="query.subjectType" placeholder="全部" clearable style="width: 160px">
-            <el-option v-for="o in SUBJECT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in DISTRIBUTOR_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.distributorCode"
+          placeholder="分销商编码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.fullName"
+          placeholder="全称关键字"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.subjectType" placeholder="主体类型" clearable style="width: 160px">
+          <el-option v-for="o in SUBJECT_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in DISTRIBUTOR_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增分销商</el-button>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>分销商列表</span>
-          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增分销商</el-button>
+          <span class="card-title">分销商列表</span>
         </div>
       </template>
 
@@ -380,6 +389,11 @@ loadPage()
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col v-if="form.subjectType === SubjectType.PERSONAL" :span="12">
+            <el-form-item label="身份证号" prop="idCard">
+              <el-input v-model="form.idCard" placeholder="身份证号" maxlength="20" />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="注册资本">
               <el-input-number
@@ -393,7 +407,13 @@ loadPage()
           </el-col>
           <el-col :span="12">
             <el-form-item label="成立日期">
-              <el-input v-model="form.establishDate" placeholder="yyyy-MM-dd" maxlength="20" />
+              <el-date-picker
+                v-model="form.establishDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择成立日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -480,10 +500,30 @@ loadPage()
   }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
 }
 
 .pagination-wrap {

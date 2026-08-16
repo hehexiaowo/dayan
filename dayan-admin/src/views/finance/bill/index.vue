@@ -66,6 +66,13 @@ const dialogVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
+/** 结算对象类型选项（DDL finance_bill.target_type 注释：channel/supplier/distributor） */
+const TARGET_TYPE_OPTIONS = [
+  { label: '渠道（channel）', value: 'channel' },
+  { label: '供应商（supplier）', value: 'supplier' },
+  { label: '分销商（distributor）', value: 'distributor' }
+] as const
+
 /** 生成结算单表单（对应 GenerateBillDTO，不含 billCode / finalAmount） */
 const form = reactive({
   billType: BillType.CHANNEL,
@@ -87,7 +94,7 @@ const form = reactive({
 
 const rules: FormRules<typeof form> = {
   billType: [{ required: true, message: '请选择结算类型', trigger: 'change' }],
-  targetType: [{ required: true, message: '请输入结算对象类型', trigger: 'blur' }],
+  targetType: [{ required: true, message: '请选择结算对象类型', trigger: 'change' }],
   targetCode: [{ required: true, message: '请输入结算对象编码', trigger: 'blur' }],
   targetName: [{ required: true, message: '请输入结算对象名称', trigger: 'blur' }],
   periodStart: [{ required: true, message: '请选择结算周期开始日期', trigger: 'change' }],
@@ -121,6 +128,19 @@ function openCreate() {
   dialogVisible.value = true
 }
 
+/**
+ * 输入字符串 → 数字数组（按逗号 split + trim，跳过空段，过滤 NaN）。
+ * GenerateBillDTO.flowIds 是 List<Long>，必须传数组，逗号分隔字符串会导致 400。
+ */
+function parseFlowIds(raw: string): number[] {
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
+    .map(Number)
+    .filter((n) => !Number.isNaN(n))
+}
+
 async function handleSubmit() {
   if (!formRef.value) return
   try {
@@ -143,7 +163,7 @@ async function handleSubmit() {
       commissionAmount: form.commissionAmount || undefined,
       refundAmount: form.refundAmount || undefined,
       adjustAmount: form.adjustAmount || undefined,
-      flowIds: form.flowIds || undefined,
+      flowIds: form.flowIds && form.flowIds.trim() ? parseFlowIds(form.flowIds) : undefined,
       settlementMethod: form.settlementMethod || undefined,
       bankInfo: form.bankInfo || undefined,
       remark: form.remark || undefined
@@ -313,45 +333,39 @@ loadPage()
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="结算单号">
-          <el-input
-            v-model="query.billCode"
-            placeholder="结算单编号"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="结算类型">
-          <el-select v-model="query.billType" placeholder="全部" clearable style="width: 160px">
-            <el-option v-for="o in BILL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="结算状态">
-          <el-select v-model="query.billStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in BILL_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="对象类型">
-          <el-input
-            v-model="query.targetType"
-            placeholder="channel/supplier/..."
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.billCode"
+          placeholder="结算单编号"
+          clearable
+          style="width: 170px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.billType" placeholder="结算类型" clearable style="width: 140px">
+          <el-option v-for="o in BILL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.billStatus" placeholder="结算状态" clearable style="width: 130px">
+          <el-option v-for="o in BILL_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-input
+          v-model="query.targetType"
+          placeholder="对象类型 channel/supplier/..."
+          clearable
+          style="width: 200px"
+          @keyup.enter="handleSearch"
+        />
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>结算单列表</span>
+          <span class="card-title">结算单列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">生成结算单</el-button>
         </div>
       </template>
@@ -462,7 +476,9 @@ loadPage()
           </el-col>
           <el-col :span="8">
             <el-form-item label="对象类型" prop="targetType">
-              <el-input v-model="form.targetType" placeholder="channel/supplier/..." maxlength="50" />
+              <el-select v-model="form.targetType" placeholder="结算对象类型" style="width: 100%">
+                <el-option v-for="o in TARGET_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -728,9 +744,17 @@ loadPage()
   gap: 16px;
 }
 
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 }
 
@@ -738,6 +762,12 @@ loadPage()
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
 }
 
 .pagination-wrap {
@@ -749,5 +779,11 @@ loadPage()
 .amount-text {
   color: #e6a23c;
   font-weight: 600;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
 }
 </style>

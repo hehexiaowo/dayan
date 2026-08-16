@@ -133,8 +133,22 @@ onMounted(loadDetail)
 
     <el-descriptions v-if="detail" :column="2" border>
       <el-descriptions-item label="课程名称" :span="2">{{ detail.courseName }}</el-descriptions-item>
+      <el-descriptions-item label="课程分类">
+        {{ categoryOptions.find((c) => c.dictCode === detail!.categoryCode)?.dictName || detail!.categoryCode || '-' }}
+      </el-descriptions-item>
       <el-descriptions-item label="课程类型">
         {{ COURSE_TYPE_OPTIONS.find((o) => o.value === detail!.courseType)?.label ?? '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="封面图">
+        <el-image
+          v-if="detail.coverImage"
+          :src="formatFileUrl(detail.coverImage)"
+          :preview-src-list="[formatFileUrl(detail.coverImage)]"
+          preview-teleported
+          fit="cover"
+          style="width: 200px; height: 120px; border-radius: 4px"
+        />
+        <template v-else>-</template>
       </el-descriptions-item>
       <el-descriptions-item label="讲师">
         {{ props.lecturers.find((l) => l.lecturerCode === detail!.lecturerCode)?.lecturerName || detail!.lecturerCode || '-' }}
@@ -244,6 +258,26 @@ onMounted(loadDetail)
           <el-col :span="12">
             <el-form-item label="结束日期">
               <el-date-picker v-model="form.courseEndDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="人数上限">
+              <el-input-number v-model="form.maxStudents" :min="0" controls-position="right" placeholder="留空 = 不限" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="排序号">
+              <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="是否免费">
+              <el-switch :model-value="form.isFree === 1" @change="(v: boolean) => (form.isFree = v ? 1 : 0)" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="是否推荐">
+              <el-switch :model-value="form.isRecommend === 1" @change="(v: boolean) => (form.isRecommend = v ? 1 : 0)" />
             </el-form-item>
           </el-col>
           <el-col :span="24">

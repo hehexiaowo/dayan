@@ -4,21 +4,24 @@
  * 字段对齐后端 com.dayan.organ.entity.OrganPermission。
  */
 
-/** 权限类型：1菜单 2按钮 3接口 */
+/** 权限类型：1=菜单 2=按钮 3=接口 4=数据（对齐 DDL organ_permission.permission_type） */
 export enum PermissionType {
   /** 菜单 */
   MENU = 1,
   /** 按钮 */
   BUTTON = 2,
   /** 接口 */
-  API = 3
+  API = 3,
+  /** 数据 */
+  DATA = 4
 }
 
 /** 权限类型选项 */
 export const PERMISSION_TYPE_OPTIONS = [
   { label: '菜单', value: PermissionType.MENU },
   { label: '按钮', value: PermissionType.BUTTON },
-  { label: '接口', value: PermissionType.API }
+  { label: '接口', value: PermissionType.API },
+  { label: '数据', value: PermissionType.DATA }
 ] as const
 
 /** 权限状态：1启用 0禁用 */
@@ -47,7 +50,7 @@ export interface Permission {
   permissionName: string
   /** 父权限编码（顶级为 null/空） */
   parentCode: string | null
-  /** 权限类型：1菜单 2按钮 3接口 */
+  /** 权限类型：1菜单 2按钮 3接口 4数据 */
   permissionType: PermissionType
   /** 资源路径（接口/页面路径） */
   path?: string

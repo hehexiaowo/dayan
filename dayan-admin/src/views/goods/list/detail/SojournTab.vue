@@ -265,41 +265,36 @@ async function handleDeleteRow(row: GoodsSojourn) {
 <template>
   <div class="sku-tab">
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="规格名称">
-        <el-input
-          v-model="query.skuName"
-          placeholder="规格名称"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="园区编码">
-        <el-input
-          v-model="query.parkCode"
-          placeholder="园区编码"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="房型编码">
-        <el-input
-          v-model="query.roomTypeCode"
-          placeholder="房型编码"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="o in SKU_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.skuName"
+        placeholder="规格名称"
+        clearable
+        style="width: 150px"
+        @keyup.enter="handleSearch"
+      />
+      <el-input
+        v-model="query.parkCode"
+        placeholder="园区编码"
+        clearable
+        style="width: 140px"
+        @keyup.enter="handleSearch"
+      />
+      <el-input
+        v-model="query.roomTypeCode"
+        placeholder="房型编码"
+        clearable
+        style="width: 140px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+        <el-option v-for="o in SKU_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增权益配置</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增权益配置</el-button>
+      </div>
+    </div>
 
     <!-- 主表格 -->
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
@@ -473,7 +468,7 @@ async function handleDeleteRow(row: GoodsSojourn) {
           </el-col>
           <el-col :span="12">
             <!-- effectiveDate 是 LocalDate，传 YYYY-MM-DD -->
-            <el-form-item label="生效日期">
+            <el-form-item label="生效日期" prop="effectiveDate">
               <el-date-picker
                 v-model="form.effectiveDate"
                 type="date"
@@ -515,6 +510,19 @@ async function handleDeleteRow(row: GoodsSojourn) {
 
 <style scoped lang="scss">
 .sku-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .pagination-wrap {
     display: flex;
     justify-content: flex-end;

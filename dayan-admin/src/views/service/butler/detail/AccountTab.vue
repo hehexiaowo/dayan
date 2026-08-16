@@ -254,12 +254,12 @@ defineExpose({ loadPage })
     <el-card shadow="never" class="organ-account-card">
       <template #header>
         <div class="card-header">
-          <span>后台登录账号（admin）</span>
+          <span class="card-title">后台登录账号（admin）</span>
           <el-button
             v-if="!organAccount"
             v-permission="'butler:info:update'"
             type="primary"
-            size="small"
+            :icon="'Plus'"
             @click="openOrganCreate"
           >
             开通后台账号
@@ -310,28 +310,34 @@ defineExpose({ loadPage })
     <el-divider content-position="left">管家独立账号（butler_account，预留未来管家端登录）</el-divider>
 
     <!-- 搜索栏 -->
-    <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="用户名">
-        <el-input v-model="query.username" placeholder="用户名" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="手机号">
-        <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.accountStatus" placeholder="全部" clearable style="width: 120px">
-          <el-option
-            v-for="o in BUTLER_ACCOUNT_STATUS_OPTIONS"
-            :key="o.value"
-            :label="o.label"
-            :value="o.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
+    <div class="toolbar">
+      <el-input
+        v-model="query.username"
+        placeholder="用户名"
+        clearable
+        style="width: 150px"
+        @keyup.enter="handleSearch"
+      />
+      <el-input
+        v-model="query.phone"
+        placeholder="手机号"
+        clearable
+        style="width: 140px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="query.accountStatus" placeholder="状态" clearable style="width: 120px">
+        <el-option
+          v-for="o in BUTLER_ACCOUNT_STATUS_OPTIONS"
+          :key="o.value"
+          :label="o.label"
+          :value="o.value"
+        />
+      </el-select>
+      <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button :icon="'Plus'" @click="openCreate">新增账号</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增账号</el-button>
+      </div>
+    </div>
 
     <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <el-table-column prop="username" label="用户名" min-width="140" show-overflow-tooltip />
@@ -426,13 +432,13 @@ defineExpose({ loadPage })
                 v-model="form.username"
                 :disabled="dialogMode === 'edit'"
                 placeholder="登录用户名"
-                maxlength="64"
+                maxlength="50"
               />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="手机号">
-              <el-input v-model="form.phone" placeholder="绑定手机号" maxlength="32" />
+              <el-input v-model="form.phone" placeholder="绑定手机号" maxlength="20" />
             </el-form-item>
           </el-col>
           <!-- 仅新增时展示密码，编辑改走重置按钮 -->
@@ -489,6 +495,19 @@ defineExpose({ loadPage })
 
 <style scoped lang="scss">
 .account-tab {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+  }
   .organ-account-card {
     margin-bottom: 8px;
 
@@ -496,6 +515,12 @@ defineExpose({ loadPage })
       display: flex;
       align-items: center;
       justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2329;
     }
   }
 
