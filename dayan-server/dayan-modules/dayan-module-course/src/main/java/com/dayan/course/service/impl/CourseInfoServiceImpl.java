@@ -26,7 +26,7 @@ import java.util.List;
  * <p>课程编码生成：{@code "CR" + String.format("%05d", sequenceProvider.next("code:seq:CR:0"))}，全表唯一。
  *
  * <p>容量约束：{@code currentStudents ≤ maxStudents}。create 时初始化 current=0，
- * update 时若下调 maxStudents 需校验不小于当前 currentStudents。状态：0=下架, 1=上架。
+ * update 时若下调 maxStudents 需校验不小于当前 currentStudents。状态（DDL 5 态）：0=草稿, 1=待上架, 2=已上架, 3=已下架, 4=已结课。
  */
 @Slf4j
 @Service
@@ -37,10 +37,12 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     private static final String CODE_PREFIX = "CR";
     /** 序列键 */
     private static final String SEQ_KEY = "code:seq:CR:0";
-    /** 课程状态：下架 */
-    private static final int STATUS_OFFLINE = 0;
-    /** 课程状态：上架 */
-    private static final int STATUS_ONLINE = 1;
+    /** 课程状态（DDL 5 态）：0=草稿, 1=待上架, 2=已上架, 3=已下架, 4=已结课 */
+    private static final int STATUS_DRAFT = 0;
+    private static final int STATUS_PENDING = 1;
+    private static final int STATUS_ONLINE = 2;
+    private static final int STATUS_OFFLINE = 3;
+    private static final int STATUS_FINISHED = 4;
 
     private final CourseInfoMapper courseInfoMapper;
     private final SequenceProvider sequenceProvider;
@@ -97,7 +99,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         entity.setCourseStartDate(dto.getCourseStartDate());
         entity.setCourseEndDate(dto.getCourseEndDate());
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
-        entity.setCourseStatus(dto.getCourseStatus() == null ? STATUS_OFFLINE : dto.getCourseStatus());
+        entity.setCourseStatus(dto.getCourseStatus() == null ? STATUS_DRAFT : dto.getCourseStatus());
         entity.setRemark(dto.getRemark());
 
         courseInfoMapper.insert(entity);
@@ -156,8 +158,12 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void publish(String courseCode) {
         CourseInfo existing = requireCourse(courseCode);
-        if (existing.getCourseStatus() != null && existing.getCourseStatus() == STATUS_ONLINE) {
+        int status = existing.getCourseStatus() == null ? STATUS_DRAFT : existing.getCourseStatus();
+        if (status == STATUS_ONLINE) {
             throw new BusinessException(ErrorCode.BUSINESS, "课程已处于上架状态");
+        }
+        if (status == STATUS_FINISHED) {
+            throw new BusinessException(ErrorCode.BUSINESS, "已结课课程不可上架");
         }
         CourseInfo update = new CourseInfo();
         update.setId(existing.getId());
@@ -170,8 +176,12 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void offline(String courseCode) {
         CourseInfo existing = requireCourse(courseCode);
-        if (existing.getCourseStatus() != null && existing.getCourseStatus() == STATUS_OFFLINE) {
+        int status = existing.getCourseStatus() == null ? STATUS_DRAFT : existing.getCourseStatus();
+        if (status == STATUS_OFFLINE) {
             throw new BusinessException(ErrorCode.BUSINESS, "课程已处于下架状态");
+        }
+        if (status != STATUS_ONLINE) {
+            throw new BusinessException(ErrorCode.BUSINESS, "仅上架课程可下架");
         }
         CourseInfo update = new CourseInfo();
         update.setId(existing.getId());
