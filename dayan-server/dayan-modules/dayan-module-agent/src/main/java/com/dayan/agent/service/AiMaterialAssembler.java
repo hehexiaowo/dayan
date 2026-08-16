@@ -74,8 +74,9 @@ public class AiMaterialAssembler {
         int blocks = 0;
         // 1. 参考范文
         if (refs != null && StrUtil.isNotBlank(refs.getRefContentCode())) {
-            material.append("【参考范文】标题：").append(refContentTitle(refs.getRefContentCode(), channelCode)).append('\n')
-                    .append(refContentBody(refs.getRefContentCode(), channelCode)).append("\n\n");
+            RefContent ref = loadRefContent(refs.getRefContentCode(), channelCode);
+            material.append("【参考范文】标题：").append(ref.title()).append('\n')
+                    .append(ref.body()).append("\n\n");
             blocks++;
         }
         // 2. 知识库 RAG
@@ -169,6 +170,7 @@ public class AiMaterialAssembler {
                 .append(StrUtil.nullToEmpty(p.getCity())).append(StrUtil.nullToEmpty(p.getDistrict()))
                 .append(StrUtil.nullToEmpty(p.getAddress())).append('\n');
         List<String> tags = p.getNetworkTags() == null ? List.of() : p.getNetworkTags().stream()
+                .filter(t -> t != null)
                 .map(t -> NETWORK_LABELS.getOrDefault(t, t)).toList();
         if (!tags.isEmpty()) {
             sb.append("业态：").append(String.join("、", tags));
@@ -205,10 +207,15 @@ public class AiMaterialAssembler {
             if (!current.isEmpty()) {
                 sb.append("费用明细（当前价）：");
                 for (ParkPricingVO pr : current) {
-                    sb.append(CHARGE_LABELS.getOrDefault(pr.getChargeType(), "费用")).append(' ')
-                            .append(StrUtil.nullToDefault(pr.getRefName(), pr.getPlanName())).append(' ')
+                    String refName = pr.getRefName() != null ? pr.getRefName()
+                            : StrUtil.nullToDefault(pr.getPlanName(), "费用项");
+                    String cycle = pr.getBillingCycle() == null ? "期"
+                            : BILLING_LABELS.getOrDefault(pr.getBillingCycle(), "期");
+                    sb.append(pr.getChargeType() == null ? "费用"
+                                    : CHARGE_LABELS.getOrDefault(pr.getChargeType(), "费用")).append(' ')
+                            .append(refName).append(' ')
                             .append(pr.getSalePrice() == null ? "面议" : pr.getSalePrice() + "元/")
-                            .append(BILLING_LABELS.getOrDefault(pr.getBillingCycle(), "期")).append("；");
+                            .append(cycle).append("；");
                 }
                 sb.append('\n');
             }
@@ -238,7 +245,7 @@ public class AiMaterialAssembler {
         String channelCode = StrUtil.nullToEmpty(ContextHolder.getChannelCode());
         if (StrUtil.isNotBlank(refs.getRefContentCode())) {
             try {
-                vo.setRefContentName(refContentTitle(refs.getRefContentCode(), channelCode));
+                vo.setRefContentName(loadRefContent(refs.getRefContentCode(), channelCode).title());
             } catch (Exception ignored) {
                 vo.setRefContentName(refs.getRefContentCode());
             }
@@ -272,30 +279,23 @@ public class AiMaterialAssembler {
 
     // ---------- 以下私有方法从 AiContentGenerateServiceImpl 原样迁移 ----------
 
-    /** 范文标题（TPL:/MY:/渠道内容三分支） */
-    private String refContentTitle(String refContentCode, String channelCode) {
+    /** 范文标题+正文（TPL:/MY:/渠道内容三分支，单次查询） */
+    private record RefContent(String title, String body) {}
+
+    private RefContent loadRefContent(String refContentCode, String channelCode) {
         if (refContentCode.startsWith("TPL:")) {
             AiRefTemplates.RefTemplate tpl = AiRefTemplates.byCode(refContentCode);
             if (tpl == null) {
                 throw new BusinessException(ErrorCode.PARAM_ERROR, "范文模板不存在: " + refContentCode);
             }
-            return tpl.name();
+            return new RefContent(tpl.name(), tpl.body());
         }
         if (refContentCode.startsWith("MY:")) {
-            return loadMyContent(refContentCode).getTitle();
+            AgentContentVO my = loadMyContent(refContentCode);
+            return new RefContent(my.getTitle(), stripHtml(my.getContentBody()));
         }
-        return loadVisibleContent(channelCode, refContentCode).getTitle();
-    }
-
-    private String refContentBody(String refContentCode, String channelCode) {
-        if (refContentCode.startsWith("TPL:")) {
-            AiRefTemplates.RefTemplate tpl = AiRefTemplates.byCode(refContentCode);
-            return tpl == null ? "" : tpl.body();
-        }
-        if (refContentCode.startsWith("MY:")) {
-            return stripHtml(loadMyContent(refContentCode).getContentBody());
-        }
-        return stripHtml(loadVisibleContent(channelCode, refContentCode).getContentBody());
+        ContentInfoVO ref = loadVisibleContent(channelCode, refContentCode);
+        return new RefContent(ref.getTitle(), stripHtml(ref.getContentBody()));
     }
 
     private AgentContentVO loadMyContent(String refContentCode) {
