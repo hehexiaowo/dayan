@@ -2,6 +2,7 @@ package com.dayan.agent.service;
 
 import com.dayan.agent.dto.AiOutlineConfirmDTO;
 import com.dayan.agent.dto.AiOutlineRegenDTO;
+import com.dayan.agent.dto.AiReviseDTO;
 import com.dayan.agent.dto.AiStrategyConfirmDTO;
 import com.dayan.agent.dto.AiTitleRegenDTO;
 import com.dayan.agent.vo.AiProjectVO;
@@ -22,4 +23,8 @@ public interface AiCreationPipelineService {
     AiProjectVO regenerateOutline(Long id, AiOutlineRegenDTO dto);
     /** 锁定大纲（可含前端微调）→ OUTLINE_CONFIRMED */
     AiProjectVO confirmOutline(Long id, AiOutlineConfirmDTO dto);
+    /** 正文流水（SSE 可听）：body→audit→polish，产物落库 → BODY_DONE；返回终态 VO */
+    AiProjectVO bodyStream(Long id, AiGenerateProgressListener listener);
+    /** 段落勘误（最小化修订，不改文风） */
+    AiProjectVO revise(Long id, AiReviseDTO dto);
 }
