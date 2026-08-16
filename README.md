@@ -34,7 +34,7 @@ dayan/
 ### 1. 启动基础设施
 
 ```bash
-docker compose -f docker-compose.infra.yml up -d
+docker compose -f docker/docker-compose.infra.yml up -d
 ```
 
 启动 MySQL（自动执行 `db/migration/*.sql` 建表与初始化数据）、Redis、Nacos。
@@ -50,7 +50,7 @@ mvn -B -ntp spring-boot:run
 ### 3. 一键启动全部服务（生产形态）
 
 ```bash
-docker compose up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
 ## 开发规范
@@ -81,7 +81,7 @@ docker compose up -d --build
 | **状态机引擎** | 接口 + Redis 实现，6 测试通过 |
 | **4 前端工程** | dayan-admin/channel（Vue3+Element Plus）+ dayan-agent/client（uni-app 小程序/H5） |
 | **CI/CD** | GitHub Actions（ci.yml 编译测试 + docker.yml 8 服务推 GHCR） |
-| **Docker 编排** | docker-compose.infra.yml（基础设施）+ docker-compose.yml（全量） |
+| **Docker 编排** | docker/docker-compose.infra.yml（基础设施）+ docker/docker-compose.yml（全量） |
 
 ## 验证 DDL（已实测）
 

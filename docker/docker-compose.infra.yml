@@ -4,9 +4,9 @@
 # MySQL 容器启动时自动执行 db/migration/*.sql 建表与种子数据初始化。
 # MinIO Console: http://localhost:9001（dayan / dayan12345）
 #
-# 启动：docker compose -f docker-compose.infra.yml up -d
-# 停止：docker compose -f docker-compose.infra.yml down
-# 清数据重建：docker compose -f docker-compose.infra.yml down -v
+# 启动：docker compose -f docker/docker-compose.infra.yml up -d
+# 停止：docker compose -f docker/docker-compose.infra.yml down
+# 清数据重建：docker compose -f docker/docker-compose.infra.yml down -v
 
 services:
   mysql:
@@ -30,7 +30,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./db/migration:/docker-entrypoint-initdb.d:ro
+      - ../db/migration:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
       interval: 10s
