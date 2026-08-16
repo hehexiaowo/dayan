@@ -1,5 +1,12 @@
 <template>
   <view class="page dy-safe-bottom">
+    <!-- ===== 渐变 header（与其他页面统一） ===== -->
+    <view class="header">
+      <text class="header-title">我的内容</text>
+      <text class="header-sub">AI 创作的图文、朋友圈、脚本</text>
+    </view>
+
+    <!-- ===== 类型筛选 ===== -->
     <view class="filter-bar">
       <view
         v-for="f in typeFilters"
@@ -9,10 +16,15 @@
         @click="switchType(f.value)"
       >{{ f.label }}</view>
     </view>
+
+    <!-- ===== 内容列表 ===== -->
     <view v-if="list.length" class="list">
       <view v-for="item in list" :key="item.id" class="card dy-clickable" @click="goDetail(item.id)">
         <view class="card-top">
-          <text class="type-tag" :class="`tag-${item.contentType}`">{{ aiContentTypeLabel(item.contentType) }}</text>
+          <view class="tags">
+            <text class="type-tag" :class="`tag-${item.contentType}`">{{ aiContentTypeLabel(item.contentType) }}</text>
+            <text v-if="item.purpose && AI_PURPOSE_TAG[item.purpose]" class="purpose-tag">{{ AI_PURPOSE_TAG[item.purpose] }}</text>
+          </view>
           <text class="time">{{ formatDateTime(item.createdAt) }}</text>
         </view>
         <text class="title">{{ item.title }}</text>
@@ -33,7 +45,7 @@ import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getMyContents, deleteAiContent } from '@/api/aiContent'
 import type { AiContent } from '@/types/aiContent'
-import { aiContentTypeLabel } from '@/types/aiContent'
+import { aiContentTypeLabel, AI_PURPOSE_TAG } from '@/types/aiContent'
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue'
 
 const list = ref<AiContent[]>([])
@@ -45,7 +57,8 @@ const typeFilters = [
   { label: '全部', value: undefined as number | undefined },
   { label: '图文', value: 1 },
   { label: '朋友圈', value: 2 },
-  { label: '脚本', value: 3 }
+  { label: '脚本', value: 3 },
+  { label: '小红书', value: 4 }
 ]
 const activeType = ref<number | undefined>(undefined)
 
@@ -79,7 +92,7 @@ function goDetail(id: number) {
 }
 
 function goCreate() {
-  uni.navigateTo({ url: '/pages/acquisition/ai-generate/index' })
+  uni.navigateTo({ url: '/pages/acquisition/ai-create/index' })
 }
 
 function onDelete(item: AiContent) {
@@ -114,15 +127,39 @@ onPullDownRefresh(handlePullDown)
 
 <style lang="scss" scoped>
 .page { padding: $spacing-md; background: $bg-page; min-height: 100vh; }
+
+/* 渐变 header（与其他页面统一） */
+.header {
+  background: $gradient-blue;
+  border-radius: $radius-lg;
+  padding: $spacing-xl $spacing-lg;
+  margin-bottom: $spacing-md;
+}
+.header-title {
+  display: block;
+  font-size: 38rpx;
+  font-weight: bold;
+  color: #fff;
+}
+.header-sub {
+  display: block;
+  margin-top: $spacing-sm;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
 .filter-bar { display: flex; gap: $spacing-sm; padding: 0 0 20rpx; }
 .filter-pill { background: $bg-card; border-radius: 32rpx; padding: 12rpx 36rpx; font-size: 26rpx; color: $text-regular; transition: background-color $transition-base, color $transition-base; }
 .filter-pill.active { background: $brand-primary; color: #fff; font-weight: 500; }
 .card { background: $bg-card; border-radius: $radius-md; padding: 28rpx; margin-bottom: 20rpx; box-shadow: $shadow-card; transition: transform $transition-fast; }
 .card:active { transform: scale(.98); }
 .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
+.tags { display: flex; gap: 12rpx; align-items: center; }
 .type-tag { background: $brand-primary-light; color: $brand-primary-dark; font-size: 22rpx; padding: 4rpx 16rpx; border-radius: $radius-sm; }
 .type-tag.tag-2 { background: $brand-success-light; color: $brand-success-dark; }
 .type-tag.tag-3 { background: $brand-warning-light; color: $brand-warning-dark; }
+.type-tag.tag-4 { background: $brand-error-light; color: $brand-error; }
+.purpose-tag { background: $bg-page; color: $text-secondary; font-size: 22rpx; padding: 4rpx 16rpx; border-radius: $radius-sm; }
 .time { font-size: 22rpx; color: $text-secondary; }
 .title { display: block; font-size: 30rpx; font-weight: 600; color: $text-primary; line-height: 1.5; }
 .summary { display: block; margin-top: 8rpx; font-size: 24rpx; color: $text-secondary; }
