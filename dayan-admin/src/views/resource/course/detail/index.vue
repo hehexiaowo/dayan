@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getCourse } from '@/api/course'
 import { listCourseLecturers } from '@/api/course-sub'
 import type { CourseInfo, CourseLecturer } from '@/types/course'
-import { COURSE_TYPE_OPTIONS, COURSE_STATUS_OPTIONS, CourseStatus } from '@/types/course'
+import { COURSE_TYPE_OPTIONS, COURSE_STATUS_OPTIONS, courseStatusTagType } from '@/types/course'
 import BasicTab from './BasicTab.vue'
 import RecordLearnTab from './RecordLearnTab.vue'
 
@@ -83,7 +83,7 @@ onMounted(() => {
           <el-tag type="info">{{ courseTypeLabel(info.courseType) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="info.courseStatus === CourseStatus.ONLINE ? 'success' : 'info'">
+          <el-tag :type="courseStatusTagType(info.courseStatus)">
             {{ courseStatusLabel(info.courseStatus) }}
           </el-tag>
         </el-descriptions-item>

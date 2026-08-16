@@ -5,6 +5,7 @@ import { getCourse, updateCourse } from '@/api/course'
 import type { CourseInfo, CourseLecturer } from '@/types/course'
 import { COURSE_TYPE_OPTIONS } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 import { useDictOptions } from '@/composables/useDict'
 
 /** 课程分类选项（业务字典 course_category） */
@@ -154,7 +155,7 @@ onMounted(loadDetail)
         <template v-else>-</template>
       </el-descriptions-item>
       <el-descriptions-item label="宣传视频" :span="2">
-        <video v-if="detail.videoUrl" :src="detail.videoUrl" controls style="max-width: 360px; max-height: 200px" />
+        <video v-if="detail.videoUrl" :src="formatFileUrl(detail.videoUrl)" controls style="max-width: 360px; max-height: 200px" />
         <template v-else>-</template>
       </el-descriptions-item>
       <el-descriptions-item label="课程大纲" :span="2">

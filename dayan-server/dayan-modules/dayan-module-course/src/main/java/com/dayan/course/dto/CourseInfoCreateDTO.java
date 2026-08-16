@@ -61,7 +61,7 @@ public class CourseInfoCreateDTO {
     private LocalDate courseEndDate;
     private Integer sortOrder;
 
-    /** 状态：0=下架, 1=上架，默认 0（下架） */
+    /** 状态（0=草稿, 1=待上架, 2=已上架, 3=已下架, 4=已结课），默认 0（草稿） */
     private Integer courseStatus;
 
     private String remark;
