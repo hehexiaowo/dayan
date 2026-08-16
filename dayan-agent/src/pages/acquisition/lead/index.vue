@@ -1,32 +1,29 @@
 <template>
   <view class="page dy-safe-bottom">
-    <!-- ===== 顶部：搜索栏（蓝底渐变区） ===== -->
-    <view class="top-section">
-      <view class="search-bar">
-        <view class="search-input-wrap">
-          <text class="search-icon">搜</text>
-          <input
-            v-model="keyword"
-            class="search-input"
-            placeholder="搜索客户名/手机号"
-            placeholder-class="search-placeholder"
-            confirm-type="search"
-            @confirm="onSearch"
-          />
-          <text v-if="keyword" class="search-clear" @click="clearKeyword">×</text>
-        </view>
+    <!-- ===== 渐变 header（与其他 tab 页统一） ===== -->
+    <view class="header">
+      <text class="header-title">线索管理</text>
+      <text class="header-sub">认领公共线索，跟进客户转化</text>
+    </view>
+
+    <!-- ===== 搜索栏（白卡，与服务页一致） ===== -->
+    <view class="toolbar">
+      <view class="search">
+        <input
+          v-model="keyword"
+          class="search-input"
+          placeholder="搜索客户名/手机号"
+          placeholder-class="search-placeholder"
+          confirm-type="search"
+          @confirm="onSearch"
+        />
+        <text v-if="keyword" class="search-clear" @click="clearKeyword">×</text>
         <button class="btn-search" size="mini" @click="onSearch">搜索</button>
       </view>
     </view>
 
-    <!-- ===== 线索清单区 ===== -->
+    <!-- ===== 内容区 ===== -->
     <view class="bottom-section">
-      <!-- 线索标题 + 统计 -->
-      <view class="list-header">
-        <text class="list-title">线索清单</text>
-        <text class="list-count">共 {{ leads.length }} 条</text>
-      </view>
-
       <!-- Tab：线索池靠左（灰色区隔），状态 Tab 靠右 -->
       <view class="tabs-row">
         <view
@@ -376,91 +373,77 @@ onPullDownRefresh(async () => {
   flex-direction: column;
 }
 
-/* ========== 顶部搜索区 ========== */
-.top-section {
+/* ===== 渐变 header（与其他 tab 页统一） ===== */
+.header {
   background: $gradient-blue;
-  padding: $spacing-md $spacing-md $spacing-lg;
+  border-radius: $radius-lg;
+  padding: $spacing-xl $spacing-lg;
+  margin: $spacing-md $spacing-md 0;
+}
+.header-title {
+  display: block;
+  font-size: 38rpx;
+  font-weight: bold;
+  color: #fff;
+}
+.header-sub {
+  display: block;
+  margin-top: $spacing-sm;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.search-bar {
+/* ===== 搜索栏（白卡，与服务页一致） ===== */
+.toolbar {
+  background: $bg-card;
+  border-radius: $radius-md;
+  margin: $spacing-md $spacing-md 0;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+}
+.search {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-}
-.search-input-wrap {
-  flex: 1;
-  position: relative;
-}
-.search-icon {
-  position: absolute;
-  left: 24rpx;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.7);
-  z-index: 1;
 }
 .search-input {
-  width: 100%;
+  flex: 1;
   height: $control-height-sm;
-  border: none;
+  border: 2rpx solid $border-base;
   border-radius: $radius-md;
-  padding: 0 20rpx 0 56rpx;
+  padding: 0 20rpx;
   font-size: 28rpx;
-  background: rgba(255, 255, 255, 0.9);
-  color: $text-primary;
+  background: $bg-page;
   box-sizing: border-box;
 }
 .search-placeholder {
   color: $text-placeholder;
 }
 .search-clear {
-  position: absolute;
-  right: 20rpx;
-  top: 50%;
-  transform: translateY(-50%);
+  padding: 0 16rpx;
   font-size: 36rpx;
   color: $text-placeholder;
-  padding: 0 12rpx;
-  z-index: 1;
 }
 .btn-search {
-  background: #fff;
-  color: $brand-primary;
-  font-size: 26rpx;
-  padding: 0 28rpx;
+  margin-left: $spacing-sm;
   height: $control-height-sm;
   line-height: $control-height-sm;
+  background: $gradient-blue;
+  color: #fff;
+  font-size: 26rpx;
+  padding: 0 32rpx;
   border-radius: $radius-md;
-  font-weight: 500;
+  box-shadow: 0 4rpx 12rpx rgba(64, 158, 255, 0.3);
 }
 
-/* ========== 线索清单区 ========== */
+/* ========== 内容区 ========== */
 .bottom-section {
   flex: 1;
   background: $bg-page;
   border-radius: $radius-lg $radius-lg 0 0;
-  margin-top: -$spacing-sm;
+  margin-top: $spacing-sm;
   padding: $spacing-lg $spacing-md 0;
   position: relative;
   z-index: 1;
-}
-
-/* 列表头 */
-.list-header {
-  display: flex;
-  align-items: baseline;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
-}
-.list-title {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: $text-primary;
-}
-.list-count {
-  font-size: 24rpx;
-  color: $text-secondary;
 }
 
 /* Tab 行：线索池靠左（灰色区隔），状态 Tab 组靠右 */
