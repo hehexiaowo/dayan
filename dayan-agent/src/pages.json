@@ -21,6 +21,8 @@
     { "path": "pages/share/poster", "style": { "navigationBarTitleText": "营销海报分享" } },
     { "path": "pages/business/index", "style": { "navigationBarTitleText": "展业中心" } },
     { "path": "pages/learning/index", "style": { "navigationBarTitleText": "学习中心" } },
+    { "path": "pages/learning/courses/index", "style": { "navigationBarTitleText": "平台课程" } },
+    { "path": "pages/learning/courses/detail", "style": { "navigationBarTitleText": "课程详情" } },
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务中心", "enablePullDownRefresh": true } },
     { "path": "pages/service/detail", "style": { "navigationBarTitleText": "权益详情" } },
     { "path": "pages/profile/index", "style": { "navigationBarTitleText": "个人中心" } },
