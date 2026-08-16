@@ -10,9 +10,9 @@
       </view>
     </view>
 
-    <!-- 必选素材（按目的） -->
-    <block v-if="purpose === 'product'">
-      <view class="dy-section-title">保险产品/政策资料（必选）<text class="req">*</text></view>
+    <!-- 素材（product 必选，其余目的可选精准勾选） -->
+    <block>
+      <view class="dy-section-title">{{ purpose === 'product' ? '保险产品/政策资料（必选）' : '知识库文档（可选，精准取材）' }}<text v-if="purpose === 'product'" class="req">*</text></view>
       <view class="search-row"><input class="dy-search" v-model="kbKeyword" placeholder="搜索知识库文档" confirm-type="search" @confirm="loadKbDocs" /></view>
       <view class="pick-list dy-card">
         <view v-for="d in kbDocs" :key="d.fileId" class="pick-item dy-clickable"
@@ -26,7 +26,7 @@
         <view v-if="!kbDocs.length" class="pick-empty"><text class="pick-empty-text">暂无文档（需渠道知识库建库）</text></view>
       </view>
 
-      <view class="dy-section-title">权益商品（必选）<text class="req">*</text></view>
+      <view class="dy-section-title">{{ purpose === 'product' ? '权益商品（必选）' : '权益商品（可选）' }}<text v-if="purpose === 'product'" class="req">*</text></view>
       <view class="search-row"><input class="dy-search" v-model="goodsKeyword" placeholder="搜索商品" confirm-type="search" @confirm="loadGoods" /></view>
       <view class="pick-list dy-card">
         <view v-for="g in goodsList" :key="g.goodsCode" class="pick-item dy-clickable"

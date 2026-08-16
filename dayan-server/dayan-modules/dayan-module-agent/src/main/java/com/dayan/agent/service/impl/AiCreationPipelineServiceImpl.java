@@ -497,13 +497,23 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
                 """.formatted(htmlEscape(title), htmlEscape(title), content);
     }
 
+    /** 配图整体降级：生成过但全部 failed/skipped（无 pending/generating/done），允许剔除占位符后保存 */
+    boolean imagesAllSettledWithoutSuccess(AiCreationProject p) {
+        if (StrUtil.isBlank(p.getImages())) {
+            return false;
+        }
+        return JSONUtil.toList(JSONUtil.parseArray(p.getImages()), AiImageVO.class).stream()
+                .allMatch(i -> "failed".equals(i.getStatus()) || "skipped".equals(i.getStatus()));
+    }
+
     @Override
     public Long saveToContent(Long id) {
         AiCreationProject p = requirePhase(id, AiProjectPhase.IMAGES_DONE, AiProjectPhase.BODY_DONE);
         if (StrUtil.isBlank(p.getBody())) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "正文尚未生成");
         }
-        if (countPlaceholders(p.getBody()) > 0 && !AiProjectPhase.IMAGES_DONE.equals(p.getStatus())) {
+        if (countPlaceholders(p.getBody()) > 0 && !AiProjectPhase.IMAGES_DONE.equals(p.getStatus())
+                && !imagesAllSettledWithoutSuccess(p)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "正文含配图位，请先完成配图（或处理失败降级）再保存");
         }
         AiMaterialRefsVO refs = refs(p);
@@ -653,11 +663,12 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
         if (raw == null) return "";
         String text = raw.replaceAll("```[a-zA-Z]*", "").replaceAll("```", "");
         text = text.replaceAll("(?m)^【(标题|摘要)】.*$", "");
-        // 模型偶发在 HTML 片段里混用 Markdown 加粗：HTML 形态转 <strong>，纯文本形态剥星号
-        if (text.contains("<")) {
+        // 模型偶发混用标记语法：真 HTML 片段（图文）把 **x** 转 <strong>；纯文本形态（朋友圈/小红书/脚本）剥星号与混入的 strong 标签
+        if (text.contains("<p") || text.contains("<h2") || text.contains("<div")) {
             text = text.replaceAll("\\*\\*([^*\\n]{1,200}?)\\*\\*", "<strong>$1</strong>");
         } else {
-            text = text.replaceAll("\\*\\*([^*\\n]{1,200}?)\\*\\*", "$1");
+            text = text.replaceAll("\\*\\*([^*\\n]{1,200}?)\\*\\*", "$1")
+                    .replaceAll("</?strong>", "");
         }
         return text.trim();
     }
