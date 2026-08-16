@@ -300,7 +300,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
                 .map(CourseInfo::getLecturerCode).filter(Objects::nonNull).toList());
         return courses.stream().map(c -> {
             CourseAgentVO vo = toAgentVO(c);
-            vo.setLecturerName(nameMap.get(c.getLecturerCode()));
+            vo.setLecturerName(c.getLecturerCode() == null ? null : nameMap.get(c.getLecturerCode()));
             return vo;
         }).toList();
     }

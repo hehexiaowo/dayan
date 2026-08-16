@@ -29,10 +29,10 @@ public interface CourseInfoService {
 
     void delete(String courseCode);
 
-    /** 上架（courseStatus: 0→1） */
+    /** 上架（courseStatus: →2 已上架；已上架/已结课不可上架） */
     void publish(String courseCode);
 
-    /** 下架（courseStatus: 1→0） */
+    /** 下架（courseStatus: 2→3 已下架；仅上架课程可下架） */
     void offline(String courseCode);
 
     /** Agent 端：上架课程列表（courseType 可空），按 sort_order DESC → created_at DESC */
