@@ -2,7 +2,7 @@
  * 知识仓库 API（对齐后端 KnowledgeRepoAdminController，RESTful /admin-api/knowledge/repos）。
  * 主键：仓库用自增 id；文档用百炼 FileId（UUID）。
  */
-import request from '@/utils/request'
+import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
 import type {
   KnowledgeRepo,

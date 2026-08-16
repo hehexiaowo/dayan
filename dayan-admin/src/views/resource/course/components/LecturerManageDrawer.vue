@@ -12,9 +12,17 @@ import type { CourseLecturer, CourseLecturerQuery } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
- * 课程讲师管理页。全局资源，独立菜单。
- * 主键 id（自增），update 用 path id。lecturerCode 系统生成。
+ * 讲师管理抽屉——课程管理页内嵌入口（无独立菜单）。
+ * 全局讲师资源 CRUD；增删改成功后 emit('changed')，父页据此刷新讲师下拉。
+ * 主键 id（自增），update 用 path id，lecturerCode 系统生成。
+ * 父页用 v-if 挂载本组件：首次打开才发列表请求，关闭即销毁。
  */
+const props = defineProps<{ modelValue: boolean }>()
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: boolean): void
+  (e: 'changed'): void
+}>()
+
 const GENDER_OPTIONS = [
   { label: '男', value: 1 },
   { label: '女', value: 2 },
@@ -111,6 +119,7 @@ async function handleSubmit() {
     }
     dialogVisible.value = false
     loadPage()
+    emit('changed')
   } finally {
     submitLoading.value = false
   }
@@ -126,6 +135,7 @@ async function handleDelete(row: CourseLecturer) {
   await deleteCourseLecturer(row.id)
   ElMessage.success('删除成功')
   loadPage()
+  emit('changed')
 }
 
 function handleReset() {
@@ -143,8 +153,14 @@ loadPage()
 </script>
 
 <template>
-  <div class="page-container">
-    <el-card shadow="never" class="search-card">
+  <el-drawer
+    :model-value="props.modelValue"
+    title="讲师管理"
+    size="72%"
+    append-to-body
+    @update:model-value="(v: boolean) => emit('update:modelValue', v)"
+  >
+    <div class="drawer-body">
       <el-form :inline="true" :model="query" @submit.prevent>
         <el-form-item label="姓名">
           <el-input v-model="query.lecturerName" placeholder="讲师姓名" clearable @keyup.enter="handleSearch" />
@@ -163,15 +179,11 @@ loadPage()
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
-    </el-card>
 
-    <el-card shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span>课程讲师</span>
-          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增讲师</el-button>
-        </div>
-      </template>
+      <div class="table-toolbar">
+        <span class="table-title">讲师列表</span>
+        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增讲师</el-button>
+      </div>
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
         <el-table-column label="头像" width="70" align="center">
@@ -219,12 +231,14 @@ loadPage()
           @size-change="handleSizeChange"
         />
       </div>
-    </el-card>
+    </div>
 
+    <!-- 新增 / 编辑讲师（叠在抽屉之上） -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogType === 'create' ? '新增讲师' : '编辑讲师'"
       width="680px"
+      append-to-body
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
@@ -306,28 +320,25 @@ loadPage()
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </el-drawer>
 </template>
 
 <style scoped lang="scss">
-.page-container {
+.drawer-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
-.search-card {
-  :deep(.el-card__body) {
-    padding-bottom: 2px;
-  }
-}
-.card-header {
+.table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+.table-title {
+  font-weight: 600;
+}
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
 }
 </style>

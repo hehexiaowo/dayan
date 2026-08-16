@@ -3,28 +3,20 @@ SET NAMES utf8mb4;
 -- rbac_resource_perm.sql  资源管理域菜单补充 + 按钮级权限补齐
 --
 -- 内容：
---   1. 新增「课程讲师」独立管理菜单（挂 admin_resource 下）；
---   2. 补齐 content / course / supplier 三域全部按钮级权限码（rbac_permission_seed.sql
+--   1. 补齐 content / course / supplier 三域全部按钮级权限码（rbac_permission_seed.sql
 --      仅覆盖了 park/scene/service/channel/goods 五域，这三域此前未播种，非超管无法授权）。
 --
 -- 历史变更：「内容分类」菜单与 content:category:* 权限随 41 号迁移字典化后由
 --   「系统管理 → 字典管理」承载，已于 44 号迁移下线，本文件不再播种。
+--   「课程讲师」独立菜单随 67 号迁移下线（讲师管理并入课程管理页抽屉，
+--   course:lecturer:* 接口权限仍保留，本文件继续播种）。
 --
 -- 幂等：system_menu 用 ON DUPLICATE KEY UPDATE；organ_permission 用 ON DUPLICATE KEY
 --   UPDATE id=id。现有库可重复 source。超管（is_admin=1）走通配 "*" 不受影响。
 -- =====================================================================
 
 -- ============================================================
--- 一、新增菜单：课程讲师（component 指向独立管理页）
--- ============================================================
-INSERT INTO `system_menu`
-  (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`, `icon`, `sort_order`, `is_visible`, `domain_type`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
-VALUES
-  ('admin_resource_course_lecturer',  '课程讲师', 'admin_resource', 2, '/resource/course/lecturer',  'resource/course/lecturer/index',  'course:lecturer:list',  'UserFilled', 7, 1, 'admin', 1, '课程讲师管理', NOW(), NOW(), 'system', 'system', 0)
-ON DUPLICATE KEY UPDATE `menu_name` = VALUES(`menu_name`), `component` = VALUES(`component`), `permission_code` = VALUES(`permission_code`), `path` = VALUES(`path`);
-
--- ============================================================
--- 二、content 域权限（info / media / record-read / record-share）
+-- 一、content 域权限（info / media / record-read / record-share）
 -- ============================================================
 INSERT INTO `organ_permission`
   (`permission_code`, `permission_name`, `parent_code`, `permission_type`, `path`, `method`, `sort_order`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)

@@ -42,9 +42,9 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '机构详情', hidden: true }
       },
       {
-        path: 'resource/knowledge/detail/:id',
+        path: 'system/knowledge/detail/:id',
         name: 'KnowledgeDetail',
-        component: () => import('@/views/resource/knowledge/detail/index.vue'),
+        component: () => import('@/views/system/knowledge/detail/index.vue'),
         meta: { title: '知识仓库详情', hidden: true }
       },
       {

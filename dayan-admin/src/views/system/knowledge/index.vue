@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 知识仓库管理页（资源管理 → 知识仓库）。
+ * 知识仓库管理页（系统管理 → 知识仓库）。
  *
  * - 列表 + 分页 + 平台/渠道筛选 + 新建（新建远端索引 / 绑定已有 IndexId）+ 删除（同步删远端）；
  * - 主键 id（自增），详情页 KnowledgeDetail 跳转；
@@ -31,7 +31,7 @@ import { formatDateTime } from '@/utils/format'
 const router = useRouter()
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
-  useCrud<KnowledgeRepo, KnowledgeRepoQuery>(
+  useCrud<KnowledgeRepo, KnowledgeRepoQuery, number>(
     { page: pageKnowledgeRepos, remove: deleteKnowledgeRepo },
     {
       idKey: 'id',
