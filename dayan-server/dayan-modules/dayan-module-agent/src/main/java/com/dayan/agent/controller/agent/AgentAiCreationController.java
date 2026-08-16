@@ -1,5 +1,7 @@
 package com.dayan.agent.controller.agent;
 
+import com.dayan.agent.dto.AiOutlineConfirmDTO;
+import com.dayan.agent.dto.AiOutlineRegenDTO;
 import com.dayan.agent.dto.AiProjectCreateDTO;
 import com.dayan.agent.dto.AiStrategyConfirmDTO;
 import com.dayan.agent.dto.AiTitleRegenDTO;
@@ -78,5 +80,23 @@ public class AgentAiCreationController {
     @PostMapping("/{id}/strategy/confirm")
     public R<AiProjectVO> confirmStrategy(@PathVariable Long id, @RequestBody @Valid AiStrategyConfirmDTO dto) {
         return R.ok(pipelineService.confirmStrategy(id, dto));
+    }
+
+    @Operation(summary = "生成大纲")
+    @PostMapping("/{id}/outline")
+    public R<AiProjectVO> outline(@PathVariable Long id) {
+        return R.ok(pipelineService.outline(id));
+    }
+
+    @Operation(summary = "带反馈重生成大纲")
+    @PostMapping("/{id}/outline/regenerate")
+    public R<AiProjectVO> regenOutline(@PathVariable Long id, @RequestBody(required = false) AiOutlineRegenDTO dto) {
+        return R.ok(pipelineService.regenerateOutline(id, dto));
+    }
+
+    @Operation(summary = "锁定大纲（可含微调）")
+    @PostMapping("/{id}/outline/confirm")
+    public R<AiProjectVO> confirmOutline(@PathVariable Long id, @RequestBody @Valid AiOutlineConfirmDTO dto) {
+        return R.ok(pipelineService.confirmOutline(id, dto));
     }
 }

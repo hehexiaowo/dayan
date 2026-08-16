@@ -2,6 +2,8 @@ package com.dayan.agent.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.dayan.agent.dto.AiOutlineConfirmDTO;
+import com.dayan.agent.dto.AiOutlineRegenDTO;
 import com.dayan.agent.dto.AiStrategyConfirmDTO;
 import com.dayan.agent.dto.AiTitleRegenDTO;
 import com.dayan.agent.entity.AiCreationProject;
@@ -39,6 +41,7 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
 
     private static final double DIGEST_TEMPERATURE = 0.2;
     private static final double STRATEGY_TEMPERATURE = 0.7;
+    private static final double OUTLINE_TEMPERATURE = 0.5;
 
     private static final Map<Integer, String> FORM_INSTRUCTIONS = Map.of(
             1, "微信公众号精品图文（1200-1500 字，HTML 片段 <h2>/<p>，标题 ≤30 字）",
@@ -139,6 +142,152 @@ public class AiCreationPipelineServiceImpl implements AiCreationPipelineService 
         p.setStatus(AiProjectPhase.STRATEGY_CONFIRMED);
         projectService.updateById(p);
         return projectService.toVO(p);
+    }
+
+    @Override
+    public AiProjectVO outline(Long id) {
+        AiCreationProject p = requirePhase(id, AiProjectPhase.STRATEGY_CONFIRMED, AiProjectPhase.OUTLINE_CONFIRMED);
+        if (Integer.valueOf(2).equals(p.getContentType())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "朋友圈文案无大纲阶段，请直接生成正文");
+        }
+        clearBodyDownstream(p);
+        AiStrategyVO strategy = parseStrategy(p);
+        List<String> warnings = new ArrayList<>();
+        AiMaterialAssembler.MaterialBundle bundle = materialAssembler.assemble(
+                p.getChannelCode(), refs(p), p.getTopic(), warnings);
+        AiOutlineVO outline = callOutline(p, strategy, bundle, null);
+        p.setOutline(JSONUtil.toJsonStr(outline));
+        p.setStatus(AiProjectPhase.STRATEGY_CONFIRMED);
+        projectService.updateById(p);
+        return projectService.toVO(p);
+    }
+
+    @Override
+    public AiProjectVO regenerateOutline(Long id, AiOutlineRegenDTO dto) {
+        // 反馈为空 = 直接重跑 outline()
+        if (dto == null || StrUtil.isBlank(dto.getFeedback())) {
+            return outline(id);
+        }
+        AiCreationProject p = requirePhase(id, AiProjectPhase.STRATEGY_CONFIRMED, AiProjectPhase.OUTLINE_CONFIRMED);
+        if (Integer.valueOf(2).equals(p.getContentType())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "朋友圈文案无大纲阶段，请直接生成正文");
+        }
+        clearBodyDownstream(p);
+        AiStrategyVO strategy = parseStrategy(p);
+        List<String> warnings = new ArrayList<>();
+        AiMaterialAssembler.MaterialBundle bundle = materialAssembler.assemble(
+                p.getChannelCode(), refs(p), p.getTopic(), warnings);
+        AiOutlineVO outline = callOutline(p, strategy, bundle, dto.getFeedback());
+        p.setOutline(JSONUtil.toJsonStr(outline));
+        p.setStatus(AiProjectPhase.STRATEGY_CONFIRMED);
+        projectService.updateById(p);
+        return projectService.toVO(p);
+    }
+
+    @Override
+    public AiProjectVO confirmOutline(Long id, AiOutlineConfirmDTO dto) {
+        AiCreationProject p = requirePhase(id, AiProjectPhase.STRATEGY_CONFIRMED, AiProjectPhase.OUTLINE_CONFIRMED);
+        AiOutlineVO outline;
+        try {
+            outline = JSONUtil.toBean(dto.getOutline(), AiOutlineVO.class);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "大纲 JSON 解析失败");
+        }
+        sanitizeOutline(outline);
+        p.setOutline(JSONUtil.toJsonStr(outline));
+        p.setStatus(AiProjectPhase.OUTLINE_CONFIRMED);
+        projectService.updateById(p);
+        return projectService.toVO(p);
+    }
+
+    /** 大纲 LLM 调用（生成/重生成共用；图文/小红书若未规划任何节点配图位，带强调指令重试一次） */
+    private AiOutlineVO callOutline(AiCreationProject p, AiStrategyVO strategy,
+                                    AiMaterialAssembler.MaterialBundle bundle, String extraDirective) {
+        String prompt = outlinePrompt(p, strategy, bundle);
+        if (StrUtil.isNotBlank(extraDirective)) {
+            prompt = prompt + "\n\n【重生成要求（最高优先级）】" + extraDirective.trim();
+        }
+        AiOutlineVO outline = LlmJson.parse(chat(prompt, OUTLINE_TEMPERATURE), AiOutlineVO.class);
+        sanitizeOutline(outline);
+        if (StrUtil.isBlank(extraDirective) && needsImageRetry(p, outline)) {
+            AiOutlineVO retry = LlmJson.parse(chat(prompt + "\n\n【重生成要求（最高优先级）】"
+                    + "按配图位规划为 3-4 个主体节点补充 imageInsertion：英文 prompt 以 Warm/Bright/Muted lifestyle photograph "
+                    + "开头、≤60 词、单一场景并含摄影术语；size 用 1280*720；无需配图的节点保持 null。", OUTLINE_TEMPERATURE),
+                    AiOutlineVO.class);
+            sanitizeOutline(retry);
+            return retry;
+        }
+        return outline;
+    }
+
+    /** 图文/小红书一个配图位都没有 → 重试（朋友圈/脚本无正文配图位，不重试） */
+    private boolean needsImageRetry(AiCreationProject p, AiOutlineVO outline) {
+        if (Integer.valueOf(2).equals(p.getContentType()) || Integer.valueOf(3).equals(p.getContentType())) {
+            return false;
+        }
+        return outline.getNodes().stream().noneMatch(n -> n.getImageInsertion() != null);
+    }
+
+    /** 大纲 prompt 渲染（生成/重生成共用，重生成在尾部追加反馈指令） */
+    private String outlinePrompt(AiCreationProject p, AiStrategyVO strategy,
+                                 AiMaterialAssembler.MaterialBundle bundle) {
+        Map<String, String> vars = new java.util.HashMap<>();
+        vars.put("core_execution_prompt", StrUtil.nullToEmpty(strategy.getCoreExecutionPrompt()));
+        vars.put("target_audience", StrUtil.nullToEmpty(strategy.getTargetAudience()));
+        vars.put("core_pain_point", StrUtil.nullToEmpty(strategy.getCorePainPoint()));
+        vars.put("viral_logic", StrUtil.nullToEmpty(strategy.getViralLogic()));
+        vars.put("advantage_hook", StrUtil.nullToEmpty(strategy.getAdvantageHook()));
+        vars.put("purpose_rule", purposeRule(p.getPurpose()));
+        vars.put("platform_rules", platformRules(p.getContentType()));
+        vars.put("selected_title", StrUtil.nullToEmpty(p.getSelectedTitle()));
+        vars.put("topic", StrUtil.blankToDefault(p.getTopic(), "（从素材归纳）"));
+        vars.put("fact_digest", digestText(p));
+        vars.put("material", StrUtil.blankToDefault(bundle.blocks(), "（无素材）"));
+        vars.put("image_count_hint", imageCountHint(p.getContentType()));
+        return render("outline", vars);
+    }
+
+    /** 大纲清洗：节点非空、补 id、配图规格兜底 */
+    void sanitizeOutline(AiOutlineVO outline) {
+        if (outline == null || outline.getNodes() == null || outline.getNodes().isEmpty()) {
+            throw new BusinessException(ErrorCode.BUSINESS, "模型未返回大纲节点，请重试");
+        }
+        for (int i = 0; i < outline.getNodes().size(); i++) {
+            AiOutlineVO.AiOutlineNode node = outline.getNodes().get(i);
+            if (StrUtil.isBlank(node.getId())) {
+                node.setId("node_" + (i + 1));
+            }
+            if (node.getImageInsertion() != null) {
+                if (StrUtil.isBlank(node.getImageInsertion().getSource())) {
+                    node.getImageInsertion().setSource("ai_generated");
+                }
+                if (StrUtil.isBlank(node.getImageInsertion().getSize())) {
+                    node.getImageInsertion().setSize("1280*720");
+                }
+            }
+        }
+        if (outline.getCoverImage() != null && StrUtil.isBlank(outline.getCoverImage().getSize())) {
+            outline.getCoverImage().setSize("1024*1024");
+        }
+    }
+
+    /** outline/body 重入前清空 body 侧产物（保留 strategy/titles） */
+    void clearBodyDownstream(AiCreationProject p) {
+        if (!AiProjectPhase.STRATEGY_CONFIRMED.equals(p.getStatus())) {
+            p.setBody(null);
+            p.setAuditLog(null);
+            p.setScores(null);
+            p.setImages(null);
+            p.setStatus(AiProjectPhase.STRATEGY_CONFIRMED);
+        }
+    }
+
+    String imageCountHint(Integer contentType) {
+        return switch (contentType) {
+            case 3 -> "仅规划 coverImage 1 张（1024*1024），所有 nodes 的 imageInsertion 必须为 null";
+            case 4 -> "coverImage 1 张（1080*1440）+ 节点配位合计 2-4 张（1280*720）";
+            default -> "coverImage 1 张（1024*1024）+ 正文节点配图 3-4 张（1280*720）";
+        };
     }
 
     // ---------- 公共设施（后续任务复用） ----------

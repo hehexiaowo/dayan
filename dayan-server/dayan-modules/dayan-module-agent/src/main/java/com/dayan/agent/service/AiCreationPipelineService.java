@@ -1,5 +1,7 @@
 package com.dayan.agent.service;
 
+import com.dayan.agent.dto.AiOutlineConfirmDTO;
+import com.dayan.agent.dto.AiOutlineRegenDTO;
 import com.dayan.agent.dto.AiStrategyConfirmDTO;
 import com.dayan.agent.dto.AiTitleRegenDTO;
 import com.dayan.agent.vo.AiProjectVO;
@@ -14,4 +16,10 @@ public interface AiCreationPipelineService {
     AiProjectVO regenerateTitles(Long id, AiTitleRegenDTO dto);
     /** 锁定策略+选定标题 → STRATEGY_CONFIRMED */
     AiProjectVO confirmStrategy(Long id, AiStrategyConfirmDTO dto);
+    /** 生成大纲（contentType≠2；重入清空 body 侧产物） */
+    AiProjectVO outline(Long id);
+    /** 带反馈重生成大纲 */
+    AiProjectVO regenerateOutline(Long id, AiOutlineRegenDTO dto);
+    /** 锁定大纲（可含前端微调）→ OUTLINE_CONFIRMED */
+    AiProjectVO confirmOutline(Long id, AiOutlineConfirmDTO dto);
 }
