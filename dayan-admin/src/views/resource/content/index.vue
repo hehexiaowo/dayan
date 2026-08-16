@@ -27,6 +27,7 @@ import {
 import FileUploader from '@/components/FileUploader/index.vue'
 import RichEditor from '@/components/RichEditor/index.vue'
 import { NETWORK_TYPE_OPTIONS, networkTagsToList } from '@/types/park'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 内容素材管理页。
@@ -411,7 +412,9 @@ onMounted(() => {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="publishTime" label="发布时间" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="publishTime" label="发布时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.publishTime) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>

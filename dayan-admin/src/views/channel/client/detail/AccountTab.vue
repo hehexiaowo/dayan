@@ -270,7 +270,7 @@ defineExpose({ loadPage })
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="客户编码">
+            <el-form-item label="客户编码" prop="clientCode">
               <el-input v-model="form.clientCode" disabled />
             </el-form-item>
           </el-col>

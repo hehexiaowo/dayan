@@ -5,7 +5,7 @@
  * 历史版本查看：子面板价格展开行（isCurrent desc 排序即版本历史）。
  */
 import { computed, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { revisePricing } from '@/api/park-pricing'
 
 defineOptions({ name: 'PricingReviseDialog' })
@@ -24,7 +24,20 @@ const visible = computed({
 })
 
 const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
 const form = ref({ salePrice: undefined as number | undefined, effectiveDate: '', priceChangeReason: '' })
+
+const rules: FormRules = {
+  salePrice: [{ required: true, message: '请填写新售价', trigger: 'blur' }],
+  effectiveDate: [{ required: true, message: '请选择生效日期', trigger: 'change' }]
+}
+
+/** 本地日期（YYYY-MM-DD），避免 toISOString 的 UTC 偏移导致默认生效日期变成昨天 */
+function todayStr(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
 
 watch(
   () => props.modelValue,
@@ -32,20 +45,19 @@ watch(
     if (v) {
       form.value = {
         salePrice: props.pricing?.salePrice,
-        effectiveDate: new Date().toISOString().slice(0, 10),
+        effectiveDate: todayStr(),
         priceChangeReason: ''
       }
     }
   }
 )
 
-const isImmediate = computed(() => !!form.value.effectiveDate && form.value.effectiveDate <= new Date().toISOString().slice(0, 10))
+const isImmediate = computed(() => !!form.value.effectiveDate && form.value.effectiveDate <= todayStr())
 
 async function handleSubmit() {
-  if (!props.pricing?.id || form.value.salePrice === undefined) {
-    ElMessage.warning('请填写新售价')
-    return
-  }
+  if (!props.pricing?.id || !formRef.value) return
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid || form.value.salePrice === undefined) return
   submitLoading.value = true
   try {
     await revisePricing(props.pricing.id, {
@@ -67,14 +79,14 @@ async function handleSubmit() {
     <el-alert type="info" :closable="false" style="margin-bottom: 12px">
       调价不会修改历史记录：{{ isImmediate ? '保存后立即生效为当前价' : '到达生效日期后自动切换为当前价' }}。历史版本可在价格展开行查看。
     </el-alert>
-    <el-form label-width="90px">
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
       <el-form-item label="调价对象">
         <span>{{ pricing?.refName || pricing?.planName || '--' }}（现售价 {{ pricing?.salePrice ?? '--' }}）</span>
       </el-form-item>
-      <el-form-item label="新售价" required>
+      <el-form-item label="新售价" prop="salePrice">
         <el-input-number v-model="form.salePrice" :min="0" :precision="2" controls-position="right" style="width: 100%" />
       </el-form-item>
-      <el-form-item label="生效日期" required>
+      <el-form-item label="生效日期" prop="effectiveDate">
         <el-date-picker v-model="form.effectiveDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
       </el-form-item>
       <el-form-item label="调价原因">

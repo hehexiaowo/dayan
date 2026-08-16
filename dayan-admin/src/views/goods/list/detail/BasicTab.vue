@@ -23,7 +23,7 @@ import {
   goodsStatusTagType
 } from '@/types/goods'
 import type { GoodsInfo } from '@/types/goods'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime, formatMoney } from '@/utils/format'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { formatFileUrl } from '@/utils/file'
 import { useDictOptions } from '@/composables/useDict'
@@ -196,13 +196,17 @@ defineExpose({ loadDetail })
             {{ goodsStatusLabel(goodsInfo.goodsStatus) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="审核状态">{{ auditStatusLabel(goodsInfo.auditStatus) }}</el-descriptions-item>
+        <el-descriptions-item label="审核状态">
+          <el-tag size="small" :type="goodsInfo.auditStatus === 1 ? 'success' : goodsInfo.auditStatus === 2 ? 'danger' : 'warning'">
+            {{ auditStatusLabel(goodsInfo.auditStatus) }}
+          </el-tag>
+        </el-descriptions-item>
         <el-descriptions-item label="商品分类">{{ categoryName(goodsInfo.categoryCode) }}</el-descriptions-item>
         <el-descriptions-item label="品牌">{{ goodsInfo.brandName ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="价格单位">{{ goodsInfo.priceUnit ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="原价">{{ goodsInfo.originalPrice ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="售价">{{ goodsInfo.salePrice ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="成本价">{{ goodsInfo.costPrice ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="原价">{{ formatMoney(goodsInfo.originalPrice) }}</el-descriptions-item>
+        <el-descriptions-item label="售价">{{ formatMoney(goodsInfo.salePrice) }}</el-descriptions-item>
+        <el-descriptions-item label="成本价">{{ formatMoney(goodsInfo.costPrice) }}</el-descriptions-item>
         <el-descriptions-item label="库存">{{ goodsInfo.stock ?? '--' }}</el-descriptions-item>
         <el-descriptions-item label="销量（只读）">{{ goodsInfo.salesCount ?? 0 }}</el-descriptions-item>
         <el-descriptions-item label="浏览量（只读）">{{ goodsInfo.viewCount ?? 0 }}</el-descriptions-item>

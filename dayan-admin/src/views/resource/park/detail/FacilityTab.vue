@@ -547,7 +547,7 @@ defineExpose({ loadPage })
       </el-table-column>
       <el-table-column prop="facilityTypeCode" label="设施编码" min-width="140" show-overflow-tooltip />
       <el-table-column prop="facilityTypeName" label="设施名称" min-width="160" show-overflow-tooltip />
-      <el-table-column label="当前价" width="130" align="center">
+      <el-table-column label="当前价" width="130" align="right">
         <template #default="{ row }">
           <span v-if="currentPriceMap.get(row.facilityTypeCode)" class="current-price">
             {{ currentPriceMap.get(row.facilityTypeCode) }}

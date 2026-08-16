@@ -31,6 +31,12 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 
 loadPage()
 
+/** 重置筛选并重新查询 */
+function handleReset() {
+  Object.assign(query, { toolName: '', toolType: undefined, status: undefined })
+  handleSearch()
+}
+
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
 const dialogType = ref<'create' | 'edit'>('create')
@@ -187,15 +193,19 @@ function visibleScopeLabel(scope?: string): string {
         </el-select>
         <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-          <el-button v-permission="'tool:info:create'" type="primary" :icon="'Plus'" @click="openCreate">
-            新增工具
-          </el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
         </div>
       </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">工具列表</span>
+          <el-button v-permission="'tool:info:create'" type="primary" :icon="'Plus'" @click="openCreate">新增工具</el-button>
+        </div>
+      </template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="toolCode">
         <el-table-column prop="toolCode" label="工具编码" width="110" />
         <el-table-column prop="toolName" label="工具名称" min-width="150" show-overflow-tooltip />

@@ -18,6 +18,7 @@ import {
   SESSION_PRIORITY_OPTIONS,
   SERVICE_TYPE_OPTIONS
 } from '@/types/service'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 服务会话管理页（第一版简化）。
@@ -353,7 +354,11 @@ loadPage()
         <el-table-column prop="butlerFullName" label="管家" min-width="110" show-overflow-tooltip>
           <template #default="{ row }">{{ row.butlerFullName || row.butlerCode || '--' }}</template>
         </el-table-column>
-        <el-table-column prop="priority" label="优先级" width="90" align="center" />
+        <el-table-column prop="priority" label="优先级" width="90" align="center">
+          <template #default="{ row }">
+            {{ SESSION_PRIORITY_OPTIONS.find((o) => o.value === row.priority)?.label ?? '--' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="sessionStatus" label="会话状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="sessionStatusTagType(row.sessionStatus)">{{ sessionStatusLabel(row.sessionStatus) }}</el-tag>
@@ -362,8 +367,12 @@ loadPage()
         <el-table-column prop="subStatus" label="子状态" min-width="110" show-overflow-tooltip>
           <template #default="{ row }">{{ row.subStatus || '--' }}</template>
         </el-table-column>
-        <el-table-column prop="acceptTime" label="受理时间" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="acceptTime" label="受理时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.acceptTime) }}</template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>

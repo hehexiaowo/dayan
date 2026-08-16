@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
+import { formatMoney } from '@/utils/format'
 import {
   pageScenes,
   getScene,
@@ -435,7 +436,8 @@ function auditStatusTagType(status?: number): 'success' | 'warning' | 'danger' |
 function priceLabel(row: SceneInfo): string {
   if (row.isFree === 1) return '免费'
   if (row.salePrice == null) return '--'
-  return row.priceUnit ? `${row.salePrice} ${row.priceUnit}` : String(row.salePrice)
+  const price = formatMoney(row.salePrice, false)
+  return row.priceUnit ? `${price} ${row.priceUnit}` : price
 }
 
 const router = useRouter()
@@ -504,7 +506,7 @@ onMounted(() => {
         <el-table-column label="机构" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ parkNameMap[row.parkCode] || row.parkCode || '-' }}</template>
         </el-table-column>
-        <el-table-column label="价格" width="120" align="center">
+        <el-table-column label="价格" width="140" align="right">
           <template #default="{ row }">
             {{ priceLabel(row) }}
           </template>

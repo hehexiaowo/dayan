@@ -31,6 +31,7 @@ import {
   COMMON_ENABLE_STATUS_OPTIONS
 } from '@/types/scene'
 import type { SceneItemPrice, SceneItemPriceQuery, SceneItem } from '@/types/scene'
+import { formatMoney } from '@/utils/format'
 
 const props = defineProps<{
   /** 场景编码（从详情页 prop 带入，create 表单自动携带） */
@@ -222,10 +223,14 @@ defineExpose({ loadPage })
       <el-table-column prop="priceType" label="定价类型" width="100" align="center">
         <template #default="{ row }">{{ priceTypeLabel(row.priceType) }}</template>
       </el-table-column>
-      <el-table-column prop="originalPrice" label="原价" width="100" align="right" />
-      <el-table-column prop="salePrice" label="售价" width="100" align="right" />
-      <el-table-column prop="channelPrice" label="渠道价" width="100" align="right">
-        <template #default="{ row }">{{ row.channelPrice != null ? row.channelPrice : '--' }}</template>
+      <el-table-column prop="originalPrice" label="原价" width="110" align="right">
+        <template #default="{ row }">{{ formatMoney(row.originalPrice) }}</template>
+      </el-table-column>
+      <el-table-column prop="salePrice" label="售价" width="110" align="right">
+        <template #default="{ row }">{{ formatMoney(row.salePrice) }}</template>
+      </el-table-column>
+      <el-table-column prop="channelPrice" label="渠道价" width="110" align="right">
+        <template #default="{ row }">{{ row.channelPrice != null ? formatMoney(row.channelPrice) : '--' }}</template>
       </el-table-column>
       <el-table-column prop="effectiveDate" label="生效日期" width="110" align="center">
         <template #default="{ row }">{{ formatDate(row.effectiveDate) }}</template>

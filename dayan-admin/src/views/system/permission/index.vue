@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
   getPermissionTree,
@@ -28,6 +28,29 @@ const loading = ref(false)
 const treeData = ref<Permission[]>([])
 /** 全量平铺权限（供父级选择） */
 const flatList = ref<Permission[]>([])
+
+/** 树关键字过滤：按名称/编码匹配，命中节点的祖先链保留 */
+const treeKeyword = ref('')
+const filteredTree = computed(() => {
+  const k = treeKeyword.value.trim()
+  if (!k) return treeData.value
+  const walk = (nodes: Permission[]): Permission[] =>
+    nodes
+      .map((n) => ({ ...n, children: n.children?.length ? walk(n.children) : undefined }))
+      .filter(
+        (n) =>
+          n.permissionName?.includes(k) ||
+          n.permissionCode?.includes(k) ||
+          (n.children?.length ?? 0) > 0
+      )
+  return walk(treeData.value)
+})
+
+/** 清空关键字并重新加载树 */
+function handleResetKeyword() {
+  treeKeyword.value = ''
+  loadTree()
+}
 
 async function loadTree() {
   loading.value = true
@@ -193,20 +216,34 @@ loadTree()
 
 <template>
   <div class="page-container">
+    <!-- 搜索栏 -->
+    <el-card shadow="never" class="search-card">
+      <div class="toolbar">
+        <el-input
+          v-model="treeKeyword"
+          placeholder="权限名称 / 编码"
+          clearable
+          style="width: 220px"
+        />
+        <div class="toolbar-actions">
+          <el-button :icon="'Refresh'" @click="loadTree">刷新</el-button>
+          <el-button :icon="'RefreshLeft'" @click="handleResetKeyword">重置</el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>权限列表</span>
-          <div>
-            <el-button :icon="'Refresh'" @click="loadTree">刷新</el-button>
-            <el-button type="primary" :icon="'Plus'" @click="openCreate()">新增权限</el-button>
-          </div>
+          <span class="card-title">权限列表</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate()">新增权限</el-button>
         </div>
       </template>
 
       <el-table
         v-loading="loading"
-        :data="treeData"
+        :data="filteredTree"
         border
         stripe
         row-key="permissionCode"
@@ -337,5 +374,31 @@ loadTree()
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
+.search-card {
+  :deep(.el-card__body) {
+    padding-bottom: 2px;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.toolbar-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
 }
 </style>

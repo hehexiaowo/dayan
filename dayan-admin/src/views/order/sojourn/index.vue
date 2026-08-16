@@ -268,7 +268,7 @@ loadPage()
         <el-table-column prop="parkFullName" label="旅游短居基地" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ row.parkFullName || row.parkCode || '--' }}</template>
         </el-table-column>
-        <el-table-column prop="checkinDate" label="入住日期" width="120" align="center">
+        <el-table-column prop="checkinDate" label="入住日期" min-width="200" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span>{{ row.checkinDate || '--' }}{{ row.checkoutDate ? ' ~ ' + row.checkoutDate : '' }}</span>
           </template>

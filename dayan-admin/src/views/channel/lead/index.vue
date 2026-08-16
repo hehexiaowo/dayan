@@ -46,6 +46,12 @@ async function loadChannels() {
 }
 loadChannels()
 
+/** 重置筛选并重新查询 */
+function handleReset() {
+  Object.assign(query, { channelCode: undefined, keyword: '', onlyWithPhone: undefined, excludeClaimed: undefined })
+  handleSearch()
+}
+
 /** 渠道编码 → 渠道名（选项未加载时回退编码本身） */
 function channelName(code?: string): string {
   if (!code) return '--'
@@ -101,14 +107,20 @@ function displayName(row: LeadInfo): string {
         <el-checkbox v-model="query.excludeClaimed">排除已认领</el-checkbox>
         <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
         </div>
       </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">线索列表</span>
+        </div>
+      </template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="leadCode">
-        <el-table-column prop="leadCode" label="线索编码" width="110" />
+        <el-table-column prop="leadCode" label="线索编码" min-width="150" show-overflow-tooltip />
         <el-table-column label="访客" min-width="150">
           <template #default="{ row }">
             <div class="visitor-cell">

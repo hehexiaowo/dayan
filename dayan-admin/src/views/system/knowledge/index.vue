@@ -46,6 +46,12 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 
 loadPage()
 
+/** 重置筛选并重新查询 */
+function handleReset() {
+  Object.assign(query, { repoName: '', repoType: undefined, channelCode: undefined, status: undefined })
+  handleSearch()
+}
+
 // ---------- 渠道下拉 ----------
 const channels = ref<ChannelInfo[]>([])
 
@@ -187,6 +193,7 @@ async function handleDelete(row: KnowledgeRepo) {
         </el-select>
         <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
         </div>
       </div>
     </el-card>

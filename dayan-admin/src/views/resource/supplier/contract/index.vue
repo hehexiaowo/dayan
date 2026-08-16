@@ -37,6 +37,7 @@ import {
 } from '@/types/supplier'
 import type { SupplierContract, SupplierContractQuery } from '@/types/supplier'
 import FileUploader from '@/components/FileUploader/index.vue'
+import { formatMoney } from '@/utils/format'
 
 // 从详情页"前往合同管理"跳转时可携带 supplierCode / contractCode 作为初始过滤（路由 query）
 const route = useRoute()
@@ -393,7 +394,9 @@ const isEdit = computed(() => dialogMode.value === 'edit')
         <el-table-column label="有效期" min-width="200" align="center">
           <template #default="{ row }">{{ dateRange(row.effectiveDate, row.expireDate) }}</template>
         </el-table-column>
-        <el-table-column prop="contractAmount" label="合同金额" width="120" align="right" />
+        <el-table-column prop="contractAmount" label="合同金额" width="130" align="right">
+          <template #default="{ row }">{{ formatMoney(row.contractAmount) }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>

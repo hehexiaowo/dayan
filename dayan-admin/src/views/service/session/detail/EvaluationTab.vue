@@ -26,6 +26,7 @@ import {
 } from '@/types/service'
 import type { ServiceEvaluation } from '@/types/service'
 import FileUploader from '@/components/FileUploader/index.vue'
+import { formatFileUrl } from '@/utils/file'
 
 const props = defineProps<{
   sessionCode: string
@@ -125,6 +126,19 @@ const imageUrlsModel = computed<string[]>({
   set(val: string[]) {
     form.imageUrls = val.length > 0 ? JSON.stringify(val) : ''
   }
+})
+
+/** 详情展示：评价图片 JSON → 可预览 URL 列表 */
+const displayImages = computed<string[]>(() => {
+  const raw = evaluation.value?.imageUrls
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string')
+  } catch {
+    // 非 JSON 数组，不展示
+  }
+  return []
 })
 
 function resetForm() {
@@ -249,8 +263,19 @@ defineExpose({ loadEvaluation })
         <el-descriptions-item label="满意度">
           <el-rate :model-value="evaluation.satisfactionRating ?? 0" disabled />
         </el-descriptions-item>
-        <el-descriptions-item label="评价图片（JSON）" :span="2">
-          {{ evaluation.imageUrls || '--' }}
+        <el-descriptions-item label="评价图片" :span="2">
+          <div v-if="displayImages.length" style="display: flex; gap: 8px; flex-wrap: wrap">
+            <el-image
+              v-for="(url, i) in displayImages"
+              :key="i"
+              :src="formatFileUrl(url)"
+              :preview-src-list="displayImages.map(formatFileUrl)"
+              preview-teleported
+              fit="cover"
+              style="width: 56px; height: 56px; border-radius: 4px"
+            />
+          </div>
+          <span v-else>--</span>
         </el-descriptions-item>
         <el-descriptions-item label="评价内容" :span="3">{{ evaluation.content || '--' }}</el-descriptions-item>
         <el-descriptions-item label="回复内容" :span="2">{{ evaluation.replyContent || '--' }}</el-descriptions-item>

@@ -157,8 +157,8 @@ onMounted(loadData)
           style="width: 340px"
         />
         <div class="toolbar-actions">
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
         </div>
       </div>
     </el-card>
@@ -196,7 +196,7 @@ onMounted(loadData)
           <template #default="{ row }">{{ row.title || '—' }}</template>
         </el-table-column>
         <el-table-column prop="content" label="正文" min-width="220" show-overflow-tooltip />
-        <el-table-column label="接收者" min-width="150" show-overflow>
+        <el-table-column label="接收者" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">
             {{ targetTypeLabel(row.targetType) }}<template v-if="row.targetName"> · {{ row.targetName }}</template>
             <template v-else-if="row.targetCode"> · {{ row.targetCode }}</template>
@@ -231,7 +231,7 @@ onMounted(loadData)
           background
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[10, 20, 50, 100]"
           :current-page="query.current"
           :page-size="query.size"
           @current-change="handlePageChange"

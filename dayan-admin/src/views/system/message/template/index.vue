@@ -262,8 +262,8 @@ onMounted(loadData)
           <el-option v-for="o in TEMPLATE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
         <div class="toolbar-actions">
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
         </div>
       </div>
     </el-card>
@@ -343,7 +343,7 @@ onMounted(loadData)
           background
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[10, 20, 50, 100]"
           :current-page="query.current"
           :page-size="query.size"
           @current-change="handlePageChange"

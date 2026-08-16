@@ -26,6 +26,7 @@ import {
   COMMON_ENABLE_STATUS_OPTIONS
 } from '@/types/scene'
 import type { SceneResource, SceneResourceQuery } from '@/types/scene'
+import { formatMoney } from '@/utils/format'
 
 const props = defineProps<{
   /** 场景编码（从详情页 prop 带入，create 表单自动携带） */
@@ -202,8 +203,8 @@ defineExpose({ loadPage })
       <el-table-column prop="unit" label="单位" width="90" align="center">
         <template #default="{ row }">{{ row.unit || '--' }}</template>
       </el-table-column>
-      <el-table-column prop="unitCost" label="单位成本" width="110" align="right">
-        <template #default="{ row }">{{ row.unitCost != null ? row.unitCost : '--' }}</template>
+      <el-table-column prop="unitCost" label="单位成本" width="120" align="right">
+        <template #default="{ row }">{{ row.unitCost != null ? formatMoney(row.unitCost) : '--' }}</template>
       </el-table-column>
       <el-table-column prop="isProvided" label="是否提供" width="100" align="center">
         <template #default="{ row }">

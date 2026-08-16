@@ -12,7 +12,7 @@ import {
   FlowStatus,
   FLOW_STATUS_OPTIONS
 } from '@/types/finance'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime, formatMoney } from '@/utils/format'
 
 /**
  * 资金流水（FinanceFlow）管理页。
@@ -241,14 +241,14 @@ function settledTagType(v?: number): 'success' | 'info' {
  */
 function amountLabel(row: FinanceFlow): { text: string; cls: string } {
   if (row.flowAmount == null) return { text: '--', cls: 'amount-zero' }
-  const fixed = Math.abs(row.flowAmount).toFixed(2)
+  const num = formatMoney(Math.abs(row.flowAmount), false)
   if (row.flowType === FlowType.INCOME) {
-    return { text: `+¥${fixed}`, cls: 'amount-income' }
+    return { text: `+¥${num}`, cls: 'amount-income' }
   }
   if (row.flowType === FlowType.EXPENSE) {
-    return { text: `-¥${fixed}`, cls: 'amount-expense' }
+    return { text: `-¥${num}`, cls: 'amount-expense' }
   }
-  return { text: `¥${fixed}`, cls: 'amount-zero' }
+  return { text: `¥${num}`, cls: 'amount-zero' }
 }
 
 /** 详情金额展示（带符号规则同上） */
@@ -259,8 +259,7 @@ function detailAmountLabel(flow?: FinanceFlow): { text: string; cls: string } {
 
 /** 纯金额展示（无符号，用于 balanceBefore/After） */
 function plainAmount(v?: number): string {
-  if (v == null) return '--'
-  return `¥${v.toFixed(2)}`
+  return formatMoney(v)
 }
 
 // 初始化加载

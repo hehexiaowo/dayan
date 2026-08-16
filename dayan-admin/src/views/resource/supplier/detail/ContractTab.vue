@@ -19,6 +19,7 @@ import {
   ContractStatus
 } from '@/types/supplier'
 import type { SupplierContract, SupplierContractQuery } from '@/types/supplier'
+import { formatMoney } from '@/utils/format'
 
 const props = defineProps<{
   supplierCode: string
@@ -154,7 +155,9 @@ defineExpose({ loadPage, refreshFailed })
       <el-table-column label="有效期" min-width="200" align="center">
         <template #default="{ row }">{{ dateRange(row.effectiveDate, row.expireDate) }}</template>
       </el-table-column>
-      <el-table-column prop="contractAmount" label="合同金额" width="120" align="right" />
+      <el-table-column prop="contractAmount" label="合同金额" width="130" align="right">
+        <template #default="{ row }">{{ formatMoney(row.contractAmount) }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="goContractDetail(row)">查看完整管理</el-button>
@@ -170,7 +173,7 @@ defineExpose({ loadPage, refreshFailed })
         :current-page="query.current"
         :page-size="query.size"
         :total="total"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         background
         @current-change="handlePageChange"

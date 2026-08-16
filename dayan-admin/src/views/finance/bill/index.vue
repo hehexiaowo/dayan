@@ -18,7 +18,7 @@ import {
   BILL_STATUS_OPTIONS,
   SETTLEMENT_METHOD_OPTIONS
 } from '@/types/finance'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime, formatMoney } from '@/utils/format'
 
 /**
  * 结算单（FinanceBill）管理页。
@@ -307,10 +307,9 @@ function billStatusTagType(
   }
 }
 
-/** 金额展示：¥ + toFixed(2) */
+/** 金额展示：千分位 + ¥ 前缀（统一走 formatMoney） */
 function amountLabel(amount?: number): string {
-  if (amount == null) return '--'
-  return `¥${amount.toFixed(2)}`
+  return formatMoney(amount)
 }
 
 /** 结算周期合并显示 */

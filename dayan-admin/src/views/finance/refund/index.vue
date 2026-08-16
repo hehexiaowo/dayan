@@ -195,6 +195,7 @@ async function handleMarkRefunding(row: FinanceRefund) {
 
 // ---------- 标记退款成功弹窗（body：refundTradeNo） ----------
 const successVisible = ref(false)
+const successFormRef = ref<FormInstance>()
 const successForm = reactive({ refundCode: '', refundTradeNo: '', refundTime: '', remark: '' })
 const successRules: FormRules<typeof successForm> = {
   refundTradeNo: [{ required: true, message: '请输入退款交易号', trigger: 'blur' }]
@@ -207,10 +208,9 @@ function openMarkSuccess(row: FinanceRefund) {
 }
 
 async function handleMarkSuccessSubmit() {
-  if (!successForm.refundCode || !successForm.refundTradeNo.trim()) {
-    ElMessage.warning('请输入退款交易号')
-    return
-  }
+  if (!successFormRef.value) return
+  const valid = await successFormRef.value.validate().catch(() => false)
+  if (!valid) return
   actionLoading.value = true
   try {
     await markRefundSuccess({

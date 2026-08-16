@@ -139,6 +139,7 @@ const actionLoading = ref(false)
 
 // ---------- 标记成功弹窗（body：tradeNo） ----------
 const successVisible = ref(false)
+const successFormRef = ref<FormInstance>()
 const successForm = reactive({ paymentCode: '', tradeNo: '', payTime: '', payDescription: '' })
 const successRules: FormRules<typeof successForm> = {
   tradeNo: [{ required: true, message: '请输入第三方交易号', trigger: 'blur' }]
@@ -151,10 +152,9 @@ function openMarkSuccess(row: FinancePayment) {
 }
 
 async function handleMarkSuccessSubmit() {
-  if (!successForm.paymentCode || !successForm.tradeNo.trim()) {
-    ElMessage.warning('请输入第三方交易号')
-    return
-  }
+  if (!successFormRef.value) return
+  const valid = await successFormRef.value.validate().catch(() => false)
+  if (!valid) return
   actionLoading.value = true
   try {
     await markPaymentSuccess({

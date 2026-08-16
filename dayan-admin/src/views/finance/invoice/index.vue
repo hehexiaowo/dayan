@@ -22,7 +22,7 @@ import {
   TITLE_TYPE_OPTIONS,
   INVOICE_STATUS_OPTIONS
 } from '@/types/finance'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime, formatMoney } from '@/utils/format'
 import FileUploader from '@/components/FileUploader/index.vue'
 
 /**
@@ -420,10 +420,9 @@ function invoiceStatusTagType(
   }
 }
 
-/** 金额展示：¥ + toFixed(2) */
+/** 金额展示：千分位 + ¥ 前缀（统一走 formatMoney） */
 function amountLabel(amount?: number): string {
-  if (amount == null) return '--'
-  return `¥${amount.toFixed(2)}`
+  return formatMoney(amount)
 }
 
 // 初始化加载

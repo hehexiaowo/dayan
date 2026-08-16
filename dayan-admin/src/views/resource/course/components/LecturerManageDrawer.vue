@@ -224,7 +224,7 @@ loadPage()
           :current-page="query.current"
           :page-size="query.size"
           :total="total"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           background
           @current-change="handlePageChange"

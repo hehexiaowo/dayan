@@ -500,7 +500,7 @@ onMounted(() => {
             <el-input-number v-model="row.sortOrder" :min="0" :max="999" controls-position="right" size="small" style="width: 100%" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="80" align="center">
+        <el-table-column label="操作" width="80" align="center" fixed="right">
           <template #default="{ $index }">
             <el-button link type="danger" size="small" @click="removeRelRow($index)">删除</el-button>
           </template>

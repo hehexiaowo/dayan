@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
+import { formatMoney } from '@/utils/format'
 import {
   pageGoods,
   getGoods,
@@ -373,7 +374,8 @@ function normalizePriceUnit(unit?: string): string {
 function priceLabel(row: GoodsInfo): string {
   if (row.salePrice == null) return '--'
   const unit = normalizePriceUnit(row.priceUnit)
-  return unit ? `${row.salePrice} ${unit}` : String(row.salePrice)
+  const price = formatMoney(row.salePrice, false)
+  return unit ? `${price} ${unit}` : price
 }
 
 /**
@@ -445,7 +447,7 @@ loadPage()
           <template #default="{ row }">{{ categoryName(row.categoryCode) }}</template>
         </el-table-column>
         <el-table-column prop="brandName" label="品牌" min-width="120" show-overflow-tooltip />
-        <el-table-column label="售价" width="120" align="center">
+        <el-table-column label="售价" width="140" align="right">
           <template #default="{ row }">
             {{ priceLabel(row) }}
           </template>

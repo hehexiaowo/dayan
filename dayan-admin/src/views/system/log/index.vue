@@ -186,7 +186,7 @@ onMounted(() => {
           <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>查询
           </el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
         </div>
       </div>
     </el-card>
@@ -244,7 +244,7 @@ onMounted(() => {
           v-model:current-page="query.current"
           v-model:page-size="query.size"
           :total="total"
-          :page-sizes="[20, 50, 100]"
+          :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           background
           @current-change="handlePageChange"

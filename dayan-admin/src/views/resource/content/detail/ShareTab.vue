@@ -10,6 +10,7 @@ import {
 } from '@/api/content-sub'
 import type { ContentRecordShare, ContentRecordShareQuery } from '@/types/content'
 import { ShareChannel, SHARE_CHANNEL_OPTIONS } from '@/types/content'
+import { formatDateTime } from '@/utils/format'
 
 /** 分享者类型（对齐 DDL sharer_type：agent/client/butler） */
 const SHARER_TYPE_OPTIONS = [
@@ -156,7 +157,9 @@ loadPage()
       <el-table-column prop="shareTitle" label="分享标题" min-width="180" show-overflow-tooltip />
       <el-table-column prop="clickCount" label="点击数" width="90" align="right" />
       <el-table-column prop="convertCount" label="转化数" width="90" align="right" />
-      <el-table-column prop="shareTime" label="分享时间" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="shareTime" label="分享时间" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">{{ formatDateTime(row.shareTime) }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
@@ -170,8 +173,8 @@ loadPage()
         :current-page="query.current"
         :page-size="query.size"
         :total="total"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
         background
         @current-change="handlePageChange"
         @size-change="handleSizeChange"

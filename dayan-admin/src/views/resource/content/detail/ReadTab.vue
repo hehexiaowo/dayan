@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import { pageContentRecordRead, deleteContentRecordRead, getContentReadStats } from '@/api/content-sub'
 import type { ContentRecordRead, ContentRecordReadQuery, ContentReadStats } from '@/types/content'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 阅读记录 tab：管理端只读 + 删除 + UV/PV 统计（记录由前端上报）。
@@ -96,7 +97,9 @@ onMounted(() => {
       </el-table-column>
       <el-table-column prop="deviceType" label="设备" width="110" show-overflow-tooltip />
       <el-table-column prop="ipAddress" label="IP" min-width="130" show-overflow-tooltip />
-      <el-table-column prop="readTime" label="阅读时间" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="readTime" label="阅读时间" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">{{ formatDateTime(row.readTime) }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="90" fixed="right">
         <template #default="{ row }">
           <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
@@ -109,8 +112,8 @@ onMounted(() => {
         :current-page="query.current"
         :page-size="query.size"
         :total="total"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
         background
         @current-change="handlePageChange"
         @size-change="handleSizeChange"

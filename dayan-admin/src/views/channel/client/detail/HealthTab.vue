@@ -13,7 +13,7 @@
  *   09_client.sql 注释用 el-select（选项见下方本地常量）。
  * - height/weight/bloodSugar/healthScore 是 BigDecimal/数值，用 el-input-number（精度按需）。
  */
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getHealthProfile, saveHealthProfile, deleteHealthProfile } from '@/api/client-sub'
 import type { ClientHealthProfile } from '@/types/client'
@@ -70,6 +70,35 @@ const form = reactive<ClientHealthProfile>({
   healthScore: undefined,
   remark: ''
 })
+
+/**
+ * JSON 字符串数组 <-> 编辑态数组适配（避免终端用户手写 JSON）。
+ * 后端存储为 JSON 数组字符串，编辑时以标签列表呈现，回车/逗号即可新增。
+ */
+function jsonListAdapter(model: Record<string, unknown>, key: string) {
+  return computed<string[]>({
+    get: () => {
+      const raw = model[key]
+      if (!raw) return []
+      try {
+        const parsed = JSON.parse(String(raw))
+        return Array.isArray(parsed) ? parsed.map(String) : [String(raw)]
+      } catch {
+        // 历史脏数据可能是普通字符串，按单值处理
+        return [String(raw)]
+      }
+    },
+    set: (arr: string[]) => {
+      model[key] = arr.length ? JSON.stringify(arr) : ''
+    }
+  })
+}
+
+const chronicDiseasesList = jsonListAdapter(form, 'chronicDiseases')
+const allergyHistoryList = jsonListAdapter(form, 'allergyHistory')
+const surgeryHistoryList = jsonListAdapter(form, 'surgeryHistory')
+const familyHistoryList = jsonListAdapter(form, 'familyHistory')
+const medicationInfoList = jsonListAdapter(form, 'medicationInfo')
 
 function resetForm() {
   Object.assign(form, {
@@ -325,27 +354,67 @@ defineExpose({ loadProfile })
           </el-col>
           <el-col :span="24">
             <el-form-item label="慢性病">
-              <el-input v-model="form.chronicDiseases" type="textarea" :rows="2" placeholder="JSON 字符串，如 [&quot;高血压&quot;]" />
+              <el-select
+                v-model="chronicDiseasesList"
+                multiple
+                filterable
+                allow-create
+                default-first-option
+                placeholder="输入后回车添加，如：高血压"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="过敏史">
-              <el-input v-model="form.allergyHistory" type="textarea" :rows="2" placeholder="JSON 字符串" />
+              <el-select
+                v-model="allergyHistoryList"
+                multiple
+                filterable
+                allow-create
+                default-first-option
+                placeholder="输入后回车添加"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="手术史">
-              <el-input v-model="form.surgeryHistory" type="textarea" :rows="2" placeholder="JSON 字符串" />
+              <el-select
+                v-model="surgeryHistoryList"
+                multiple
+                filterable
+                allow-create
+                default-first-option
+                placeholder="输入后回车添加"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="家族病史">
-              <el-input v-model="form.familyHistory" type="textarea" :rows="2" placeholder="JSON 字符串" />
+              <el-select
+                v-model="familyHistoryList"
+                multiple
+                filterable
+                allow-create
+                default-first-option
+                placeholder="输入后回车添加"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="当前用药">
-              <el-input v-model="form.medicationInfo" type="textarea" :rows="2" placeholder="JSON 字符串" />
+              <el-select
+                v-model="medicationInfoList"
+                multiple
+                filterable
+                allow-create
+                default-first-option
+                placeholder="输入后回车添加，如：阿司匹林"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">

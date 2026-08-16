@@ -306,7 +306,6 @@ async function handleDeleteRow(row: GoodsSojourn) {
       <el-table-column prop="roomTypeName" label="房型" min-width="120" show-overflow-tooltip>
         <template #default="{ row }">{{ row.roomTypeName || row.roomTypeCode || '-' }}</template>
       </el-table-column>
-      <el-table-column prop="roomTypeName" label="房型名称" min-width="120" show-overflow-tooltip />
       <el-table-column prop="skuPrice" label="SKU 价格" width="110" align="right" />
       <el-table-column prop="priceUnit" label="价格单位" width="100" align="center" />
       <el-table-column prop="minDays" label="最少天" width="90" align="center" />

@@ -10,6 +10,7 @@ import {
 } from '@/api/course-sub'
 import type { CourseRecordLearn, CourseRecordLearnQuery } from '@/types/course'
 import { LearnStatus, LEARN_STATUS_OPTIONS } from '@/types/course'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 学习记录 tab（按 courseCode 分组的 CRUD）。
@@ -174,8 +175,12 @@ loadPage()
           <el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="enrollTime" label="报名时间" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="lastLearnTime" label="最近学习" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="enrollTime" label="报名时间" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">{{ formatDateTime(row.enrollTime) }}</template>
+      </el-table-column>
+      <el-table-column prop="lastLearnTime" label="最近学习" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">{{ formatDateTime(row.lastLearnTime) }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
@@ -189,8 +194,8 @@ loadPage()
         :current-page="query.current"
         :page-size="query.size"
         :total="total"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
         background
         @current-change="handlePageChange"
         @size-change="handleSizeChange"
