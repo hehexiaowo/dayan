@@ -6,7 +6,11 @@ import com.dayan.channel.dto.ChannelAccountCreateDTO;
 import com.dayan.channel.dto.ChannelAccountQueryDTO;
 import com.dayan.channel.dto.ChannelAccountUpdateDTO;
 import com.dayan.channel.entity.ChannelAccount;
+import com.dayan.channel.entity.ChannelAccountRoleRel;
+import com.dayan.channel.entity.ChannelRole;
 import com.dayan.channel.mapper.ChannelAccountMapper;
+import com.dayan.channel.mapper.ChannelAccountRoleRelMapper;
+import com.dayan.channel.mapper.ChannelRoleMapper;
 import com.dayan.channel.service.ChannelAccountService;
 import com.dayan.channel.vo.ChannelAccountVO;
 import com.dayan.common.core.exception.BusinessException;
@@ -20,7 +24,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 渠道账号（channel_account）服务实现。
@@ -38,6 +47,8 @@ public class ChannelAccountServiceImpl implements ChannelAccountService {
     private final DayanSecrets dayanSecrets;
 
     private final ChannelAccountMapper accountMapper;
+    private final ChannelAccountRoleRelMapper accountRoleRelMapper;
+    private final ChannelRoleMapper roleMapper;
     private final PasswordService passwordService;
 
     @Override
@@ -55,13 +66,73 @@ public class ChannelAccountServiceImpl implements ChannelAccountService {
         if (query.getRealName() != null && !query.getRealName().isEmpty()) {
             wrapper.like(ChannelAccount::getRealName, query.getRealName());
         }
+        if (query.getPhone() != null && !query.getPhone().isEmpty()) {
+            wrapper.like(ChannelAccount::getPhone, query.getPhone());
+        }
         if (query.getAccountStatus() != null) {
             wrapper.eq(ChannelAccount::getAccountStatus, query.getAccountStatus());
         }
         Page<ChannelAccount> page = accountMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
-        List<ChannelAccountVO> records = page.getRecords().stream().map(this::toVO).toList();
+        // 批量回填账号角色名（account → roleCodes → roleNames，避免 N+1）
+        List<String> accountCodes = page.getRecords().stream()
+                .map(ChannelAccount::getAccountCode)
+                .filter(c -> c != null && !c.isEmpty())
+                .toList();
+        Map<String, List<String>> accountRoles = accountCodes.isEmpty()
+                ? Collections.emptyMap() : listAccountRoleCodes(accountCodes);
+        Map<String, String> roleNameMap = resolveRoleNames(accountRoles.values().stream()
+                .flatMap(Collection::stream).collect(Collectors.toSet()));
+        List<ChannelAccountVO> records = page.getRecords().stream()
+                .map(a -> toVO(a, accountRoles, roleNameMap)).toList();
         return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), records);
+    }
+
+    /** 批量查询账号 → 已分配角色编码列表 */
+    private Map<String, List<String>> listAccountRoleCodes(Collection<String> accountCodes) {
+        List<ChannelAccountRoleRel> rels = accountRoleRelMapper.selectList(
+                new LambdaQueryWrapper<ChannelAccountRoleRel>()
+                        .in(ChannelAccountRoleRel::getAccountCode, accountCodes));
+        return rels.stream().collect(Collectors.groupingBy(
+                ChannelAccountRoleRel::getAccountCode,
+                Collectors.mapping(ChannelAccountRoleRel::getRoleCode, Collectors.toList())));
+    }
+
+    /** 批量解析 roleCode → roleName */
+    private Map<String, String> resolveRoleNames(Collection<String> roleCodes) {
+        if (roleCodes == null || roleCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<ChannelRole> roles = roleMapper.selectList(new LambdaQueryWrapper<ChannelRole>()
+                .in(ChannelRole::getRoleCode, roleCodes));
+        return roles.stream().collect(Collectors.toMap(
+                ChannelRole::getRoleCode, ChannelRole::getRoleName, (x, y) -> x));
+    }
+
+    private ChannelAccountVO toVO(ChannelAccount entity, Map<String, List<String>> accountRoles,
+                                  Map<String, String> roleNameMap) {
+        ChannelAccountVO vo = new ChannelAccountVO();
+        vo.setId(entity.getId());
+        vo.setChannelCode(entity.getChannelCode());
+        vo.setAccountCode(entity.getAccountCode());
+        vo.setUsername(entity.getUsername());
+        vo.setRealName(entity.getRealName());
+        vo.setAvatar(entity.getAvatar());
+        vo.setPhone(entity.getPhone());
+        vo.setOpenId(entity.getOpenId());
+        vo.setUnionId(entity.getUnionId());
+        vo.setEmail(entity.getEmail());
+        vo.setPosition(entity.getPosition());
+        vo.setLastLoginTime(entity.getLastLoginTime());
+        vo.setLastLoginIp(entity.getLastLoginIp());
+        vo.setLoginCount(entity.getLoginCount());
+        vo.setAccountStatus(entity.getAccountStatus());
+        vo.setIsAdmin(entity.getIsAdmin());
+        vo.setCreatedAt(entity.getCreatedAt());
+        List<String> roleCodes = accountRoles.getOrDefault(entity.getAccountCode(), Collections.emptyList());
+        vo.setRoleNames(roleCodes.stream().map(roleNameMap::get)
+                .filter(Objects::nonNull).collect(Collectors.toList()));
+        return vo;
     }
 
     @Override

@@ -19,9 +19,10 @@
  * - accountStatus 3 态（0锁定 / 1正常 / 2禁用）；
  * - isAdmin 2 态（0否 / 1是）。
  */
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
+import { useUserStore } from '@/stores/user'
 import {
   pageChannelAccounts,
   createChannelAccount,
@@ -277,17 +278,53 @@ async function handleAssignRolesSubmit() {
 }
 
 // ---------- 渠道下拉选项 ----------
-/** 所属渠道下拉（从 getChannelInfoTree 取扁平化渠道列表） */
+/** 当前账号登录信息（isAdmin 判定管理权限） */
+const userStore = useUserStore()
+
+/** 渠道树（getChannelInfoTree 原样，供树形选择） */
+const channelTree = ref<ChannelInfo[]>([])
+/** 扁平化渠道列表（当前渠道 + 全部下级，供渠道名映射/编辑展示） */
 const channelOptions = ref<ChannelInfo[]>([])
+/** 当前登录账号所属渠道（树根 = 当前渠道，含 canManage） */
+const currentChannel = ref<ChannelInfo | null>(null)
+
+/** 递归拍平渠道树 */
+function flattenChannels(nodes: ChannelInfo[]): ChannelInfo[] {
+  const out: ChannelInfo[] = []
+  for (const n of nodes) {
+    out.push(n)
+    if (n.children?.length) out.push(...flattenChannels(n.children))
+  }
+  return out
+}
 
 async function loadChannelOptions() {
   try {
-    channelOptions.value = (await getChannelInfoTree()) ?? []
+    const tree = (await getChannelInfoTree()) ?? []
+    channelTree.value = tree
+    channelOptions.value = flattenChannels(tree)
+    currentChannel.value = tree[0] ?? null
+    // 新增默认归属本级渠道（管理权限账号可再改为下级）
+    if (dialogMode.value === 'create' && !form.channelCode && currentChannel.value) {
+      form.channelCode = currentChannel.value.channelCode!
+    }
   } catch (err) {
     // 接口异常时降级为空列表，不阻塞主页面
     console.warn('[account] 加载渠道下拉失败:', err)
     channelOptions.value = []
   }
+}
+
+/** 是否具备管理下级权限：当前账号超管 或 当前渠道为管理型（canManage=1） */
+const canManageSubChannels = computed(
+  () => userStore.userInfo?.isAdmin === 1 || currentChannel.value?.canManage === 1
+)
+
+/** 渠道编码 → 渠道名称（shortName || fullName || 编码兜底） */
+function channelName(code?: string): string {
+  if (!code) return '--'
+  const found = channelOptions.value.find((c) => c.channelCode === code)
+  return found ? found.shortName || found.fullName || code : code
 }
 
 // ---------- 渲染辅助 ----------
@@ -352,9 +389,22 @@ onMounted(() => {
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="accountCode">
         <el-table-column prop="accountCode" label="账号编码" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="channelCode" label="所属渠道" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ channelName(row.channelCode) }}</template>
+        </el-table-column>
         <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip />
         <el-table-column prop="realName" label="真实姓名" min-width="100" show-overflow-tooltip />
         <el-table-column prop="phone" label="手机" min-width="120" />
+        <el-table-column label="角色" min-width="160">
+          <template #default="{ row }">
+            <template v-if="row.roleNames && row.roleNames.length">
+              <el-tag v-for="name in row.roleNames" :key="name" size="small" style="margin-right: 4px">
+                {{ name }}
+              </el-tag>
+            </template>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="是否超管" width="90" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.isAdmin === 1" type="success" size="small">是</el-tag>
@@ -371,7 +421,7 @@ onMounted(() => {
         <el-table-column prop="lastLoginTime" label="最后登录时间" min-width="160">
           <template #default="{ row }">{{ formatDateTime(row.lastLoginTime) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="primary" size="small" @click="openAssignRoles(row)">分配角色</el-button>
@@ -409,17 +459,31 @@ onMounted(() => {
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="所属渠道" prop="channelCode">
+              <!-- 管理权限（超管/管理型渠道）：树形选择本级及下级；业务型：固定本级 -->
+              <el-tree-select
+                v-if="dialogMode === 'create' && canManageSubChannels"
+                v-model="form.channelCode"
+                :data="channelTree"
+                :props="{ label: 'shortName', value: 'channelCode', children: 'children' }"
+                node-key="channelCode"
+                check-strictly
+                filterable
+                default-expand-all
+                placeholder="请选择所属渠道（含本级及下级）"
+                style="width: 100%"
+              />
               <el-select
+                v-else
                 v-model="form.channelCode"
                 placeholder="请选择所属渠道"
                 filterable
                 style="width: 100%"
-                :disabled="dialogMode === 'edit'"
+                :disabled="dialogMode === 'edit' || !canManageSubChannels"
               >
                 <el-option
                   v-for="ch in channelOptions"
                   :key="ch.channelCode"
-                  :label="ch.fullName"
+                  :label="ch.shortName || ch.fullName || ch.channelCode"
                   :value="ch.channelCode!"
                 />
               </el-select>

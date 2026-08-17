@@ -41,9 +41,8 @@ public class OrganAccountRoleServiceImpl implements OrganAccountRoleService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "账号不存在：" + accountCode);
         }
 
-        // 先删后增（全量覆盖）
-        accountRoleRelMapper.delete(new LambdaQueryWrapper<OrganAccountRoleRel>()
-                .eq(OrganAccountRoleRel::getAccountCode, accountCode));
+        // 先删后增（全量覆盖）：物理删除避免逻辑删除残留占 uk_account_role 唯一键
+        accountRoleRelMapper.physicallyDeleteByAccountCode(accountCode);
 
         if (roleCodes == null || roleCodes.isEmpty()) {
             log.info("账号角色已清空: accountCode={}", accountCode);

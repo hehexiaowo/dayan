@@ -42,9 +42,8 @@ public class ChannelAccountRoleServiceImpl implements ChannelAccountRoleService 
             throw new BusinessException(ErrorCode.NOT_FOUND, "渠道账号不存在: " + accountCode);
         }
 
-        // 先删后增（全量覆盖）
-        accountRoleRelMapper.delete(new LambdaQueryWrapper<ChannelAccountRoleRel>()
-                .eq(ChannelAccountRoleRel::getAccountCode, accountCode));
+        // 先删后增（全量覆盖）：物理删除避免逻辑删除残留占 uk_account_role 唯一键
+        accountRoleRelMapper.physicallyDeleteByAccountCode(accountCode);
 
         if (roleCodes == null || roleCodes.isEmpty()) {
             log.info("渠道账号角色已清空: accountCode={}", accountCode);
