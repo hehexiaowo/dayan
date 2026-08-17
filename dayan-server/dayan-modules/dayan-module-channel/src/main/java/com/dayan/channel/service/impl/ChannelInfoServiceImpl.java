@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -85,6 +86,11 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
 
     @Override
     public List<ChannelInfoVO> tree() {
+        return tree(new ChannelInfoQueryDTO());
+    }
+
+    @Override
+    public List<ChannelInfoVO> tree(ChannelInfoQueryDTO query) {
         // 全量加载后内存构建（渠道数量级小）
         List<ChannelInfo> all = channelInfoMapper.selectList(new LambdaQueryWrapper<ChannelInfo>()
                 .orderByAsc(ChannelInfo::getSortOrder)
@@ -101,7 +107,7 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
             codeMap.put(node.getChannelCode(), node);
         }
 
-        List<ChannelInfoVO> roots = new java.util.ArrayList<>();
+        List<ChannelInfoVO> roots = new ArrayList<>();
         for (ChannelInfoVO node : nodes) {
             String parentCode = node.getParentCode();
             if (parentCode == null || parentCode.isEmpty() || !codeMap.containsKey(parentCode)) {
@@ -110,7 +116,52 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
                 codeMap.get(parentCode).getChildren().add(node);
             }
         }
-        return roots;
+
+        // 无过滤条件时行为不变（与旧 tree() 一致）
+        if (query == null || (!hasText(query.getFullName())
+                && query.getChannelType() == null && query.getStatus() == null)) {
+            return roots;
+        }
+        return filterTree(roots, query);
+    }
+
+    /**
+     * 树过滤：保留命中节点及其祖先链，非命中子树剪掉（参考 admin 端
+     * {@code SystemMenuService#withAncestors} 补全祖先链的思路，保证搜索命中后
+     * 树形上下文可读）。
+     */
+    private List<ChannelInfoVO> filterTree(List<ChannelInfoVO> nodes, ChannelInfoQueryDTO query) {
+        List<ChannelInfoVO> kept = new ArrayList<>();
+        for (ChannelInfoVO node : nodes) {
+            List<ChannelInfoVO> keptChildren = filterTree(node.getChildren(), query);
+            if (matchFilter(node, query) || !keptChildren.isEmpty()) {
+                node.getChildren().clear();
+                node.getChildren().addAll(keptChildren);
+                kept.add(node);
+            }
+        }
+        return kept;
+    }
+
+    /** 节点是否命中过滤条件（fullName 模糊 / channelType 精确 / status 精确）。 */
+    private boolean matchFilter(ChannelInfoVO node, ChannelInfoQueryDTO query) {
+        if (hasText(query.getFullName())) {
+            if (node.getFullName() == null
+                    || !node.getFullName().toLowerCase().contains(query.getFullName().toLowerCase())) {
+                return false;
+            }
+        }
+        if (query.getChannelType() != null && !query.getChannelType().equals(node.getChannelType())) {
+            return false;
+        }
+        if (query.getStatus() != null && !query.getStatus().equals(node.getStatus())) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean hasText(String s) {
+        return s != null && !s.isEmpty();
     }
 
     @Override

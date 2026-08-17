@@ -5,6 +5,7 @@ import com.dayan.channel.dto.ChannelRoleQueryDTO;
 import com.dayan.channel.dto.ChannelRoleUpdateDTO;
 import com.dayan.channel.entity.ChannelRole;
 import com.dayan.channel.service.ChannelRoleService;
+import com.dayan.channel.service.impl.ChannelRoleServiceImpl;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
@@ -89,7 +90,12 @@ public class ChannelRoleChannelController {
     @PutMapping("/{roleCode}/permissions")
     public R<Void> assignPermissions(@PathVariable String roleCode,
                                      @RequestBody List<String> permissionCodes) {
-        requireOwnChannel(channelRoleService.getDetail(roleCode));
+        ChannelRole role = channelRoleService.getDetail(roleCode);
+        requireOwnChannel(role);
+        // 内置角色权限由平台（admin）统一定义，渠道端只读
+        if (role.getRoleType() != null && role.getRoleType() == 1) {
+            throw new BusinessException(ErrorCode.BUSINESS, "内置角色权限由平台统一维护，渠道不可修改");
+        }
         channelRoleService.assignPermissions(roleCode, permissionCodes);
         return R.ok();
     }
@@ -102,9 +108,15 @@ public class ChannelRoleChannelController {
         return R.ok(channelRoleService.listPermissions(roleCode));
     }
 
-    /** 校验角色归属当前渠道 */
+    /** 校验角色归属当前渠道（内置角色 channel_code='GLOBAL' 全渠道可见放行） */
     private void requireOwnChannel(ChannelRole role) {
-        if (role == null || !ContextHolder.getChannelCode().equals(role.getChannelCode())) {
+        String channelCode = ContextHolder.getChannelCode();
+        if (role == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "角色不存在");
+        }
+        String ownCode = role.getChannelCode();
+        if (!ChannelRoleServiceImpl.GLOBAL_CHANNEL_CODE.equals(ownCode)
+                && !ownCode.equals(channelCode)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "无权操作非本渠道的角色");
         }
     }

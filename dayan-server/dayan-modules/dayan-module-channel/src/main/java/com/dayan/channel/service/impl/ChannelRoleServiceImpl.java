@@ -39,6 +39,9 @@ public class ChannelRoleServiceImpl implements ChannelRoleService {
     /** 角色编码前缀（RoLe） */
     private static final String ROLE_CODE_PREFIX = "RL";
 
+    /** 内置角色占位渠道编码：channel_code='GLOBAL' 的行是全渠道共用的系统预置角色 */
+    public static final String GLOBAL_CHANNEL_CODE = "GLOBAL";
+
     private final ChannelRoleMapper roleMapper;
     private final ChannelRolePermissionShipMapper rolePermissionShipMapper;
     private final ChannelAccountRoleRelMapper accountRoleRelMapper;
@@ -47,14 +50,17 @@ public class ChannelRoleServiceImpl implements ChannelRoleService {
     @Override
     public PageResult<ChannelRole> page(ChannelRoleQueryDTO query) {
         LambdaQueryWrapper<ChannelRole> wrapper = new LambdaQueryWrapper<ChannelRole>()
-                .eq(query.getChannelCode() != null && !query.getChannelCode().isEmpty(),
-                        ChannelRole::getChannelCode, query.getChannelCode())
                 .like(query.getRoleName() != null && !query.getRoleName().isEmpty(),
                         ChannelRole::getRoleName, query.getRoleName())
                 .eq(query.getRoleType() != null, ChannelRole::getRoleType, query.getRoleType())
                 .eq(query.getStatus() != null, ChannelRole::getStatus, query.getStatus())
                 .orderByAsc(ChannelRole::getSortOrder)
                 .orderByAsc(ChannelRole::getId);
+        // 渠道维度：内置角色（GLOBAL）全渠道共用 + 本渠道自定义角色；
+        // admin 端不传 channelCode 时查全部
+        if (query.getChannelCode() != null && !query.getChannelCode().isEmpty()) {
+            wrapper.in(ChannelRole::getChannelCode, GLOBAL_CHANNEL_CODE, query.getChannelCode());
+        }
         Page<ChannelRole> page = roleMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
         return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), page.getRecords());
@@ -68,13 +74,17 @@ public class ChannelRoleServiceImpl implements ChannelRoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(ChannelRoleCreateDTO dto) {
+        // 内置角色由平台维护（channel_code='GLOBAL'），渠道只能创建自定义角色
+        if (dto.getRoleType() != null && dto.getRoleType() == 1) {
+            throw new BusinessException(ErrorCode.BUSINESS, "内置角色由平台统一维护，不能创建");
+        }
         String roleCode = codeGenerator.generate(ROLE_CODE_PREFIX);
 
         ChannelRole role = new ChannelRole();
         role.setChannelCode(dto.getChannelCode());
         role.setRoleCode(roleCode);
         role.setRoleName(dto.getRoleName());
-        role.setRoleType(dto.getRoleType());
+        role.setRoleType(dto.getRoleType() == null ? 2 : dto.getRoleType());
         role.setDescription(dto.getDescription());
         role.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
         role.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
@@ -88,6 +98,9 @@ public class ChannelRoleServiceImpl implements ChannelRoleService {
     @Transactional(rollbackFor = Exception.class)
     public void update(String roleCode, ChannelRoleUpdateDTO dto) {
         ChannelRole existing = requireRole(roleCode);
+        if (existing.getRoleType() != null && existing.getRoleType() == 1) {
+            throw new BusinessException(ErrorCode.BUSINESS, "内置角色不可修改");
+        }
         ChannelRole update = new ChannelRole();
         update.setId(existing.getId());
         if (dto.getRoleName() != null) update.setRoleName(dto.getRoleName());
@@ -102,7 +115,10 @@ public class ChannelRoleServiceImpl implements ChannelRoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(String roleCode) {
-        requireRole(roleCode);
+        ChannelRole existing = requireRole(roleCode);
+        if (existing.getRoleType() != null && existing.getRoleType() == 1) {
+            throw new BusinessException(ErrorCode.BUSINESS, "内置角色不可删除");
+        }
         // 校验是否有账号关联
         Long relCount = accountRoleRelMapper.selectCount(new LambdaQueryWrapper<ChannelAccountRoleRel>()
                 .eq(ChannelAccountRoleRel::getRoleCode, roleCode));

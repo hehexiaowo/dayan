@@ -295,14 +295,18 @@ function statusTagType(v?: number): 'success' | 'info' {
             <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="150" align="center">
+        <el-table-column prop="createdAt" label="创建时间" min-width="160">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openAssignPermission(row)">分配权限</el-button>
-            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
+            <!-- 内置角色（roleType=1）全渠道共用，渠道端只读：无编辑/删除/授权 -->
+            <template v-if="row.roleType !== 1">
+              <el-button link type="primary" size="small" @click="openAssignPermission(row)">分配权限</el-button>
+              <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+              <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
+            </template>
+            <el-tag v-else size="small" type="info" effect="plain">平台内置</el-tag>
           </template>
         </el-table-column>
         <template #empty>

@@ -62,6 +62,9 @@ public class DayanTenantHandler implements TenantLineHandler {
             "channel_permission",
             // 角色-权限关联表：通过 role_code 间接归属渠道，本身无 channel_code 列
             "channel_role_permission_ship",
+            // 渠道角色表：内置角色 channel_code='GLOBAL' 全渠道共用，
+            // 渠道自定义角色按 channel_code 区分——业务层 in(GLOBAL, 本渠道) 过滤
+            "channel_role",
             // 代理人-客户绑定：通过 agent_code 归属渠道（channel 端反查本渠道 agentCodes 过滤）
             "agent_client_rel",
             // 代理人分享记录：同上，靠 agentCodes 集合过滤
