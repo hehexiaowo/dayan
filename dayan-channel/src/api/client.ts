@@ -19,6 +19,14 @@ export function pageClients(query: ClientQuery): Promise<PageResult<Client>> {
   })
 }
 
+/** 客户详情：GET /channel-api/clients/{clientCode}（后端限本渠道） */
+export function getClient(clientCode: string): Promise<Client> {
+  return request<Client>({
+    url: `/channel-api/clients/${clientCode}`,
+    method: 'get'
+  })
+}
+
 // ==================== 客户账号（/channel-api/client-accounts）====================
 
 /** 客户账号分页 */

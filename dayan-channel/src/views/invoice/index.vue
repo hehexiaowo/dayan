@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import { applyFinanceInvoice, getFinanceInvoice, pageFinanceInvoices } from '@/api/finance'
 import { formatDateTime, formatMoney } from '@/utils/format'
@@ -19,7 +19,8 @@ import {
  *
  * - 列表：useCrud 只读 page（不传 create）；
  * - 申请发票弹窗：独立状态，提交调 applyFinanceInvoice，成功后刷新列表；
- * - 详情：简化方案，ElMessageBox.alert 展示 VO JSON（仿任务 8 订单详情）。
+ * - 详情：el-dialog + el-descriptions 结构化弹窗，调 getFinanceInvoice
+ *   拉取完整 VO 后中文化展示全字段（对齐 order-manage 详情模式）。
  *
  * 防越权说明：
  * - applicantCode / applicantType / applicantName 由后端 ChannelInvoiceController 强制注入
@@ -67,23 +68,22 @@ function invoiceTypeText(v?: number): string {
 }
 
 /**
- * 发票状态 tag 颜色：0待审核=warning / 1已审核=primary / 2已开票=success /
- * 3已寄出=primary / 4已完成=success / 5已作废=info / 6已红冲=danger
+ * 发票状态 tag 颜色（对齐 admin）：0待审核=info / 1已审核=primary / 2已开票=success /
+ * 3已寄出=warning / 4已完成=success / 5已作废=danger / 6已红冲=danger。
  */
 function invoiceStatusTagType(v?: number): 'info' | 'warning' | 'success' | 'primary' | 'danger' {
   switch (v) {
     case 0:
-      return 'warning'
+      return 'info'
     case 1:
       return 'primary'
     case 2:
       return 'success'
     case 3:
-      return 'primary'
+      return 'warning'
     case 4:
       return 'success'
     case 5:
-      return 'info'
     case 6:
       return 'danger'
     default:
@@ -103,40 +103,32 @@ onMounted(() => {
   })
 })
 
-// ==================== 查看详情（简化：alert JSON，仿任务 8 订单详情） ====================
+// ==================== 查看详情（el-dialog + el-descriptions） ====================
 
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => {
-    switch (c) {
-      case '&':
-        return '&amp;'
-      case '<':
-        return '&lt;'
-      case '>':
-        return '&gt;'
-      case '"':
-        return '&quot;'
-      default:
-        return '&#39;'
-    }
-  })
+const detailVisible = ref(false)
+const detailLoading = ref(false)
+const currentDetail = ref<FinanceInvoice | null>(null)
+
+/** 抬头类型文案 */
+function titleTypeText(v?: number): string {
+  const opt = TITLE_TYPE_OPTIONS.find((o) => o.value === v)
+  return opt ? opt.label : '-'
 }
 
+/** 打开详情弹窗：调 getFinanceInvoice 拉取完整 VO 后结构化展示 */
 async function viewDetail(invoiceCode?: string) {
   if (!invoiceCode) return
+  detailVisible.value = true
+  detailLoading.value = true
+  currentDetail.value = null
   try {
-    const vo = await getFinanceInvoice(invoiceCode)
-    await ElMessageBox.alert(
-      `<pre class="invoice-detail-pre">${escapeHtml(JSON.stringify(vo, null, 2))}</pre>`,
-      `发票详情 · ${invoiceCode}`,
-      {
-        confirmButtonText: '关闭',
-        dangerouslyUseHTMLString: true,
-        customClass: 'invoice-detail-msgbox'
-      }
-    )
+    currentDetail.value = await getFinanceInvoice(invoiceCode)
   } catch (err) {
+    // 接口报错由响应拦截器统一提示；关闭弹窗
     void err
+    detailVisible.value = false
+  } finally {
+    detailLoading.value = false
   }
 }
 
@@ -356,7 +348,10 @@ async function handleSubmitApply() {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="invoiceTitle" label="抬头" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="invoiceTitle" label="发票抬头" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="invoiceNo" label="发票号码" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.invoiceNo || '--' }}</template>
+        </el-table-column>
         <el-table-column prop="invoiceAmount" label="金额" width="130" align="right">
           <template #default="{ row }">{{ formatMoney(row.invoiceAmount) }}</template>
         </el-table-column>
@@ -371,8 +366,11 @@ async function handleSubmitApply() {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="applyTime" label="申请时间" min-width="160">
+        <el-table-column prop="applyTime" label="申请时间" min-width="160" align="center">
           <template #default="{ row }">{{ formatDateTime(row.applyTime) }}</template>
+        </el-table-column>
+        <el-table-column prop="sendTime" label="寄出时间" min-width="160" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.sendTime) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" align="center" fixed="right">
           <template #default="{ row }">
@@ -491,6 +489,61 @@ async function handleSubmitApply() {
         <el-button type="primary" :loading="submitting" @click="handleSubmitApply">提交申请</el-button>
       </template>
     </el-dialog>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailVisible" title="发票详情" width="720px">
+      <div v-loading="detailLoading">
+        <el-descriptions v-if="currentDetail" :column="2" border>
+          <el-descriptions-item label="发票编码">{{ currentDetail.invoiceCode || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="发票状态">
+            <el-tag
+              v-if="currentDetail.invoiceStatus !== undefined && currentDetail.invoiceStatus !== null"
+              :type="invoiceStatusTagType(currentDetail.invoiceStatus)"
+            >
+              {{ invoiceStatusText(currentDetail.invoiceStatus) }}
+            </el-tag>
+            <span v-else>--</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="发票类型">
+            <el-tag
+              v-if="currentDetail.invoiceType !== undefined && currentDetail.invoiceType !== null"
+              :type="invoiceTypeTagType(currentDetail.invoiceType)"
+            >
+              {{ invoiceTypeText(currentDetail.invoiceType) }}
+            </el-tag>
+            <span v-else>--</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="抬头类型">{{ titleTypeText(currentDetail.titleType) }}</el-descriptions-item>
+          <el-descriptions-item label="发票抬头" :span="2">{{ currentDetail.invoiceTitle || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="纳税人识别号">{{ currentDetail.taxNo || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="开票金额">{{ formatMoney(currentDetail.invoiceAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="发票内容">{{ currentDetail.invoiceContent || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="发票号码">{{ currentDetail.invoiceNo || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="关联订单编码">{{ currentDetail.orderCode || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="关联结算单编码">{{ currentDetail.billCode || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="申请方名称">{{ currentDetail.applicantName || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="申请方编码">{{ currentDetail.applicantCode || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="申请方类型">{{ currentDetail.applicantType || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="开户银行">{{ currentDetail.bankName || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="银行账号">{{ currentDetail.bankAccount || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="注册地址" :span="2">{{ currentDetail.registerAddress || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="注册电话">{{ currentDetail.registerPhone || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="申请时间">{{ formatDateTime(currentDetail.applyTime) }}</el-descriptions-item>
+          <el-descriptions-item label="开票时间">{{ formatDateTime(currentDetail.issueTime) }}</el-descriptions-item>
+          <el-descriptions-item label="寄出时间">{{ formatDateTime(currentDetail.sendTime) }}</el-descriptions-item>
+          <el-descriptions-item label="收件人">{{ currentDetail.receiverName || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="收件人电话">{{ currentDetail.receiverPhone || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="收件地址" :span="2">{{ currentDetail.receiverAddress || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="收件邮箱">{{ currentDetail.receiverEmail || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(currentDetail.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="发票文件" :span="2">
+            <span v-if="currentDetail.invoiceUrl">{{ currentDetail.invoiceUrl }}</span>
+            <span v-else>--</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="备注" :span="2">{{ currentDetail.remark || '--' }}</el-descriptions-item>
+        </el-descriptions>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -523,25 +576,5 @@ async function handleSubmitApply() {
   margin-left: 8px;
   color: #909399;
   font-size: 12px;
-}
-</style>
-
-<!-- 详情 MessageBox 用到的 <pre> 样式（非 scoped：MessageBox 渲染在 body 末尾，scoped 不生效） -->
-<style lang="scss">
-.invoice-detail-msgbox {
-  .invoice-detail-pre {
-    margin: 0;
-    max-height: 60vh;
-    overflow: auto;
-    padding: 12px;
-    background: #f5f7fa;
-    border-radius: 4px;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 12px;
-    line-height: 1.6;
-    color: #303133;
-    white-space: pre-wrap;
-    word-break: break-all;
-  }
 }
 </style>

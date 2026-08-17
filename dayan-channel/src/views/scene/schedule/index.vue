@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { ElMessageBox } from 'element-plus'
+import { onMounted, ref } from 'vue'
 import { useCrud } from '@/composables/useCrud'
-import { getSceneSchedule, pageSceneSchedules } from '@/api/scene'
+import { pageSceneSchedules } from '@/api/scene'
 import {
   SCENE_SCHEDULE_STATUS_OPTIONS,
   SceneScheduleStatus,
   type SceneSchedule,
   type SceneScheduleQuery
 } from '@/types/scene'
-import { formatMoney } from '@/utils/format'
+import { formatDateTime, formatMoney } from '@/utils/format'
 
 /**
  * 场景管理页（业务运营目录）。
@@ -17,8 +16,8 @@ import { formatMoney } from '@/utils/format'
  * 管理本渠道所有场景活动日程（scene_schedule）的记录+流转：
  * - 搜索栏：场景编码 / 日程状态 / 日程日期范围；
  * - el-table：sceneCode / sceneName / scheduleDate / 时段 / 报名人数 / 价格 / 状态(5态tag) / 操作(详情)；
- * - 详情：沿用渠道端主流模式 ElMessageBox.alert 展示结构化 JSON（日程字段简单，
- *   与 order-manage/invoice 的详情体验一致）。
+ * - 详情：el-dialog + el-descriptions 结构化弹窗展示行数据全字段
+ *   （对齐 order-manage 详情模式；日程字段与列表 VO 一致，不再单独请求详情接口）。
  *
  * 数据隔离：后端 ChannelSceneScheduleController 通过 channel_config_scene → scene_code
  * 间接过滤，只返回本渠道已配置场景的日程。
@@ -40,7 +39,6 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 )
 
 /** 日期范围（el-date-picker type=daterange 绑定用） */
-import { ref } from 'vue'
 const dateRange = ref<[string, string] | null>(null)
 
 function handleDateRangeChange(val: [string, string] | null) {
@@ -84,41 +82,15 @@ function statusText(v?: number) {
   return opt ? opt.label : '-'
 }
 
-/** HTML 转义，防止 JSON 字段在 dangerouslyUseHTMLString 下注入 */
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => {
-    switch (c) {
-      case '&':
-        return '&amp;'
-      case '<':
-        return '&lt;'
-      case '>':
-        return '&gt;'
-      case '"':
-        return '&quot;'
-      default:
-        return '&#39;'
-    }
-  })
-}
+// ==================== 查看详情（el-dialog + el-descriptions） ====================
 
-async function viewDetail(row: SceneSchedule) {
-  if (!row.id) return
-  try {
-    const vo = await getSceneSchedule(row.id)
-    await ElMessageBox.alert(
-      `<pre class="scene-schedule-detail-pre">${escapeHtml(JSON.stringify(vo, null, 2))}</pre>`,
-      `场景日程详情 · ${row.sceneName || row.sceneCode}`,
-      {
-        confirmButtonText: '关闭',
-        dangerouslyUseHTMLString: true,
-        customClass: 'scene-schedule-detail-msgbox'
-      }
-    )
-  } catch (err) {
-    // 用户关闭弹窗或接口报错：静默（错误已由响应拦截器统一提示）
-    void err
-  }
+const detailVisible = ref(false)
+const currentRow = ref<SceneSchedule | null>(null)
+
+/** 打开详情弹窗：展示行数据全字段 */
+function openDetail(row: SceneSchedule) {
+  currentRow.value = row
+  detailVisible.value = true
 }
 
 onMounted(() => {
@@ -166,7 +138,7 @@ onMounted(() => {
         <el-table-column prop="sceneCode" label="场景编码" min-width="130" show-overflow-tooltip />
         <el-table-column prop="sceneName" label="场景名称" min-width="140" show-overflow-tooltip />
         <el-table-column prop="scheduleDate" label="活动日期" width="120" align="center" />
-        <el-table-column label="时段" width="160" align="center">
+        <el-table-column label="时段" width="160" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span>{{ row.startTime || '--' }} ~ {{ row.endTime || '--' }}</span>
           </template>
@@ -187,9 +159,12 @@ onMounted(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.remark || '--' }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="viewDetail(row)">查看详情</el-button>
+            <el-button type="primary" link size="small" @click="openDetail(row)">查看详情</el-button>
           </template>
         </el-table-column>
         <template #empty>
@@ -210,6 +185,33 @@ onMounted(() => {
         />
       </div>
     </el-card>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailVisible" title="场景日程详情" width="720px">
+      <el-descriptions v-if="currentRow" :column="2" border>
+        <el-descriptions-item label="场景编码">{{ currentRow.sceneCode || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="场景名称">{{ currentRow.sceneName || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="活动日期">{{ currentRow.scheduleDate || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="日程状态">
+          <el-tag
+            v-if="currentRow.status !== undefined && currentRow.status !== null"
+            :type="statusTagType(currentRow.status)"
+          >
+            {{ statusText(currentRow.status) }}
+          </el-tag>
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="开始时间">{{ currentRow.startTime || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="结束时间">{{ currentRow.endTime || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="报名人数">
+          {{ currentRow.currentPerson ?? 0 }} / {{ currentRow.maxPerson ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="价格">{{ formatMoney(currentRow.priceOverride) }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatDateTime(currentRow.createdAt) }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ formatDateTime(currentRow.updatedAt) }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ currentRow.remark || '--' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 
@@ -236,24 +238,5 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
-}
-</style>
-
-<style lang="scss">
-.scene-schedule-detail-msgbox {
-  .scene-schedule-detail-pre {
-    margin: 0;
-    max-height: 60vh;
-    overflow: auto;
-    padding: 12px;
-    background: #f5f7fa;
-    border-radius: 4px;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 12px;
-    line-height: 1.6;
-    color: #303133;
-    white-space: pre-wrap;
-    word-break: break-all;
-  }
 }
 </style>

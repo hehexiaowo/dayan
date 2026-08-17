@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { pageShareRecords } from '@/api/agent'
 import type { ShareRecord, ShareRecordQuery } from '@/types/agent'
-import { SHARE_TYPE_OPTIONS } from '@/types/agent'
+import { SHARE_TYPE_OPTIONS, shareChannelLabel } from '@/types/agent'
 import { formatDateTime } from '@/utils/format'
 
 /**
@@ -11,7 +11,8 @@ import { formatDateTime } from '@/utils/format'
  *
  * - 数据源：pageShareRecords（/channel-api/agent-share-records，任务 6 新建）。
  * - 搜索：代理人编码 / 分享类型。
- * - 表格：shareCode / agentCode / shareType(text) / bizCode / clientName / viewCount / shareTime。
+ * - 表格：shareCode / agentCode / shareType(text) / shareChannel(tag) / bizCode / clientName / viewCount / shareTime。
+ * - 行内详情弹窗（行数据展开）：el-descriptions 展示全量字段，不调新接口。
  * - 后端端点未实现时降级（空表 + 控制台 warn，不弹 toast）。
  *
  * 说明：useCrud 不返回 handleReset（已核实 composables/useCrud.ts），
@@ -34,6 +35,15 @@ function handleReset() {
   query.agentCode = ''
   query.shareType = undefined
   handleSearch()
+}
+
+// ---------- 详情弹窗 ----------
+const detailVisible = ref(false)
+const currentRow = ref<ShareRecord | null>(null)
+
+function openDetail(row: ShareRecord) {
+  currentRow.value = row
+  detailVisible.value = true
 }
 
 onMounted(() => {
@@ -63,15 +73,25 @@ onMounted(() => {
       <template #header><div class="card-header"><span class="card-title">分享记录列表</span></div></template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="shareCode">
         <el-table-column prop="shareCode" label="分享编码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="agentCode" label="代理人" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="agentCode" label="代理人编码" min-width="120" show-overflow-tooltip />
         <el-table-column prop="shareType" label="类型" width="90" align="center">
           <template #default="{ row }">{{ shareTypeText(row.shareType) }}</template>
         </el-table-column>
+        <el-table-column prop="shareChannel" label="分享渠道" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag type="info">{{ shareChannelLabel(row.shareChannel) }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="bizCode" label="业务编码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="clientName" label="客户" min-width="100" />
-        <el-table-column prop="viewCount" label="浏览数" width="80" align="right" />
+        <el-table-column prop="clientName" label="客户" min-width="100" show-overflow-tooltip />
+        <el-table-column prop="viewCount" label="浏览次数" width="80" align="right" />
         <el-table-column prop="shareTime" label="分享时间" min-width="160">
           <template #default="{ row }">{{ formatDateTime(row.shareTime) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="80" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
+          </template>
         </el-table-column>
         <template #empty><el-empty description="暂无数据" /></template>
       </el-table>
@@ -82,6 +102,21 @@ onMounted(() => {
           @current-change="handlePageChange" @size-change="handleSizeChange" />
       </div>
     </el-card>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailVisible" title="分享记录详情" width="720px">
+      <el-descriptions v-if="currentRow" :column="2" border>
+        <el-descriptions-item label="分享编码">{{ currentRow.shareCode || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="代理人编码">{{ currentRow.agentCode || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="分享类型">{{ shareTypeText(currentRow.shareType) }}</el-descriptions-item>
+        <el-descriptions-item label="业务编码">{{ currentRow.bizCode || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="分享渠道">{{ currentRow.shareChannel ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="客户编码">{{ currentRow.clientCode || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="客户姓名">{{ currentRow.clientName || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="浏览数">{{ currentRow.viewCount ?? '--' }}</el-descriptions-item>
+        <el-descriptions-item label="分享时间">{{ formatDateTime(currentRow.shareTime) }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 

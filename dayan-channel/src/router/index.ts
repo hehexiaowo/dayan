@@ -23,8 +23,27 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/default/index.vue'),
     redirect: '/dashboard',
     // children 运行时由 addDynamicRoutes 动态注入（permission 守卫登录后调用）。
-    // 此处声明空数组仅为满足 RouteRecordRaw 类型要求。
-    children: []
+    // 以下为静态详情路由（与动态菜单路由平级共存，列表页"详情"跳转进入）。
+    children: [
+      {
+        path: '/agent/detail/:agentCode',
+        name: 'AgentDetail',
+        component: () => import('@/views/agent/detail/index.vue'),
+        meta: { title: '代理人详情' }
+      },
+      {
+        path: '/client/detail/:clientCode',
+        name: 'ClientDetail',
+        component: () => import('@/views/client/detail/index.vue'),
+        meta: { title: '客户详情' }
+      },
+      {
+        path: '/scene/detail/:sceneCode',
+        name: 'SceneDetail',
+        component: () => import('@/views/scene/detail/index.vue'),
+        meta: { title: '场景详情' }
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',
