@@ -9,6 +9,7 @@ import {
   type SceneSchedule,
   type SceneScheduleQuery
 } from '@/types/scene'
+import { formatMoney } from '@/utils/format'
 
 /**
  * 场景管理页（业务运营目录）。
@@ -131,39 +132,33 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="场景编码">
-          <el-input v-model="query.sceneCode" placeholder="场景编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="日程状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in SCENE_SCHEDULE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="日程日期">
-          <el-date-picker
-            v-model="dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            style="width: 260px"
-            @change="handleDateRangeChange"
-          />
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.sceneCode" placeholder="场景编码" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.status" placeholder="日程状态" clearable style="width: 140px">
+          <el-option v-for="o in SCENE_SCHEDULE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          style="width: 260px"
+          @change="handleDateRangeChange"
+        />
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>场景活动日程列表</span>
+          <span class="card-title">场景活动日程列表</span>
         </div>
       </template>
 
@@ -181,10 +176,8 @@ onMounted(() => {
             <span>{{ row.currentPerson ?? 0 }} / {{ row.maxPerson ?? '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="priceOverride" label="价格（元）" width="110" align="right">
-          <template #default="{ row }">
-            {{ row.priceOverride != null ? Number(row.priceOverride).toFixed(2) : '--' }}
-          </template>
+        <el-table-column prop="priceOverride" label="价格" width="110" align="right">
+          <template #default="{ row }">{{ formatMoney(row.priceOverride) }}</template>
         </el-table-column>
         <el-table-column prop="status" label="日程状态" width="100" align="center">
           <template #default="{ row }">

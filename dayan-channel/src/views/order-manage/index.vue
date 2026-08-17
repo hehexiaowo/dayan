@@ -32,6 +32,7 @@ import {
   type OrderSojournQuery
 } from '@/types/order'
 import { PAY_TYPE_OPTIONS, type PayType } from '@/types/finance'
+import { formatAmount, formatDateTime, formatMoney } from '@/utils/format'
 
 /**
  * 订单管理页（采购结算目录 - 4 类订单统一管理）。
@@ -173,11 +174,6 @@ const ORDER_TYPE_LABEL_DETAIL: Record<TabKey, string> = {
 /** 是否可取消（仅待支付 / 退款中可取消） */
 function isCancellable(status?: number): boolean {
   return status === OrderStatus.PENDING_PAY || status === OrderStatus.REFUNDING
-}
-
-/** 金额格式化（保留 2 位小数，空值返回 '--'） */
-function formatAmount(v?: number | null): string {
-  return v != null ? Number(v).toFixed(2) : '--'
 }
 
 // ==================== 通用搜索栏 handler ====================
@@ -352,35 +348,32 @@ async function handleSubmitPay() {
       <el-tab-pane label="权益订单" name="equity" lazy>
         <div class="tab-inner">
           <el-card shadow="never" class="search-card">
-            <el-form :inline="true" :model="equityCrud.query" @submit.prevent>
-              <el-form-item label="订单编码">
-                <el-input
-                  v-model="equityCrud.query.orderCode"
-                  placeholder="订单编码"
-                  clearable
-                  @keyup.enter="equityCrud.handleSearch"
-                />
-              </el-form-item>
-              <el-form-item label="订单状态">
-                <el-select
-                  v-model="equityCrud.query.orderStatus"
-                  placeholder="全部"
-                  clearable
-                  style="width: 140px"
-                >
-                  <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-                </el-select>
-              </el-form-item>
-              <el-form-item>
+            <div class="toolbar">
+              <el-input
+                v-model="equityCrud.query.orderCode"
+                placeholder="订单编码"
+                clearable
+                style="width: 160px"
+                @keyup.enter="equityCrud.handleSearch"
+              />
+              <el-select
+                v-model="equityCrud.query.orderStatus"
+                placeholder="订单状态"
+                clearable
+                style="width: 140px"
+              >
+                <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+              <div class="toolbar-actions">
                 <el-button type="primary" :icon="'Search'" @click="equityCrud.handleSearch">查询</el-button>
                 <el-button :icon="'Refresh'" @click="resetSearch(equityCrud.query, equityCrud.handleSearch)">重置</el-button>
-              </el-form-item>
-            </el-form>
+              </div>
+            </div>
           </el-card>
 
           <el-card shadow="never">
             <template #header>
-              <div class="card-header"><span>权益订单列表</span></div>
+              <div class="card-header"><span class="card-title">权益订单列表</span></div>
             </template>
             <el-table
               v-loading="equityCrud.loading.value"
@@ -403,10 +396,12 @@ async function handleSubmitPay() {
               </el-table-column>
               <el-table-column prop="goodsName" label="商品名称" min-width="160" show-overflow-tooltip />
               <el-table-column prop="quantity" label="数量" width="80" align="right" />
-              <el-table-column prop="payAmount" label="实付金额（元）" width="130" align="right">
-                <template #default="{ row }">{{ formatAmount(row.payAmount) }}</template>
+              <el-table-column prop="payAmount" label="实付金额" width="130" align="right">
+                <template #default="{ row }">{{ formatMoney(row.payAmount) }}</template>
               </el-table-column>
-              <el-table-column prop="createdAt" label="创建时间" min-width="160" />
+              <el-table-column prop="createdAt" label="创建时间" min-width="160">
+                <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+              </el-table-column>
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="openDetail(row, 'equity')">详情</el-button>
@@ -453,35 +448,32 @@ async function handleSubmitPay() {
       <el-tab-pane label="场景订单" name="scene" lazy>
         <div class="tab-inner">
           <el-card shadow="never" class="search-card">
-            <el-form :inline="true" :model="sceneCrud.query" @submit.prevent>
-              <el-form-item label="订单编码">
-                <el-input
-                  v-model="sceneCrud.query.orderCode"
-                  placeholder="订单编码"
-                  clearable
-                  @keyup.enter="sceneCrud.handleSearch"
-                />
-              </el-form-item>
-              <el-form-item label="订单状态">
-                <el-select
-                  v-model="sceneCrud.query.orderStatus"
-                  placeholder="全部"
-                  clearable
-                  style="width: 140px"
-                >
-                  <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-                </el-select>
-              </el-form-item>
-              <el-form-item>
+            <div class="toolbar">
+              <el-input
+                v-model="sceneCrud.query.orderCode"
+                placeholder="订单编码"
+                clearable
+                style="width: 160px"
+                @keyup.enter="sceneCrud.handleSearch"
+              />
+              <el-select
+                v-model="sceneCrud.query.orderStatus"
+                placeholder="订单状态"
+                clearable
+                style="width: 140px"
+              >
+                <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+              <div class="toolbar-actions">
                 <el-button type="primary" :icon="'Search'" @click="sceneCrud.handleSearch">查询</el-button>
                 <el-button :icon="'Refresh'" @click="resetSearch(sceneCrud.query, sceneCrud.handleSearch)">重置</el-button>
-              </el-form-item>
-            </el-form>
+              </div>
+            </div>
           </el-card>
 
           <el-card shadow="never">
             <template #header>
-              <div class="card-header"><span>场景订单列表</span></div>
+              <div class="card-header"><span class="card-title">场景订单列表</span></div>
             </template>
             <el-table
               v-loading="sceneCrud.loading.value"
@@ -505,10 +497,12 @@ async function handleSubmitPay() {
               <el-table-column prop="sceneName" label="场景名称" min-width="160" show-overflow-tooltip />
               <el-table-column prop="activityDate" label="活动日期" width="120" align="center" />
               <el-table-column prop="participantCount" label="人数" width="80" align="right" />
-              <el-table-column prop="payAmount" label="实付金额（元）" width="130" align="right">
-                <template #default="{ row }">{{ formatAmount(row.payAmount) }}</template>
+              <el-table-column prop="payAmount" label="实付金额" width="130" align="right">
+                <template #default="{ row }">{{ formatMoney(row.payAmount) }}</template>
               </el-table-column>
-              <el-table-column prop="createdAt" label="创建时间" min-width="160" />
+              <el-table-column prop="createdAt" label="创建时间" min-width="160">
+                <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+              </el-table-column>
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="openDetail(row, 'scene')">详情</el-button>
@@ -555,35 +549,32 @@ async function handleSubmitPay() {
       <el-tab-pane label="课程订单" name="course" lazy>
         <div class="tab-inner">
           <el-card shadow="never" class="search-card">
-            <el-form :inline="true" :model="courseCrud.query" @submit.prevent>
-              <el-form-item label="订单编码">
-                <el-input
-                  v-model="courseCrud.query.orderCode"
-                  placeholder="订单编码"
-                  clearable
-                  @keyup.enter="courseCrud.handleSearch"
-                />
-              </el-form-item>
-              <el-form-item label="订单状态">
-                <el-select
-                  v-model="courseCrud.query.orderStatus"
-                  placeholder="全部"
-                  clearable
-                  style="width: 140px"
-                >
-                  <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-                </el-select>
-              </el-form-item>
-              <el-form-item>
+            <div class="toolbar">
+              <el-input
+                v-model="courseCrud.query.orderCode"
+                placeholder="订单编码"
+                clearable
+                style="width: 160px"
+                @keyup.enter="courseCrud.handleSearch"
+              />
+              <el-select
+                v-model="courseCrud.query.orderStatus"
+                placeholder="订单状态"
+                clearable
+                style="width: 140px"
+              >
+                <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+              <div class="toolbar-actions">
                 <el-button type="primary" :icon="'Search'" @click="courseCrud.handleSearch">查询</el-button>
                 <el-button :icon="'Refresh'" @click="resetSearch(courseCrud.query, courseCrud.handleSearch)">重置</el-button>
-              </el-form-item>
-            </el-form>
+              </div>
+            </div>
           </el-card>
 
           <el-card shadow="never">
             <template #header>
-              <div class="card-header"><span>课程订单列表</span></div>
+              <div class="card-header"><span class="card-title">课程订单列表</span></div>
             </template>
             <el-table
               v-loading="courseCrud.loading.value"
@@ -606,10 +597,12 @@ async function handleSubmitPay() {
               </el-table-column>
               <el-table-column prop="courseName" label="课程名称" min-width="160" show-overflow-tooltip />
               <el-table-column prop="quantity" label="数量" width="80" align="right" />
-              <el-table-column prop="payAmount" label="实付金额（元）" width="130" align="right">
-                <template #default="{ row }">{{ formatAmount(row.payAmount) }}</template>
+              <el-table-column prop="payAmount" label="实付金额" width="130" align="right">
+                <template #default="{ row }">{{ formatMoney(row.payAmount) }}</template>
               </el-table-column>
-              <el-table-column prop="createdAt" label="创建时间" min-width="160" />
+              <el-table-column prop="createdAt" label="创建时间" min-width="160">
+                <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+              </el-table-column>
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="openDetail(row, 'course')">详情</el-button>
@@ -656,35 +649,32 @@ async function handleSubmitPay() {
       <el-tab-pane label="旅游短居订单" name="sojourn" lazy>
         <div class="tab-inner">
           <el-card shadow="never" class="search-card">
-            <el-form :inline="true" :model="sojournCrud.query" @submit.prevent>
-              <el-form-item label="订单编码">
-                <el-input
-                  v-model="sojournCrud.query.orderCode"
-                  placeholder="订单编码"
-                  clearable
-                  @keyup.enter="sojournCrud.handleSearch"
-                />
-              </el-form-item>
-              <el-form-item label="订单状态">
-                <el-select
-                  v-model="sojournCrud.query.orderStatus"
-                  placeholder="全部"
-                  clearable
-                  style="width: 140px"
-                >
-                  <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-                </el-select>
-              </el-form-item>
-              <el-form-item>
+            <div class="toolbar">
+              <el-input
+                v-model="sojournCrud.query.orderCode"
+                placeholder="订单编码"
+                clearable
+                style="width: 160px"
+                @keyup.enter="sojournCrud.handleSearch"
+              />
+              <el-select
+                v-model="sojournCrud.query.orderStatus"
+                placeholder="订单状态"
+                clearable
+                style="width: 140px"
+              >
+                <el-option v-for="o in ORDER_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+              <div class="toolbar-actions">
                 <el-button type="primary" :icon="'Search'" @click="sojournCrud.handleSearch">查询</el-button>
                 <el-button :icon="'Refresh'" @click="resetSearch(sojournCrud.query, sojournCrud.handleSearch)">重置</el-button>
-              </el-form-item>
-            </el-form>
+              </div>
+            </div>
           </el-card>
 
           <el-card shadow="never">
             <template #header>
-              <div class="card-header"><span>旅游短居订单列表</span></div>
+              <div class="card-header"><span class="card-title">旅游短居订单列表</span></div>
             </template>
             <el-table
               v-loading="sojournCrud.loading.value"
@@ -715,10 +705,12 @@ async function handleSubmitPay() {
                 </template>
               </el-table-column>
               <el-table-column prop="stayDays" label="天数" width="80" align="right" />
-              <el-table-column prop="payAmount" label="实付金额（元）" width="130" align="right">
-                <template #default="{ row }">{{ formatAmount(row.payAmount) }}</template>
+              <el-table-column prop="payAmount" label="实付金额" width="130" align="right">
+                <template #default="{ row }">{{ formatMoney(row.payAmount) }}</template>
               </el-table-column>
-              <el-table-column prop="createdAt" label="创建时间" min-width="160" />
+              <el-table-column prop="createdAt" label="创建时间" min-width="160">
+                <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+              </el-table-column>
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="openDetail(row, 'sojourn')">详情</el-button>
@@ -844,10 +836,10 @@ async function handleSubmitPay() {
             <el-descriptions :column="2" border size="small">
               <el-descriptions-item label="入库方式">{{ deliverTypeText((detailData as Order).deliverType) }}</el-descriptions-item>
               <el-descriptions-item label="发放数量">{{ (detailData as Order).deliverCount ?? '-' }}</el-descriptions-item>
-              <el-descriptions-item label="支付时间">{{ (detailData as Order).payTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="发放时间">{{ (detailData as Order).deliverTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="到期时间">{{ (detailData as Order).expireTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间">{{ (detailData as Order).createdAt || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="支付时间">{{ formatDateTime((detailData as Order).payTime) }}</el-descriptions-item>
+              <el-descriptions-item label="发放时间">{{ formatDateTime((detailData as Order).deliverTime) }}</el-descriptions-item>
+              <el-descriptions-item label="到期时间">{{ formatDateTime((detailData as Order).expireTime) }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间">{{ formatDateTime((detailData as Order).createdAt) }}</el-descriptions-item>
               <el-descriptions-item v-if="(detailData as Order).cancelReason" label="取消原因" :span="2">
                 {{ (detailData as Order).cancelReason }}
               </el-descriptions-item>
@@ -876,7 +868,7 @@ async function handleSubmitPay() {
               <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderScene).payAmount) }}</el-descriptions-item>
               <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderScene).totalAmount) }}</el-descriptions-item>
               <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderScene).discountAmount) }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间" :span="2">{{ (detailData as OrderScene).createdAt || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime((detailData as OrderScene).createdAt) }}</el-descriptions-item>
               <el-descriptions-item v-if="(detailData as OrderScene).cancelReason" label="取消原因" :span="2">
                 {{ (detailData as OrderScene).cancelReason }}
               </el-descriptions-item>
@@ -901,7 +893,7 @@ async function handleSubmitPay() {
               <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderCourse).payAmount) }}</el-descriptions-item>
               <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderCourse).totalAmount) }}</el-descriptions-item>
               <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderCourse).discountAmount) }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间" :span="2">{{ (detailData as OrderCourse).createdAt || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime((detailData as OrderCourse).createdAt) }}</el-descriptions-item>
               <el-descriptions-item v-if="(detailData as OrderCourse).cancelReason" label="取消原因" :span="2">
                 {{ (detailData as OrderCourse).cancelReason }}
               </el-descriptions-item>
@@ -936,7 +928,7 @@ async function handleSubmitPay() {
               <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderSojourn).discountAmount) }}</el-descriptions-item>
               <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderSojourn).totalAmount) }}</el-descriptions-item>
               <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderSojourn).payAmount) }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间" :span="2">{{ (detailData as OrderSojourn).createdAt || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime((detailData as OrderSojourn).createdAt) }}</el-descriptions-item>
               <el-descriptions-item v-if="(detailData as OrderSojourn).cancelReason" label="取消原因" :span="2">
                 {{ (detailData as OrderSojourn).cancelReason }}
               </el-descriptions-item>
@@ -952,6 +944,7 @@ async function handleSubmitPay() {
 .page-container {
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
 .order-tabs {

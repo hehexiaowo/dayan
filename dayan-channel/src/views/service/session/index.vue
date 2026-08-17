@@ -4,7 +4,7 @@ import { useCrud } from '@/composables/useCrud'
 import { pageServiceSessions } from '@/api/service'
 import type { ServiceSession, ServiceSessionQuery } from '@/types/service'
 import { SERVICE_TYPE_OPTIONS, SESSION_STATUS_OPTIONS } from '@/types/service'
-import { statusTagType } from '@/utils/format'
+import { formatDateTime, statusTagType } from '@/utils/format'
 
 /**
  * 服务记录页（只读列表）。
@@ -56,29 +56,23 @@ onMounted(() => {
 <template>
   <div class="page-container">
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="会话编码">
-          <el-input v-model="query.sessionCode" placeholder="会话编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="服务类型">
-          <el-select v-model="query.serviceType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in SERVICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.sessionStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in SESSION_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.sessionCode" placeholder="会话编码" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.serviceType" placeholder="服务类型" clearable style="width: 130px">
+          <el-option v-for="o in SERVICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.sessionStatus" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in SESSION_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <el-card shadow="never">
-      <template #header><div class="card-header"><span>服务记录</span></div></template>
+      <template #header><div class="card-header"><span class="card-title">服务记录列表</span></div></template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="sessionCode">
         <el-table-column prop="sessionCode" label="会话编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="serviceType" label="类型" width="90" align="center">
@@ -92,8 +86,12 @@ onMounted(() => {
             <el-tag :type="statusTagType(row.sessionStatus)">{{ statusText(row.sessionStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="acceptTime" label="受理时间" min-width="160" />
-        <el-table-column prop="completeTime" label="完成时间" min-width="160" />
+        <el-table-column prop="acceptTime" label="受理时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.acceptTime) }}</template>
+        </el-table-column>
+        <el-table-column prop="completeTime" label="完成时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.completeTime) }}</template>
+        </el-table-column>
         <template #empty><el-empty description="暂无数据" /></template>
       </el-table>
       <div class="pagination-wrap">

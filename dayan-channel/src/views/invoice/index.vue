@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import { applyFinanceInvoice, getFinanceInvoice, pageFinanceInvoices } from '@/api/finance'
+import { formatDateTime, formatMoney } from '@/utils/format'
 import {
   INVOICE_STATUS_OPTIONS,
   INVOICE_TYPE_OPTIONS,
@@ -94,11 +95,6 @@ function invoiceStatusTagType(v?: number): 'info' | 'warning' | 'success' | 'pri
 function invoiceStatusText(v?: number): string {
   const opt = INVOICE_STATUS_OPTIONS.find((o) => o.value === v)
   return opt ? opt.label : '-'
-}
-
-/** 金额格式化（保留 2 位小数） */
-function formatAmount(v?: number | null): string {
-  return v != null ? Number(v).toFixed(2) : '--'
 }
 
 onMounted(() => {
@@ -317,47 +313,32 @@ async function handleSubmitApply() {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="发票编码">
-          <el-input
-            v-model="query.invoiceCode"
-            placeholder="发票编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="发票类型">
-          <el-select
-            v-model="query.invoiceType"
-            placeholder="全部"
-            clearable
-            style="width: 160px"
-          >
-            <el-option v-for="o in INVOICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="发票状态">
-          <el-select
-            v-model="query.invoiceStatus"
-            placeholder="全部"
-            clearable
-            style="width: 140px"
-          >
-            <el-option v-for="o in INVOICE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.invoiceCode"
+          placeholder="发票编码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.invoiceType" placeholder="发票类型" clearable style="width: 140px">
+          <el-option v-for="o in INVOICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.invoiceStatus" placeholder="发票状态" clearable style="width: 140px">
+          <el-option v-for="o in INVOICE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>发票列表</span>
+          <span class="card-title">发票列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openApplyDialog">申请发票</el-button>
         </div>
       </template>
@@ -376,8 +357,8 @@ async function handleSubmitApply() {
           </template>
         </el-table-column>
         <el-table-column prop="invoiceTitle" label="抬头" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="invoiceAmount" label="金额（元）" width="120" align="right">
-          <template #default="{ row }">{{ formatAmount(row.invoiceAmount) }}</template>
+        <el-table-column prop="invoiceAmount" label="金额" width="130" align="right">
+          <template #default="{ row }">{{ formatMoney(row.invoiceAmount) }}</template>
         </el-table-column>
         <el-table-column prop="invoiceStatus" label="状态" width="110" align="center">
           <template #default="{ row }">
@@ -390,7 +371,9 @@ async function handleSubmitApply() {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="applyTime" label="申请时间" min-width="160" />
+        <el-table-column prop="applyTime" label="申请时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.applyTime) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="120" align="center" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="viewDetail(row.invoiceCode)">查看详情</el-button>

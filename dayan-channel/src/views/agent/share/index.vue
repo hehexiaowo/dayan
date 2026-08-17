@@ -4,6 +4,7 @@ import { useCrud } from '@/composables/useCrud'
 import { pageShareRecords } from '@/api/agent'
 import type { ShareRecord, ShareRecordQuery } from '@/types/agent'
 import { SHARE_TYPE_OPTIONS } from '@/types/agent'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 分享记录页（只读列表）。
@@ -46,24 +47,20 @@ onMounted(() => {
 <template>
   <div class="page-container">
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="代理人">
-          <el-input v-model="query.agentCode" placeholder="代理人编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="分享类型">
-          <el-select v-model="query.shareType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in SHARE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.agentCode" placeholder="代理人编码" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.shareType" placeholder="分享类型" clearable style="width: 120px">
+          <el-option v-for="o in SHARE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <el-card shadow="never">
-      <template #header><div class="card-header"><span>分享记录</span></div></template>
+      <template #header><div class="card-header"><span class="card-title">分享记录列表</span></div></template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="shareCode">
         <el-table-column prop="shareCode" label="分享编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="agentCode" label="代理人" min-width="120" show-overflow-tooltip />
@@ -73,7 +70,9 @@ onMounted(() => {
         <el-table-column prop="bizCode" label="业务编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="clientName" label="客户" min-width="100" />
         <el-table-column prop="viewCount" label="浏览数" width="80" align="right" />
-        <el-table-column prop="shareTime" label="分享时间" min-width="160" />
+        <el-table-column prop="shareTime" label="分享时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.shareTime) }}</template>
+        </el-table-column>
         <template #empty><el-empty description="暂无数据" /></template>
       </el-table>
       <div class="pagination-wrap">

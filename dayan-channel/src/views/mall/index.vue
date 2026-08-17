@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Picture, ShoppingCart, Delete } from '@element-plus/icons-vue'
 import { GOODS_TYPE_OPTIONS, pageGoodsInfos, type GoodsInfo } from '@/api/goods'
 import { createOrderEquity } from '@/api/order'
@@ -171,6 +171,17 @@ const orderSource = ref(1)
 
 async function handleCheckout() {
   if (cart.value.length === 0 || submitting.value) return
+  // 二次确认：批量下单不可撤销，按购物车总件数提示
+  const totalQuantity = cart.value.reduce((sum, item) => sum + item.quantity, 0)
+  try {
+    await ElMessageBox.confirm(
+      `确定批量结算选中的 ${totalQuantity} 件商品吗？`,
+      '批量结算',
+      { type: 'warning' }
+    )
+  } catch {
+    return
+  }
   submitting.value = true
   const successCodes: string[] = []
   const failedItems: string[] = []
@@ -217,21 +228,17 @@ onMounted(() => {
   <div class="mall-container">
     <!-- 左侧：商品区 -->
     <div class="goods-section">
-      <!-- 搜索栏 -->
+      <!-- 搜索栏（前端实时过滤，无需查询按钮） -->
       <el-card shadow="never" class="search-card">
-        <el-form :inline="true" @submit.prevent>
-          <el-form-item label="商品名称">
-            <el-input v-model="searchName" placeholder="商品名称" clearable />
-          </el-form-item>
-          <el-form-item label="商品类型">
-            <el-select v-model="searchType" placeholder="全部" clearable style="width: 120px">
-              <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
+        <div class="toolbar">
+          <el-input v-model="searchName" placeholder="商品名称" clearable style="width: 160px" />
+          <el-select v-model="searchType" placeholder="商品类型" clearable style="width: 130px">
+            <el-option v-for="o in GOODS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+          <div class="toolbar-actions">
             <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-          </el-form-item>
-        </el-form>
+          </div>
+        </div>
       </el-card>
 
       <!-- 商品卡片网格 -->
@@ -401,6 +408,9 @@ onMounted(() => {
 .goods-section {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .cart-section {
@@ -411,8 +421,6 @@ onMounted(() => {
 }
 
 .search-card {
-  margin-bottom: 16px;
-
   :deep(.el-card__body) {
     padding-bottom: 2px;
   }

@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { pageEquityActivates } from '@/api/equity'
 import type { EquityActivate, EquityActivateQuery } from '@/types/equity'
-import { statusTagType } from '@/utils/format'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 激活记录页（只读列表）。
@@ -43,36 +43,34 @@ onMounted(() => {
 <template>
   <div class="page-container">
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="激活码">
-          <el-input v-model="query.activateCode" placeholder="激活码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="权益码">
-          <el-input v-model="query.equityCode" placeholder="权益码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="客户编码">
-          <el-input v-model="query.clientCode" placeholder="客户编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.activateCode" placeholder="激活码" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.equityCode" placeholder="权益码" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.clientCode" placeholder="客户编码" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <el-card shadow="never">
-      <template #header><div class="card-header"><span>激活记录</span></div></template>
+      <template #header><div class="card-header"><span class="card-title">激活记录列表</span></div></template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="activateCode">
         <el-table-column prop="activateCode" label="激活码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="equityCode" label="权益码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="goodsCode" label="商品编码" min-width="120" show-overflow-tooltip />
         <el-table-column prop="clientFullName" label="客户" min-width="100" />
         <el-table-column prop="clientPhone" label="手机" min-width="120" />
-        <el-table-column prop="activateTime" label="激活时间" min-width="160" />
-        <el-table-column prop="expireTime" label="过期时间" min-width="160" />
+        <el-table-column prop="activateTime" label="激活时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.activateTime) }}</template>
+        </el-table-column>
+        <el-table-column prop="expireTime" label="过期时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.expireTime) }}</template>
+        </el-table-column>
         <el-table-column prop="isIdCardVerified" label="实名" width="70" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusTagType(row.isIdCardVerified === 1 ? 2 : 0)">{{ row.isIdCardVerified === 1 ? '是' : '否' }}</el-tag>
+            <el-tag :type="row.isIdCardVerified === 1 ? 'success' : 'info'">{{ row.isIdCardVerified === 1 ? '是' : '否' }}</el-tag>
           </template>
         </el-table-column>
         <template #empty><el-empty description="暂无数据" /></template>

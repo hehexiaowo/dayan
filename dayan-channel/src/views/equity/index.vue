@@ -10,6 +10,7 @@ import {
   type EquityQuery
 } from '@/types/equity'
 import { formatFileUrl } from '@/utils/file'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 权益管理页（业务运营目录）。
@@ -120,35 +121,39 @@ const timelineNodes = computed<TimelineNode[]>(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="权益编码">
-          <el-input v-model="query.equityCode" placeholder="权益编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="权益状态">
-          <el-select v-model="query.equityStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in EQUITY_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="载体类型">
-          <el-select v-model="query.carrierType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in CARRIER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="客户编码">
-          <el-input v-model="query.clientCode" placeholder="关联客户编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.equityCode"
+          placeholder="权益编码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.equityStatus" placeholder="权益状态" clearable style="width: 140px">
+          <el-option v-for="o in EQUITY_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.carrierType" placeholder="载体类型" clearable style="width: 140px">
+          <el-option v-for="o in CARRIER_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-input
+          v-model="query.clientCode"
+          placeholder="关联客户编码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>权益列表</span>
+          <span class="card-title">权益列表</span>
         </div>
       </template>
 
@@ -176,8 +181,12 @@ const timelineNodes = computed<TimelineNode[]>(() => {
         </el-table-column>
         <el-table-column prop="personCount" label="使用人数" width="100" align="center" />
         <el-table-column prop="clientCode" label="客户编码" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="activateTime" label="激活时间" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="expireTime" label="到期时间" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="activateTime" label="激活时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.activateTime) }}</template>
+        </el-table-column>
+        <el-table-column prop="expireTime" label="到期时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.expireTime) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="openDetail(row)">查看详情</el-button>
@@ -255,7 +264,9 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             <el-descriptions-item label="激活码">{{ currentEquity.activateCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="绑定码">{{ currentEquity.bindCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="物流单号">{{ currentEquity.logisticsNo || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="库存到期">{{ currentEquity.shelfExpireTime || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="库存到期">
+              {{ currentEquity.shelfExpireTime ? formatDateTime(currentEquity.shelfExpireTime) : '-' }}
+            </el-descriptions-item>
             <el-descriptions-item v-if="currentEquity.qrCodeUrl" label="二维码" :span="2">
               <el-link type="primary" :href="formatFileUrl(currentEquity.qrCodeUrl)" target="_blank">
                 {{ formatFileUrl(currentEquity.qrCodeUrl) }}
@@ -271,7 +282,7 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             <el-timeline-item
               v-for="(node, idx) in timelineNodes"
               :key="idx"
-              :timestamp="node.time"
+              :timestamp="formatDateTime(node.time)"
               placement="top"
               :color="node.color"
             >

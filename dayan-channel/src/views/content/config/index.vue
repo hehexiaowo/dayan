@@ -33,6 +33,10 @@ async function loadData() {
     //    完整的"可选池"需后端补一个"平台内容池"接口。先用已配置的渲染。
     allContents.value = await pageContents({ ...{ appType: appType.value, current: 1, size: 200, auditStatus: 2 } })
       .then((res) => res.records)
+  } catch (err) {
+    // 与其他页一致：接口异常降级提示，不阻塞页面
+    console.warn('[content/config] 加载内容配置失败:', err)
+    ElMessage.warning('加载内容配置失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -61,7 +65,7 @@ onMounted(() => loadData())
     <el-card v-loading="loading" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>内容配置（{{ appType === 'agent' ? '代理人端' : '客户端' }}）</span>
+          <span class="card-title">内容配置（{{ appType === 'agent' ? '代理人端' : '客户端' }}）</span>
           <el-button type="primary" :loading="saving" @click="handleSave">保存配置</el-button>
         </div>
       </template>

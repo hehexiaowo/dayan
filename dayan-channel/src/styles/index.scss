@@ -25,3 +25,36 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* ===== 列表页统一模板共享类（与 admin 端模板对齐）===== */
+
+/* 搜索区工具栏：控件无 label、placeholder 提示、8px 间距 */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* 工具栏右侧按钮组（查询/重置靠右） */
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* 表格卡片头：标题左、操作按钮右 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 卡片标题：15px/600 */
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+

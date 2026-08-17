@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { pageReadRecords } from '@/api/content'
 import type { ContentReadRecord, ContentReadRecordQuery } from '@/types/content'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 阅读记录页（只读列表）。
@@ -46,19 +47,17 @@ onMounted(() => {
 <template>
   <div class="page-container">
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="内容编码">
-          <el-input v-model="query.contentCode" placeholder="内容编码" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.contentCode" placeholder="内容编码" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <el-card shadow="never">
-      <template #header><div class="card-header"><span>阅读记录</span></div></template>
+      <template #header><div class="card-header"><span class="card-title">阅读记录列表</span></div></template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
         <el-table-column prop="contentCode" label="内容编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="readerName" label="读者" min-width="100" />
@@ -67,7 +66,9 @@ onMounted(() => {
           <template #default="{ row }">{{ row.readSource === 1 ? '代理人' : row.readSource === 2 ? '客户' : '--' }}</template>
         </el-table-column>
         <el-table-column prop="readDuration" label="阅读时长(秒)" width="120" align="right" />
-        <el-table-column prop="readTime" label="阅读时间" min-width="160" />
+        <el-table-column prop="readTime" label="阅读时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.readTime) }}</template>
+        </el-table-column>
         <template #empty><el-empty description="暂无数据" /></template>
       </el-table>
       <div class="pagination-wrap">

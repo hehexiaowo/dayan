@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { pageClientAccounts } from '@/api/client'
 import { GENDER_OPTIONS, type ClientAccount, type ClientAccountQuery } from '@/types/client'
-import { statusTagType } from '@/utils/format'
+import { formatDateTime, statusTagType } from '@/utils/format'
 
 /**
  * 客户账号页。
@@ -60,30 +60,24 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="用户名">
-          <el-input v-model="query.username" placeholder="用户名" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="账号状态">
-          <el-select v-model="query.accountStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.username" placeholder="用户名" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.phone" placeholder="手机号" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.accountStatus" placeholder="账号状态" clearable style="width: 130px">
+          <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>客户账号</span>
+          <span class="card-title">客户账号列表</span>
         </div>
       </template>
 
@@ -100,7 +94,9 @@ onMounted(() => {
             <el-tag :type="statusTagType(row.accountStatus)">{{ row.accountStatus === 1 ? '正常' : '禁用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="160" />
+        <el-table-column prop="createdAt" label="创建时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <template #empty>
           <el-empty description="暂无数据" />
         </template>

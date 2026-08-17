@@ -40,6 +40,7 @@ import type {
   ChannelRole
 } from '@/types/channel'
 import { CHANNEL_ACCOUNT_STATUS_OPTIONS, CHANNEL_IS_ADMIN_OPTIONS } from '@/types/channel'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 本页使用的查询参数类型。
@@ -302,11 +303,6 @@ function accountStatusTagType(v?: number): 'success' | 'info' | 'warning' {
   return 'info'
 }
 
-function formatDateTime(s?: string): string {
-  if (!s) return '--'
-  return s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s
-}
-
 // ---------- 搜索重置 ----------
 function handleReset() {
   query.username = ''
@@ -326,38 +322,30 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="用户名">
-          <el-input v-model="query.username" placeholder="用户名" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="真实姓名">
-          <el-input v-model="query.realName" placeholder="真实姓名" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.accountStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option
-              v-for="o in CHANNEL_ACCOUNT_STATUS_OPTIONS"
-              :key="o.value"
-              :label="o.label"
-              :value="o.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.username" placeholder="用户名" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.realName" placeholder="真实姓名" clearable style="width: 150px" @keyup.enter="handleSearch" />
+        <el-input v-model="query.phone" placeholder="手机号" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.accountStatus" placeholder="状态" clearable style="width: 120px">
+          <el-option
+            v-for="o in CHANNEL_ACCOUNT_STATUS_OPTIONS"
+            :key="o.value"
+            :label="o.label"
+            :value="o.value"
+          />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>账号列表</span>
+          <span class="card-title">账号列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增账号</el-button>
         </div>
       </template>

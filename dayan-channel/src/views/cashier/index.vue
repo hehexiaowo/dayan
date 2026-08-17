@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import { createFinancePayment, markFinancePaymentSuccess, pageFinancePayments } from '@/api/finance'
+import { formatDateTime, formatMoney } from '@/utils/format'
 import {
   PAY_TYPE_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
@@ -117,11 +118,6 @@ function payStatusText(v?: number): string {
 function payTypeText(v?: number): string {
   const opt = PAY_TYPE_OPTIONS.find((o) => o.value === v)
   return opt ? opt.label : '-'
-}
-
-/** 金额格式化 */
-function formatAmount(v?: number | null): string {
-  return v != null ? Number(v).toFixed(2) : '--'
 }
 
 /** 是否待支付（决定「标记成功」按钮显示） */
@@ -294,45 +290,39 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="支付单编码">
-          <el-input
-            v-model="query.paymentCode"
-            placeholder="支付单编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="订单编码">
-          <el-input
-            v-model="query.orderCode"
-            placeholder="订单编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="支付状态">
-          <el-select v-model="query.payStatus" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in PAYMENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="支付方式">
-          <el-select v-model="query.payType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.paymentCode"
+          placeholder="支付单编码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-input
+          v-model="query.orderCode"
+          placeholder="订单编码"
+          clearable
+          style="width: 160px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.payStatus" placeholder="支付状态" clearable style="width: 140px">
+          <el-option v-for="o in PAYMENT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.payType" placeholder="支付方式" clearable style="width: 140px">
+          <el-option v-for="o in PAY_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>支付单列表</span>
+          <span class="card-title">支付单列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreateDialog()">创建支付</el-button>
         </div>
       </template>
@@ -351,8 +341,8 @@ onMounted(() => {
           </template>
         </el-table-column>
         <el-table-column prop="orderCode" label="订单编码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="payAmount" label="金额（元）" width="120" align="right">
-          <template #default="{ row }">{{ formatAmount(row.payAmount) }}</template>
+        <el-table-column prop="payAmount" label="金额" width="130" align="right">
+          <template #default="{ row }">{{ formatMoney(row.payAmount) }}</template>
         </el-table-column>
         <el-table-column prop="payType" label="支付方式" width="110" align="center">
           <template #default="{ row }">
@@ -380,10 +370,7 @@ onMounted(() => {
           </template>
         </el-table-column>
         <el-table-column prop="payTime" label="支付时间" min-width="160">
-          <template #default="{ row }">
-            <span v-if="row.payTime">{{ row.payTime }}</span>
-            <span v-else class="text-muted">--</span>
-          </template>
+          <template #default="{ row }">{{ formatDateTime(row.payTime) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" align="center" fixed="right">
           <template #default="{ row }">

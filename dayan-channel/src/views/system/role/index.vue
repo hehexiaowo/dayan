@@ -30,6 +30,7 @@ import {
   CHANNEL_ROLE_STATUS_OPTIONS
 } from '@/types/channel'
 import type { ChannelRole, ChannelRoleQuery, ChannelPermission } from '@/types/channel'
+import { formatDateTime } from '@/utils/format'
 
 const userStore = useUserStore()
 
@@ -249,43 +250,32 @@ function statusLabel(v?: number): string {
 function statusTagType(v?: number): 'success' | 'info' {
   return v === 1 ? 'success' : 'info'
 }
-
-function formatDateTime(s?: string): string {
-  if (!s) return '--'
-  return s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s
-}
 </script>
 
 <template>
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="角色名称">
-          <el-input v-model="query.roleName" placeholder="角色名称" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="类型">
-          <el-select v-model="query.roleType" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in CHANNEL_ROLE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in CHANNEL_ROLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.roleName" placeholder="角色名称" clearable style="width: 160px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.roleType" placeholder="类型" clearable style="width: 120px">
+          <el-option v-for="o in CHANNEL_ROLE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in CHANNEL_ROLE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>角色列表</span>
+          <span class="card-title">角色列表</span>
           <el-button type="primary" :icon="'Plus'" @click="openCreate">新增角色</el-button>
         </div>
       </template>

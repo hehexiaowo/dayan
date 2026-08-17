@@ -303,30 +303,25 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="渠道全称">
-          <el-input
-            v-model="query.fullName"
-            placeholder="渠道全称关键字"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="渠道类型">
-          <el-select v-model="query.channelType" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="o in CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in CHANNEL_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input
+          v-model="query.fullName"
+          placeholder="渠道全称"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.channelType" placeholder="渠道类型" clearable style="width: 140px">
+          <el-option v-for="o in CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+          <el-option v-for="o in CHANNEL_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 无管理权限时降级提示 -->
@@ -342,7 +337,7 @@ onMounted(() => {
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>渠道列表</span>
+          <span class="card-title">渠道列表</span>
           <div>
             <el-button :icon="'Refresh'" @click="loadTree">刷新</el-button>
             <el-button v-if="canManageAll === 1" type="primary" :icon="'Plus'" @click="openCreate()">

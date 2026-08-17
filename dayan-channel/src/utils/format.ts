@@ -24,6 +24,31 @@ export function formatAmount(val: number | string | null | undefined): string {
   return Number(val).toFixed(2)
 }
 
+/** 金额格式化：千分位 + ¥ 前缀（与 admin 端 formatMoney 对齐，用于表格金额列） */
+export function formatMoney(val: number | string | null | undefined): string {
+  if (val == null || val === '') return '--'
+  const n = Number(val)
+  if (Number.isNaN(n)) return '--'
+  return `¥${n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+/**
+ * 将后端 ISO 时间字符串格式化为 "YYYY-MM-DD HH:mm:ss"。
+ *
+ * 兼容 ISO 含 T（2026-08-05T18:59:27）、带毫秒/时区、已是目标格式三种输入；
+ * 解析失败或空值返回 '--'。
+ */
+export function formatDateTime(value: unknown): string {
+  if (value == null || value === '') return '--'
+  const str = String(value).trim()
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(str)) return str
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  const d = new Date(str)
+  if (Number.isNaN(d.getTime())) return '--'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 /** 通用空值显示 */
 export function dashIfEmpty(val: unknown): string {
   return val == null || val === '' ? '--' : String(val)

@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { pageAgentAccounts } from '@/api/agent'
 import type { AgentAccount, AgentAccountQuery } from '@/types/agent'
-import { statusTagType } from '@/utils/format'
+import { formatDateTime, statusTagType } from '@/utils/format'
 
 /**
  * 代理人账号页。
@@ -53,27 +53,23 @@ onMounted(() => {
   <div class="page-container">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
-      <el-form :inline="true" :model="query" @submit.prevent>
-        <el-form-item label="关键字">
-          <el-input v-model="query.keyword" placeholder="账号/姓名/手机" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="账号状态">
-          <el-select v-model="query.accountStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
+      <div class="toolbar">
+        <el-input v-model="query.keyword" placeholder="关键字（账号/姓名/手机）" clearable style="width: 200px" @keyup.enter="handleSearch" />
+        <el-select v-model="query.accountStatus" placeholder="账号状态" clearable style="width: 130px">
+          <el-option v-for="o in ACCOUNT_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>代理账号</span>
+          <span class="card-title">代理账号列表</span>
         </div>
       </template>
 
@@ -88,7 +84,9 @@ onMounted(() => {
             <el-tag :type="statusTagType(row.accountStatus)">{{ row.accountStatus === 1 ? '正常' : '禁用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="160" />
+        <el-table-column prop="createdAt" label="创建时间" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <template #empty>
           <el-empty description="暂无数据" />
         </template>
