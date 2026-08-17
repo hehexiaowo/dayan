@@ -34,6 +34,14 @@
           <DyIconBlock text="AI" color="red" size="md" />
           <text class="tool-label">AI 创作</text>
         </view>
+        <view class="tool-item dy-clickable" @click="onTool('qa')">
+          <DyIconBlock text="答" color="red" size="md" />
+          <text class="tool-label">你问我答</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('network')">
+          <DyIconBlock text="网" color="green" size="md" />
+          <text class="tool-label">养老网络</text>
+        </view>
       </view>
     </view>
 
@@ -187,6 +195,14 @@ function onTool(type: string) {
   }
   if (type === 'poster') {
     uni.navigateTo({ url: '/pages/acquisition/poster/index' });
+    return;
+  }
+  if (type === 'qa') {
+    uni.navigateTo({ url: '/pages/acquisition/qa/index' });
+    return;
+  }
+  if (type === 'network') {
+    uni.navigateTo({ url: '/pages/business/park/index' });
     return;
   }
   uni.showToast({ title: '功能开发中', icon: 'none' });
