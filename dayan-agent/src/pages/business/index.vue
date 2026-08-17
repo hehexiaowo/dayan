@@ -35,6 +35,16 @@
       </view>
       <text class="card-arrow">›</text>
     </view>
+
+    <!-- 展业贺卡 -->
+    <view class="card dy-clickable" @click="onSection('card')">
+      <DyIconBlock text="卡" color="orange" size="lg" />
+      <view class="card-body">
+        <view class="card-title">展业贺卡</view>
+        <view class="card-desc">节日贺卡 · 一键制作</view>
+      </view>
+      <text class="card-arrow">›</text>
+    </view>
   </view>
 </template>
 
@@ -52,6 +62,10 @@ function onSection(type: string) {
   }
   if (type === 'activity') {
     uni.navigateTo({ url: '/pages/business/scene/index' });
+    return;
+  }
+  if (type === 'card') {
+    uni.navigateTo({ url: '/pages/business/card/index' });
     return;
   }
 }
