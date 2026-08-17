@@ -189,3 +189,26 @@ export interface EquityActivateQuery extends PageQuery {
   clientCode?: string
   activateChannel?: number
 }
+
+/**
+ * 激活渠道（equity_activate.activate_channel，与 DDL 对齐）：
+ * 1=APP / 2=小程序 / 3=H5 / 4=管家代激活 / 5=代理人代激活。
+ */
+export const ACTIVATE_CHANNEL_OPTIONS = [
+  { label: 'APP', value: 1 },
+  { label: '小程序', value: 2 },
+  { label: 'H5', value: 3 },
+  { label: '管家代激活', value: 4 },
+  { label: '代理人代激活', value: 5 }
+] as const
+
+/** 激活渠道标签文本。 */
+export function activateChannelLabel(v?: number): string {
+  const found = ACTIVATE_CHANNEL_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : v != null ? String(v) : '--'
+}
+
+/** 激活渠道 tag 颜色：代理人/管家代激活=渠道业绩来源（warning），自然流量=info */
+export function activateChannelTagType(v?: number): 'warning' | 'info' {
+  return v === 4 || v === 5 ? 'warning' : 'info'
+}

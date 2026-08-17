@@ -46,21 +46,25 @@ function handleReset() {
   handleSearch()
 }
 
+/**
+ * 权益状态 tag 颜色（业务语义）：
+ * 0库存中 info / 1已出库 primary / 2已激活 primary / 3使用中 success /
+ * 4已完成 success / 5已过期 danger / 6已作废 danger / 7更换权益人中 warning。
+ */
 function statusTagType(v?: number): 'success' | 'warning' | 'info' | 'danger' | 'primary' {
   switch (v) {
-    case EquityStatus.ACTIVATED:
-    case EquityStatus.IN_USE:
-      return 'success'
-    case EquityStatus.STOCK:
     case EquityStatus.OUTBOUND:
-      return 'warning'
-    case EquityStatus.COMPLETED:
+    case EquityStatus.ACTIVATED:
       return 'primary'
+    case EquityStatus.IN_USE:
+    case EquityStatus.COMPLETED:
+      return 'success'
     case EquityStatus.EXPIRED:
     case EquityStatus.VOID:
       return 'danger'
     case EquityStatus.CHANGING_HOLDER:
-      return 'info'
+      return 'warning'
+    case EquityStatus.STOCK:
     default:
       return 'info'
   }
@@ -159,6 +163,7 @@ const timelineNodes = computed<TimelineNode[]>(() => {
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="equityCode">
         <el-table-column prop="equityCode" label="权益编码" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="equityNo" label="卡号" min-width="140" show-overflow-tooltip />
         <el-table-column prop="equityStatus" label="权益状态" width="110" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.equityStatus !== undefined && row.equityStatus !== null" :type="statusTagType(row.equityStatus)">
@@ -167,24 +172,23 @@ const timelineNodes = computed<TimelineNode[]>(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="商品名称" min-width="180" show-overflow-tooltip>
+        <el-table-column label="商品" min-width="200">
           <template #default="{ row }">
-            <span v-if="row.goodsName">{{ row.goodsName }}</span>
-            <span v-else class="text-muted">未关联订单</span>
+            <div>
+              <div>{{ row.goodsName || '-' }}</div>
+              <div style="font-size:12px;color:#909399">{{ row.skuName || '-' }}</div>
+            </div>
           </template>
-        </el-table-column>
-        <el-table-column prop="skuName" label="规格" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.skuName || '-' }}</template>
         </el-table-column>
         <el-table-column prop="carrierType" label="载体类型" width="100" align="center">
           <template #default="{ row }">{{ carrierText(row.carrierType) }}</template>
         </el-table-column>
         <el-table-column prop="personCount" label="使用人数" width="100" align="center" />
         <el-table-column prop="clientCode" label="客户编码" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="activateTime" label="激活时间" min-width="160" show-overflow-tooltip>
+        <el-table-column prop="activateTime" label="激活时间" min-width="160" align="center" show-overflow-tooltip>
           <template #default="{ row }">{{ formatDateTime(row.activateTime) }}</template>
         </el-table-column>
-        <el-table-column prop="expireTime" label="到期时间" min-width="160" show-overflow-tooltip>
+        <el-table-column prop="expireTime" label="过期时间" min-width="160" align="center" show-overflow-tooltip>
           <template #default="{ row }">{{ formatDateTime(row.expireTime) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="100" align="center" fixed="right">
@@ -332,11 +336,6 @@ const timelineNodes = computed<TimelineNode[]>(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
-}
-
-.text-muted {
-  color: var(--el-text-color-placeholder);
-  font-size: 12px;
 }
 
 .detail-section {

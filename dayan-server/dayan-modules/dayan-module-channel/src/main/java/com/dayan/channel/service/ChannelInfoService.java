@@ -29,6 +29,15 @@ public interface ChannelInfoService {
     List<ChannelInfoVO> tree();
 
     /**
+     * 查询渠道树并支持过滤（fullName 模糊、channelType、status）。
+     *
+     * <p>命中节点保留其祖先链（非命中子树剪掉）；过滤条件均为空时与 {@link #tree()} 行为一致。
+     *
+     * @param query 过滤条件；可为 null（等价于无过滤）
+     */
+    List<ChannelInfoVO> tree(ChannelInfoQueryDTO query);
+
+    /**
      * 渠道详情。
      */
     ChannelInfoVO getDetail(String channelCode);

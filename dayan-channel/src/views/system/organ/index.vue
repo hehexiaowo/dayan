@@ -359,6 +359,12 @@ onMounted(() => {
         <el-table-column prop="fullName" label="渠道全称" min-width="220" show-overflow-tooltip />
         <el-table-column prop="shortName" label="简称" min-width="120" show-overflow-tooltip />
         <el-table-column prop="channelCode" label="渠道编码" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="contactPerson" label="联系人" width="100" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.contactPerson || '--' }}</template>
+        </el-table-column>
+        <el-table-column prop="contactPhone" label="联系电话" min-width="130" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.contactPhone || '--' }}</template>
+        </el-table-column>
         <el-table-column label="类型" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="channelTypeTagType(row.channelType)">

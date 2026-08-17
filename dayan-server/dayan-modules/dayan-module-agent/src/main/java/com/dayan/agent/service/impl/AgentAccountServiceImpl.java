@@ -199,6 +199,15 @@ public class AgentAccountServiceImpl implements AgentAccountService {
         vo.setLastLoginIp(entity.getLastLoginIp());
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
+        // join agent_info：真实姓名/等级/认证状态（账号-代理人 1:1）
+        AgentInfo agent = agentInfoMapper.selectOne(new LambdaQueryWrapper<AgentInfo>()
+                .eq(AgentInfo::getAgentCode, entity.getAgentCode())
+                .last("LIMIT 1"));
+        if (agent != null) {
+            vo.setRealName(agent.getFullName());
+            vo.setAgentLevel(agent.getAgentLevel());
+            vo.setIsCertified(agent.getIsCertified());
+        }
         return vo;
     }
 }

@@ -1,25 +1,29 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCrud } from '@/composables/useCrud'
 import { pageClientAccounts } from '@/api/client'
-import { GENDER_OPTIONS, type ClientAccount, type ClientAccountQuery } from '@/types/client'
-import { formatDateTime, statusTagType } from '@/utils/format'
+import type { ClientAccount, ClientAccountQuery } from '@/types/client'
+import { formatDateTime } from '@/utils/format'
 
 /**
  * 客户账号页。
  *
  * - 数据源：pageClientAccounts（/channel-api/client-accounts，任务 6 新建）。
  * - 搜索：用户名 / 手机号 / 账号状态。
- * - 表格：clientCode / username / realName / phone / gender / accountStatus(tag) / createdAt。
+ * - 表格：clientCode / username / realName / phone / accountStatus(tag) / lastLoginTime / createdAt。
+ * - "详情"跳转客户详情路由页 /client/detail/:clientCode（ClientDetail，tab 式主从详情）。
  * - 后端端点未实现时降级（空表 + 控制台 warn，不弹 toast）。
  *
  * 说明：useCrud 不返回 handleReset（已核实 composables/useCrud.ts），
  * 故在本页面内自定义 handleReset（与现有 client/index.vue 等页面一致）。
  */
 
+/** 账号状态（DB 现有注释权威）：0 锁定 / 1 正常 / 2 禁用 */
 const ACCOUNT_STATUS_OPTIONS = [
+  { value: 0, label: '锁定' },
   { value: 1, label: '正常' },
-  { value: 0, label: '禁用' }
+  { value: 2, label: '禁用' }
 ]
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
@@ -43,9 +47,26 @@ function handleReset() {
   handleSearch()
 }
 
-function genderText(v?: number) {
-  const opt = GENDER_OPTIONS.find((o) => o.value === v)
-  return opt ? opt.label : '未知'
+/** 账号状态 tag 颜色：0 锁定 warning / 1 正常 success / 2 禁用 info */
+function accountStatusTagType(v?: number): 'warning' | 'success' | 'info' {
+  const map: Record<number, 'warning' | 'success' | 'info'> = {
+    0: 'warning',
+    1: 'success',
+    2: 'info'
+  }
+  return map[v ?? -1] ?? 'info'
+}
+
+/** 账号状态中文标签 */
+function accountStatusText(v?: number): string {
+  return ACCOUNT_STATUS_OPTIONS.find((o) => o.value === v)?.label ?? '--'
+}
+
+// ---------- 详情跳转 ----------
+const router = useRouter()
+
+function goDetail(row: ClientAccount) {
+  router.push({ name: 'ClientDetail', params: { clientCode: row.clientCode } })
 }
 
 onMounted(() => {
@@ -82,20 +103,25 @@ onMounted(() => {
       </template>
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="clientCode">
-        <el-table-column prop="clientCode" label="账号编码" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="clientCode" label="账号编码" min-width="140" fixed="left" show-overflow-tooltip />
         <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip />
         <el-table-column prop="realName" label="姓名" min-width="100" />
         <el-table-column prop="phone" label="手机号" min-width="120" />
-        <el-table-column prop="gender" label="性别" width="80" align="center">
-          <template #default="{ row }">{{ genderText(row.gender) }}</template>
-        </el-table-column>
         <el-table-column prop="accountStatus" label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusTagType(row.accountStatus)">{{ row.accountStatus === 1 ? '正常' : '禁用' }}</el-tag>
+            <el-tag :type="accountStatusTagType(row.accountStatus)">{{ accountStatusText(row.accountStatus) }}</el-tag>
           </template>
+        </el-table-column>
+        <el-table-column prop="lastLoginTime" label="最后登录" min-width="160">
+          <template #default="{ row }">{{ formatDateTime(row.lastLoginTime) }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" min-width="160">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="80" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
+          </template>
         </el-table-column>
         <template #empty>
           <el-empty description="暂无数据" />

@@ -112,9 +112,6 @@ function displayName(row: LeadInfo): string {
         <el-table-column label="来源" width="100" align="center">
           <template #default="{ row }">{{ leadSourceTypeLabel(row.sourceType) }}</template>
         </el-table-column>
-        <el-table-column label="访客环境" width="90" align="center">
-          <template #default="{ row }">{{ row.visitorSource || '--' }}</template>
-        </el-table-column>
         <el-table-column prop="interactCount" label="互动次数" width="90" align="center">
           <template #default="{ row }">{{ row.interactCount ?? 0 }}</template>
         </el-table-column>

@@ -16,6 +16,8 @@ public class SceneInfoVO {
     private String sceneName;
     private Integer sceneType;
     private String parkCode;
+    /** 机构名称 join park_info.full_name */
+    private String parkName;
     private String provinceCode;
     private String cityCode;
     private String districtCode;

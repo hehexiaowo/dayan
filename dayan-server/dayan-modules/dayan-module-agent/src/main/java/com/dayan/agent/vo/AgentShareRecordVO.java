@@ -17,6 +17,8 @@ public class AgentShareRecordVO {
     private String bizCode;
     private Integer shareChannel;
     private String clientCode;
+    /** 客户姓名 join client_info.full_name */
+    private String clientName;
     private Integer viewCount;
     private LocalDateTime shareTime;
     private LocalDateTime createdAt;

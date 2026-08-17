@@ -9,7 +9,9 @@ import com.dayan.common.core.resp.R;
 import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.scene.dto.SceneInfoQueryDTO;
 import com.dayan.scene.dto.SceneScheduleQueryDTO;
+import com.dayan.scene.entity.ParkInfoView;
 import com.dayan.scene.entity.SceneInfo;
+import com.dayan.scene.mapper.ParkInfoViewMapper;
 import com.dayan.scene.mapper.SceneInfoMapper;
 import com.dayan.scene.service.SceneInfoService;
 import com.dayan.scene.service.SceneScheduleService;
@@ -46,6 +48,7 @@ public class ChannelSceneController {
     private final SceneScheduleService sceneScheduleService;
     private final ChannelConfigSceneService channelConfigSceneService;
     private final SceneInfoMapper sceneInfoMapper;
+    private final ParkInfoViewMapper parkInfoViewMapper;
 
     @Operation(summary = "本渠道已配置场景列表")
     @SaCheckPermission("channel:scene:list")
@@ -57,7 +60,9 @@ public class ChannelSceneController {
             return R.ok(new PageResult<>(query.getCurrent(), query.getSize(), 0L, Collections.emptyList()));
         }
         query.setSceneCodes(sceneCodes);
-        return R.ok(sceneInfoService.page(query));
+        PageResult<SceneInfoVO> result = sceneInfoService.page(query);
+        fillParkName(result.getRecords());
+        return R.ok(result);
     }
 
     @Operation(summary = "场景详情")
@@ -73,6 +78,7 @@ public class ChannelSceneController {
         if (vo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "场景不存在");
         }
+        fillParkName(List.of(vo));
         return R.ok(vo);
     }
 
@@ -136,5 +142,29 @@ public class ChannelSceneController {
         Map<String, String> nameMap = scenes.stream()
                 .collect(Collectors.toMap(SceneInfo::getSceneCode, SceneInfo::getSceneName, (a, b) -> a));
         records.forEach(vo -> vo.setSceneName(nameMap.get(vo.getSceneCode())));
+    }
+
+    /**
+     * 批量回填 parkName：按结果里出现的 parkCode 集合一次性查 park_info（跨模块只读视图），
+     * 组装 Map&lt;parkCode, fullName&gt; 后回填到每个 VO，避免 N+1。
+     */
+    private void fillParkName(List<SceneInfoVO> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        Set<String> codes = records.stream()
+                .map(SceneInfoVO::getParkCode)
+                .filter(c -> c != null && !c.isEmpty())
+                .collect(Collectors.toSet());
+        if (codes.isEmpty()) {
+            return;
+        }
+        List<ParkInfoView> parks = parkInfoViewMapper.selectList(
+                new LambdaQueryWrapper<ParkInfoView>()
+                        .in(ParkInfoView::getParkCode, codes)
+                        .select(ParkInfoView::getParkCode, ParkInfoView::getFullName));
+        Map<String, String> nameMap = parks.stream()
+                .collect(Collectors.toMap(ParkInfoView::getParkCode, ParkInfoView::getFullName, (a, b) -> a));
+        records.forEach(vo -> vo.setParkName(nameMap.get(vo.getParkCode())));
     }
 }

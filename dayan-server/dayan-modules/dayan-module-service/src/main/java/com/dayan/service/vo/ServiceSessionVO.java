@@ -16,6 +16,8 @@ public class ServiceSessionVO {
     /** 服务项目编码 */
     private String itemCode;
     private String clientCode;
+    /** 客户姓名 join client_info.full_name */
+    private String clientName;
     private String butlerCode;
     private String butlerFullName;
     private Integer serviceType;

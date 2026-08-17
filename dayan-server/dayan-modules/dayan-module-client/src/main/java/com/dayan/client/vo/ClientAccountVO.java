@@ -15,6 +15,8 @@ public class ClientAccountVO {
     private String channelCode;
     private String username;
     private String phone;
+    /** 真实姓名 join client_info.full_name */
+    private String realName;
     private String openId;
     private String unionId;
     private String alipayId;

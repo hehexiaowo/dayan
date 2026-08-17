@@ -11,6 +11,8 @@ export interface SceneInfo {
   description?: string
   coverImage?: string
   capacity?: number
+  /** 预约数 */
+  bookCount?: number
   usedCapacity?: number
   sceneStatus?: number
   auditStatus?: number
@@ -30,11 +32,19 @@ export interface SceneInfoQuery extends PageQuery {
   auditStatus?: number
 }
 
-/** 场景类型选项 */
+/**
+ * 场景类型选项（scene_info.scene_type，DB 现有注释权威，8 值）：
+ * 1 参观体验 / 2 健康讲座 / 3 亲子互动 / 4 节日活动 / 5 文化娱乐 / 6 健康检测 / 7 美食品鉴 / 8 其他。
+ */
 export const SCENE_TYPE_OPTIONS = [
-  { value: 1, label: '线下活动' },
-  { value: 2, label: '线上直播' },
-  { value: 3, label: '体验探访' }
+  { value: 1, label: '参观体验' },
+  { value: 2, label: '健康讲座' },
+  { value: 3, label: '亲子互动' },
+  { value: 4, label: '节日活动' },
+  { value: 5, label: '文化娱乐' },
+  { value: 6, label: '健康检测' },
+  { value: 7, label: '美食品鉴' },
+  { value: 8, label: '其他' }
 ]
 
 /** 场景状态选项 */
@@ -102,4 +112,16 @@ export interface SceneScheduleQuery {
   scheduleDateEnd?: string
   current: number
   size: number
+}
+
+/**
+ * 场景状态 tag 色（业务语义）：0=草稿 info / 1=已上架 success / 2=已下架 warning / 3=已满期 danger。
+ */
+export function sceneStatusTagType(v?: number): 'success' | 'warning' | 'danger' | 'info' {
+  switch (v) {
+    case 1: return 'success'
+    case 2: return 'warning'
+    case 3: return 'danger'
+    default: return 'info'
+  }
 }

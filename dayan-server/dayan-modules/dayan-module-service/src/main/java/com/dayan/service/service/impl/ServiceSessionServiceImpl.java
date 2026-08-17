@@ -16,6 +16,7 @@ import com.dayan.service.dto.ServiceSessionUpdateDTO;
 import com.dayan.service.dto.SubStatusUpdateDTO;
 import com.dayan.service.dto.TransitionDTO;
 import com.dayan.service.entity.ButlerInfoView;
+import com.dayan.service.entity.ClientInfoView;
 import com.dayan.service.entity.ServiceEquityArrange;
 import com.dayan.service.entity.ServiceEquitySolution;
 import com.dayan.service.entity.ServiceSession;
@@ -23,6 +24,7 @@ import com.dayan.service.enums.ServiceSessionEvent;
 import com.dayan.service.event.ServiceSessionFinishedEvent;
 import com.dayan.service.event.ServiceSessionStartedEvent;
 import com.dayan.service.mapper.ButlerInfoViewMapper;
+import com.dayan.service.mapper.ClientInfoViewMapper;
 import com.dayan.service.mapper.ServiceEquityArrangeMapper;
 import com.dayan.service.mapper.ServiceEquitySolutionMapper;
 import com.dayan.service.mapper.ServiceSessionMapper;
@@ -70,6 +72,7 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
 
     private final ServiceSessionMapper sessionMapper;
     private final ButlerInfoViewMapper butlerInfoViewMapper;
+    private final ClientInfoViewMapper clientInfoViewMapper;
     private final ServiceEquitySolutionMapper solutionMapper;
     private final ServiceEquityArrangeMapper arrangeMapper;
     private final SequenceProvider sequenceProvider;
@@ -474,6 +477,11 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         vo.setEquityCode(entity.getEquityCode());
         vo.setItemCode(entity.getItemCode());
         vo.setClientCode(entity.getClientCode());
+        // 跨模块只读 client_info 取客户姓名快照（同 ButlerInfoView 模式）
+        ClientInfoView client = clientInfoViewMapper.selectOne(new LambdaQueryWrapper<ClientInfoView>()
+                .eq(ClientInfoView::getClientCode, entity.getClientCode())
+                .last("LIMIT 1"));
+        vo.setClientName(client == null ? null : client.getFullName());
         vo.setButlerCode(entity.getButlerCode());
         vo.setButlerFullName(entity.getButlerFullName());
         vo.setServiceType(entity.getServiceType());

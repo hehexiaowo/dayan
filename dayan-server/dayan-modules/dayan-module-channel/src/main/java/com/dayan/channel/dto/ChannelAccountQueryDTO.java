@@ -13,6 +13,8 @@ public class ChannelAccountQueryDTO {
     private String channelCode;
     /** 用户名/手机号/邮箱（模糊匹配 username 或精确匹配 phone/email） */
     private String username;
+    /** 手机号（模糊匹配） */
+    private String phone;
     private String realName;
     private Integer accountStatus;
 }

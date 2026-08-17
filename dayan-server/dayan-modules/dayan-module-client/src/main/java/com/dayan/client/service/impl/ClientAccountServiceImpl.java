@@ -6,7 +6,9 @@ import com.dayan.client.dto.ClientAccountCreateDTO;
 import com.dayan.client.dto.ClientAccountQueryDTO;
 import com.dayan.client.dto.ClientAccountUpdateDTO;
 import com.dayan.client.entity.ClientAccount;
+import com.dayan.client.entity.ClientInfo;
 import com.dayan.client.mapper.ClientAccountMapper;
+import com.dayan.client.mapper.ClientInfoMapper;
 import com.dayan.client.service.ClientAccountService;
 import com.dayan.client.vo.ClientAccountVO;
 import com.dayan.common.core.exception.BusinessException;
@@ -20,6 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 客户账号服务实现（按 channel_code 隔离，复用 PasswordService BCrypt）。
@@ -33,6 +38,7 @@ public class ClientAccountServiceImpl implements ClientAccountService {
     private final DayanSecrets dayanSecrets;
 
     private final ClientAccountMapper accountMapper;
+    private final ClientInfoMapper clientInfoMapper;
     private final PasswordService passwordService;
 
     @Override
@@ -55,6 +61,7 @@ public class ClientAccountServiceImpl implements ClientAccountService {
         Page<ClientAccount> page = accountMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
         List<ClientAccountVO> records = page.getRecords().stream().map(this::toVO).toList();
+        fillRealName(records);
         return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), records);
     }
 
@@ -170,5 +177,28 @@ public class ClientAccountServiceImpl implements ClientAccountService {
         vo.setAccountStatus(entity.getAccountStatus());
         vo.setCreatedAt(entity.getCreatedAt());
         return vo;
+    }
+
+    /**
+     * 批量回填真实姓名：按结果里出现的 clientCode 一次性查 client_info 取 fullName，
+     * 组装 Map&lt;clientCode, fullName&gt; 回填到每个 VO，避免 N+1（channel_code 由租户拦截器自动追加）。
+     */
+    private void fillRealName(List<ClientAccountVO> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        Set<String> codes = records.stream()
+                .map(ClientAccountVO::getClientCode)
+                .filter(c -> c != null && !c.isEmpty())
+                .collect(Collectors.toSet());
+        if (codes.isEmpty()) {
+            return;
+        }
+        List<ClientInfo> infos = clientInfoMapper.selectList(new LambdaQueryWrapper<ClientInfo>()
+                .in(ClientInfo::getClientCode, codes)
+                .select(ClientInfo::getClientCode, ClientInfo::getFullName));
+        Map<String, String> nameMap = infos.stream()
+                .collect(Collectors.toMap(ClientInfo::getClientCode, ClientInfo::getFullName, (a, b) -> a));
+        records.forEach(vo -> vo.setRealName(nameMap.get(vo.getClientCode())));
     }
 }

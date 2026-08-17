@@ -95,6 +95,7 @@ public class AgentShareRecordServiceImpl implements AgentShareRecordService {
         vo.setBizCode(entity.getBizCode());
         vo.setShareChannel(entity.getShareChannel());
         vo.setClientCode(entity.getClientCode());
+        vo.setClientName(shareRecordMapper.selectClientNameByCode(entity.getClientCode()));
         vo.setViewCount(entity.getViewCount());
         vo.setShareTime(entity.getShareTime());
         vo.setCreatedAt(entity.getCreatedAt());

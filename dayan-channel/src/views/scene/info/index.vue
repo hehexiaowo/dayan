@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCrud } from '@/composables/useCrud'
 import { pageScenes } from '@/api/scene'
 import type { SceneInfo, SceneInfoQuery } from '@/types/scene'
-import { SCENE_TYPE_OPTIONS, SCENE_STATUS_OPTIONS } from '@/types/scene'
-import { formatDateTime, statusTagType } from '@/utils/format'
+import { SCENE_TYPE_OPTIONS, SCENE_STATUS_OPTIONS, sceneStatusTagType } from '@/types/scene'
 
 /**
  * 场景营销页（只读列表）。
  *
  * - 数据源：pageScenes（/channel-api/scenes，任务 6 新建）。
  * - 搜索：场景名称 / 类型 / 状态。
- * - 表格：sceneCode / sceneName / sceneType(text) / parkName / sceneStatus(tag) / startTime / endTime。
+ * - 表格：sceneCode / sceneName / sceneType(text) / parkName / bookCount / sceneStatus(tag)。
+ * - "详情"跳转场景详情路由页 /scene/detail/:sceneCode（SceneDetail，tab 式主从详情）。
  * - 后端端点未实现时降级（空表 + 控制台 warn，不弹 toast）。
  *
  * 说明：useCrud 不返回 handleReset（已核实 composables/useCrud.ts），
@@ -46,6 +47,13 @@ function handleReset() {
   handleSearch()
 }
 
+// ---------- 详情跳转 ----------
+const router = useRouter()
+
+function goDetail(row: SceneInfo) {
+  router.push({ name: 'SceneDetail', params: { sceneCode: row.sceneCode } })
+}
+
 onMounted(() => {
   loadPage().catch((err) => {
     // 后端端点未实现，降级：留空 + 控制台 warn（不弹 toast）
@@ -78,19 +86,23 @@ onMounted(() => {
         <el-table-column prop="sceneCode" label="场景编码" min-width="140" show-overflow-tooltip />
         <el-table-column prop="sceneName" label="场景名称" min-width="140" show-overflow-tooltip />
         <el-table-column prop="sceneType" label="类型" width="100" align="center">
-          <template #default="{ row }">{{ sceneTypeText(row.sceneType) }}</template>
-        </el-table-column>
-        <el-table-column prop="parkName" label="园区" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="sceneStatus" label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusTagType(row.sceneStatus)">{{ sceneStatusText(row.sceneStatus) }}</el-tag>
+            <el-tag type="info">{{ sceneTypeText(row.sceneType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="startTime" label="开始时间" min-width="160">
-          <template #default="{ row }">{{ formatDateTime(row.startTime) }}</template>
+        <el-table-column prop="parkName" label="园区" min-width="120" show-overflow-tooltip />
+        <el-table-column label="预约/容量" width="120" align="center">
+          <template #default="{ row }">{{ row.bookCount ?? 0 }} / {{ row.capacity ?? '--' }}</template>
         </el-table-column>
-        <el-table-column prop="endTime" label="结束时间" min-width="160">
-          <template #default="{ row }">{{ formatDateTime(row.endTime) }}</template>
+        <el-table-column prop="sceneStatus" label="状态" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="sceneStatusTagType(row.sceneStatus)">{{ sceneStatusText(row.sceneStatus) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="80" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
+          </template>
         </el-table-column>
         <template #empty><el-empty description="暂无数据" /></template>
       </el-table>

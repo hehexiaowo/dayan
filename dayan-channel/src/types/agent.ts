@@ -7,24 +7,24 @@ import type { PageQuery } from './common'
  * 渠道后台视角取本渠道代理人子集。
  */
 
-/** 代理人等级：1 一级 / 2 二级 / 3 三级 / 4 四级 */
+/** 代理人等级（DB 现有注释权威）：1 普通 / 2 银牌 / 3 金牌 / 4 钻石 */
 export enum AgentLevel {
-  /** 一级代理人 */
+  /** 普通代理人 */
   LEVEL_1 = 1,
-  /** 二级代理人 */
+  /** 银牌代理人 */
   LEVEL_2 = 2,
-  /** 三级代理人 */
+  /** 金牌代理人 */
   LEVEL_3 = 3,
-  /** 四级代理人 */
+  /** 钻石代理人 */
   LEVEL_4 = 4
 }
 
 /** 代理人等级选项 */
 export const AGENT_LEVEL_OPTIONS = [
-  { label: '一级', value: AgentLevel.LEVEL_1 },
-  { label: '二级', value: AgentLevel.LEVEL_2 },
-  { label: '三级', value: AgentLevel.LEVEL_3 },
-  { label: '四级', value: AgentLevel.LEVEL_4 }
+  { label: '普通', value: AgentLevel.LEVEL_1 },
+  { label: '银牌', value: AgentLevel.LEVEL_2 },
+  { label: '金牌', value: AgentLevel.LEVEL_3 },
+  { label: '钻石', value: AgentLevel.LEVEL_4 }
 ] as const
 
 /** 代理人状态：1 启用 / 0 禁用 */
@@ -90,7 +90,7 @@ export interface AgentAccount {
   agentLevel?: number
   isCertified?: number
   accountStatus?: number
-  lastLoginAt?: string
+  lastLoginTime?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -154,9 +154,32 @@ export interface ShareRecordQuery extends PageQuery {
   clientCode?: string
 }
 
-/** 分享类型选项 */
+/**
+ * 分享类型（agent_share_record.share_type，与 DDL 对齐）：
+ * 1=内容 / 2=场景 / 3=机构 / 4=权益 / 5=课程。
+ */
 export const SHARE_TYPE_OPTIONS = [
-  { value: 1, label: '内容分享' },
-  { value: 2, label: '场景分享' },
-  { value: 3, label: '权益分享' }
+  { value: 1, label: '内容' },
+  { value: 2, label: '场景' },
+  { value: 3, label: '机构' },
+  { value: 4, label: '权益' },
+  { value: 5, label: '课程' }
 ]
+
+/**
+ * 分享渠道（agent_share_record.share_channel，与 DDL 对齐）：
+ * 1=微信 / 2=朋友圈 / 3=复制链接 / 4=二维码 / 5=短信。
+ */
+export const SHARE_CHANNEL_OPTIONS = [
+  { label: '微信', value: 1 },
+  { label: '朋友圈', value: 2 },
+  { label: '复制链接', value: 3 },
+  { label: '二维码', value: 4 },
+  { label: '短信', value: 5 }
+] as const
+
+/** 分享渠道标签文本。 */
+export function shareChannelLabel(v?: number): string {
+  const found = SHARE_CHANNEL_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : v != null ? String(v) : '--'
+}

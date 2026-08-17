@@ -222,6 +222,8 @@ export interface ChannelAccount {
   accountStatus?: number
   /** 是否管理员：0否/1是 */
   isAdmin?: number
+  /** 已分配角色名称列表（列表页批量回填） */
+  roleNames?: string[]
   createdAt?: string
 }
 

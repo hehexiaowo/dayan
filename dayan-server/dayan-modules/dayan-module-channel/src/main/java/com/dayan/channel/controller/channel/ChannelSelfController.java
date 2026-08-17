@@ -1,5 +1,6 @@
 package com.dayan.channel.controller.channel;
 
+import com.dayan.channel.dto.ChannelInfoQueryDTO;
 import com.dayan.channel.service.ChannelInfoService;
 import com.dayan.channel.vo.ChannelInfoVO;
 import com.dayan.common.core.resp.R;
@@ -32,11 +33,11 @@ public class ChannelSelfController {
         return R.ok(channelInfoService.getDetail(channelCode));
     }
 
-    @Operation(summary = "本渠道组织架构树")
+    @Operation(summary = "本渠道组织架构树（支持 fullName/channelType/status 过滤）")
     @GetMapping("/tree")
-    public R<List<ChannelInfoVO>> tree() {
+    public R<List<ChannelInfoVO>> tree(ChannelInfoQueryDTO query) {
         String channelCode = ContextHolder.getChannelCode();
-        List<ChannelInfoVO> fullTree = channelInfoService.tree();
+        List<ChannelInfoVO> fullTree = channelInfoService.tree(query);
         // 找到当前渠道节点及其所有后代（ancestors 包含 channelCode）
         List<ChannelInfoVO> subTree = fullTree.stream()
                 .filter(vo -> channelCode.equals(vo.getChannelCode())

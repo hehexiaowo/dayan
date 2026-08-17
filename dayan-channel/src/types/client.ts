@@ -68,7 +68,7 @@ export interface ClientAccount {
   avatar?: string
   gender?: number
   accountStatus?: number
-  lastLoginAt?: string
+  lastLoginTime?: string
   createdAt?: string
   updatedAt?: string
 }
