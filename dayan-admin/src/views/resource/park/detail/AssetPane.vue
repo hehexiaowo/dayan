@@ -41,6 +41,8 @@ const props = defineProps<{
   refType1?: string
   /** 关联编码（锁定模式传业务实体编码） */
   refCode?: string
+  /** 独立页面模式：外层包 search-card + 表格卡片（header 标题/新增/重置）；false=嵌入 tab 裸结构 */
+  showCard?: boolean
 }>()
 
 /** FileUploader type 映射（按表单所选素材类型） */
@@ -79,6 +81,20 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
 )
 
 loadPage()
+
+/** 重置筛选并重新查询（独立页面模式使用） */
+function handleReset() {
+  Object.assign(query, {
+    keyword: undefined,
+    assetType: undefined,
+    refType1: undefined,
+    refType2: undefined,
+    refCode: undefined,
+    storageType: undefined,
+    status: undefined
+  })
+  handleSearch()
+}
 
 // ---------- 字典（两级关联）----------
 const { options: refType1DictOptions } = useDictOptions('asset_ref_type1')
@@ -318,7 +334,8 @@ defineExpose({ loadPage })
 
 <template>
   <div class="asset-pane">
-    <div class="toolbar">
+    <el-card shadow="never" :class="showCard ? 'search-card' : 'embedded-card'">
+      <div class="toolbar">
       <el-select v-model="query.assetType" placeholder="素材类型" clearable style="width: 110px">
         <el-option v-for="o in ASSET_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
       </el-select>
@@ -355,11 +372,20 @@ defineExpose({ loadPage })
       </el-select>
       <div class="toolbar-actions">
         <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
-        <el-button type="primary" :icon="'Plus'" @click="openCreate">新增素材</el-button>
+        <el-button v-if="showCard" :icon="'Refresh'" @click="handleReset">重置</el-button>
+        <el-button v-if="!showCard" type="primary" :icon="'Plus'" @click="openCreate">新增素材</el-button>
       </div>
-    </div>
+      </div>
+    </el-card>
 
-    <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
+    <el-card shadow="never" :class="showCard ? '' : 'embedded-card'">
+      <template v-if="showCard" #header>
+        <div class="card-header">
+          <span class="card-title">素材列表</span>
+          <el-button type="primary" :icon="'Plus'" @click="openCreate">新增素材</el-button>
+        </div>
+      </template>
+      <el-table v-loading="loading" :data="tableData" border stripe row-key="id">
       <!-- 预览：图片/VR 缩略图；视频/文档无预览 -->
       <el-table-column label="预览" min-width="96" align="center">
         <template #default="{ row }">
@@ -430,20 +456,21 @@ defineExpose({ loadPage })
           <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
-    </el-table>
+      </el-table>
 
-    <div class="pagination-wrap">
-      <el-pagination
-        :current-page="query.current"
-        :page-size="query.size"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        background
-        @current-change="handlePageChange"
-        @size-change="handleSizeChange"
-      />
-    </div>
+      <div class="pagination-wrap">
+        <el-pagination
+          :current-page="query.current"
+          :page-size="query.size"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @current-change="handlePageChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
+    </el-card>
 
     <el-dialog
       v-model="dialogVisible"
@@ -630,6 +657,38 @@ defineExpose({ loadPage })
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  // 独立页面模式：搜索卡片（与全站 search-card 模板一致，body 底部压缩，与列表卡间距 16px）
+  .search-card {
+    margin-bottom: 16px;
+
+    :deep(.el-card__body) {
+      padding-bottom: 2px;
+    }
+  }
+
+  // 嵌入 tab 模式：卡片透明化，视觉上保持裸 toolbar + 裸表格
+  .embedded-card {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+
+    :deep(.el-card__body) {
+      padding: 0;
+    }
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
   }
 
   .pagination-wrap {

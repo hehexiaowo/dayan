@@ -14,7 +14,7 @@ import AssetPane from '@/views/resource/park/detail/AssetPane.vue'
     <el-alert type="info" :closable="false" style="margin-bottom: 12px">
       系统素材仓库：统一管理本地 OSS 文件与外部链接资源，各业务模块从这里统一调配；类型1/类型2/关联编码为冗余分类（真实引用在各业务表），删除受引用保护。
     </el-alert>
-    <AssetPane />
+    <AssetPane :show-card="true" />
   </div>
 </template>
 

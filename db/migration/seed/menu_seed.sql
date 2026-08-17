@@ -41,6 +41,7 @@ VALUES
   ('admin_basic_role', '角色管理', 'admin_basic', 2, '/basic/role', 'basic/role/index', 'organ:role:list', 'UserFilled', 2, 1, 'admin', 1, '角色权限管理', NOW(), NOW(), 'system', 'system', 0),
   ('admin_basic_menu', '菜单管理', 'admin_basic', 2, '/basic/menu', 'basic/menu/index', 'system:menu:list', 'Menu', 3, 1, 'admin', 1, '菜单管理', NOW(), NOW(), 'system', 'system', 0),
   ('admin_basic_organ', '组织架构', 'admin_basic', 2, '/basic/organ', 'basic/organ/index', 'organ:info:list', 'OfficeBuilding', 4, 1, 'admin', 1, '组织部门管理', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_basic_permission', '权限管理', 'admin_basic', 2, '/basic/permission', 'system/permission/index', 'system:permission:list', 'Lock', 6, 1, 'admin', 1, '权限管理', NOW(), NOW(), 'system', 'system', 0),
 
   -- ========== 资源管理子菜单 ==========
   ('admin_resource_supplier', '供应管理', 'admin_resource', 2, '/resource/supplier', 'resource/supplier/index', 'supplier:info:list', 'Connection', 1, 1, 'admin', 1, '供应商管理', NOW(), NOW(), 'system', 'system', 0),

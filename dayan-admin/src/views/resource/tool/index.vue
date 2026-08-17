@@ -370,4 +370,14 @@ function visibleScopeLabel(scope?: string): string {
     padding-bottom: 2px;
   }
 }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
 </style>

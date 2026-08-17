@@ -391,7 +391,9 @@ loadPage()
 
 <style scoped lang="scss">
 .page-container {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 .toolbar {
   display: flex;
