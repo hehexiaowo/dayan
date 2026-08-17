@@ -94,6 +94,7 @@
     { "path": "pages/business/mall/detail", "style": { "navigationBarTitleText": "商品详情" } },
     { "path": "pages/business/scene/index", "style": { "navigationBarTitleText": "场景活动" } },
     { "path": "pages/business/scene/detail", "style": { "navigationBarTitleText": "场景详情" } }
+{ "path": "pages/business/card/index", "style": { "navigationBarTitleText": "展业贺卡" } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "white",
