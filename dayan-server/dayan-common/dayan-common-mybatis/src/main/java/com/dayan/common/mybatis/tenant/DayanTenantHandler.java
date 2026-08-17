@@ -61,7 +61,11 @@ public class DayanTenantHandler implements TenantLineHandler {
             // 权限字典表：全渠道共享同一套权限码，无 channel_code 列
             "channel_permission",
             // 角色-权限关联表：通过 role_code 间接归属渠道，本身无 channel_code 列
-            "channel_role_permission_ship"
+            "channel_role_permission_ship",
+            // 代理人-客户绑定：通过 agent_code 归属渠道（channel 端反查本渠道 agentCodes 过滤）
+            "agent_client_rel",
+            // 代理人分享记录：同上，靠 agentCodes 集合过滤
+            "agent_share_record"
     };
 
     private final Set<String> ignoreTables;
