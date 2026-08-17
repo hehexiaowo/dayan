@@ -20,7 +20,7 @@ export interface GoodsInfo {
   goodsName?: string
   /** 商品简称 */
   goodsShortName?: string
-  /** 商品类型：1=权益 / 2=场景 / 3=课程 / 4=旅游短居 */
+  /** 商品类型：1=养老权益 / 2=场景营销 / 3=培训课程 / 4=旅游短居 */
   goodsType?: number
   /** 分类编码 */
   categoryCode?: string
@@ -74,11 +74,11 @@ export interface GoodsInfoQuery extends PageQuery {
   auditStatus?: number
 }
 
-/** 商品类型选项（搜索栏下拉 + 表格 tag 文案）。 */
+/** 商品类型选项（搜索栏下拉 + 表格 tag 文案，四端统一命名）。 */
 export const GOODS_TYPE_OPTIONS = [
-  { label: '权益', value: 1 },
-  { label: '场景', value: 2 },
-  { label: '课程', value: 3 },
+  { label: '养老权益', value: 1 },
+  { label: '场景营销', value: 2 },
+  { label: '培训课程', value: 3 },
   { label: '旅游短居', value: 4 }
 ] as const
 

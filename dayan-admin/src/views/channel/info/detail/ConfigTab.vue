@@ -395,9 +395,9 @@ function handleSubTabChange(name: string | number) {
           <el-table-column label="商品类型" width="110" align="center">
             <template #default="{ row }">
               <el-select v-model="row.goodsType" size="small" style="width: 100%">
-                <el-option :value="1" label="权益" />
-                <el-option :value="2" label="场景" />
-                <el-option :value="3" label="课程" />
+                <el-option :value="1" label="养老权益" />
+                <el-option :value="2" label="场景营销" />
+                <el-option :value="3" label="培训课程" />
                 <el-option :value="4" label="旅游短居" />
               </el-select>
             </template>

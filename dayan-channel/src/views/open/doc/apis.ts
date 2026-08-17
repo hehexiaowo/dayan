@@ -146,7 +146,7 @@ export const groups: ApiGroup[] = [
   },
   {
     id: 'equity',
-    title: '权益订单',
+    title: '养老权益订单',
     apis: [
       {
         id: 'equity-detail',

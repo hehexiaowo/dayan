@@ -30,11 +30,11 @@ export enum OrderType {
   SOJOURN = 4
 }
 
-/** 订单类型选项（订单管理 4 tab 用） */
+/** 订单类型选项（订单管理 4 tab 用，四端统一命名） */
 export const ORDER_TYPE_OPTIONS = [
-  { label: '权益订单', value: OrderType.EQUITY },
-  { label: '场景订单', value: OrderType.SCENE },
-  { label: '课程订单', value: OrderType.COURSE },
+  { label: '养老权益订单', value: OrderType.EQUITY },
+  { label: '场景营销订单', value: OrderType.SCENE },
+  { label: '培训课程订单', value: OrderType.COURSE },
   { label: '旅游短居订单', value: OrderType.SOJOURN }
 ] as const
 
@@ -202,6 +202,10 @@ export interface OrderScene {
   discountAmount?: number
   /** 实付金额（元） */
   payAmount?: number
+  /** 支付方式：1=微信支付 / 2=支付宝 / 3=银行转账 / 4=余额支付 / 5=线下支付 */
+  payType?: number
+  /** 支付时间（yyyy-MM-dd HH:mm:ss） */
+  payTime?: string
   /** 订单状态（0-7，见 OrderStatus） */
   orderStatus?: OrderStatus
   /** 取消原因 */
@@ -261,6 +265,10 @@ export interface OrderCourse {
   discountAmount?: number
   /** 实付金额（元） */
   payAmount?: number
+  /** 支付方式：1=微信支付 / 2=支付宝 / 3=银行转账 / 4=余额支付 / 5=线下支付 */
+  payType?: number
+  /** 支付时间（yyyy-MM-dd HH:mm:ss） */
+  payTime?: string
   /** 订单状态（0-7，见 OrderStatus） */
   orderStatus?: OrderStatus
   /** 取消原因 */
@@ -334,6 +342,10 @@ export interface OrderSojourn {
   discountAmount?: number
   /** 实付金额（元） */
   payAmount?: number
+  /** 支付方式：1=微信支付 / 2=支付宝 / 3=银行转账 / 4=余额支付 / 5=线下支付 */
+  payType?: number
+  /** 支付时间（yyyy-MM-dd HH:mm:ss） */
+  payTime?: string
   /** 押金（元） */
   depositAmount?: number
   /** 订单状态（0-7，见 OrderStatus） */

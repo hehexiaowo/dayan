@@ -8,10 +8,10 @@
  *
  * - 基本信息 tab：始终显示（GoodsInfo 主表字段编辑）。
  * - SKU 子表 tab：4 选 1，按 goodsType 互斥显示（goodsType 创建后不可改，决定唯一 SKU 子表）：
- *   - goodsType=1（权益商品）→ 权益配置（EquityConfigTab）
- *   - goodsType=2（场景商品）→ 场景配置（SceneTab）
- *   - goodsType=3（课程商品）→ 课程配置（CourseTab）
- *   - goodsType=4（旅游短居商品）→ 权益配置（SojournTab，原「旅游短居配置」）
+ *   - goodsType=1（养老权益）→ 权益配置（EquityConfigTab）
+ *   - goodsType=2（场景营销）→ 场景配置（SceneTab）
+ *   - goodsType=3（培训课程）→ 课程配置（CourseTab）
+ *   - goodsType=4（旅游短居）→ 权益配置（SojournTab，原「旅游短居配置」）
  *
  * 加载 getGoods 拿到 goodsType 后才计算 tab 列表，避免未拿主信息时渲染错误 SKU tab。
  * 所有 tab 带 lazy 属性懒加载（子 tab nav 常驻，未访问不渲染内容）。

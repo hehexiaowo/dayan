@@ -26,7 +26,9 @@ import {
  * - 支付单列表（useCrud 只读 page）：paymentCode / orderType / orderCode /
  *   payAmount / payType / tradeNo / payStatus / payTime；
  * - 创建支付弹窗：若路由 query 带 orderCode + orderType，onMounted 自动打开并预填；
- * - 标记成功（模拟支付完成）：仅 payStatus===0（待支付）显示，弹 prompt 输入 tradeNo。
+ * - 标记成功（模拟支付完成）：仅 payStatus===0（待支付）显示，弹 prompt 输入 tradeNo；
+ * - 详情：el-dialog + el-descriptions 结构化弹窗展示支付单行数据全字段
+ *   （对齐 order-manage 详情模式）。
  *
  * 防越权说明：
  * - 支付单读接口由后端 ChannelFinanceController 反查本渠道 4 类订单的 orderCode
@@ -34,11 +36,11 @@ import {
  * - 权益订单（orderType=1）创建支付时 payAmount 由后端从订单表权威解析覆盖。
  */
 
-/** 订单类型选项（与种子菜单 4 类订单一致） */
+/** 订单类型选项（与订单管理 4 类订单统一命名） */
 const ORDER_TYPE_OPTIONS = [
-  { label: '权益订单', value: 1 },
-  { label: '场景订单', value: 2 },
-  { label: '课程订单', value: 3 },
+  { label: '养老权益订单', value: 1 },
+  { label: '场景营销订单', value: 2 },
+  { label: '培训课程订单', value: 3 },
   { label: '旅游短居订单', value: 4 }
 ] as const
 
@@ -123,6 +125,17 @@ function payTypeText(v?: number): string {
 /** 是否待支付（决定「标记成功」按钮显示） */
 function isPending(status?: number): boolean {
   return status === PaymentStatus.PENDING
+}
+
+// ==================== 查看详情（el-dialog + el-descriptions） ====================
+
+const detailVisible = ref(false)
+const currentRow = ref<FinancePayment | null>(null)
+
+/** 打开详情弹窗：展示行数据全字段 */
+function openDetail(row: FinancePayment) {
+  currentRow.value = row
+  detailVisible.value = true
 }
 
 // ==================== 标记支付成功（模拟支付） ====================
@@ -369,11 +382,12 @@ onMounted(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="payTime" label="支付时间" min-width="160">
+        <el-table-column prop="payTime" label="支付时间" min-width="160" align="center">
           <template #default="{ row }">{{ formatDateTime(row.payTime) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center" fixed="right">
+        <el-table-column label="操作" width="150" align="center" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row)">查看详情</el-button>
             <el-button
               v-if="isPending(row.payStatus)"
               link
@@ -383,7 +397,6 @@ onMounted(() => {
             >
               标记成功
             </el-button>
-            <span v-else class="text-muted">-</span>
           </template>
         </el-table-column>
         <template #empty>
@@ -462,6 +475,42 @@ onMounted(() => {
         <el-button @click="closeCreateDialog">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmitCreate">创建支付单</el-button>
       </template>
+    </el-dialog>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailVisible" title="支付单详情" width="720px">
+      <el-descriptions v-if="currentRow" :column="2" border>
+        <el-descriptions-item label="支付单编码">{{ currentRow.paymentCode || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="订单类型">
+          <el-tag
+            v-if="currentRow.orderType !== undefined && currentRow.orderType !== null"
+            :type="orderTypeTagType(currentRow.orderType)"
+          >
+            {{ orderTypeText(currentRow.orderType) }}
+          </el-tag>
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="订单编码">{{ currentRow.orderCode || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="支付方式">{{ payTypeText(currentRow.payType) }}</el-descriptions-item>
+        <el-descriptions-item label="支付金额">{{ formatMoney(currentRow.payAmount) }}</el-descriptions-item>
+        <el-descriptions-item label="支付状态">
+          <el-tag
+            v-if="currentRow.payStatus !== undefined && currentRow.payStatus !== null"
+            :type="payStatusTagType(currentRow.payStatus)"
+          >
+            {{ payStatusText(currentRow.payStatus) }}
+          </el-tag>
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="第三方交易号">{{ currentRow.tradeNo || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="支付时间">{{ formatDateTime(currentRow.payTime) }}</el-descriptions-item>
+        <el-descriptions-item label="回调通知时间">{{ formatDateTime(currentRow.notifyTime) }}</el-descriptions-item>
+        <el-descriptions-item label="付款方账号">{{ currentRow.payerAccount || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="收款方账号">{{ currentRow.payeeAccount || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="支付说明" :span="2">{{ currentRow.payDescription || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="扩展数据" :span="2">{{ currentRow.extraData || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime(currentRow.createdAt) }}</el-descriptions-item>
+      </el-descriptions>
     </el-dialog>
   </div>
 </template>

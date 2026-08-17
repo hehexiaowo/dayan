@@ -165,9 +165,9 @@ function deliverTypeText(v?: number): string {
 
 /** 详情抽屉标题：TabKey → 订单类型文案 */
 const ORDER_TYPE_LABEL_DETAIL: Record<TabKey, string> = {
-  equity: '权益订单',
-  scene: '场景订单',
-  course: '课程订单',
+  equity: '养老权益订单',
+  scene: '场景营销订单',
+  course: '培训课程订单',
   sojourn: '旅游短居订单'
 }
 
@@ -262,12 +262,12 @@ const cancelSojourn = makeCancelHandler(cancelOrderSojourn, () => sojournCrud.lo
 
 /**
  * 订单类型 → 文案映射（支付弹窗头部展示用）。
- * 1=权益 / 2=场景 / 3=课程 / 4=旅游短居（与 finance_payment.order_type 一致）。
+ * 1=养老权益 / 2=场景营销 / 3=培训课程 / 4=旅游短居（与 finance_payment.order_type 一致）。
  */
 const ORDER_TYPE_LABEL: Record<number, string> = {
-  1: '权益订单',
-  2: '场景订单',
-  3: '课程订单',
+  1: '养老权益订单',
+  2: '场景营销订单',
+  3: '培训课程订单',
   4: '旅游短居订单'
 }
 
@@ -344,8 +344,8 @@ async function handleSubmitPay() {
 <template>
   <div class="page-container">
     <el-tabs v-model="activeTab" type="border-card" class="order-tabs">
-      <!-- ==================== 权益订单 ==================== -->
-      <el-tab-pane label="权益订单" name="equity" lazy>
+      <!-- ==================== 养老权益订单 ==================== -->
+      <el-tab-pane label="养老权益订单" name="equity" lazy>
         <div class="tab-inner">
           <el-card shadow="never" class="search-card">
             <div class="toolbar">
@@ -373,7 +373,7 @@ async function handleSubmitPay() {
 
           <el-card shadow="never">
             <template #header>
-              <div class="card-header"><span class="card-title">权益订单列表</span></div>
+              <div class="card-header"><span class="card-title">养老权益订单列表</span></div>
             </template>
             <el-table
               v-loading="equityCrud.loading.value"
@@ -394,10 +394,16 @@ async function handleSubmitPay() {
                   <span v-else>-</span>
                 </template>
               </el-table-column>
+              <el-table-column prop="orderSource" label="采购来源" width="100" align="center">
+                <template #default="{ row }">{{ orderSourceText(row.orderSource) }}</template>
+              </el-table-column>
               <el-table-column prop="goodsName" label="商品名称" min-width="160" show-overflow-tooltip />
               <el-table-column prop="quantity" label="数量" width="80" align="right" />
               <el-table-column prop="payAmount" label="实付金额" width="130" align="right">
                 <template #default="{ row }">{{ formatMoney(row.payAmount) }}</template>
+              </el-table-column>
+              <el-table-column prop="payType" label="支付方式" width="100" align="center">
+                <template #default="{ row }">{{ payTypeText(row.payType) }}</template>
               </el-table-column>
               <el-table-column prop="createdAt" label="创建时间" min-width="160">
                 <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
@@ -444,8 +450,8 @@ async function handleSubmitPay() {
         </div>
       </el-tab-pane>
 
-      <!-- ==================== 场景订单 ==================== -->
-      <el-tab-pane label="场景订单" name="scene" lazy>
+      <!-- ==================== 场景营销订单 ==================== -->
+      <el-tab-pane label="场景营销订单" name="scene" lazy>
         <div class="tab-inner">
           <el-card shadow="never" class="search-card">
             <div class="toolbar">
@@ -473,7 +479,7 @@ async function handleSubmitPay() {
 
           <el-card shadow="never">
             <template #header>
-              <div class="card-header"><span class="card-title">场景订单列表</span></div>
+              <div class="card-header"><span class="card-title">场景营销订单列表</span></div>
             </template>
             <el-table
               v-loading="sceneCrud.loading.value"
@@ -493,6 +499,9 @@ async function handleSubmitPay() {
                   </el-tag>
                   <span v-else>-</span>
                 </template>
+              </el-table-column>
+              <el-table-column prop="clientFullName" label="客户" min-width="120" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.clientFullName || '--' }}</template>
               </el-table-column>
               <el-table-column prop="sceneName" label="场景名称" min-width="160" show-overflow-tooltip />
               <el-table-column prop="activityDate" label="活动日期" width="120" align="center" />
@@ -545,8 +554,8 @@ async function handleSubmitPay() {
         </div>
       </el-tab-pane>
 
-      <!-- ==================== 课程订单 ==================== -->
-      <el-tab-pane label="课程订单" name="course" lazy>
+      <!-- ==================== 培训课程订单 ==================== -->
+      <el-tab-pane label="培训课程订单" name="course" lazy>
         <div class="tab-inner">
           <el-card shadow="never" class="search-card">
             <div class="toolbar">
@@ -574,7 +583,7 @@ async function handleSubmitPay() {
 
           <el-card shadow="never">
             <template #header>
-              <div class="card-header"><span class="card-title">课程订单列表</span></div>
+              <div class="card-header"><span class="card-title">培训课程订单列表</span></div>
             </template>
             <el-table
               v-loading="courseCrud.loading.value"
@@ -594,6 +603,9 @@ async function handleSubmitPay() {
                   </el-tag>
                   <span v-else>-</span>
                 </template>
+              </el-table-column>
+              <el-table-column prop="clientFullName" label="客户" min-width="120" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.clientFullName || '--' }}</template>
               </el-table-column>
               <el-table-column prop="courseName" label="课程名称" min-width="160" show-overflow-tooltip />
               <el-table-column prop="quantity" label="数量" width="80" align="right" />
@@ -695,8 +707,11 @@ async function handleSubmitPay() {
                   <span v-else>-</span>
                 </template>
               </el-table-column>
+              <el-table-column prop="clientFullName" label="客户" min-width="120" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.clientFullName || '--' }}</template>
+              </el-table-column>
               <el-table-column prop="parkFullName" label="机构" min-width="180" show-overflow-tooltip />
-              <el-table-column label="入住日期" width="200" align="center">
+              <el-table-column label="入住日期" min-width="190" show-overflow-tooltip>
                 <template #default="{ row }">
                   <span v-if="row.checkinDate || row.checkoutDate">
                     {{ row.checkinDate ?? '--' }} ~ {{ row.checkoutDate ?? '--' }}
@@ -801,7 +816,7 @@ async function handleSubmitPay() {
     >
       <div v-loading="detailLoading">
         <template v-if="detailData">
-          <!-- ==================== 权益订单详情 ==================== -->
+          <!-- ==================== 养老权益订单详情 ==================== -->
           <div v-if="detailKind === 'equity'" class="detail-section">
             <h4 class="detail-section-title">基本信息</h4>
             <el-descriptions :column="2" border size="small">
@@ -849,7 +864,7 @@ async function handleSubmitPay() {
             </el-descriptions>
           </div>
 
-          <!-- ==================== 场景订单详情 ==================== -->
+          <!-- ==================== 场景营销订单详情 ==================== -->
           <div v-else-if="detailKind === 'scene'" class="detail-section">
             <h4 class="detail-section-title">基本信息</h4>
             <el-descriptions :column="2" border size="small">
@@ -868,6 +883,8 @@ async function handleSubmitPay() {
               <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderScene).payAmount) }}</el-descriptions-item>
               <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderScene).totalAmount) }}</el-descriptions-item>
               <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderScene).discountAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="支付方式">{{ payTypeText((detailData as OrderScene).payType) }}</el-descriptions-item>
+              <el-descriptions-item label="支付时间">{{ formatDateTime((detailData as OrderScene).payTime) }}</el-descriptions-item>
               <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime((detailData as OrderScene).createdAt) }}</el-descriptions-item>
               <el-descriptions-item v-if="(detailData as OrderScene).cancelReason" label="取消原因" :span="2">
                 {{ (detailData as OrderScene).cancelReason }}
@@ -875,7 +892,7 @@ async function handleSubmitPay() {
             </el-descriptions>
           </div>
 
-          <!-- ==================== 课程订单详情 ==================== -->
+          <!-- ==================== 培训课程订单详情 ==================== -->
           <div v-else-if="detailKind === 'course'" class="detail-section">
             <h4 class="detail-section-title">基本信息</h4>
             <el-descriptions :column="2" border size="small">
@@ -893,6 +910,8 @@ async function handleSubmitPay() {
               <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderCourse).payAmount) }}</el-descriptions-item>
               <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderCourse).totalAmount) }}</el-descriptions-item>
               <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderCourse).discountAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="支付方式">{{ payTypeText((detailData as OrderCourse).payType) }}</el-descriptions-item>
+              <el-descriptions-item label="支付时间">{{ formatDateTime((detailData as OrderCourse).payTime) }}</el-descriptions-item>
               <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime((detailData as OrderCourse).createdAt) }}</el-descriptions-item>
               <el-descriptions-item v-if="(detailData as OrderCourse).cancelReason" label="取消原因" :span="2">
                 {{ (detailData as OrderCourse).cancelReason }}
@@ -928,6 +947,8 @@ async function handleSubmitPay() {
               <el-descriptions-item label="优惠金额">{{ formatAmount((detailData as OrderSojourn).discountAmount) }}</el-descriptions-item>
               <el-descriptions-item label="订单总额">{{ formatAmount((detailData as OrderSojourn).totalAmount) }}</el-descriptions-item>
               <el-descriptions-item label="实付金额">{{ formatAmount((detailData as OrderSojourn).payAmount) }}</el-descriptions-item>
+              <el-descriptions-item label="支付方式">{{ payTypeText((detailData as OrderSojourn).payType) }}</el-descriptions-item>
+              <el-descriptions-item label="支付时间">{{ formatDateTime((detailData as OrderSojourn).payTime) }}</el-descriptions-item>
               <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime((detailData as OrderSojourn).createdAt) }}</el-descriptions-item>
               <el-descriptions-item v-if="(detailData as OrderSojourn).cancelReason" label="取消原因" :span="2">
                 {{ (detailData as OrderSojourn).cancelReason }}

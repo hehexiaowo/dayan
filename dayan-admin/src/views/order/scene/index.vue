@@ -208,13 +208,13 @@ loadPage()
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span class="card-title">场景订单列表</span>
+          <span class="card-title">场景营销订单列表</span>
         </div>
       </template>
 
       <el-table v-loading="loading" :data="tableData" border stripe row-key="orderCode">
         <el-table-column prop="orderCode" label="订单编号" min-width="150" show-overflow-tooltip />
-        <el-table-column label="订单类型" width="100" align="center">场景订单</el-table-column>
+        <el-table-column label="订单类型" width="110" align="center">场景营销订单</el-table-column>
         <el-table-column prop="channelFullName" label="渠道" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">{{ row.channelFullName || row.channelCode || '--' }}</template>
         </el-table-column>
@@ -272,10 +272,10 @@ loadPage()
     </el-card>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="场景订单详情" width="780px" :close-on-click-modal="false">
+    <el-dialog v-model="detailVisible" title="场景营销订单详情" width="780px" :close-on-click-modal="false">
       <el-descriptions :column="2" border>
         <el-descriptions-item label="订单编号">{{ detail.orderCode }}</el-descriptions-item>
-        <el-descriptions-item label="订单类型">场景订单</el-descriptions-item>
+        <el-descriptions-item label="订单类型">场景营销订单</el-descriptions-item>
         <el-descriptions-item label="渠道">{{ detail.channelFullName || detail.channelCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="代理人">{{ detail.agentFullName || detail.agentCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="分销商">{{ detail.distributorFullName || detail.distributorCode || '--' }}</el-descriptions-item>

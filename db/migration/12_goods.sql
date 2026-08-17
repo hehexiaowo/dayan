@@ -18,7 +18,7 @@ CREATE TABLE `goods_info` (
   `goods_code` VARCHAR(50) NOT NULL COMMENT '商品编码',
   `goods_name` VARCHAR(200) NOT NULL COMMENT '商品名称',
   `goods_short_name` VARCHAR(50) DEFAULT NULL COMMENT '商品简称',
-  `goods_type` TINYINT(2) NOT NULL COMMENT '商品类型（1=权益商品, 2=场景商品, 3=课程商品, 4=旅居商品）',
+  `goods_type` TINYINT(2) NOT NULL COMMENT '商品类型（1=养老权益, 2=场景营销, 3=培训课程, 4=旅游短居）',
   `category_code` VARCHAR(50) DEFAULT NULL COMMENT '分类编码',
   `brand_name` VARCHAR(100) DEFAULT NULL COMMENT '品牌名称',
   `cover_image` VARCHAR(500) DEFAULT NULL COMMENT '封面图URL',

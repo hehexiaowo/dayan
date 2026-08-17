@@ -259,7 +259,7 @@ CREATE TABLE `channel_config_goods` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `channel_code` VARCHAR(50) NOT NULL COMMENT '渠道编码',
   `goods_code` VARCHAR(64) NOT NULL COMMENT '商品编码',
-  `goods_type` TINYINT(2) NOT NULL COMMENT '商品类型（1=权益商品, 2=场景商品, 3=课程商品, 4=旅居商品）',
+  `goods_type` TINYINT(2) NOT NULL COMMENT '商品类型（1=养老权益, 2=场景营销, 3=培训课程, 4=旅游短居）',
   `custom_name` VARCHAR(200) DEFAULT NULL COMMENT '自定义商品名称',
   `custom_price` DECIMAL(12,2) DEFAULT NULL COMMENT '自定义价格',
   `custom_description` TEXT DEFAULT NULL COMMENT '自定义描述',

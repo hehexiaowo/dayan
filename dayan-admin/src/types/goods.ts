@@ -5,7 +5,7 @@
  * GoodsCourse / GoodsSojourn）与对应的 DTO（DDL 来源：db/migration/12_goods.sql）。
  *
  * 枚举说明（重要，对齐 DDL 5 态）：
- * - GoodsType：4 值（1权益/2场景/3课程/4旅游短居），按 goodsType 互斥决定显示哪个 SKU 子表。
+ * - GoodsType：4 值（1养老权益/2场景营销/3培训课程/4旅游短居），按 goodsType 互斥决定显示哪个 SKU 子表。
  * - GoodsStatus：5 态（0草稿/1待上架/2已上架/3已下架/4已售罄）。
  * - shelf 接口语义偏差：上下架接口 GoodsInfoShelfDTO 只支持 0/1 二态（0下架/1上架），
  *   与 DDL 5 态存在语义偏差（shelf 的 1 在 DDL 是"待上架"，而非"已上架"）。
@@ -15,28 +15,28 @@ import type { PageQuery } from '@/types/common'
 import { AuditStatus, AUDIT_STATUS_OPTIONS } from '@/types/scene'
 
 /**
- * 商品类型：1=权益商品 / 2=场景商品 / 3=课程商品 / 4=旅游短居商品（对齐 DDL）。
+ * 商品类型：1=养老权益 / 2=场景营销 / 3=培训课程 / 4=旅游短居（对齐 DDL）。
  *
  * UpdateDTO 含该字段，可编辑（后端约束：对应 SKU 子表全空时才允许改类型，非空时报错）；
  * 按该值互斥决定详情页显示哪个 SKU 子表。
  */
 export enum GoodsType {
-  /** 权益商品 */
+  /** 养老权益 */
   EQUITY = 1,
-  /** 场景商品 */
+  /** 场景营销 */
   SCENE = 2,
-  /** 课程商品 */
+  /** 培训课程 */
   COURSE = 3,
-  /** 旅游短居商品 */
+  /** 旅游短居 */
   SOJOURN = 4
 }
 
 /** 商品类型选项 */
 export const GOODS_TYPE_OPTIONS = [
-  { label: '权益商品', value: GoodsType.EQUITY },
-  { label: '场景商品', value: GoodsType.SCENE },
-  { label: '课程商品', value: GoodsType.COURSE },
-  { label: '旅游短居商品', value: GoodsType.SOJOURN }
+  { label: '养老权益', value: GoodsType.EQUITY },
+  { label: '场景营销', value: GoodsType.SCENE },
+  { label: '培训课程', value: GoodsType.COURSE },
+  { label: '旅游短居', value: GoodsType.SOJOURN }
 ] as const
 
 /**
