@@ -16,6 +16,10 @@ import type { ToolInfo, ToolInfoQuery } from '@/types/tool'
 import { TOOL_TYPE_OPTIONS, TOOL_END_OPTIONS, toolTypeLabel } from '@/types/tool'
 import { COMMON_STATUS_OPTIONS } from '@/types/common'
 import { formatDateTime } from '@/utils/format'
+import QaConfigTab from './QaConfigTab.vue'
+
+/** 当前激活的 Tab：tool=工具列表 qa=AI 问答人物 */
+const activeTab = ref('tool')
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
   useCrud<ToolInfo, ToolInfoQuery>(
@@ -175,7 +179,9 @@ function visibleScopeLabel(scope?: string): string {
 
 <template>
   <div class="page-container">
-    <!-- 搜索栏 -->
+    <el-tabs v-model="activeTab">
+      <el-tab-pane label="工具列表" name="tool">
+        <!-- 工具列表：搜索栏 -->
     <el-card shadow="never" class="search-card">
       <div class="toolbar">
         <el-input
@@ -337,7 +343,13 @@ function visibleScopeLabel(scope?: string): string {
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
-    </el-dialog>
+      </el-dialog>
+      </el-tab-pane>
+
+      <el-tab-pane label="AI 问答人物" name="qa">
+        <QaConfigTab />
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
