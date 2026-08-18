@@ -188,7 +188,7 @@ async function loadDetail() {
 
 function goBack() {
   uni.navigateBack({
-    fail: () => uni.redirectTo({ url: '/pages/learning/courses/index' }),
+    fail: () => uni.redirectTo({ url: '/pages/course/dayan/index' }),
   });
 }
 

@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app';
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import { getCourses } from '@/api/course';
 import { CourseSource } from '@/types';
 import type { Course } from '@/types';
@@ -86,29 +86,16 @@ import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 /**
- * 学习中心板块列表页（渠道课程 / 外部课程 / 雁鸣中国共用，course_source 2/3/4）。
+ * 雁鸣中国列表页（course_source=4，与数据库 course 域同频）。
  *
  * - 布局仿微信公众号历史消息：头条大卡（封面 + 标题叠加 + 白底 meta 行），
  *   其余条目左文右缩略图；无图片字段，封面用板块色渐变 + 标题首字代替；
- * - 板块名由导航栏标题承载（onLoad setNavigationBarTitle），页内不再放说明卡；
- * - 渲染差异按板块：渠道=视频样式（播放钮/播放量），雁鸣=日期，
- *   外部=时长；大雁课程（course_source=1）在独立课程列表页。
+ * - 板块渲染差异：雁鸣=品牌资讯（日期/阅读量）；
+ * - 导航栏标题由 pages.json 承载（雁鸣中国）。
  */
 
-interface BoardMeta {
-  key: 'channel' | 'external' | 'yanming';
-  title: string;
-  icon: string;
-  source: CourseSource;
-}
-
-const BOARD_MAP: Record<string, BoardMeta> = {
-  '2': { key: 'channel', title: '渠道课程', icon: '渠', source: CourseSource.CHANNEL },
-  '3': { key: 'external', title: '外部课程', icon: '外', source: CourseSource.EXTERNAL },
-  '4': { key: 'yanming', title: '雁鸣中国', icon: '鸣', source: CourseSource.YANMING },
-};
-
-const board = ref<BoardMeta>(BOARD_MAP['2']);
+/** 板块渲染语义：资讯样式 + 日期 */
+const board = { key: 'yanming', title: '雁鸣中国', icon: '鸣', source: CourseSource.YANMING } as const;
 const items = ref<Course[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
@@ -117,8 +104,8 @@ const loadError = ref(false);
 const hero = computed<Course>(() => items.value[0]);
 const restItems = computed<Course[]>(() => items.value.slice(1));
 
-/** 渠道板块按视频样式渲染（存量内容以视频课为主） */
-const isVideo = computed(() => board.value.key === 'channel');
+/** 板块按阅读样式渲染 */
+const isVideo = computed(() => false);
 
 const viewsLabel = computed(() => (isVideo.value ? '播放' : '阅读'));
 
@@ -127,12 +114,9 @@ function coverChar(item: Course): string {
   return (item.courseName || '?').charAt(0);
 }
 
-/** meta 副信息：渠道/外部=时长，雁鸣=日期 */
+/** meta 副信息：资讯展示日期 */
 function contentMeta(item: Course): string {
-  if (board.value.key === 'yanming') {
-    return item.publishTime ? formatDate(item.publishTime) : '';
-  }
-  return item.durationText || '';
+  return item.publishTime ? formatDate(item.publishTime) : '';
 }
 
 /** 阅读量 / 播放量格式化：>=10000 显示 x.x 万 */
@@ -160,7 +144,7 @@ async function loadList() {
   loading.value = true;
   loadError.value = false;
   try {
-    items.value = await getCourses(undefined, board.value.source);
+    items.value = await getCourses(undefined, board.source);
   } catch {
     loadError.value = true;
     items.value = [];
@@ -171,17 +155,8 @@ async function loadList() {
 
 function onItemClick(item: Course) {
   if (!item.courseCode) return;
-  uni.navigateTo({ url: `/pages/learning/board/detail?code=${item.courseCode}` });
+  uni.navigateTo({ url: `/pages/course/yanming/detail?code=${item.courseCode}` });
 }
-
-// 深链入口：onLoad 仅解析 query，状态只存内存
-onLoad((options) => {
-  const source = options?.source;
-  if (source && BOARD_MAP[source]) {
-    board.value = BOARD_MAP[source];
-  }
-  uni.setNavigationBarTitle({ title: board.value.title });
-});
 
 onShow(() => {
   loadList();

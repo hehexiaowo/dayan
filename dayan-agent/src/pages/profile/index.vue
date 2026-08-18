@@ -162,7 +162,7 @@ function goEquityDepot() {
   uni.showToast({ title: '权益仓库开发中', icon: 'none' });
 }
 function goLearning() {
-  uni.switchTab({ url: '/pages/learning/index' });
+  uni.switchTab({ url: '/pages/course/index' });
 }
 function goAbout() {
   uni.navigateTo({ url: '/pages/profile/about' });

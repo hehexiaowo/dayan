@@ -156,7 +156,7 @@ async function loadList() {
 }
 
 function goDetail(courseCode: string) {
-  uni.navigateTo({ url: `/pages/learning/courses/detail?code=${courseCode}` });
+  uni.navigateTo({ url: `/pages/course/dayan/detail?code=${courseCode}` });
 }
 
 onShow(() => {

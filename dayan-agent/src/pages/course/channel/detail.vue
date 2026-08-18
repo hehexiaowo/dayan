@@ -54,7 +54,7 @@ import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 /**
- * 学习中心内容详情页（渠道课程 / 外部课程 / 雁鸣中国共用）。
+ * 渠道课程内容详情页（course_source 与数据库同频）。
  *
  * - 数据走真实课程详情接口（GET /agent-api/courses/{courseCode}，浏览量累加）；
  * - 正文 courseBody 为纯文本，按空行分段渲染（公众号文章样式）；

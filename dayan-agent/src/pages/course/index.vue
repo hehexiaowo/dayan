@@ -90,7 +90,7 @@ const boards: BoardDef[] = [
     subtitle: '平台自研 · 讲师亲授',
     icon: '雁',
     unit: '门',
-    url: '/pages/learning/courses/index',
+    url: '/pages/course/dayan/index',
   },
   {
     key: 'channel',
@@ -99,7 +99,7 @@ const boards: BoardDef[] = [
     icon: '渠',
     unit: '门',
     source: CourseSource.CHANNEL,
-    url: '/pages/learning/board/index?source=2',
+    url: '/pages/course/channel/index',
   },
   {
     key: 'external',
@@ -108,7 +108,7 @@ const boards: BoardDef[] = [
     icon: '外',
     unit: '门',
     source: CourseSource.EXTERNAL,
-    url: '/pages/learning/board/index?source=3',
+    url: '/pages/course/external/index',
   },
   {
     key: 'yanming',
@@ -117,7 +117,7 @@ const boards: BoardDef[] = [
     icon: '鸣',
     unit: '条',
     source: CourseSource.YANMING,
-    url: '/pages/learning/board/index?source=4',
+    url: '/pages/course/yanming/index',
   },
 ];
 
