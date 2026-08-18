@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS `tool_ai_qa_session` (
   `last_message_at` DATETIME DEFAULT NULL COMMENT '最近消息时间',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `creator` VARCHAR(64) DEFAULT 'system' COMMENT '创建人',
+  `updater` VARCHAR(64) DEFAULT 'system' COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：1已删除/0未删除',
   `deleted_at` DATETIME DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
