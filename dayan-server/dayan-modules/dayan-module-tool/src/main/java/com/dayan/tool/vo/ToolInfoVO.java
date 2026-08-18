@@ -15,16 +15,16 @@ public class ToolInfoVO {
     private String toolCode;
     /** 工具名称 */
     private String toolName;
-    /** 工具类型（1=计算器, 2=测评, 3=表单, 4=其他） */
-    private Integer toolType;
+    /** 工具类型（pension/gap/ai_creator/ai_qa） */
+    private String toolType;
     /** 工具简介 */
     private String toolDesc;
     /** 图标 */
     private String icon;
     /** 入口路径 */
     private String entryPath;
-    /** 工具配置（JSON 字符串） */
-    private String config;
+    /** 工具配置 JSON */
+    private String configJson;
     /** 可见端（逗号分隔：agent/client） */
     private String visibleScope;
     /** 排序号 */

@@ -1,28 +1,28 @@
 /**
- * 工具域相关类型（获客工具）。
+ * 工具域相关类型（工具配置）。
  *
  * 字段对齐后端 com.dayan.tool.entity.ToolInfo / ToolInfoVO。
  * - Integer → number
  * - LocalDateTime → string
- * - config 为 JSON 字符串（原样透传，端上自行解析）
+ * - configJson 为 JSON 字符串（原样透传，端上自行解析）
  */
 import type { PageQuery } from '@/types/common'
 
 /**
- * 工具类型（tool_info.tool_type）。
- * 1=计算器 / 2=测评 / 3=表单 / 4=其他。
+ * 工具实例类型（tool_info.tool_type）。
+ * 四类固定：pension 社保养老计算器 / gap 养老缺口计算器 / ai_creator AI 创作 / ai_qa 你问我答。
  */
 export const TOOL_TYPE_OPTIONS = [
-  { label: '计算器', value: 1 },
-  { label: '测评', value: 2 },
-  { label: '表单', value: 3 },
-  { label: '其他', value: 4 }
+  { label: '社保养老计算器', value: 'pension' },
+  { label: '养老缺口计算器', value: 'gap' },
+  { label: 'AI 创作', value: 'ai_creator' },
+  { label: '你问我答', value: 'ai_qa' }
 ] as const
 
 /** 工具类型标签文本。 */
-export function toolTypeLabel(v?: number): string {
+export function toolTypeLabel(v?: string): string {
   const found = TOOL_TYPE_OPTIONS.find((o) => o.value === v)
-  return found ? found.label : v != null ? String(v) : '--'
+  return found ? found.label : v != null ? v : '--'
 }
 
 /**
@@ -34,7 +34,7 @@ export const TOOL_END_OPTIONS = [
 ] as const
 
 /**
- * 工具实体（后端 ToolInfoVO）。
+ * 工具实例实体（后端 ToolInfoVO）。
  */
 export interface ToolInfo {
   id?: number
@@ -42,16 +42,16 @@ export interface ToolInfo {
   toolCode?: string
   /** 工具名称（必填） */
   toolName: string
-  /** 工具类型：1计算器/2测评/3表单/4其他 */
-  toolType?: number
+  /** 工具类型：pension/gap/ai_creator/ai_qa */
+  toolType?: string
   /** 工具简介 */
   toolDesc?: string
   /** 图标（文字或图标名） */
   icon?: string
   /** 入口路径（端上页面路径，必填） */
   entryPath: string
-  /** 工具配置（JSON 字符串，如 {"color":"orange"}） */
-  config?: string
+  /** 工具配置 JSON（按类型承载提示词/默认值等） */
+  configJson?: string
   /** 可见端（逗号分隔：agent/client） */
   visibleScope?: string
   /** 排序号 */
@@ -70,6 +70,6 @@ export interface ToolInfo {
 export interface ToolInfoQuery extends PageQuery {
   toolCode?: string
   toolName?: string
-  toolType?: number
+  toolType?: string
   status?: number
 }

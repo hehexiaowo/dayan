@@ -666,19 +666,20 @@ export interface ContentCategoryOption {
   categoryName: string;
 }
 
-// ===== 获客工具 =====
+// ===== 工具实例 =====
 
-/** 获客工具（对齐后端 ToolInfoVO，GET /agent-api/tools） */
+/** 工具实例（对齐后端 ToolInfoVO，GET /agent-api/tools） */
 export interface ToolInfo {
   id?: number;
   toolCode: string;
   toolName: string;
-  toolType?: number;
+  /** pension/gap/ai_creator/ai_qa */
+  toolType?: string;
   toolDesc?: string;
   icon?: string;
   entryPath: string;
-  /** JSON 字符串，端上解析（如 {"color":"orange"}） */
-  config?: string;
+  /** 工具实例基础配置 JSON */
+  configJson?: string;
   visibleScope?: string;
   sortOrder?: number;
   status?: number;

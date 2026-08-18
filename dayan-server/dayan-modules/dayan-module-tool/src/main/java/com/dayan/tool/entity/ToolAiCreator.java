@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * AI 创作项目（tool 域六阶段流水线状态）。
+ * AI 创作使用记录（按 tool_code 区分公众号/小红书等实例）。
  *
  * <p>各阶段产物以 JSON 字符串存 JSON 列（materials/material_refs/fact_digest/strategy/
  * titles/outline/audit_log/scores/images/warnings），body 为正文 LONGTEXT。
@@ -16,11 +16,13 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("tool_ai_creator")
+@TableName("tool_ai_creator_record")
 public class ToolAiCreator extends BaseEntity {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    /** 所属工具实例（tool_info.tool_code） */
+    private String toolCode;
     /** 创建代理人编码（登录上下文注入，防越权） */
     private String agentCode;
     /** 渠道编码（租户隔离） */

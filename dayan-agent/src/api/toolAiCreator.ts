@@ -4,6 +4,8 @@ import type { PageQuery, PageResult } from '@/types'
 import type { AiMaterialBlock, AiMaterialRefs, AiProject, AiProjectListItem } from '@/types/toolAiCreator'
 
 export interface AiProjectCreatePayload {
+  /** 所属工具实例，缺省 TL00003 */
+  toolCode?: string
   purpose: string
   contentType: number
   styleCode: string

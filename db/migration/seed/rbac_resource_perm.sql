@@ -132,22 +132,22 @@ VALUES
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
--- 五、tool 域：获客工具菜单 + 按钮级权限（42_tool_domain.sql 配套）
+-- 五、tool 域：工具配置菜单 + 按钮级权限（42_tool_domain.sql 配套，76 迁移改名）
 -- ============================================================
 INSERT INTO `system_menu`
   (`menu_code`, `menu_name`, `parent_code`, `menu_type`, `path`, `component`, `permission_code`, `icon`, `sort_order`, `is_visible`, `domain_type`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
-  ('admin_resource_tool', '获客工具', 'admin_resource', 2, '/resource/tool', 'resource/tool/index', 'tool:info:list', 'MagicStick', 8, 1, 'admin', 1, '获客工具管理', NOW(), NOW(), 'system', 'system', 0)
+  ('admin_resource_tool', '工具配置', 'admin_resource', 2, '/resource/tool', 'resource/tool/index', 'tool:info:list', 'MagicStick', 8, 1, 'admin', 1, '内置工具实例配置', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `menu_name` = VALUES(`menu_name`), `component` = VALUES(`component`), `permission_code` = VALUES(`permission_code`), `path` = VALUES(`path`);
 
 INSERT INTO `organ_permission`
   (`permission_code`, `permission_name`, `parent_code`, `permission_type`, `path`, `method`, `sort_order`, `status`, `remark`, `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
-  ('tool:info:list',   '工具列表', 'tool:info', 3, '/admin-api/tool/info/page', 'GET',    400, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:info:query',  '工具详情', 'tool:info', 3, '/admin-api/tool/info/*',    'GET',    401, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:info:create', '新增工具', 'tool:info', 3, '/admin-api/tool/info',      'POST',   402, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:info:update', '修改工具', 'tool:info', 3, '/admin-api/tool/info/*',    'PUT',    403, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:info:delete', '删除工具', 'tool:info', 3, '/admin-api/tool/info/*',    'DELETE', 404, 1, '获客工具', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:list',   '工具列表', 'tool:info', 3, '/admin-api/tool/info/page', 'GET',    400, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:query',  '工具详情', 'tool:info', 3, '/admin-api/tool/info/*',    'GET',    401, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:create', '新增工具', 'tool:info', 3, '/admin-api/tool/info',      'POST',   402, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:update', '修改工具', 'tool:info', 3, '/admin-api/tool/info/*',    'PUT',    403, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
+  ('tool:info:delete', '删除工具', 'tool:info', 3, '/admin-api/tool/info/*',    'DELETE', 404, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
   ('tool:qa:list',     'AI 问答人物列表', 'tool:qa', 3, '/admin-api/tool/qa/config/page', 'GET',    405, 1, 'AI 问答人物', NOW(), NOW(), 'system', 'system', 0),
   ('tool:qa:query',    'AI 问答人物详情', 'tool:qa', 3, '/admin-api/tool/qa/config/*',    'GET',    406, 1, 'AI 问答人物', NOW(), NOW(), 'system', 'system', 0),
   ('tool:qa:create',   '新增 AI 问答人物', 'tool:qa', 3, '/admin-api/tool/qa/config',      'POST',   407, 1, 'AI 问答人物', NOW(), NOW(), 'system', 'system', 0),

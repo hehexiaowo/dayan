@@ -223,7 +223,7 @@ async function send() {
     if (!sessionCode.value) {
       sessionCode.value = await createQaSession(configId.value);
     }
-    const res = await chatQa({ configId: configId.value, sessionCode: sessionCode.value, question: q });
+    const res = await chatQa({ configId: configId.value, toolCode: 'TL00004', sessionCode: sessionCode.value, question: q });
     messages.value.push({
       id: tmpId--,
       sessionCode: sessionCode.value,

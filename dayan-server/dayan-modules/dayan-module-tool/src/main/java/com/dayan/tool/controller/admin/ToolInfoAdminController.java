@@ -22,7 +22,7 @@ import java.util.List;
  *
  * <p>路径：{@code /tool/info/*}（context-path 拼接为 {@code /admin-api/tool/info/*}）。
  */
-@Tag(name = "获客工具管理")
+@Tag(name = "工具配置")
 @RestController
 @RequestMapping("/tool/info")
 @RequiredArgsConstructor
@@ -52,7 +52,7 @@ public class ToolInfoAdminController {
     }
 
     @Operation(summary = "新增工具")
-    @OperationLog(module = "获客工具", action = "新增")
+    @OperationLog(module = "工具配置", action = "新增")
     @SaCheckPermission("tool:info:create")
     @PostMapping
     public R<String> create(@RequestBody @Valid ToolInfoCreateDTO dto) {
@@ -60,7 +60,7 @@ public class ToolInfoAdminController {
     }
 
     @Operation(summary = "修改工具")
-    @OperationLog(module = "获客工具", action = "修改")
+    @OperationLog(module = "工具配置", action = "修改")
     @SaCheckPermission("tool:info:update")
     @PutMapping("/{toolCode}")
     public R<Void> update(@PathVariable String toolCode, @RequestBody ToolInfoUpdateDTO dto) {
@@ -69,7 +69,7 @@ public class ToolInfoAdminController {
     }
 
     @Operation(summary = "删除工具")
-    @OperationLog(module = "获客工具", action = "删除")
+    @OperationLog(module = "工具配置", action = "删除")
     @SaCheckPermission("tool:info:delete")
     @DeleteMapping("/{toolCode}")
     public R<Void> delete(@PathVariable String toolCode) {

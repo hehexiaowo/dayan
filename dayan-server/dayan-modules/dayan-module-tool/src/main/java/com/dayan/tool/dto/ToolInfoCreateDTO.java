@@ -16,8 +16,10 @@ public class ToolInfoCreateDTO {
     @Size(max = 100)
     private String toolName;
 
-    /** 工具类型（1=计算器, 2=测评, 3=表单, 4=其他） */
-    private Integer toolType;
+    /** 工具类型（pension/gap/ai_creator/ai_qa） */
+    @NotBlank(message = "工具类型不能为空")
+    @Size(max = 32)
+    private String toolType;
 
     @Size(max = 500)
     private String toolDesc;
@@ -30,8 +32,8 @@ public class ToolInfoCreateDTO {
     @Size(max = 200)
     private String entryPath;
 
-    /** 工具配置（JSON 字符串） */
-    private String config;
+    /** 工具配置 JSON */
+    private String configJson;
 
     /** 可见端（逗号分隔：agent/client），默认 agent */
     @Size(max = 50)

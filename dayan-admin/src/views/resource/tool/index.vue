@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * 获客工具管理页。
+ * 工具配置页。
  *
  * - 标准 CRUD（搜索 + 表格 + 分页 + 新增/编辑弹窗）；
  * - 主键 toolCode 由服务端生成（TL 前缀），新增表单不含该字段；
+ * - 类型四类固定：pension/gap/ai_creator/ai_qa；
  * - visibleScope 逗号分隔多值，表单用多选（数组）与字符串互转；
- * - config 为 JSON 字符串，用 textarea 原样编辑，提交前做 JSON 合法性校验；
+ * - configJson 为 JSON 字符串，用 textarea 原样编辑，提交前做 JSON 合法性校验；
  * - 路由由后端菜单（component='resource/tool/index'）自动解析，无需改路由。
  */
 import { reactive, ref } from 'vue'
@@ -18,7 +19,7 @@ import { COMMON_STATUS_OPTIONS } from '@/types/common'
 import { formatDateTime } from '@/utils/format'
 import QaConfigTab from './QaConfigTab.vue'
 
-/** 当前激活的 Tab：tool=工具列表 qa=AI 问答人物 */
+/** 当前激活的 Tab：tool=工具配置 qa=AI 问答人物 */
 const activeTab = ref('tool')
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
@@ -53,11 +54,11 @@ type ToolForm = Omit<ToolInfo, 'visibleScope'> & { visibleScope: string[] }
 const form = reactive<ToolForm>({
   toolCode: undefined,
   toolName: '',
-  toolType: 1,
+  toolType: 'pension',
   toolDesc: '',
   icon: '',
   entryPath: '',
-  config: '',
+  configJson: '',
   visibleScope: ['agent'],
   sortOrder: 0,
   status: 1,
@@ -73,11 +74,11 @@ function resetForm() {
   Object.assign(form, {
     toolCode: undefined,
     toolName: '',
-    toolType: 1,
+    toolType: 'pension',
     toolDesc: '',
     icon: '',
     entryPath: '',
-    config: '',
+    configJson: '',
     visibleScope: ['agent'],
     sortOrder: 0,
     status: 1,
@@ -97,11 +98,11 @@ function openEdit(row: ToolInfo) {
   Object.assign(form, {
     toolCode: row.toolCode,
     toolName: row.toolName ?? '',
-    toolType: row.toolType ?? 1,
+    toolType: row.toolType ?? 'pension',
     toolDesc: row.toolDesc ?? '',
     icon: row.icon ?? '',
     entryPath: row.entryPath ?? '',
-    config: row.config ?? '',
+    configJson: row.configJson ?? '',
     visibleScope: row.visibleScope ? row.visibleScope.split(',').filter(Boolean) : ['agent'],
     sortOrder: row.sortOrder ?? 0,
     status: row.status ?? 1,
@@ -117,10 +118,10 @@ async function handleSubmit() {
   } catch {
     return
   }
-  // config 非空时校验 JSON 合法性
-  if (form.config) {
+  // configJson 非空时校验 JSON 合法性
+  if (form.configJson) {
     try {
-      JSON.parse(form.config)
+      JSON.parse(form.configJson)
     } catch {
       ElMessage.error('工具配置不是合法 JSON')
       return
@@ -132,7 +133,7 @@ async function handleSubmit() {
     toolDesc: form.toolDesc || undefined,
     icon: form.icon || undefined,
     entryPath: form.entryPath,
-    config: form.config || undefined,
+    configJson: form.configJson || undefined,
     visibleScope: form.visibleScope.length ? form.visibleScope.join(',') : undefined,
     sortOrder: form.sortOrder,
     status: form.status,
@@ -180,7 +181,7 @@ function visibleScopeLabel(scope?: string): string {
 <template>
   <div class="page-container">
     <el-tabs v-model="activeTab">
-      <el-tab-pane label="工具列表" name="tool">
+      <el-tab-pane label="工具配置" name="tool">
         <!-- 工具列表：搜索栏 -->
     <el-card shadow="never" class="search-card">
       <div class="toolbar">
@@ -208,7 +209,7 @@ function visibleScopeLabel(scope?: string): string {
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span class="card-title">工具列表</span>
+          <span class="card-title">工具配置</span>
           <el-button v-permission="'tool:info:create'" type="primary" :icon="'Plus'" @click="openCreate">新增工具</el-button>
         </div>
       </template>
@@ -278,7 +279,7 @@ function visibleScopeLabel(scope?: string): string {
           </el-col>
           <el-col :span="12">
             <el-form-item label="工具名称" prop="toolName">
-              <el-input v-model="form.toolName" placeholder="如：退休养老金计算器" maxlength="100" />
+              <el-input v-model="form.toolName" placeholder="如：AI 创作（公众号）" maxlength="100" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -325,7 +326,7 @@ function visibleScopeLabel(scope?: string): string {
           <el-col :span="24">
             <el-form-item label="工具配置">
               <el-input
-                v-model="form.config"
+                v-model="form.configJson"
                 type="textarea"
                 :rows="2"
                 placeholder='JSON，如 {"color":"orange"}（可选）'

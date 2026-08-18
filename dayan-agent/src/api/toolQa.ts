@@ -18,8 +18,8 @@ export function getQaSessions(configId: number): Promise<QaSession[]> {
 }
 
 /** 新建会话（返回 sessionCode） */
-export function createQaSession(configId: number): Promise<string> {
-  return request<string>({ url: '/tools/qa/sessions', method: 'POST', data: { configId } });
+export function createQaSession(configId: number, toolCode = 'TL00004'): Promise<string> {
+  return request<string>({ url: '/tools/qa/sessions', method: 'POST', data: { configId, toolCode } });
 }
 
 /** 删除会话 */
@@ -33,6 +33,6 @@ export function getQaMessages(sessionCode: string): Promise<QaMessage[]> {
 }
 
 /** 问答（第一期走 JSON 非流式，保证小程序兼容） */
-export function chatQa(data: { configId: number; sessionCode?: string; question: string }): Promise<QaChatResult> {
+export function chatQa(data: { configId: number; toolCode?: string; sessionCode?: string; question: string }): Promise<QaChatResult> {
   return request<QaChatResult>({ url: '/tools/qa/chat', method: 'POST', data });
 }

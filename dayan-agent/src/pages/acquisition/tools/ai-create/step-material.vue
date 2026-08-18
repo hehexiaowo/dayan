@@ -222,6 +222,7 @@ async function submit() {
       uni.showToast({ title: `部分素材加载失败：${warnings[0]}`, icon: 'none', duration: 2000 })
     }
     const id = await createAiProject({
+      toolCode: 'TL00003',
       purpose: purpose.value,
       contentType: contentType.value,
       styleCode: styleCode.value,

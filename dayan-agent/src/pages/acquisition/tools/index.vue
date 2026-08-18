@@ -52,7 +52,7 @@ interface ToolItem {
 const FALLBACK_TOOLS: ToolItem[] = [
   {
     id: 'TL00001',
-    name: '退休养老金计算器',
+    name: '社保养老计算器',
     desc: '根据当前工资、缴费年限，估算退休后每月可领养老金',
     icon: '退',
     color: 'orange',
@@ -60,19 +60,19 @@ const FALLBACK_TOOLS: ToolItem[] = [
   },
   {
     id: 'TL00002',
-    name: '养老生活缺口计算器',
+    name: '养老缺口计算器',
     desc: '计算退休资金缺口，帮客户提前做好养老储备规划',
     icon: '缺',
     color: 'red',
     path: '/pages/acquisition/tools/gap-calculator',
   },
   {
-    id: 'TL00003',
-    name: 'AI 创作',
-    desc: '六阶段 AI 图文创作：素材→策略→大纲→正文→配图→成品',
-    icon: 'AI',
+    id: 'TL00004',
+    name: '你问我答',
+    desc: '基于知识库的 AI 问答：选人物、带引用、保留对话',
+    icon: '答',
     color: 'red',
-    path: '/pages/acquisition/tools/ai-create/index',
+    path: '/pages/acquisition/qa/index',
   },
 ];
 
@@ -97,7 +97,7 @@ function mapTool(t: ToolInfo): ToolItem {
     name: t.toolName,
     desc: t.toolDesc || '',
     icon: t.icon || '工',
-    color: parseColor(t.config),
+    color: parseColor(t.configJson),
     path: t.entryPath,
   };
 }

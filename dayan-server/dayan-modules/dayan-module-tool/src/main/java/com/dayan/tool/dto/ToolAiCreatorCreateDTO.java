@@ -14,7 +14,9 @@ import java.util.List;
 /** 创建 AI 创作项目（目的+素材引用与快照+形态/风格/读者+主题）；素材由前端聚合提交 */
 @Data
 public class ToolAiCreatorCreateDTO {
-    /** product=产品宣传/park=机构推荐/science=科普获客 */
+    /** 所属工具实例；为空时回落 TL00003 */
+    @Size(max = 50)
+    private String toolCode;
     @NotBlank(message = "文章目的必选")
     private String purpose;
     /** 1图文 2朋友圈 3视频脚本 4小红书 */

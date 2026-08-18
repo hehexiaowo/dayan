@@ -12,7 +12,8 @@ public class ToolInfoUpdateDTO {
     @Size(max = 100)
     private String toolName;
 
-    private Integer toolType;
+    @Size(max = 32)
+    private String toolType;
 
     @Size(max = 500)
     private String toolDesc;
@@ -23,7 +24,7 @@ public class ToolInfoUpdateDTO {
     @Size(max = 200)
     private String entryPath;
 
-    private String config;
+    private String configJson;
 
     @Size(max = 50)
     private String visibleScope;

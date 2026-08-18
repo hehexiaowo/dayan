@@ -70,6 +70,7 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
             default -> AiPurpose.requireValid(dto.getPurpose());
         }
         ToolAiCreator entity = new ToolAiCreator();
+        entity.setToolCode(StrUtil.blankToDefault(dto.getToolCode(), "TL00003"));
         entity.setAgentCode(agentCode);
         entity.setChannelCode(StrUtil.nullToEmpty(ContextHolder.getChannelCode()));
         entity.setPurpose(dto.getPurpose());
@@ -136,6 +137,7 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
     public ToolAiCreatorVO toVO(ToolAiCreator e) {
         ToolAiCreatorVO vo = new ToolAiCreatorVO();
         vo.setId(e.getId());
+        vo.setToolCode(e.getToolCode());
         vo.setPurpose(e.getPurpose());
         vo.setContentType(e.getContentType());
         vo.setStyleCode(e.getStyleCode());

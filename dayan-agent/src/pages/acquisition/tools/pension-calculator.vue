@@ -220,9 +220,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref, computed, watch } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getShareAgentCard, trackShare } from '@/api/share';
+import { savePensionCalculatorRecord } from '@/api/tool';
 import { formatFileUrl } from '@/utils/file';
 import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
@@ -296,6 +297,20 @@ const replacementLevel = computed(() => {
   return { cls: 'bar-low', text: '替代率偏低，需要额外规划养老收入来源' };
 });
 
+// ===== 使用记录：计算结果稳定后保存（指纹去重，避免输入过程重复记录） =====
+let lastSavedFingerprint = '';
+watch(
+  result,
+  (r) => {
+    if (!canCalc.value) return;
+    const fingerprint = JSON.stringify({ input: form, result: r });
+    if (fingerprint === lastSavedFingerprint) return;
+    lastSavedFingerprint = fingerprint;
+    savePensionCalculatorRecord({ ...form }, r).catch(() => { /* 记录失败不阻塞使用 */ });
+  },
+  { flush: 'post' },
+);
+
 // ===== 工具函数 =====
 function formatNum(n: number): string {
   if (!n || isNaN(n)) return '0';
@@ -332,7 +347,7 @@ onLoad((opts) => {
       agentCode: agent,
       shareType: 2,
       bizCode: 'pension-calculator',
-      bizTitle: '退休养老金计算器',
+      bizTitle: '社保养老计算器',
     });
   }
 });

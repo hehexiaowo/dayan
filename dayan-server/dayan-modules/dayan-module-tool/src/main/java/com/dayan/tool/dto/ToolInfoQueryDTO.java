@@ -12,6 +12,6 @@ public class ToolInfoQueryDTO {
     private Long size = 20L;
     private String toolCode;
     private String toolName;
-    private Integer toolType;
+    private String toolType;
     private Integer status;
 }

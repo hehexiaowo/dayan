@@ -40,13 +40,14 @@ public class ToolAiQaSessionServiceImpl implements ToolAiQaSessionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String create(String agentCode, String channelCode, Long configId) {
+    public String create(String agentCode, String channelCode, Long configId, String toolCode) {
         ToolAiQaConfig config = configMapper.selectById(configId);
         if (config == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "人物配置不存在: " + configId);
         }
         ToolAiQaSession session = new ToolAiQaSession();
         session.setSessionCode(codeGenerator.generate("QAS"));
+        session.setToolCode(toolCode == null || toolCode.isBlank() ? "TL00004" : toolCode);
         session.setConfigId(config.getId());
         session.setConfigCode(config.getConfigCode());
         session.setPersonaName(config.getPersonaName());
@@ -83,6 +84,7 @@ public class ToolAiQaSessionServiceImpl implements ToolAiQaSessionService {
         ToolAiQaSessionVO vo = new ToolAiQaSessionVO();
         vo.setId(s.getId());
         vo.setSessionCode(s.getSessionCode());
+        vo.setToolCode(s.getToolCode());
         vo.setConfigId(s.getConfigId());
         vo.setConfigCode(s.getConfigCode());
         vo.setPersonaName(s.getPersonaName());

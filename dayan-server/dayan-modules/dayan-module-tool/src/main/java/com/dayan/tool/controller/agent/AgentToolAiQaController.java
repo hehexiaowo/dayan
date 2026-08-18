@@ -57,10 +57,12 @@ public class AgentToolAiQaController {
     @Operation(summary = "新建会话")
     @PostMapping("/sessions")
     @OperationLog(module = "AI 问答", action = "新建会话")
-    public R<String> createSession(@RequestBody Map<String, Long> body) {
+    public R<String> createSession(@RequestBody Map<String, Object> body) {
         String agentCode = ContextHolder.getAccountCode();
         String channelCode = ContextHolder.getChannelCode();
-        return R.ok(sessionService.create(agentCode, channelCode, body.get("configId")));
+        Long configId = body.get("configId") == null ? null : Long.valueOf(String.valueOf(body.get("configId")));
+        String toolCode = body.get("toolCode") == null ? null : String.valueOf(body.get("toolCode"));
+        return R.ok(sessionService.create(agentCode, channelCode, configId, toolCode));
     }
 
     @Operation(summary = "删除会话")

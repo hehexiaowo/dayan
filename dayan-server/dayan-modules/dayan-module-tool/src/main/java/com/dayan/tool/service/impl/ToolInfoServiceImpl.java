@@ -11,6 +11,7 @@ import com.dayan.tool.dto.ToolInfoQueryDTO;
 import com.dayan.tool.dto.ToolInfoUpdateDTO;
 import com.dayan.tool.entity.ToolInfo;
 import com.dayan.tool.mapper.ToolInfoMapper;
+import com.dayan.tool.model.ToolType;
 import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.ToolInfoVO;
 import lombok.RequiredArgsConstructor;
@@ -81,14 +82,17 @@ public class ToolInfoServiceImpl implements ToolInfoService {
     public String create(ToolInfoCreateDTO dto) {
         String toolCode = generateToolCode();
 
+        ToolType.requireValid(dto.getToolType());
+        validateConfigJson(dto.getConfigJson());
+
         ToolInfo entity = new ToolInfo();
         entity.setToolCode(toolCode);
         entity.setToolName(dto.getToolName());
-        entity.setToolType(dto.getToolType() == null ? 1 : dto.getToolType());
+        entity.setToolType(dto.getToolType());
         entity.setToolDesc(dto.getToolDesc());
         entity.setIcon(dto.getIcon());
         entity.setEntryPath(dto.getEntryPath());
-        entity.setConfig(dto.getConfig());
+        entity.setConfigJson(dto.getConfigJson());
         entity.setVisibleScope(dto.getVisibleScope() == null || dto.getVisibleScope().isEmpty()
                 ? DEFAULT_VISIBLE_SCOPE : dto.getVisibleScope());
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
@@ -108,11 +112,17 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         update.setId(existing.getId());
 
         if (dto.getToolName() != null) update.setToolName(dto.getToolName());
-        if (dto.getToolType() != null) update.setToolType(dto.getToolType());
+        if (dto.getToolType() != null) {
+            ToolType.requireValid(dto.getToolType());
+            update.setToolType(dto.getToolType());
+        }
         if (dto.getToolDesc() != null) update.setToolDesc(dto.getToolDesc());
         if (dto.getIcon() != null) update.setIcon(dto.getIcon());
         if (dto.getEntryPath() != null) update.setEntryPath(dto.getEntryPath());
-        if (dto.getConfig() != null) update.setConfig(dto.getConfig());
+        if (dto.getConfigJson() != null) {
+            validateConfigJson(dto.getConfigJson());
+            update.setConfigJson(dto.getConfigJson());
+        }
         if (dto.getVisibleScope() != null) update.setVisibleScope(dto.getVisibleScope());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
@@ -138,7 +148,8 @@ public class ToolInfoServiceImpl implements ToolInfoService {
                         ToolInfo::getToolCode, query.getToolCode())
                 .like(query.getToolName() != null && !query.getToolName().isEmpty(),
                         ToolInfo::getToolName, query.getToolName())
-                .eq(query.getToolType() != null, ToolInfo::getToolType, query.getToolType())
+                .eq(query.getToolType() != null && !query.getToolType().isEmpty(),
+                        ToolInfo::getToolType, query.getToolType())
                 .eq(query.getStatus() != null, ToolInfo::getStatus, query.getStatus())
                 .orderByAsc(ToolInfo::getSortOrder)
                 .orderByDesc(ToolInfo::getCreatedAt);
@@ -159,6 +170,17 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         return CODE_PREFIX + String.format("%05d", sequenceProvider.next(SEQ_KEY));
     }
 
+    private void validateConfigJson(String configJson) {
+        if (configJson == null || configJson.isBlank()) {
+            return;
+        }
+        try {
+            cn.hutool.json.JSONUtil.parse(configJson);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "工具配置不是合法 JSON");
+        }
+    }
+
     private ToolInfoVO toVO(ToolInfo entity) {
         ToolInfoVO vo = new ToolInfoVO();
         vo.setId(entity.getId());
@@ -168,7 +190,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         vo.setToolDesc(entity.getToolDesc());
         vo.setIcon(entity.getIcon());
         vo.setEntryPath(entity.getEntryPath());
-        vo.setConfig(entity.getConfig());
+        vo.setConfigJson(entity.getConfigJson());
         vo.setVisibleScope(entity.getVisibleScope());
         vo.setSortOrder(entity.getSortOrder());
         vo.setStatus(entity.getStatus());

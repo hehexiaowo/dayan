@@ -20,6 +20,9 @@ public class ToolAiQaSession extends BaseEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 所属工具实例（tool_info.tool_code） */
+    private String toolCode;
+
     /** 会话编码（QAS+5位序列） */
     private String sessionCode;
 

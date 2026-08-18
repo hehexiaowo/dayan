@@ -174,7 +174,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
      */
     private String resolveSession(ToolAiQaChatDTO dto, String agentCode, String channelCode, ToolAiQaConfig config) {
         if (StrUtil.isBlank(dto.getSessionCode())) {
-            return sessionService.create(agentCode, channelCode, config.getId());
+            return sessionService.create(agentCode, channelCode, config.getId(), dto.getToolCode());
         }
         ToolAiQaSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAiQaSession>()
                 .eq(ToolAiQaSession::getSessionCode, dto.getSessionCode())

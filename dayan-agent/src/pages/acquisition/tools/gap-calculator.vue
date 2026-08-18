@@ -211,9 +211,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref, computed, watch } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getShareAgentCard, trackShare } from '@/api/share';
+import { saveGapCalculatorRecord } from '@/api/tool';
 import { formatFileUrl } from '@/utils/file';
 import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
@@ -326,6 +327,20 @@ const advice = computed(() => {
   return `距退休还有 ${yearsToRetire} 年，建议每月额外储备约 ¥${formatNum(Math.round(extraMonthly))} 元（按 ${form.returnRate}% 年化），或通过商业养老年金险弥补缺口。`;
 });
 
+// ===== 使用记录：计算结果稳定后保存（指纹去重，避免输入过程重复记录） =====
+let lastSavedFingerprint = '';
+watch(
+  result,
+  (r) => {
+    if (!canCalc.value) return;
+    const fingerprint = JSON.stringify({ input: form, result: r });
+    if (fingerprint === lastSavedFingerprint) return;
+    lastSavedFingerprint = fingerprint;
+    saveGapCalculatorRecord({ ...form }, r).catch(() => { /* 记录失败不阻塞使用 */ });
+  },
+  { flush: 'post' },
+);
+
 // ===== 工具函数 =====
 function formatNum(n: number): string {
   if (!n || isNaN(n)) return '0';
@@ -362,7 +377,7 @@ onLoad((opts) => {
       agentCode: agent,
       shareType: 2,
       bizCode: 'gap-calculator',
-      bizTitle: '养老生活缺口计算器',
+      bizTitle: '养老缺口计算器',
     });
   }
 });

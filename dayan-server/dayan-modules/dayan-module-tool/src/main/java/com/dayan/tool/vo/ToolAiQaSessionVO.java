@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public class ToolAiQaSessionVO {
     private Long id;
     private String sessionCode;
+    private String toolCode;
     private Long configId;
     private String configCode;
     private String personaName;

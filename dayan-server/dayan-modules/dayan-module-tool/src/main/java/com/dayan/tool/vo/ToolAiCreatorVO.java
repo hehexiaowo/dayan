@@ -9,6 +9,7 @@ import java.util.List;
 @Data
 public class ToolAiCreatorVO {
     private Long id;
+    private String toolCode;
     private String purpose;
     private Integer contentType;
     private String styleCode;
