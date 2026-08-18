@@ -1,14 +1,21 @@
 package com.dayan.knowledge.controller.agent;
 
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.mybatis.context.ContextHolder;
+import com.dayan.knowledge.dto.KnowledgeRetrieveDTO;
 import com.dayan.knowledge.service.KnowledgeRepoService;
+import com.dayan.knowledge.vo.KnowledgeChatVO;
 import com.dayan.knowledge.vo.KnowledgeDocVO;
 import com.dayan.knowledge.vo.KnowledgeRepoVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,5 +64,21 @@ public class AgentKnowledgeController {
             result.removeIf(d -> d.getFileName() == null || !d.getFileName().contains(kw));
         }
         return R.ok(result);
+    }
+
+    @Operation(summary = "知识检索（AI 创作素材取材，可见性同 /repos）")
+    @PostMapping("/retrieve")
+    public R<List<KnowledgeChatVO.Citation>> retrieve(@RequestBody @Valid KnowledgeRetrieveDTO dto) {
+        String channelCode = ContextHolder.getChannelCode();
+        boolean visible = knowledgeRepoService.listForAgent(channelCode).stream()
+                .anyMatch(r -> dto.getRepoId().equals(r.getId()));
+        if (!visible) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在或不可见");
+        }
+        int topK = dto.getTopK() == null ? 6 : Math.min(Math.max(dto.getTopK(), 1), 10);
+        List<KnowledgeChatVO.Citation> cites = (dto.getDocFileIds() != null && !dto.getDocFileIds().isEmpty())
+                ? knowledgeRepoService.retrieveByDocuments(dto.getRepoId(), dto.getQuery(), topK, dto.getDocFileIds())
+                : knowledgeRepoService.retrieve(dto.getRepoId(), dto.getQuery(), topK);
+        return R.ok(cites);
     }
 }
