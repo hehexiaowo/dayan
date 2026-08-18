@@ -17,6 +17,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -41,7 +44,7 @@ public class AgentToolAiQaController {
 
     @Operation(summary = "某人物下我的会话列表")
     @GetMapping("/sessions")
-    public R<List<ToolAiQaSessionVO>> sessions(Long configId) {
+    public R<List<ToolAiQaSessionVO>> sessions(@RequestParam Long configId) {
         String agentCode = ContextHolder.getAccountCode();
         return R.ok(sessionService.listByPersona(agentCode, configId));
     }

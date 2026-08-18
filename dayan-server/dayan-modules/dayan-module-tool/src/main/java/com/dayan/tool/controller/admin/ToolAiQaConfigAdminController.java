@@ -49,7 +49,7 @@ public class ToolAiQaConfigAdminController {
     @OperationLog(module = "AI 问答", action = "修改人物")
     @SaCheckPermission("tool:qa:update")
     @PutMapping("/{id}")
-    public R<Void> update(@PathVariable Long id, @RequestBody ToolAiQaConfigUpdateDTO dto) {
+    public R<Void> update(@PathVariable Long id, @RequestBody @Valid ToolAiQaConfigUpdateDTO dto) {
         configService.update(id, dto);
         return R.ok();
     }
