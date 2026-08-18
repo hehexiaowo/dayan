@@ -34,6 +34,7 @@ import AccountTab from './AccountTab.vue'
 import RoleTab from './RoleTab.vue'
 import PlatformTab from './PlatformTab.vue'
 import ConfigTab from './ConfigTab.vue'
+import KnowledgeTab from './KnowledgeTab.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -91,7 +92,8 @@ const tabs = [
   { name: 'account', label: '账号管理' },
   { name: 'role', label: '角色管理' },
   { name: 'platform', label: '开放平台' },
-  { name: 'config', label: '分发配置' }
+  { name: 'config', label: '分发配置' },
+  { name: 'knowledge', label: '知识仓库' }
 ] as const
 </script>
 
@@ -134,6 +136,7 @@ const tabs = [
         <RoleTab v-else-if="t.name === 'role'" :channel-code="channelCode" />
         <PlatformTab v-else-if="t.name === 'platform'" :channel-code="channelCode" />
         <ConfigTab v-else-if="t.name === 'config'" :channel-code="channelCode" />
+        <KnowledgeTab v-else-if="t.name === 'knowledge'" :channel-code="channelCode" />
       </el-tab-pane>
     </el-tabs>
   </div>

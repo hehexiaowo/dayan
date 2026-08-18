@@ -6,15 +6,26 @@ import { request } from '@/utils/request'
 import type { PageResult } from '@/types/common'
 import type {
   KnowledgeRepo,
+  KnowledgeRepoTreeNode,
   KnowledgeRepoQuery,
   KnowledgeRepoCreatePayload,
   KnowledgeDoc,
+  KnowledgeChunk,
   KnowledgeChatResult
 } from '@/types/knowledge'
 
 /** 仓库分页列表 */
 export function pageKnowledgeRepos(params: KnowledgeRepoQuery): Promise<PageResult<KnowledgeRepo>> {
   return request<PageResult<KnowledgeRepo>>({ url: '/admin-api/knowledge/repos/page', method: 'get', params })
+}
+
+/** 渠道树形知识库（root 渠道 + 全部后代；channelCode 为空 = 全渠道树） */
+export function getKnowledgeRepoTree(channelCode?: string): Promise<KnowledgeRepoTreeNode[]> {
+  return request<KnowledgeRepoTreeNode[]>({
+    url: '/admin-api/knowledge/repos/tree',
+    method: 'get',
+    params: channelCode ? { channelCode } : {}
+  })
 }
 
 /** 仓库详情 */
@@ -92,6 +103,19 @@ export function getKnowledgeImportStatus(id: number, jobId: string): Promise<str
 /** 删除索引内文档（远端永久删除） */
 export function deleteKnowledgeDoc(id: number, fileId: string): Promise<void> {
   return request<void>({ url: `/admin-api/knowledge/repos/${id}/documents/${fileId}`, method: 'delete' })
+}
+
+/** 文档切片列表（切片管理，分页实时代理百炼） */
+export function listKnowledgeDocChunks(
+  id: number,
+  fileId: string,
+  params: { pageNum?: number; pageSize?: number }
+): Promise<{ total: number; chunks: KnowledgeChunk[] }> {
+  return request<{ total: number; chunks: KnowledgeChunk[] }>({
+    url: `/admin-api/knowledge/repos/${id}/documents/${fileId}/chunks`,
+    method: 'get',
+    params
+  })
 }
 
 // ---------- 问答 / 检索 ----------

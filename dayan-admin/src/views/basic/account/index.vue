@@ -100,7 +100,7 @@ async function loadRoles(organCode: string) {
 /** 编辑回显时临时关闭 watch 的清空逻辑，避免覆盖刚加载的已分配角色 */
 const suppressRoleWatch = ref(false)
 
-/** 切换机构时重载角色选项并清空已选角色（程序化回显时仅重载不清空） */
+/** 切换机构时重载角色选项并清空已选项（程序化回显时仅重载不清空） */
 watch(
   () => form.organCode,
   (code) => {
@@ -295,11 +295,6 @@ function handleReset() {
   handleSearch()
 }
 
-function genderText(v?: number) {
-  const opt = GENDER_OPTIONS.find((o) => o.value === v)
-  return opt ? opt.label : '未知'
-}
-
 // 初始化加载
 onMounted(() => {
   loadOrgans()
@@ -316,7 +311,7 @@ loadPage()
           <el-option
             v-for="o in organOptions"
             :key="o.organCode"
-            :label="o.fullName || o.shortName || o.organCode"
+            :label="o.shortName || o.fullName || o.organCode"
             :value="o.organCode"
           />
         </el-select>
@@ -358,14 +353,15 @@ loadPage()
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="gender" label="性别" width="70">
-          <template #default="{ row }">{{ genderText(row.gender) }}</template>
-        </el-table-column>
-        <el-table-column prop="phone" label="手机号" min-width="120" />
-        <el-table-column prop="email" label="邮箱" min-width="160" show-overflow-tooltip />
         <el-table-column prop="loginCount" label="登录次数" width="90" align="center" />
         <el-table-column prop="lastLoginTime" label="最近登录" min-width="160">
           <template #default="{ row }">{{ formatDateTime(row.lastLoginTime) }}</template>
+        </el-table-column>
+        <el-table-column label="是否超管" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.isAdmin === 1" type="danger" size="small">是</el-tag>
+            <span v-else>否</span>
+          </template>
         </el-table-column>
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
@@ -415,7 +411,7 @@ loadPage()
                 <el-option
                   v-for="o in organOptions"
                   :key="o.organCode"
-                  :label="o.fullName || o.shortName || o.organCode"
+                  :label="o.shortName || o.fullName || o.organCode"
                   :value="o.organCode"
                 />
               </el-select>

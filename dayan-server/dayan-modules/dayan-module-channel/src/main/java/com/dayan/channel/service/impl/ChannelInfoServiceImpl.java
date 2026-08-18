@@ -241,8 +241,9 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         if (dto.getShortName() != null) update.setShortName(dto.getShortName());
         if (dto.getChannelType() != null) update.setChannelType(dto.getChannelType());
 
-        // 移动层级：变更 parentCode 时重算 ancestors/level
-        if (dto.getParentCode() != null) {
+        // 移动层级：仅当 parentCode 实际变化时重算 ancestors/level；
+        // 未变化（普通字段编辑）不进入移动校验，避免误报「移动到子渠道下」
+        if (dto.getParentCode() != null && !dto.getParentCode().equals(existing.getParentCode())) {
             String newParent = dto.getParentCode();
             if (newParent.isEmpty()) {
                 // 移到顶级
@@ -254,8 +255,10 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
                     throw new BusinessException(ErrorCode.PARAM_ERROR, "上级渠道不能是自身");
                 }
                 ChannelInfo parent = requireChannel(newParent);
-                // 防止把渠道挂到自己的子孙下（形成环）
-                if (isDescendant(existing, newParent)) {
+                // 防止把渠道挂到自己的子孙下（形成环）：
+                // 新 parent 的祖先链（不含自身）里若包含当前渠道，说明新 parent 是当前渠道的子孙
+                if (parent.getAncestors() != null
+                        && java.util.Arrays.asList(parent.getAncestors().split(",")).contains(channelCode)) {
                     throw new BusinessException(ErrorCode.PARAM_ERROR, "不能将渠道移动到其子渠道下");
                 }
                 update.setParentCode(newParent);
@@ -264,8 +267,8 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
             }
         }
 
-        if (dto.getUnifiedCreditCode() != null) {
-            // 信用代码唯一校验（排除自身）
+        if (dto.getUnifiedCreditCode() != null && !dto.getUnifiedCreditCode().isBlank()) {
+            // 信用代码唯一校验（排除自身）；空字符串视为未填写，跳过校验
             Long count = channelInfoMapper.selectCount(new LambdaQueryWrapper<ChannelInfo>()
                     .eq(ChannelInfo::getUnifiedCreditCode, dto.getUnifiedCreditCode())
                     .ne(ChannelInfo::getChannelCode, channelCode));
@@ -368,20 +371,6 @@ public class ChannelInfoServiceImpl implements ChannelInfoService {
         if (ancestors == null || !java.util.Arrays.asList(ancestors.split(",")).contains(currentCode)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "无权操作非本渠道子树的资源");
         }
-    }
-
-    /** 判断 targetCode 是否为 current 的子孙（依据 ancestors 链） */
-    private boolean isDescendant(ChannelInfo current, String targetCode) {
-        String ancestors = current.getAncestors();
-        if (ancestors == null || ancestors.isEmpty()) {
-            return false;
-        }
-        for (String code : ancestors.split(",")) {
-            if (targetCode.equals(code)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private String buildAncestors(String parentAncestors, String parentCode) {

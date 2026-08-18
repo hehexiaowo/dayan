@@ -16,7 +16,7 @@ import {
   SESSION_STATUS_OPTIONS,
   SESSION_PRIORITY_OPTIONS,
   SESSION_SOURCE_TYPE_OPTIONS,
-  SERVICE_TYPE_OPTIONS
+  subStatusLabel
 } from '@/types/service'
 import type { ServiceSession } from '@/types/service'
 
@@ -43,11 +43,6 @@ async function loadDetail() {
 loadDetail()
 
 // ---------- 辅助渲染 ----------
-function serviceTypeLabel(v?: number): string {
-  const found = SERVICE_TYPE_OPTIONS.find((o) => o.value === v)
-  return found ? found.label : '--'
-}
-
 function sessionStatusLabel(v?: number): string {
   const found = SESSION_STATUS_OPTIONS.find((o) => o.value === v)
   return found ? found.label : '--'
@@ -139,7 +134,7 @@ defineExpose({ loadDetail })
 
       <el-descriptions :column="3" border>
         <el-descriptions-item label="会话编码">{{ sessionInfo.sessionCode ?? '--' }}</el-descriptions-item>
-        <el-descriptions-item label="服务类型">{{ serviceTypeLabel(sessionInfo.serviceType) }}</el-descriptions-item>
+        <el-descriptions-item label="服务类型">{{ sessionInfo.itemName || sessionInfo.itemCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="会话状态">
           <el-tag size="small">{{ sessionStatusLabel(sessionInfo.sessionStatus) }}</el-tag>
         </el-descriptions-item>
@@ -157,7 +152,7 @@ defineExpose({ loadDetail })
         <el-descriptions-item label="渠道">{{ sessionInfo.channelCode || '--' }}</el-descriptions-item>
         <el-descriptions-item label="来源类型">{{ sourceTypeLabel(sessionInfo.sourceType) }}</el-descriptions-item>
         <el-descriptions-item label="来源编码">{{ sessionInfo.sourceCode || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="子状态">{{ sessionInfo.subStatus || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="子状态">{{ subStatusLabel(sessionInfo.subStatus) }}</el-descriptions-item>
         <el-descriptions-item label="服务描述" :span="3">{{ sessionInfo.serviceDescription || '--' }}</el-descriptions-item>
         <el-descriptions-item label="受理时间">{{ formatDateTime(sessionInfo.acceptTime) }}</el-descriptions-item>
         <el-descriptions-item label="完成时间">{{ formatDateTime(sessionInfo.completeTime) }}</el-descriptions-item>

@@ -24,11 +24,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getSession } from '@/api/service'
-import {
-  SessionStatus,
-  SESSION_STATUS_OPTIONS,
-  SERVICE_TYPE_OPTIONS
-} from '@/types/service'
+import { SessionStatus, SESSION_STATUS_OPTIONS } from '@/types/service'
 import type { ServiceSession } from '@/types/service'
 import BasicTab from './BasicTab.vue'
 import EvaluationTab from './EvaluationTab.vue'
@@ -50,6 +46,10 @@ async function loadDetail() {
   detailLoading.value = true
   try {
     sessionInfo.value = await getSession(sessionCode.value)
+    // 进入详情默认激活「当前业务环节」对应 tab（P0-3 当前环节高亮）
+    if (sessionInfo.value?.sessionStatus !== undefined && defaultTabByStatus[sessionInfo.value.sessionStatus]) {
+      activeTab.value = defaultTabByStatus[sessionInfo.value.sessionStatus]
+    }
   } catch {
     sessionInfo.value = null
   } finally {
@@ -63,10 +63,9 @@ function goBack() {
   router.push({ path: '/service/session' })
 }
 
-/** 服务类型文本 */
-function serviceTypeLabel(t?: number): string {
-  const found = SERVICE_TYPE_OPTIONS.find((o) => o.value === t)
-  return found ? found.label : '--'
+/** 服务类型文本（= 服务项目名称，服务类型列与详情均以服务项目为准） */
+function serviceTypeLabel(s?: ServiceSession): string {
+  return s?.itemName || s?.itemCode || '--'
 }
 
 /** 会话状态文本 */
@@ -94,12 +93,34 @@ function sessionStatusTagType(status?: number): 'success' | 'warning' | 'danger'
 
 const tabs = [
   { name: 'basic', label: '基本信息' },
-  { name: 'evaluation', label: '服务评价' },
   { name: 'demand', label: '权益需求' },
   { name: 'solution', label: '权益方案' },
   { name: 'arrange', label: '全程安排' },
-  { name: 'followup', label: '回访品控' }
+  { name: 'followup', label: '回访品控' },
+  { name: 'evaluation', label: '服务评价' }
 ] as const
+
+/** 业务环节与会话状态的对应：当前状态 → 建议下一步（P1-3 引导文案） */
+const nextStepHint: Record<number, string> = {
+  [SessionStatus.PENDING]: '待分配管家：请在「全程安排」前先分配管家，或使用列表页「分配管家」',
+  [SessionStatus.ACCEPTED]: '待收集需求：请在「权益需求」tab 登记客户需求后提交',
+  [SessionStatus.DEMAND_SUBMITTED]: '方案制定中：在「权益方案」tab 制定并确认方案',
+  [SessionStatus.SOLUTION_CONFIRMED]: '安排确认中：在「全程安排」tab 确认安排后即可开始服务',
+  [SessionStatus.IN_SERVICE]: '服务进行中：完成后在列表页点击「完成服务」',
+  [SessionStatus.COMPLETED]: '服务已完成：可在「回访品控」「服务评价」tab 完善记录',
+  [SessionStatus.CANCELLED]: '会话已取消'
+}
+
+/** 当前环节对应建议停留的 tab（状态 → 默认激活 tab） */
+const defaultTabByStatus: Record<number, string> = {
+  [SessionStatus.PENDING]: 'basic',
+  [SessionStatus.ACCEPTED]: 'demand',
+  [SessionStatus.DEMAND_SUBMITTED]: 'solution',
+  [SessionStatus.SOLUTION_CONFIRMED]: 'arrange',
+  [SessionStatus.IN_SERVICE]: 'followup',
+  [SessionStatus.COMPLETED]: 'evaluation',
+  [SessionStatus.CANCELLED]: 'basic'
+}
 </script>
 
 <template>
@@ -111,7 +132,7 @@ const tabs = [
         <span class="title">{{ sessionInfo.serviceTitle || '服务会话' }}</span>
         <el-tag size="small" class="ml-8">{{ sessionInfo.sessionCode }}</el-tag>
         <el-tag size="small" type="info" class="ml-8">
-          {{ serviceTypeLabel(sessionInfo.serviceType) }}
+          {{ serviceTypeLabel(sessionInfo) }}
         </el-tag>
         <el-tag size="small" :type="sessionStatusTagType(sessionInfo.sessionStatus)" class="ml-8">
           {{ sessionStatusLabel(sessionInfo.sessionStatus) }}
@@ -120,6 +141,11 @@ const tabs = [
         <span v-if="sessionInfo.butlerFullName || sessionInfo.butlerCode" class="meta">
           · 管家：{{ sessionInfo.butlerFullName || sessionInfo.butlerCode }}
         </span>
+      </div>
+      <!-- 下一步引导（P1-3）：按当前状态提示建议动作 -->
+      <div v-if="sessionInfo && nextStepHint[sessionInfo.sessionStatus!]" class="next-step-hint">
+        <el-icon class="hint-icon"><Promotion /></el-icon>
+        <span>{{ nextStepHint[sessionInfo.sessionStatus!] }}</span>
       </div>
       <div v-else-if="!detailLoading" class="session-summary">
         <span class="title">未找到会话（sessionCode={{ sessionCode }}）</span>
@@ -166,6 +192,7 @@ const tabs = [
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 .session-summary {
   display: flex;
@@ -184,5 +211,23 @@ const tabs = [
 }
 .ml-8 {
   margin-left: 4px;
+}
+/* 下一步引导条 */
+.next-step-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-basis: 100%;
+  margin-top: 4px;
+  padding: 8px 14px;
+  background: #ecf5ff;
+  border: 1px solid #d9ecff;
+  border-radius: 6px;
+  color: #337ecc;
+  font-size: 13px;
+
+  .hint-icon {
+    font-size: 15px;
+  }
 }
 </style>

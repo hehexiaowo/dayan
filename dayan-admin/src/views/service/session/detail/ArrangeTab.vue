@@ -15,7 +15,7 @@
  * - arrangeDate / timeStart / timeEnd 用 el-date-picker / el-time-picker
  * - participantCount 才用 el-input-number
  */
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -23,20 +23,32 @@ import {
   createServiceEquityArrange,
   updateServiceEquityArrange,
   deleteServiceEquityArrange,
-  confirmServiceEquityArrange
+  confirmServiceEquityArrange,
+  listServiceEquitySolutions
 } from '@/api/service-sub'
 import {
   ARRANGE_TYPE_OPTIONS,
   ARRANGE_STATUS_OPTIONS,
   FOLLOWUP_YES_NO_OPTIONS
 } from '@/types/service'
-import type { ServiceEquityArrange, ServiceEquityArrangeQuery } from '@/types/service'
+import type { ServiceEquityArrange, ServiceEquityArrangeQuery, ServiceEquitySolution } from '@/types/service'
 
 const props = defineProps<{
   sessionCode: string
   /** 会话客户编码（从会话详情带入，新增时回填，客户端不可改） */
   clientCode?: string
 }>()
+
+// ---------- 关联方案下拉（P1-1：从本会话方案列表选择，避免手填编码） ----------
+const solutionOptions = ref<ServiceEquitySolution[]>([])
+
+onMounted(async () => {
+  try {
+    solutionOptions.value = await listServiceEquitySolutions(props.sessionCode)
+  } catch {
+    solutionOptions.value = []
+  }
+})
 
 // ---------- 列表（useCrud，主键 arrangeCode） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
@@ -358,7 +370,20 @@ defineExpose({ loadPage })
           </el-col>
           <el-col :span="12">
             <el-form-item label="关联方案">
-              <el-input v-model="form.solutionCode" placeholder="方案编码（软关联，可选）" maxlength="50" />
+              <el-select
+                v-model="form.solutionCode"
+                placeholder="选择关联方案（本会话，可选）"
+                filterable
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="s in solutionOptions"
+                  :key="s.solutionCode"
+                  :label="`${s.solutionName || s.solutionCode}（${s.solutionCode}）`"
+                  :value="s.solutionCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

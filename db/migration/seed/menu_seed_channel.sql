@@ -165,3 +165,15 @@ WHERE `menu_code`='channel_agent_scene' AND `domain_type`='channel';
 -- 路由 /cashier 仍可直达（隐藏备用页，零风险可逆）。
 UPDATE `system_menu` SET `is_visible`=0, `updated_at`=NOW()
 WHERE `menu_code`='channel_cashier' AND `domain_type`='channel';
+
+-- ==================== 知识仓库（系统管理 → 知识仓库，本渠道知识库管理）====================
+-- 对应 channel 端落地页 views/system/knowledge/index.vue + ChannelKnowledgeController。
+-- 菜单名「知识仓库」4 字符合 channel 端命名约定；权限码 channel:knowledge:view 见 channel_permission_seed.sql。
+INSERT INTO system_menu
+(menu_code, menu_name, parent_code, menu_type, path, component, permission_code,
+ icon, sort_order, is_visible, is_external, is_cache, domain_type, status,
+ created_at, updated_at, creator, updater, deleted, deleted_at)
+VALUES
+('channel_system_knowledge', '知识仓库', 'channel_system', 2, '/system/knowledge', 'system/knowledge/index', 'channel:knowledge:view',
+ 'Collection', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

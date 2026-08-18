@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import DepartmentPanel from './DepartmentPanel.vue'
 import { useCrud } from '@/composables/useCrud'
 import { pageOrgans, createOrgan, updateOrgan, deleteOrgan } from '@/api/organ'
 import type { Organ, OrganQuery } from '@/types/organ'
@@ -32,6 +33,16 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
     }
   }
 )
+
+const selectedOrgan = ref<Organ | null>(null)
+
+function openDepartments(row: Organ) {
+  selectedOrgan.value = row
+}
+
+function closeDepartments() {
+  selectedOrgan.value = null
+}
 
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -182,7 +193,8 @@ loadPage()
 
 <template>
   <div class="page-container">
-    <!-- 搜索栏 -->
+    <template v-if="!selectedOrgan">
+      <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
       <div class="toolbar">
         <el-input v-model="query.organCode" placeholder="机构编码" clearable style="width: 150px" @keyup.enter="handleSearch" />
@@ -200,7 +212,7 @@ loadPage()
       </div>
     </el-card>
 
-    <!-- 表格 -->
+    <!-- 机构列表 -->
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
@@ -228,8 +240,9 @@ loadPage()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
+            <el-button v-permission="'organ:dept:list'" link type="primary" size="small" @click="openDepartments(row)">管理部门</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
           </template>
@@ -249,6 +262,14 @@ loadPage()
         />
       </div>
     </el-card>
+    </template>
+
+    <DepartmentPanel
+      v-else
+      :organ-code="selectedOrgan.organCode!"
+      :organ-name="selectedOrgan.shortName || selectedOrgan.fullName || selectedOrgan.organCode!"
+      @close="closeDepartments"
+    />
 
     <!-- 新增 / 编辑弹窗 -->
     <el-dialog

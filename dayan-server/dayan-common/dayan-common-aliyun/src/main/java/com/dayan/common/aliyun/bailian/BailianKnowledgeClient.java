@@ -277,6 +277,59 @@ public class BailianKnowledgeClient {
         }
     }
 
+    // ==================== 切片管理 ====================
+
+    /**
+     * 分页查询知识库文档的切片列表（切片管理用）。
+     *
+     * @param fileId 文档 ID（必须，切片按文档维度展示）
+     * @return 切片列表（text/score）与总数
+     */
+    public ChunkPage listChunks(String indexId, String fileId, int pageNum, int pageSize) {
+        try {
+            com.aliyun.bailian20231229.models.ListChunksRequest req =
+                    new com.aliyun.bailian20231229.models.ListChunksRequest()
+                            .setIndexId(indexId)
+                            .setFileId(fileId)
+                            .setPageNum(pageNum)
+                            .setPageSize(pageSize);
+            com.aliyun.bailian20231229.models.ListChunksResponse resp =
+                    sdkClient.listChunks(workspaceId, req);
+            checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "查询切片列表");
+            com.aliyun.bailian20231229.models.ListChunksResponseBody.ListChunksResponseBodyData data =
+                    resp.getBody().getData();
+            List<ChunkItem> chunks = new ArrayList<>();
+            if (data != null && data.getNodes() != null) {
+                for (var n : data.getNodes()) {
+                    chunks.add(new ChunkItem(n.getText(), n.getScore(), n.getMetadata()));
+                }
+            }
+            return new ChunkPage(data == null || data.getTotal() == null ? 0 : data.getTotal(), chunks);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw wrap(e, "查询切片列表");
+        }
+    }
+
+    // ==================== 索引配置更新 ====================
+
+    /**
+     * 更新知识库配置（名称/描述；ROA POST /index/update，Id+Name 至少一项）。
+     * 用于本地知识仓库改名时与百炼远端索引保持同步。
+     */
+    public void updateIndex(String indexId, String name, String description) {
+        Map<String, String> query = new HashMap<>();
+        query.put("Id", indexId);
+        if (name != null && !name.isBlank()) {
+            query.put("Name", name);
+        }
+        if (description != null && !description.isBlank()) {
+            query.put("Description", description);
+        }
+        callIndex("UpdateIndex", "/index/update", query);
+    }
+
     /**
      * 向预签名 URL 上传文件二进制（ApplyFileUploadLease 返回的 URL，短时有效，须尽快上传）。
      * 注意：预签名 URL 自带签名，本方法不涉及 AccessKey。
@@ -461,5 +514,27 @@ public class BailianKnowledgeClient {
         private String status;
         private Long sizeInBytes;
         private String parser;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChunkPage {
+        private long total;
+        private List<ChunkItem> chunks;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChunkItem {
+        /** 切片文本内容 */
+        private String text;
+        /** 相关度（0-1，未评分可能为 null） */
+        private Double score;
+        /** 切片元数据（doc_id 等，JSON 对象或 null） */
+        private Object metadata;
     }
 }

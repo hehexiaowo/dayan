@@ -67,7 +67,7 @@ public class OrganAccountService {
         Page<OrganAccount> page = accountMapper.selectPage(new Page<>(current, size), wrapper);
         List<OrganAccount> accounts = page.getRecords();
 
-        // 批量解析机构名 + 角色，避免 N+1（VO 不含 password/salt，天然脱敏）
+        // 批量解析机构名和角色，避免 N+1（VO 不含 password/salt，天然脱敏）
         Map<String, String> organNameMap = resolveOrganNames(accounts);
         Map<String, List<String>> accountRoles = resolveAccountRoleCodes(accounts);
         Set<String> allRoleCodes = accountRoles.values().stream()
@@ -168,7 +168,7 @@ public class OrganAccountService {
         return account;
     }
 
-    /** 批量解析 organCode → 机构名（优先全称，回退简称）。 */
+    /** 批量解析 organCode → 机构名（优先简称，回退全称）。 */
     private Map<String, String> resolveOrganNames(List<OrganAccount> accounts) {
         Set<String> organCodes = accounts.stream()
                 .map(OrganAccount::getOrganCode)
@@ -181,8 +181,8 @@ public class OrganAccountService {
                 .in(OrganInfo::getOrganCode, organCodes));
         return organs.stream()
                 .collect(Collectors.toMap(OrganInfo::getOrganCode,
-                        o -> o.getFullName() != null && !o.getFullName().isEmpty()
-                                ? o.getFullName() : o.getShortName(),
+                        o -> o.getShortName() != null && !o.getShortName().isEmpty()
+                                ? o.getShortName() : o.getFullName(),
                         (x, y) -> x));
     }
 

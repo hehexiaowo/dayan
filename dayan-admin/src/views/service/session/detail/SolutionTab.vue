@@ -14,7 +14,7 @@
  * - solutionType / presentationMethod / isAccepted / status 用 el-select + OPTIONS
  * - estimatedCost 才用 el-input-number（金额，precision=2）
  */
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
@@ -22,7 +22,8 @@ import {
   createServiceEquitySolution,
   updateServiceEquitySolution,
   deleteServiceEquitySolution,
-  acceptServiceEquitySolution
+  acceptServiceEquitySolution,
+  listServiceEquityDemands
 } from '@/api/service-sub'
 import {
   SOLUTION_TYPE_OPTIONS,
@@ -30,13 +31,24 @@ import {
   SOLUTION_IS_ACCEPTED_OPTIONS,
   SOLUTION_STATUS_OPTIONS
 } from '@/types/service'
-import type { ServiceEquitySolution, ServiceEquitySolutionQuery } from '@/types/service'
+import type { ServiceEquityDemand, ServiceEquitySolution, ServiceEquitySolutionQuery } from '@/types/service'
 
 const props = defineProps<{
   sessionCode: string
   /** 会话客户编码（从会话详情带入，新增时回填，客户端不可改） */
   clientCode?: string
 }>()
+
+// ---------- 关联需求下拉（P1-1：从本会话需求列表选择，避免手填编码） ----------
+const demandOptions = ref<ServiceEquityDemand[]>([])
+
+onMounted(async () => {
+  try {
+    demandOptions.value = await listServiceEquityDemands(props.sessionCode)
+  } catch {
+    demandOptions.value = []
+  }
+})
 
 // ---------- 列表（useCrud，主键 solutionCode） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
@@ -366,12 +378,20 @@ defineExpose({ loadPage })
           <el-col :span="12">
             <el-form-item label="关联需求" prop="demandCode">
               <!-- 编辑时 demandCode 不可改（UpdateDTO 不含 demandCode） -->
-              <el-input
+              <el-select
                 v-model="form.demandCode"
                 :disabled="dialogMode === 'edit'"
-                placeholder="需求编码（必填，关联本会话需求）"
-                maxlength="50"
-              />
+                placeholder="选择关联需求（本会话）"
+                filterable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="d in demandOptions"
+                  :key="d.demandCode"
+                  :label="`${d.usePersonName || d.healthSummary || d.demandCode}（${d.demandCode}）`"
+                  :value="d.demandCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

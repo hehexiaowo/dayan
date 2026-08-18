@@ -6,8 +6,10 @@ import com.dayan.knowledge.dto.KnowledgeDocImportDTO;
 import com.dayan.knowledge.dto.KnowledgeRepoCreateDTO;
 import com.dayan.knowledge.dto.KnowledgeRepoQueryDTO;
 import com.dayan.knowledge.dto.KnowledgeRepoUpdateDTO;
+import com.dayan.knowledge.entity.KnowledgeRepo;
 import com.dayan.knowledge.vo.KnowledgeChatVO;
 import com.dayan.knowledge.vo.KnowledgeDocVO;
+import com.dayan.knowledge.vo.KnowledgeRepoTreeNodeVO;
 import com.dayan.knowledge.vo.KnowledgeRepoVO;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -67,8 +69,30 @@ public interface KnowledgeRepoService {
     /** 删除索引内文档（远端永久删除） */
     void deleteDocument(Long id, String fileId);
 
+    /** 分页查询文档切片列表（切片管理用；fileId 必填，实时代理百炼） */
+    com.dayan.common.aliyun.bailian.BailianKnowledgeClient.ChunkPage listChunks(Long id, String fileId, int pageNum, int pageSize);
+
     /** Agent 端：当前渠道可见仓库（平台库 + 本渠道库，按排序） */
     List<KnowledgeRepoVO> listForAgent(String channelCode);
+
+    /** 按渠道编码查本渠道仓库（repo_type=2 且 channel_code 匹配；未创建返回 null） */
+    KnowledgeRepoVO getByChannelCode(String channelCode);
+
+    /**
+     * 渠道树形知识库（root + 全部后代）。
+     *
+     * <p>每节点解析独立仓库与沿祖先链最近继承源；跳过租户拦截批量查仓库，
+     * 可见性以「root 及其后代」的渠道树范围为准（调用方保证 root 是当前渠道或其后代）。
+     */
+    List<KnowledgeRepoTreeNodeVO> getRepoTree(String rootChannelCode);
+
+    /**
+     * 校验仓库对当前登录渠道可见（当前渠道 ∪ 祖先 ∪ 后代），返回仓库实体。
+     *
+     * <p>用于 chat/retrieve 等「使用」操作：channel 端可对继承库（祖先渠道的库）问答，
+     * 可对本渠道及后代渠道的库问答；不可见时抛 NOT_FOUND。未登录渠道上下文（admin）放行。
+     */
+    KnowledgeRepo requireRepoVisible(Long id);
 
     /** RAG 问答（检索命中 + 大模型生成） */
     KnowledgeChatVO chat(Long id, KnowledgeChatDTO dto);

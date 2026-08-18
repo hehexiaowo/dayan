@@ -112,6 +112,21 @@ function resetForm() {
   })
 }
 
+/** 归属类型切换：渠道时按渠道简称预填默认仓库名「{简称}知识库」 */
+function handleRepoTypeChange() {
+  if (form.repoType === 2) {
+    const ch = channels.value.find((c) => c.channelCode === form.channelCode)
+    if (ch) form.repoName = `${ch.shortName || ch.fullName}知识库`
+  }
+}
+
+/** 选择渠道后按渠道简称预填默认仓库名（未手动修改时） */
+function handleChannelChange() {
+  if (form.repoType !== 2) return
+  const ch = channels.value.find((c) => c.channelCode === form.channelCode)
+  if (ch) form.repoName = `${ch.shortName || ch.fullName}知识库`
+}
+
 function openCreate() {
   resetForm()
   dialogVisible.value = true
@@ -220,12 +235,13 @@ async function handleDelete(row: KnowledgeRepo) {
           </template>
         </el-table-column>
         <el-table-column prop="repoCode" label="编码" width="110" align="center" />
-        <el-table-column label="归属" width="170">
+        <el-table-column label="归属" width="190">
           <template #default="{ row }">
             <el-tag size="small" :type="row.repoType === 2 ? 'warning' : 'primary'">
               {{ knowledgeRepoTypeLabel(row.repoType) }}
             </el-tag>
-            <span v-if="row.repoType === 2" class="channel-name">{{ row.channelName || row.channelCode }}</span>
+            <span v-if="row.repoType === 2" class="channel-name">{{ row.channelShortName || row.channelName || row.channelCode }}</span>
+            <span v-else class="channel-name">大雁养老</span>
           </template>
         </el-table-column>
         <el-table-column prop="indexId" label="百炼索引 ID" min-width="200" show-overflow-tooltip />
@@ -277,13 +293,13 @@ async function handleDelete(row: KnowledgeRepo) {
           <el-input v-model="form.repoName" placeholder="如：大雁养老平台知识库 / xx渠道知识库" maxlength="100" />
         </el-form-item>
         <el-form-item label="归属类型">
-          <el-radio-group v-model="form.repoType">
+          <el-radio-group v-model="form.repoType" @change="handleRepoTypeChange">
             <el-radio :value="1">平台（大雁养老）</el-radio>
             <el-radio :value="2">渠道</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item v-if="form.repoType === 2" label="所属渠道" prop="channelCode">
-          <el-select v-model="form.channelCode" placeholder="选择渠道" filterable style="width: 100%">
+          <el-select v-model="form.channelCode" placeholder="选择渠道" filterable style="width: 100%" @change="handleChannelChange">
             <el-option v-for="c in channels" :key="c.channelCode" :label="c.fullName" :value="c.channelCode" />
           </el-select>
         </el-form-item>

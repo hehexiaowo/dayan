@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
@@ -15,9 +15,10 @@ import type { ButlerInfo, ServiceSession, ServiceSessionQuery } from '@/types/se
 import {
   SessionStatus,
   SESSION_STATUS_OPTIONS,
-  SESSION_PRIORITY_OPTIONS,
-  SERVICE_TYPE_OPTIONS
+  SESSION_PRIORITY_OPTIONS
 } from '@/types/service'
+import { listServiceItems } from '@/api/service-item'
+import type { ServiceItem } from '@/types/service-item'
 import { formatDateTime } from '@/utils/format'
 
 /**
@@ -35,6 +36,9 @@ import { formatDateTime } from '@/utils/format'
  * 状态机事件（ServiceSessionEvent）：
  *   assign_butler(1→2) / submit_demand(2→3) / confirm_solution(3→4) /
  *   reject_solution(3→2) / start_service(4→5) / finish(5→6) / cancel(1|2|5→7)。
+ *
+ * 服务类型 = 服务项目（service_item）：权益商品激活按服务项目创建会话，
+ *   列表「服务类型」列与筛选均以服务项目为准（itemCode/itemName）。
  */
 
 const {
@@ -54,7 +58,7 @@ const {
       equityCode: '',
       clientCode: '',
       butlerCode: '',
-      serviceType: undefined,
+      itemCode: undefined,
       sessionStatus: undefined
     }
   }
@@ -72,8 +76,54 @@ function handleReset() {
   query.equityCode = ''
   query.clientCode = ''
   query.butlerCode = ''
-  query.serviceType = undefined
+  query.itemCode = undefined
   query.sessionStatus = undefined
+  handleSearch()
+}
+
+// ---------- 服务项目下拉（服务类型=服务项目筛选） ----------
+const serviceItems = ref<ServiceItem[]>([])
+
+onMounted(async () => {
+  try {
+    serviceItems.value = await listServiceItems()
+  } catch {
+    serviceItems.value = []
+  }
+})
+
+// ---------- 状态概览统计卡（待办视角：点击即快捷筛选） ----------
+/** 状态统计：由列表数据实时聚合，仅统计当前查询结果集（简化：展示即算） */
+const statusSummary = ref([
+  { label: '全部', count: 0, status: undefined as number | undefined },
+  { label: '待分配', count: 0, status: SessionStatus.PENDING },
+  { label: '待收集', count: 0, status: SessionStatus.ACCEPTED },
+  { label: '方案中', count: 0, status: SessionStatus.DEMAND_SUBMITTED },
+  { label: '安排中', count: 0, status: SessionStatus.SOLUTION_CONFIRMED },
+  { label: '服务中', count: 0, status: SessionStatus.IN_SERVICE },
+  { label: '已完成', count: 0, status: SessionStatus.COMPLETED },
+  { label: '已取消', count: 0, status: SessionStatus.CANCELLED }
+])
+
+watch(
+  () => [total.value, tableData.value],
+  () => {
+    statusSummary.value[0].count = total.value
+    const counts: Record<number, number> = {}
+    for (const row of tableData.value) {
+      const s = row.sessionStatus
+      if (s !== undefined && s !== null) counts[s] = (counts[s] ?? 0) + 1
+    }
+    for (const item of statusSummary.value) {
+      if (item.status !== undefined) item.count = counts[item.status] ?? 0
+    }
+  },
+  { immediate: true }
+)
+
+/** 快捷筛选：点击统计卡按状态过滤 */
+function filterByStatus(status?: number) {
+  query.sessionStatus = status
   handleSearch()
 }
 
@@ -251,11 +301,6 @@ async function handleCancelSession(row: ServiceSession) {
 }
 
 // ---------- 辅助渲染 ----------
-function serviceTypeLabel(t?: number): string {
-  const found = SERVICE_TYPE_OPTIONS.find((o) => o.value === t)
-  return found ? found.label : t != null ? String(t) : '--'
-}
-
 function sessionStatusLabel(s?: number): string {
   const found = SESSION_STATUS_OPTIONS.find((o) => o.value === s)
   return found ? found.label : s != null ? String(s) : '--'
@@ -315,8 +360,8 @@ loadPage()
           style="width: 140px"
           @keyup.enter="handleSearch"
         />
-        <el-select v-model="query.serviceType" placeholder="服务类型" clearable style="width: 140px">
-          <el-option v-for="o in SERVICE_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        <el-select v-model="query.itemCode" placeholder="服务类型" clearable filterable style="width: 180px">
+          <el-option v-for="o in serviceItems" :key="o.itemCode" :label="o.itemName" :value="o.itemCode" />
         </el-select>
         <el-select v-model="query.sessionStatus" placeholder="会话状态" clearable style="width: 130px">
           <el-option v-for="o in SESSION_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
@@ -324,6 +369,22 @@ loadPage()
         <div class="toolbar-actions">
           <el-button type="primary" :icon="'Search'" @click="handleSearch">查询</el-button>
           <el-button :icon="'Refresh'" @click="handleReset">重置</el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 状态概览统计卡（点击即筛选） -->
+    <el-card shadow="never" class="summary-card">
+      <div class="status-stats">
+        <div
+          v-for="s in statusSummary"
+          :key="s.label"
+          class="stat-item"
+          :class="{ active: query.sessionStatus === s.status }"
+          @click="filterByStatus(s.status)"
+        >
+          <span class="stat-label">{{ s.label }}</span>
+          <span class="stat-count">{{ s.count }}</span>
         </div>
       </div>
     </el-card>
@@ -344,14 +405,15 @@ loadPage()
         row-key="sessionCode"
       >
         <el-table-column prop="sessionCode" label="会话编码" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="serviceType" label="服务类型" width="110" align="center">
+        <el-table-column prop="itemName" label="服务类型" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-tag type="info">{{ serviceTypeLabel(row.serviceType) }}</el-tag>
+            <el-tag type="info">{{ row.itemName || '--' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="serviceTitle" label="服务标题" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="clientCode" label="客户" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="butlerFullName" label="管家" min-width="110" show-overflow-tooltip>
+        <el-table-column prop="clientName" label="发起人" min-width="130" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.clientName || row.clientCode || '--' }}</template>
+        </el-table-column>
+        <el-table-column prop="butlerFullName" label="养老管家" min-width="110" show-overflow-tooltip>
           <template #default="{ row }">{{ row.butlerFullName || row.butlerCode || '--' }}</template>
         </el-table-column>
         <el-table-column prop="priority" label="优先级" width="90" align="center">
@@ -359,89 +421,88 @@ loadPage()
             {{ SESSION_PRIORITY_OPTIONS.find((o) => o.value === row.priority)?.label ?? '--' }}
           </template>
         </el-table-column>
-        <el-table-column prop="sessionStatus" label="会话状态" width="100" align="center">
+        <el-table-column prop="sessionStatus" label="会话阶段" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="sessionStatusTagType(row.sessionStatus)">{{ sessionStatusLabel(row.sessionStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="subStatus" label="子状态" min-width="110" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.subStatus || '--' }}</template>
+        <el-table-column prop="updatedAt" label="更新时间" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatDateTime(row.updatedAt) }}</template>
         </el-table-column>
-        <el-table-column prop="acceptTime" label="受理时间" min-width="160" show-overflow-tooltip>
-          <template #default="{ row }">{{ formatDateTime(row.acceptTime) }}</template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="160" show-overflow-tooltip>
+        <el-table-column prop="createdAt" label="发起时间" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <!-- 按状态动态展示流转按钮（统一走 transition 端点） -->
-            <el-button
-              v-if="row.sessionStatus === SessionStatus.PENDING"
-              link
-              type="success"
-              size="small"
-              :disabled="actionLoading"
-              @click="handleAssignButler(row)"
-            >
-              分配管家
-            </el-button>
-            <el-button
-              v-if="row.sessionStatus === SessionStatus.ACCEPTED"
-              link
-              type="primary"
-              size="small"
-              :disabled="actionLoading"
-              @click="handleTransition(row, 'submit_demand', '提交需求', '确定提交需求吗？')"
-            >
-              提交需求
-            </el-button>
-            <el-button
-              v-if="row.sessionStatus === SessionStatus.DEMAND_SUBMITTED"
-              link
-              type="success"
-              size="small"
-              :disabled="actionLoading"
-              @click="handleTransition(row, 'confirm_solution', '确认方案', '确定确认方案吗？')"
-            >
-              确认方案
-            </el-button>
-            <el-button
-              v-if="row.sessionStatus === SessionStatus.SOLUTION_CONFIRMED"
-              link
-              type="primary"
-              size="small"
-              :disabled="actionLoading"
-              @click="handleTransition(row, 'start_service', '开始服务', '确定开始服务吗？')"
-            >
-              开始服务
-            </el-button>
-            <el-button
-              v-if="row.sessionStatus === SessionStatus.IN_SERVICE"
-              link
-              type="success"
-              size="small"
-              :disabled="actionLoading"
-              @click="handleTransition(row, 'finish', '完成服务', '确定完成服务吗？')"
-            >
-              完成服务
-            </el-button>
-            <el-button
-              v-if="
-                row.sessionStatus === SessionStatus.PENDING ||
-                row.sessionStatus === SessionStatus.ACCEPTED ||
-                row.sessionStatus === SessionStatus.IN_SERVICE
-              "
-              link
-              type="danger"
-              size="small"
-              :disabled="actionLoading"
-              @click="handleCancelSession(row)"
-            >
-              取消
-            </el-button>
+            <!-- 流转按钮仅进行中状态展示（已完成/已取消无流转动作） -->
+            <template v-if="row.sessionStatus !== SessionStatus.COMPLETED && row.sessionStatus !== SessionStatus.CANCELLED">
+              <el-button
+                v-if="row.sessionStatus === SessionStatus.PENDING"
+                link
+                type="success"
+                size="small"
+                :disabled="actionLoading"
+                @click="handleAssignButler(row)"
+              >
+                分配管家
+              </el-button>
+              <el-button
+                v-if="row.sessionStatus === SessionStatus.ACCEPTED"
+                link
+                type="primary"
+                size="small"
+                :disabled="actionLoading"
+                @click="handleTransition(row, 'submit_demand', '提交需求', '确定提交需求吗？')"
+              >
+                提交需求
+              </el-button>
+              <el-button
+                v-if="row.sessionStatus === SessionStatus.DEMAND_SUBMITTED"
+                link
+                type="success"
+                size="small"
+                :disabled="actionLoading"
+                @click="handleTransition(row, 'confirm_solution', '确认方案', '确定确认方案吗？')"
+              >
+                确认方案
+              </el-button>
+              <el-button
+                v-if="row.sessionStatus === SessionStatus.SOLUTION_CONFIRMED"
+                link
+                type="primary"
+                size="small"
+                :disabled="actionLoading"
+                @click="handleTransition(row, 'start_service', '开始服务', '确定开始服务吗？')"
+              >
+                开始服务
+              </el-button>
+              <el-button
+                v-if="row.sessionStatus === SessionStatus.IN_SERVICE"
+                link
+                type="success"
+                size="small"
+                :disabled="actionLoading"
+                @click="handleTransition(row, 'finish', '完成服务', '确定完成服务吗？')"
+              >
+                完成服务
+              </el-button>
+              <el-button
+                v-if="
+                  row.sessionStatus === SessionStatus.PENDING ||
+                  row.sessionStatus === SessionStatus.ACCEPTED ||
+                  row.sessionStatus === SessionStatus.IN_SERVICE
+                "
+                link
+                type="danger"
+                size="small"
+                :disabled="actionLoading"
+                @click="handleCancelSession(row)"
+              >
+                取消
+              </el-button>
+            </template>
             <el-button link type="danger" size="small" @click="handleDeleteRow(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -570,6 +631,56 @@ loadPage()
 .search-card {
   :deep(.el-card__body) {
     padding-bottom: 2px;
+  }
+}
+
+/* 状态概览统计卡 */
+.summary-card {
+  :deep(.el-card__body) {
+    padding: 12px 16px;
+  }
+
+  .status-stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid #e4e7ed;
+      background: #fafafa;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: #409eff;
+        color: #409eff;
+      }
+
+      &.active {
+        background: #409eff;
+        border-color: #409eff;
+
+        .stat-label,
+        .stat-count {
+          color: #fff;
+        }
+      }
+
+      .stat-label {
+        font-size: 13px;
+        color: #606266;
+      }
+      .stat-count {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1f2329;
+      }
+    }
   }
 }
 </style>

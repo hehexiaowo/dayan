@@ -1,13 +1,10 @@
 /**
- * 知识仓库（百炼知识库：平台 + 每渠道一个）。
- * 对齐后端 KnowledgeRepoAdminController（/admin-api/knowledge/repos）。
+ * 知识仓库类型（Channel 端本渠道知识库管理）。
+ *
+ * 对齐后端 ChannelKnowledgeController（/channel-api/knowledge/repos）。
+ * 从 admin 端 src/types/knowledge.ts 精简：渠道端仅操作本渠道一个仓库，
+ * 无平台/渠道归属切换，故去掉 repoType/channelCode/channelName 等归属字段。
  */
-
-/** 仓库归属类型选项 */
-export const KNOWLEDGE_REPO_TYPE_OPTIONS = [
-  { value: 1, label: '平台' },
-  { value: 2, label: '渠道' }
-] as const
 
 /** 仓库状态选项 */
 export const KNOWLEDGE_REPO_STATUS_OPTIONS = [
@@ -15,10 +12,6 @@ export const KNOWLEDGE_REPO_STATUS_OPTIONS = [
   { value: 1, label: '正常' },
   { value: 2, label: '异常' }
 ] as const
-
-export function knowledgeRepoTypeLabel(v?: number): string {
-  return v === 2 ? '渠道' : v === 1 ? '平台' : '--'
-}
 
 export function knowledgeRepoStatusLabel(v?: number): string {
   return v === 1 ? '正常' : v === 2 ? '异常' : '构建中'
@@ -44,13 +37,6 @@ export function parseStatusLabel(v?: string): string {
   }
 }
 
-export function parseStatusTagType(v?: string): 'success' | 'danger' | 'warning' | 'info' {
-  if (v === 'PARSE_SUCCESS') return 'success'
-  if (v === 'PARSE_FAILED') return 'danger'
-  if (v === 'PARSING' || v === 'INIT') return 'warning'
-  return 'info'
-}
-
 /** 索引内文档状态标签 */
 export function indexStatusLabel(v?: string): string {
   switch (v) {
@@ -74,17 +60,11 @@ export function indexStatusTagType(v?: string): 'success' | 'danger' | 'warning'
   return 'info'
 }
 
-/** 知识仓库实体 */
+/** 知识仓库实体（本渠道仓库，字段对齐 KnowledgeRepoVO） */
 export interface KnowledgeRepo {
   id?: number
   repoCode: string
   repoName: string
-  /** 1=平台大雁养老 2=渠道 */
-  repoType: number
-  channelCode?: string
-  channelName?: string
-  /** 渠道简称（列表「归属」列展示用） */
-  channelShortName?: string
   /** 百炼远端索引 ID */
   indexId?: string
   buildJobId?: string
@@ -114,27 +94,6 @@ export interface KnowledgeRepoTreeNode {
   inheritedFromName?: string | null
   /** 子节点（后代渠道） */
   children: KnowledgeRepoTreeNode[]
-}
-
-/** 分页查询参数 */
-export interface KnowledgeRepoQuery {
-  current: number
-  size: number
-  repoType?: number
-  channelCode?: string
-  repoName?: string
-  status?: number
-}
-
-/** 创建参数（mode=create 新建远端索引 / mode=bind 绑定已有） */
-export interface KnowledgeRepoCreatePayload {
-  repoName: string
-  repoType: number
-  channelCode?: string
-  mode?: 'create' | 'bind'
-  indexId?: string
-  description?: string
-  sortOrder?: number
 }
 
 /** 知识库文档（远端代理） */

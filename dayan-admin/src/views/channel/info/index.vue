@@ -471,7 +471,6 @@ onMounted(() => {
         default-expand-all
       >
         <el-table-column prop="fullName" label="渠道全称" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="shortName" label="简称" min-width="120" show-overflow-tooltip />
         <el-table-column prop="channelCode" label="渠道编码" min-width="140" show-overflow-tooltip />
         <el-table-column label="类型" width="100" align="center">
           <template #default="{ row }">
@@ -480,16 +479,14 @@ onMounted(() => {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="unifiedCreditCode" label="社会信用代码" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="legalPerson" label="法人" width="100" />
-        <el-table-column prop="contactPerson" label="联系人" width="100" />
-        <el-table-column prop="contactPhone" label="联系电话" min-width="130" />
-        <el-table-column prop="agentCount" label="代理人" width="80" align="center" />
-        <el-table-column prop="sortOrder" label="排序" width="70" align="center" />
+        <el-table-column prop="contactPerson" label="联系人" min-width="100" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.contactPerson || '--' }}</template>
+        </el-table-column>
+        <el-table-column prop="agentCount" label="队伍数量" width="90" align="center" />
         <el-table-column label="分销商" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ distributorNameMap[row.distributorCode] || row.distributorCode || '-' }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="80" align="center">
+        <el-table-column label="合作状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)">
               {{ statusLabel(row.status) }}

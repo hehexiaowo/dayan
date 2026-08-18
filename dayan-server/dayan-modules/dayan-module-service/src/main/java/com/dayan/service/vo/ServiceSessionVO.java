@@ -15,6 +15,8 @@ public class ServiceSessionVO {
     private String equityCode;
     /** 服务项目编码 */
     private String itemCode;
+    /** 服务项目名称（join service_item.item_name；服务类型展示用） */
+    private String itemName;
     private String clientCode;
     /** 客户姓名 join client_info.full_name */
     private String clientName;
@@ -48,4 +50,6 @@ public class ServiceSessionVO {
     private String closeReason;
     private String remark;
     private LocalDateTime createdAt;
+    /** 更新时间 */
+    private LocalDateTime updatedAt;
 }

@@ -27,6 +27,9 @@ public class KnowledgeRepoVO {
     /** 渠道名称（关联查询，失败容错为空） */
     private String channelName;
 
+    /** 渠道简称（关联查询；列表「归属」列展示用，失败容错为空） */
+    private String channelShortName;
+
     /** 百炼远端索引 ID */
     private String indexId;
 

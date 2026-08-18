@@ -487,6 +487,34 @@ export const SESSION_STATUS_OPTIONS = [
 ] as const
 
 /**
+ * 会话子状态（service_session.sub_status，独立于状态机，由应用层 UPDATE）。
+ * 展示层中文映射（DDL 注释权威：normal/hold/urgent/reassign/refund_review/refund_done/interrupted）。
+ */
+export const SUB_STATUS_OPTIONS = [
+  { label: '正常', value: 'normal' },
+  { label: '挂起', value: 'hold' },
+  { label: '加急', value: 'urgent' },
+  { label: '重新分配', value: 'reassign' },
+  { label: '退款审核中', value: 'refund_review' },
+  { label: '退款完成', value: 'refund_done' },
+  { label: '中断', value: 'interrupted' }
+] as const
+
+/** 子状态中文标签（未知值回退原文） */
+export function subStatusLabel(v?: string): string {
+  if (!v) return '--'
+  const found = SUB_STATUS_OPTIONS.find((o) => o.value === v)
+  return found ? found.label : v
+}
+
+/** 子状态 el-tag type：加急/退款审核中 warning，挂起/中断 info，其余 success。 */
+export function subStatusTagType(v?: string): 'success' | 'warning' | 'danger' | 'info' {
+  if (v === 'urgent' || v === 'refund_review') return 'warning'
+  if (v === 'hold' || v === 'interrupted') return 'info'
+  return 'success'
+}
+
+/**
  * 服务类型（service_session.service_type）。
  *
  * 1=上门服务 / 2=电话咨询 / 3=远程协助 / 4=机构驻点 / 5=其他。
@@ -534,6 +562,8 @@ export interface ServiceSession {
   equityCode?: string
   /** 服务项目编码（激活来源，ServiceSessionVO 返回） */
   itemCode?: string
+  /** 服务项目名称（服务类型=服务项目，join service_item.item_name） */
+  itemName?: string
   /** 客户编码 */
   clientCode?: string
   /** 服务管家编码 */
@@ -601,6 +631,8 @@ export interface ServiceSessionQuery extends PageQuery {
   clientCode?: string
   butlerCode?: string
   serviceType?: number
+  /** 服务项目编码（服务类型=服务项目维度筛选） */
+  itemCode?: string
   parkCode?: string
   agentCode?: string
   channelCode?: string

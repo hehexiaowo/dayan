@@ -22,6 +22,7 @@ import {
 } from '@/api/knowledge'
 import type { KnowledgeDoc } from '@/types/knowledge'
 import { indexStatusLabel, indexStatusTagType } from '@/types/knowledge'
+import ChunkDialog from '@/components/ChunkDialog/index.vue'
 
 const props = defineProps<{ repoId: number }>()
 
@@ -201,6 +202,13 @@ async function handleDelete(row: KnowledgeDoc) {
   loadDocs()
 }
 
+// ---------- 切片管理 ----------
+const chunkDialogRef = ref<InstanceType<typeof ChunkDialog>>()
+
+function openChunks(row: KnowledgeDoc) {
+  chunkDialogRef.value?.open(row.fileId, row.fileName)
+}
+
 function formatSize(bytes?: number): string {
   if (!bytes) return '--'
   if (bytes < 1024) return `${bytes} B`
@@ -268,8 +276,9 @@ function taskStatusText(t: UploadTask): string {
       <el-table-column label="更新时间" width="170" align="center">
         <template #default="{ row }">{{ formatTime(row.gmtModified) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="90" fixed="right">
+      <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
+          <el-button link type="primary" size="small" @click="openChunks(row)">切片</el-button>
           <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -277,6 +286,9 @@ function taskStatusText(t: UploadTask): string {
         <el-empty description="暂无文档，上传后自动解析入库" :image-size="80" />
       </template>
     </el-table>
+
+    <!-- 切片管理弹窗 -->
+    <ChunkDialog ref="chunkDialogRef" :repo-id="props.repoId" />
   </div>
 </template>
 

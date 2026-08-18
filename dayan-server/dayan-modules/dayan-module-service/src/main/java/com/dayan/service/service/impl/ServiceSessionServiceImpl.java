@@ -27,6 +27,7 @@ import com.dayan.service.mapper.ButlerInfoViewMapper;
 import com.dayan.service.mapper.ClientInfoViewMapper;
 import com.dayan.service.mapper.ServiceEquityArrangeMapper;
 import com.dayan.service.mapper.ServiceEquitySolutionMapper;
+import com.dayan.service.mapper.ServiceItemLightMapper;
 import com.dayan.service.mapper.ServiceSessionMapper;
 import com.dayan.service.service.ServiceSessionService;
 import com.dayan.service.vo.ServiceSessionVO;
@@ -73,6 +74,7 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
     private final ServiceSessionMapper sessionMapper;
     private final ButlerInfoViewMapper butlerInfoViewMapper;
     private final ClientInfoViewMapper clientInfoViewMapper;
+    private final ServiceItemLightMapper serviceItemLightMapper;
     private final ServiceEquitySolutionMapper solutionMapper;
     private final ServiceEquityArrangeMapper arrangeMapper;
     private final SequenceProvider sequenceProvider;
@@ -444,6 +446,9 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         if (query.getServiceType() != null) {
             wrapper.eq(ServiceSession::getServiceType, query.getServiceType());
         }
+        if (query.getItemCode() != null && !query.getItemCode().isEmpty()) {
+            wrapper.eq(ServiceSession::getItemCode, query.getItemCode());
+        }
         if (query.getParkCode() != null && !query.getParkCode().isEmpty()) {
             wrapper.eq(ServiceSession::getParkCode, query.getParkCode());
         }
@@ -476,6 +481,14 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         vo.setSessionCode(entity.getSessionCode());
         vo.setEquityCode(entity.getEquityCode());
         vo.setItemCode(entity.getItemCode());
+        // 服务类型=服务项目：按 item_code 关联 service_item 取项目名称（失败容错为空）
+        if (entity.getItemCode() != null && !entity.getItemCode().isEmpty()) {
+            try {
+                vo.setItemName(serviceItemLightMapper.selectItemName(entity.getItemCode()));
+            } catch (Exception e) {
+                log.warn("关联服务项目名称失败 itemCode={}: {}", entity.getItemCode(), e.getMessage());
+            }
+        }
         vo.setClientCode(entity.getClientCode());
         // 跨模块只读 client_info 取客户姓名快照（同 ButlerInfoView 模式）
         ClientInfoView client = clientInfoViewMapper.selectOne(new LambdaQueryWrapper<ClientInfoView>()
@@ -509,6 +522,7 @@ public class ServiceSessionServiceImpl implements ServiceSessionService {
         vo.setCloseReason(entity.getCloseReason());
         vo.setRemark(entity.getRemark());
         vo.setCreatedAt(entity.getCreatedAt());
+        vo.setUpdatedAt(entity.getUpdatedAt());
         return vo;
     }
 }

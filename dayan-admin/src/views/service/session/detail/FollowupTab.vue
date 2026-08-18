@@ -14,14 +14,15 @@
  * - create 时不含 isFollowupNeeded / nextFollowupDate / status（服务端自动算/固定）
  * - edit 时 status / isFollowupNeeded / isResolved 可手改
  */
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { useCrud } from '@/composables/useCrud'
 import {
   pageServiceEquityFollowups,
   createServiceEquityFollowup,
   updateServiceEquityFollowup,
-  deleteServiceEquityFollowup
+  deleteServiceEquityFollowup,
+  listServiceEquityArranges
 } from '@/api/service-sub'
 import {
   FOLLOWUP_TYPE_OPTIONS,
@@ -29,13 +30,24 @@ import {
   FOLLOWUP_STATUS_OPTIONS,
   FOLLOWUP_YES_NO_OPTIONS
 } from '@/types/service'
-import type { ServiceEquityFollowup, ServiceEquityFollowupQuery } from '@/types/service'
+import type { ServiceEquityFollowup, ServiceEquityFollowupQuery, ServiceEquityArrange } from '@/types/service'
 
 const props = defineProps<{
   sessionCode: string
   /** 会话客户编码（从会话详情带入，新增时回填，客户端不可改） */
   clientCode?: string
 }>()
+
+// ---------- 关联安排下拉（P1-1：从本会话安排列表选择，避免手填编码） ----------
+const arrangeOptions = ref<ServiceEquityArrange[]>([])
+
+onMounted(async () => {
+  try {
+    arrangeOptions.value = await listServiceEquityArranges(props.sessionCode)
+  } catch {
+    arrangeOptions.value = []
+  }
+})
 
 // ---------- 列表（useCrud，主键 followupCode） ----------
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } = useCrud<
@@ -346,12 +358,21 @@ defineExpose({ loadPage })
           <el-col :span="12">
             <el-form-item label="关联安排">
               <!-- 编辑时 arrangeCode 不可改（UpdateDTO 不含 arrangeCode） -->
-              <el-input
+              <el-select
                 v-model="form.arrangeCode"
                 :disabled="dialogMode === 'edit'"
-                placeholder="安排编码（软关联，可选）"
-                maxlength="50"
-              />
+                placeholder="选择关联安排（本会话，可选）"
+                filterable
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="a in arrangeOptions"
+                  :key="a.arrangeCode"
+                  :label="`${a.parkFullName || a.arrangeDate || a.arrangeCode}（${a.arrangeCode}）`"
+                  :value="a.arrangeCode"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

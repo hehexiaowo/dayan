@@ -10,17 +10,20 @@ import com.dayan.common.core.code.CodeGenerator;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
-import com.dayan.channel.service.ChannelInfoService;
+import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.knowledge.dto.KnowledgeChatDTO;
 import com.dayan.knowledge.dto.KnowledgeDocImportDTO;
 import com.dayan.knowledge.dto.KnowledgeRepoCreateDTO;
 import com.dayan.knowledge.dto.KnowledgeRepoQueryDTO;
 import com.dayan.knowledge.dto.KnowledgeRepoUpdateDTO;
 import com.dayan.knowledge.entity.KnowledgeRepo;
+import com.dayan.knowledge.mapper.ChannelInfoLight;
+import com.dayan.knowledge.mapper.ChannelInfoLightMapper;
 import com.dayan.knowledge.mapper.KnowledgeRepoMapper;
 import com.dayan.knowledge.service.KnowledgeRepoService;
 import com.dayan.knowledge.vo.KnowledgeChatVO;
 import com.dayan.knowledge.vo.KnowledgeDocVO;
+import com.dayan.knowledge.vo.KnowledgeRepoTreeNodeVO;
 import com.dayan.knowledge.vo.KnowledgeRepoVO;
 import com.dayan.system.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +33,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -65,8 +75,8 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     private static final int DEFAULT_TOP_K = 4;
 
     private final KnowledgeRepoMapper knowledgeRepoMapper;
+    private final ChannelInfoLightMapper channelInfoLightMapper;
     private final SystemConfigService systemConfigService;
-    private final ChannelInfoService channelInfoService;
     private final CodeGenerator codeGenerator;
     private final BailianChatClient bailianChatClient = new BailianChatClient();
 
@@ -103,6 +113,152 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
                 .orderByDesc(KnowledgeRepo::getId);
         return knowledgeRepoMapper.selectList(wrapper).stream()
                 .map(this::toVO).collect(Collectors.toList());
+    }
+
+    @Override
+    public KnowledgeRepoVO getByChannelCode(String channelCode) {
+        if (StrUtil.isBlank(channelCode)) {
+            return null;
+        }
+        KnowledgeRepo repo = knowledgeRepoMapper.selectOne(new LambdaQueryWrapper<KnowledgeRepo>()
+                .eq(KnowledgeRepo::getRepoType, TYPE_CHANNEL)
+                .eq(KnowledgeRepo::getChannelCode, channelCode)
+                .last("LIMIT 1"));
+        return repo == null ? null : toVO(repo);
+    }
+
+    @Override
+    public List<KnowledgeRepoTreeNodeVO> getRepoTree(String rootChannelCode) {
+        List<ChannelInfoLight> channels = channelInfoLightMapper.selectAll();
+        if (channels.isEmpty()) {
+            return List.of();
+        }
+        Map<String, ChannelInfoLight> byCode = channels.stream()
+                .collect(Collectors.toMap(ChannelInfoLight::getChannelCode, Function.identity(), (a, b) -> a));
+
+        // 收集 root 及其全部后代（ancestors 链包含 root）；root 为空 = 全渠道树
+        Set<String> scope = new HashSet<>();
+        for (ChannelInfoLight c : channels) {
+            if (StrUtil.isBlank(rootChannelCode) || rootChannelCode.equals(c.getChannelCode())
+                    || (c.getAncestors() != null && c.getAncestors().contains(rootChannelCode))) {
+                scope.add(c.getChannelCode());
+            }
+        }
+        // 继承解析需要祖先链上的仓库（scope 渠道的 ancestors 一并纳入查询范围）
+        Set<String> queryCodes = new HashSet<>(scope);
+        for (String code : scope) {
+            ChannelInfoLight c = byCode.get(code);
+            if (c != null && StrUtil.isNotBlank(c.getAncestors())) {
+                for (String anc : c.getAncestors().split(",")) {
+                    if (StrUtil.isNotBlank(anc)) {
+                        queryCodes.add(anc);
+                    }
+                }
+            }
+        }
+        Map<String, KnowledgeRepo> repoByChannel = new HashMap<>();
+        for (KnowledgeRepo r : knowledgeRepoMapper.selectByChannelCodes(queryCodes)) {
+            repoByChannel.putIfAbsent(r.getChannelCode(), r);
+        }
+
+        // 按祖先链从近到远找最近建有仓库的渠道（继承源）
+        Map<String, KnowledgeRepo> effectiveByChannel = new HashMap<>();
+        for (String code : scope) {
+            KnowledgeRepo own = repoByChannel.get(code);
+            if (own != null) {
+                effectiveByChannel.put(code, own);
+                continue;
+            }
+            ChannelInfoLight c = byCode.get(code);
+            if (c != null && StrUtil.isNotBlank(c.getAncestors())) {
+                String[] ancestors = c.getAncestors().split(",");
+                for (int i = ancestors.length - 1; i >= 0; i--) {
+                    KnowledgeRepo ancRepo = repoByChannel.get(ancestors[i].trim());
+                    if (ancRepo != null) {
+                        effectiveByChannel.put(code, ancRepo);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 组装树：parent_code 挂接，root 为顶层
+        Map<String, KnowledgeRepoTreeNodeVO> nodes = new LinkedHashMap<>();
+        for (ChannelInfoLight c : channels) {
+            if (!scope.contains(c.getChannelCode())) {
+                continue;
+            }
+            KnowledgeRepoTreeNodeVO node = new KnowledgeRepoTreeNodeVO();
+            node.setChannelCode(c.getChannelCode());
+            node.setFullName(c.getFullName());
+            node.setShortName(c.getShortName());
+            node.setLevel(c.getLevel());
+            node.setRepo(repoByChannel.get(c.getChannelCode()) == null ? null : toVO(repoByChannel.get(c.getChannelCode())));
+            node.setEffectiveRepo(effectiveByChannel.get(c.getChannelCode()) == null ? null
+                    : toVO(effectiveByChannel.get(c.getChannelCode())));
+            KnowledgeRepo effective = effectiveByChannel.get(c.getChannelCode());
+            if (effective != null && !c.getChannelCode().equals(effective.getChannelCode())) {
+                node.setInheritedFrom(effective.getChannelCode());
+                ChannelInfoLight src = byCode.get(effective.getChannelCode());
+                node.setInheritedFromName(src == null ? effective.getChannelCode() : src.getShortName());
+            }
+            nodes.put(c.getChannelCode(), node);
+        }
+        // 挂 children
+        List<KnowledgeRepoTreeNodeVO> roots = new ArrayList<>();
+        for (KnowledgeRepoTreeNodeVO node : nodes.values()) {
+            ChannelInfoLight c = byCode.get(node.getChannelCode());
+            String parent = c == null ? null : c.getParentCode();
+            if (parent != null && nodes.containsKey(parent)) {
+                nodes.get(parent).getChildren().add(node);
+            } else {
+                roots.add(node);
+            }
+        }
+        return roots;
+    }
+
+    @Override
+    public KnowledgeRepo requireRepoVisible(Long id) {
+        KnowledgeRepo repo = knowledgeRepoMapper.selectByIdIgnoreTenant(id);
+        if (repo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "知识仓库不存在: " + id);
+        }
+        String currentCode = ContextHolder.getChannelCode();
+        if (StrUtil.isBlank(currentCode)) {
+            // 未绑定渠道上下文（admin 端）放行
+            return repo;
+        }
+        String repoChannel = repo.getChannelCode();
+        if (repoChannel != null && repoChannel.equals(currentCode)) {
+            return repo;
+        }
+        // 平台库（channel_code=null）对 channel 端不可见（继承/后代均不适用）
+        if (StrUtil.isBlank(repoChannel)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "知识仓库不存在: " + id);
+        }
+        // 可见范围：repo 渠道 ∈ 当前渠道的祖先（继承使用）∪ 当前渠道的后代
+        List<ChannelInfoLight> channels = channelInfoLightMapper.selectAll();
+        ChannelInfoLight repoChannelInfo = channels.stream()
+                .filter(c -> repoChannel.equals(c.getChannelCode()))
+                .findFirst().orElse(null);
+        if (repoChannelInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "知识仓库不存在: " + id);
+        }
+        boolean visible = repoChannelInfo.getAncestors() != null
+                && repoChannelInfo.getAncestors().contains(currentCode);
+        if (!visible) {
+            // repo 渠道是当前渠道的祖先（子渠道继承使用祖先的库）
+            ChannelInfoLight currentInfo = channels.stream()
+                    .filter(c -> currentCode.equals(c.getChannelCode()))
+                    .findFirst().orElse(null);
+            visible = currentInfo != null && currentInfo.getAncestors() != null
+                    && currentInfo.getAncestors().contains(repoChannel);
+        }
+        if (!visible) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "知识仓库不存在: " + id);
+        }
+        return repo;
     }
 
     @Override
@@ -172,8 +328,18 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void update(Long id, KnowledgeRepoUpdateDTO dto) {
         KnowledgeRepo repo = requireRepo(id);
+        // 名称/描述变化且已建库时先同步百炼远端（失败中止，保证本地与远端一致）
+        if (dto.getRepoName() != null || dto.getDescription() != null) {
+            String newName = dto.getRepoName() != null ? dto.getRepoName() : repo.getRepoName();
+            String newDesc = dto.getDescription() != null ? dto.getDescription() : repo.getDescription();
+            if (StrUtil.isNotBlank(repo.getIndexId())
+                    && (!newName.equals(repo.getRepoName()) || !java.util.Objects.equals(newDesc, repo.getDescription()))) {
+                requireClient().updateIndex(repo.getIndexId(), newName, newDesc);
+            }
+        }
         if (dto.getRepoName() != null) {
             repo.setRepoName(dto.getRepoName());
         }
@@ -326,11 +492,21 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
         requireClient().deleteDocuments(repo.getIndexId(), List.of(fileId));
     }
 
+    @Override
+    public BailianKnowledgeClient.ChunkPage listChunks(Long id, String fileId, int pageNum, int pageSize) {
+        KnowledgeRepo repo = requireRepo(id);
+        requireIndexId(repo);
+        if (fileId == null || fileId.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "切片查询必须指定文档 ID");
+        }
+        return requireClient().listChunks(repo.getIndexId(), fileId, pageNum, pageSize);
+    }
+
     // ==================== RAG 问答 / 检索 ====================
 
     @Override
     public KnowledgeChatVO chat(Long id, KnowledgeChatDTO dto) {
-        KnowledgeRepo repo = requireRepo(id);
+        KnowledgeRepo repo = requireRepoVisible(id);
         requireIndexId(repo);
         int topK = dto.getTopK() == null || dto.getTopK() < 1 ? DEFAULT_TOP_K : dto.getTopK();
         List<BailianKnowledgeClient.RetrieveNode> nodes =
@@ -380,7 +556,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
 
     @Override
     public List<KnowledgeChatVO.Citation> retrieve(Long id, String query, Integer topK) {
-        KnowledgeRepo repo = requireRepo(id);
+        KnowledgeRepo repo = requireRepoVisible(id);
         requireIndexId(repo);
         if (StrUtil.isBlank(query)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "检索词不能为空");
@@ -396,7 +572,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
 
     @Override
     public List<KnowledgeChatVO.Citation> retrieveByDocuments(Long id, String query, Integer topK, List<String> documentIds) {
-        KnowledgeRepo repo = requireRepo(id);
+        KnowledgeRepo repo = requireRepoVisible(id);
         requireIndexId(repo);
         if (StrUtil.isBlank(query)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "检索词不能为空");
@@ -457,6 +633,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
         vo.setRepoType(repo.getRepoType());
         vo.setChannelCode(repo.getChannelCode());
         vo.setChannelName(resolveChannelName(repo.getChannelCode()));
+        vo.setChannelShortName(resolveChannelShortName(repo.getChannelCode()));
         vo.setIndexId(repo.getIndexId());
         vo.setBuildJobId(repo.getBuildJobId());
         vo.setDescription(repo.getDescription());
@@ -469,15 +646,28 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
         return vo;
     }
 
-    /** 渠道名关联查询（失败容错为空，不阻断列表） */
+    /** 渠道名关联查询（失败容错为空，不阻断列表；直读 channel_info 表） */
     private String resolveChannelName(String channelCode) {
         if (StrUtil.isBlank(channelCode)) {
             return null;
         }
         try {
-            return channelInfoService.getDetail(channelCode).getFullName();
+            return knowledgeRepoMapper.selectChannelFullName(channelCode);
         } catch (Exception e) {
             log.warn("关联渠道名失败 channelCode={}: {}", channelCode, e.getMessage());
+            return null;
+        }
+    }
+
+    /** 渠道简称关联查询（列表「归属」列展示用；失败容错为空，不阻断列表） */
+    private String resolveChannelShortName(String channelCode) {
+        if (StrUtil.isBlank(channelCode)) {
+            return null;
+        }
+        try {
+            return knowledgeRepoMapper.selectChannelShortName(channelCode);
+        } catch (Exception e) {
+            log.warn("关联渠道简称失败 channelCode={}: {}", channelCode, e.getMessage());
             return null;
         }
     }
