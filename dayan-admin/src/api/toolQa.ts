@@ -31,20 +31,28 @@ export function deleteQaConfig(id: number): Promise<void> {
 }
 
 const REPO_PAGE_SIZE = 100
-const REPO_MAX_PAGES = 5
 
 /**
  * 知识库绑定选项（id + repoName），供人物表单多选下拉使用。
  *
- * 复用已有分页接口 pageKnowledgeRepos 拉取（最多 5 页 × 100），
+ * 复用已有分页接口 pageKnowledgeRepos 全量拉取（按 total 分页，按 id 去重），
  * 避免依赖不存在的 /admin-api/knowledge/repos/list 接口。
  */
 export async function fetchRepoOptions(): Promise<{ id: number; repoName: string }[]> {
-  const list: { id: number; repoName: string }[] = []
-  for (let page = 1; page <= REPO_MAX_PAGES; page++) {
+  const map = new Map<number, { id: number; repoName: string }>()
+  let page = 1
+  let total = Infinity
+  while (map.size < total) {
     const res = await pageKnowledgeRepos({ current: page, size: REPO_PAGE_SIZE })
-    list.push(...res.records.map((r) => ({ id: Number(r.id), repoName: r.repoName })))
-    if (list.length >= res.total || res.records.length === 0) break
+    total = res.total ?? 0
+    for (const r of res.records) {
+      if (r.id == null) continue
+      const id = Number(r.id)
+      if (Number.isNaN(id)) continue
+      map.set(id, { id, repoName: r.repoName })
+    }
+    if (res.records.length === 0 || map.size >= total) break
+    page++
   }
-  return list
+  return Array.from(map.values())
 }
