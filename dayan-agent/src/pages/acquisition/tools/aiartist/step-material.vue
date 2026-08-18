@@ -1,16 +1,15 @@
 <template>
   <view class="page">
-    <view class="dy-section-title">文章目的</view>
-    <view class="option-grid">
-      <view v-for="o in AI_PURPOSE_OPTIONS" :key="o.value" class="option-card dy-clickable"
-        :class="{ picked: purpose === o.value }" @click="purpose = o.value">
-        <text class="option-title">{{ o.label }}</text>
-        <text class="option-desc">{{ o.desc }}</text>
-        <view v-if="purpose === o.value" class="option-flag"><text class="option-flag-mark">✓</text></view>
+    <!-- 当前创作分类 -->
+    <view v-if="category" class="cat-banner">
+      <DyIconBlock :text="category.icon || '创'" :color="catColor(category.iconColor)" size="md" shape="circle" />
+      <view class="cat-banner-info">
+        <text class="cat-banner-name">{{ category.toolName }}</text>
+        <text class="cat-banner-desc">{{ category.toolDesc }}</text>
       </view>
     </view>
 
-    <!-- 素材（product 必选，其余目的可选精准勾选） -->
+    <!-- 素材（按分类目的条件渲染） -->
     <view>
       <view class="dy-section-title">{{ purpose === 'product' ? '保险产品/政策资料（必选）' : '知识库文档（可选，精准取材）' }}<text v-if="purpose === 'product'" class="req">*</text></view>
       <view class="search-row"><input class="dy-search" v-model="kbKeyword" placeholder="搜索知识库文档" confirm-type="search" @confirm="loadKbDocs" /></view>
@@ -57,6 +56,18 @@
           <view class="check-round" :class="{ on: parkCodes.includes(p.parkCode) }"><text class="check-mark">✓</text></view>
         </view>
       </view>
+    </template>
+
+    <!-- 分类专属：粘贴内容 -->
+    <template v-if="purpose === 'science'">
+      <view class="dy-section-title">粘贴文章内容或链接（必填）<text class="req">*</text></view>
+      <textarea class="dy-textarea" v-model="pastedText" maxlength="4000"
+        placeholder="粘贴要转写的文章全文，或文章链接（转写将忠于原文事实）" />
+    </template>
+    <template v-if="purpose === 'product'">
+      <view class="dy-section-title">粘贴保险计划书文本（必填）<text class="req">*</text></view>
+      <textarea class="dy-textarea" v-model="pastedText" maxlength="8000"
+        placeholder="粘贴已有保险计划书的核心内容（保障责任、保额、费率、缴费方式等）" />
     </template>
 
     <!-- 可选素材 -->
@@ -112,21 +123,23 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { createAiProject, getAiTemplates } from '@/api/toolAiCreator'
+import { createAiProject, getAiTemplates, getAiartistConfigs } from '@/api/toolAiartist'
 import { getKnowledgeDocs } from '@/api/knowledge'
 import { getGoodsList } from '@/api/goods'
 import { getRegions } from '@/api/park'
 import { assembleMaterials } from '@/utils/aiMaterial'
 import type { AiRefTemplateOption, KnowledgeDocOption } from '@/types/aiContent'
+import type { AiartistConfig } from '@/types/toolAiartist'
 import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS, AI_AUDIENCE_OPTIONS } from '@/types/aiContent'
 import type { ParkCard } from '@/types/park'
 import type { GoodsProduct } from '@/types'
-import { AI_PURPOSE_OPTIONS } from '@/types/toolAiCreator'
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue'
 
 /**
- * 第 1 步：选目的 → 动态必选素材 → 形态/风格/读者 → 前端聚合素材 → 创建项目。
- * 素材由本页聚合（范文正文/知识检索召回/商品详情/机构摘要）随创建提交，
- * 后端存快照供 digest 阶段一次性消费（tool 域不做业务库依赖）。
+ * 第 1 步（分类化）：创作分类（tool_info 的 aiartist 实例）决定目的与素材规则。
+ * 主题创作（science）→ 粘贴文章/链接；机构介绍（park）→ 选机构；
+ * 保险计划（product）→ 粘贴计划书 + 知识库/商品。
+ * 素材由本页聚合随创建提交，后端存快照供 digest 阶段一次性消费。
  */
 const PARK_CATS = [
   { value: 'vital', label: '活力长居' },
@@ -134,11 +147,29 @@ const PARK_CATS = [
   { value: 'sojourn', label: '旅游短居' }
 ] as const
 
-const purpose = ref<string>('product')
+type CatColor = 'blue' | 'green' | 'orange' | 'red' | 'gray'
+
+const COLOR_SET: readonly CatColor[] = ['blue', 'green', 'orange', 'red', 'gray']
+function catColor(color?: string): CatColor {
+  return (color && COLOR_SET.includes(color as CatColor) ? color : 'blue') as CatColor
+}
+
+/** 兜底分类 — 接口不可用/未配置时按 toolCode 识别目的（与 tool_info 预置种子一致） */
+const FALLBACK_CONFIGS: AiartistConfig[] = [
+  { toolCode: 'TL00003', toolName: 'AI创作（主题创作）', purpose: 'science', icon: '主', iconColor: 'blue' },
+  { toolCode: 'TL90006', toolName: 'AI创作（机构介绍）', purpose: 'park', icon: '机', iconColor: 'green' },
+  { toolCode: 'TL90007', toolName: 'AI创作（保险计划）', purpose: 'product', icon: '保', iconColor: 'orange' },
+]
+
+const toolCode = ref('')
+const category = ref<AiartistConfig | null>(null)
+const purpose = computed(() => category.value?.purpose || 'science')
+
 const contentType = ref(1)
 const styleCode = ref('professional')
 const audience = ref('general')
 const topic = ref('')
+const pastedText = ref('')
 const refContentCode = ref('')
 const kbFileIds = ref<string[]>([])
 const goodsCodes = ref<string[]>([])
@@ -158,12 +189,28 @@ const filteredParks = computed(() =>
   parkKeyword.value ? parks.value.filter((p) => p.fullName?.includes(parkKeyword.value)) : parks.value
 )
 
-onLoad(() => {
+onLoad(async (opts) => {
+  toolCode.value = opts?.toolCode || ''
+  if (!toolCode.value) {
+    uni.showToast({ title: '请先选择创作分类', icon: 'none' })
+    return
+  }
+  await loadCategory()
   loadTemplates()
   loadKbDocs()
   loadGoods()
   loadParks()
 })
+
+async function loadCategory() {
+  try {
+    const list = await getAiartistConfigs()
+    const all = list && list.length ? list : FALLBACK_CONFIGS
+    category.value = all.find((c) => c.toolCode === toolCode.value) || null
+  } catch {
+    category.value = FALLBACK_CONFIGS.find((c) => c.toolCode === toolCode.value) || null
+  }
+}
 
 async function loadTemplates() { try { templates.value = await getAiTemplates() } catch { /* 已提示 */ } }
 async function loadKbDocs() { try { kbDocs.value = await getKnowledgeDocs(kbKeyword.value || undefined) } catch { /* 已提示 */ } }
@@ -198,11 +245,17 @@ function selectedGoods() {
 
 async function submit() {
   if (creating.value) return
+  if (purpose.value === 'science' && !pastedText.value.trim()) {
+    uni.showToast({ title: '请粘贴要转写的文章内容或链接', icon: 'none' }); return
+  }
   if (purpose.value === 'science' && !topic.value.trim()) {
-    uni.showToast({ title: '科普获客需填写主题', icon: 'none' }); return
+    uni.showToast({ title: '请填写主题/切入话题', icon: 'none' }); return
+  }
+  if (purpose.value === 'product' && !pastedText.value.trim()) {
+    uni.showToast({ title: '请粘贴保险计划书文本', icon: 'none' }); return
   }
   if (purpose.value === 'product' && (!kbFileIds.value.length || !goodsCodes.value.length)) {
-    uni.showToast({ title: '产品宣传需选知识库资料与商品', icon: 'none' }); return
+    uni.showToast({ title: '保险计划需选知识库资料与权益商品', icon: 'none' }); return
   }
   if (purpose.value === 'park' && !parkCodes.value.length) {
     uni.showToast({ title: '请选择养老机构', icon: 'none' }); return
@@ -210,6 +263,7 @@ async function submit() {
   creating.value = true
   uni.showLoading({ title: '聚合素材中…', mask: true })
   try {
+    const pastedTitle = purpose.value === 'product' ? '保险计划书（粘贴）' : '转写文章（粘贴）'
     const { materials, materialRefs, warnings } = await assembleMaterials({
       purpose: purpose.value,
       topic: topic.value.trim(),
@@ -217,13 +271,14 @@ async function submit() {
       goods: selectedGoods(),
       parkCodes: parkCodes.value,
       refContentCode: refContentCode.value,
+      pastedText: pastedText.value,
+      pastedTitle,
     })
     if (warnings.length) {
       uni.showToast({ title: `部分素材加载失败：${warnings[0]}`, icon: 'none', duration: 2000 })
     }
     const id = await createAiProject({
-      toolCode: 'TL00003',
-      purpose: purpose.value,
+      toolCode: toolCode.value,
       contentType: contentType.value,
       styleCode: styleCode.value,
       audience: audience.value,
@@ -231,7 +286,7 @@ async function submit() {
       materialRefs,
       materials,
     })
-    uni.navigateTo({ url: `/pages/acquisition/tools/ai-create/step-strategy?id=${id}` })
+    uni.navigateTo({ url: `/pages/acquisition/tools/aiartist/step-strategy?id=${id}` })
   } catch { /* 全局拦截器已提示 */ } finally {
     uni.hideLoading()
     creating.value = false
@@ -241,6 +296,10 @@ async function submit() {
 
 <style scoped lang="scss">
 .page { padding: $spacing-md $spacing-md 180rpx; background: $bg-page; min-height: 100vh; }
+.cat-banner { display: flex; align-items: center; background: $gradient-blue; border-radius: $radius-lg; padding: $spacing-md $spacing-lg; margin-bottom: $spacing-md; }
+.cat-banner-info { flex: 1; margin-left: $spacing-md; display: flex; flex-direction: column; min-width: 0; }
+.cat-banner-name { font-size: 30rpx; font-weight: 700; color: #fff; }
+.cat-banner-desc { margin-top: 6rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
 .req { color: $brand-error; margin-left: 8rpx; }
 .option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; margin-bottom: 24rpx; }
 .option-card { position: relative; background: $bg-card; border: 2rpx solid $border-light; border-radius: $radius-md; padding: 24rpx; }

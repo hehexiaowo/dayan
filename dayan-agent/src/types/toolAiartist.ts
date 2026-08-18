@@ -84,8 +84,24 @@ export interface AiProjectImage {
 
 export interface AiAuditItem { type?: string; message?: string }
 
+/**
+ * AI 创作分类（tool_info 的 aiartist 实例，对齐后端 ToolAiartistConfigVO）。
+ * 分类的创作目的与提示词配置来自实例 config_json。
+ */
+export interface AiartistConfig {
+  toolCode: string
+  toolName: string
+  toolDesc?: string
+  /** product/park/science（config_json 预置） */
+  purpose?: string
+  icon?: string
+  iconColor?: string
+}
+
 export interface AiProject {
   id: number
+  /** 所属创作分类（tool_info.tool_code） */
+  toolCode?: string
   purpose: AiPurpose
   contentType: number
   styleCode?: string
@@ -113,6 +129,8 @@ export interface AiProject {
 
 export interface AiProjectListItem {
   id: number
+  /** 所属创作分类（tool_info.tool_code） */
+  toolCode?: string
   purpose: AiPurpose
   contentType: number
   topic?: string
@@ -133,7 +151,7 @@ export const AI_PHASE_LABELS: Record<string, string> = {
 
 /** 按状态路由到对应步骤页 */
 export function phaseStep(status?: string, contentType?: number): string {
-  const base = '/pages/acquisition/tools/ai-create/'
+  const base = '/pages/acquisition/tools/aiartist/'
   switch (status) {
     case 'CREATED':
     case 'DIGESTED':

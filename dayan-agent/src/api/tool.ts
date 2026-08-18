@@ -3,7 +3,8 @@ import type { ToolInfo } from '@/types';
 
 /**
  * 工具接口封装（agent 端）。
- * 工具列表：GET /agent-api/tools（返回启用且 visibleScope 含 agent 的工具，按 sortOrder 升序）。
+ * 工具列表：GET /agent-api/tools（返回全部启用工具，按 id 升序；
+ * 图标/颜色/页面路径由端上按 tool_type 固定映射）。
  * 计算器使用记录：POST /agent-api/tools/calculator/{pension|gap}。
  */
 

@@ -8,7 +8,7 @@ import type {
   AiKbFileRef,
   AiMaterialBlock,
   AiMaterialRefs
-} from '@/types/toolAiCreator'
+} from '@/types/toolAiartist'
 import { htmlToText } from '@/utils/htmlToText'
 
 /** 机构全量详情的宽松别名（字段与 ParkFullDetail 同构，便于本地窄类型书写） */
@@ -26,6 +26,10 @@ export interface AssembleMaterialsInput {
   parkCodes: string[]
   /** 参考范文（TPL:模板码 或 内容 code；为空跳过） */
   refContentCode: string
+  /** 粘贴的文章/计划书文本（主题创作、保险计划分类用；为空跳过） */
+  pastedText?: string
+  /** 粘贴文本块标题（缺省「粘贴内容」） */
+  pastedTitle?: string
 }
 
 /** 聚合结果：素材块 + 引用（含展示名） */
@@ -55,6 +59,15 @@ export async function assembleMaterials(input: AssembleMaterialsInput): Promise<
   const blocks: AiMaterialBlock[] = []
   const warnings: string[] = []
   const refs: AiMaterialRefs = {}
+
+  // 0) 粘贴文本（主题转写文章 / 保险计划书等，直接成块）
+  if (input.pastedText && input.pastedText.trim()) {
+    blocks.push({
+      type: 'ref',
+      title: input.pastedTitle || '粘贴内容',
+      text: input.pastedText.trim().slice(0, REF_CONTENT_MAX),
+    })
+  }
 
   // 1) 范文（TPL: 模板静态文案后端持有，仅内容 code 拉正文）
   if (input.refContentCode) {

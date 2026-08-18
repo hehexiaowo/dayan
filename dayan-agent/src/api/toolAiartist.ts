@@ -1,12 +1,13 @@
 import request from '@/utils/request'
 import type { AiRefTemplateOption } from '@/types/aiContent'
 import type { PageQuery, PageResult } from '@/types'
-import type { AiMaterialBlock, AiMaterialRefs, AiProject, AiProjectListItem } from '@/types/toolAiCreator'
+import type { AiMaterialBlock, AiMaterialRefs, AiProject, AiProjectListItem, AiartistConfig } from '@/types/toolAiartist'
 
 export interface AiProjectCreatePayload {
-  /** 所属工具实例，缺省 TL00003 */
-  toolCode?: string
-  purpose: string
+  /** 所属创作分类（tool_info.tool_code，必填） */
+  toolCode: string
+  /** 创作目的；不传则后端取分类实例 config_json 预置值 */
+  purpose?: string
   contentType: number
   styleCode: string
   audience?: string
@@ -15,6 +16,11 @@ export interface AiProjectCreatePayload {
   materialRefs?: AiMaterialRefs
   /** 素材快照（前端聚合块，digest 阶段一次性消费） */
   materials?: AiMaterialBlock[]
+}
+
+/** 创作分类列表 */
+export function getAiartistConfigs(): Promise<AiartistConfig[]> {
+  return request<AiartistConfig[]>({ url: '/tools/ai-creator/configs', method: 'GET' })
 }
 
 /** 创建创作项目 */

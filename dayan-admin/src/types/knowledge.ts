@@ -1,6 +1,6 @@
 /**
  * 知识仓库（百炼知识库：平台 + 每渠道一个）。
- * 对齐后端 KnowledgeRepoAdminController（/admin-api/knowledge/repos）。
+ * 对齐后端 KnowledgeRepoAdminController（/admin-api/system/knowledge/repos）。
  */
 
 /** 仓库归属类型选项 */

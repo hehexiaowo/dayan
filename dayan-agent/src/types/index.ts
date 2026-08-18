@@ -660,20 +660,19 @@ export interface ContentCategoryOption {
 
 // ===== 工具实例 =====
 
-/** 工具实例（对齐后端 ToolInfoVO，GET /agent-api/tools） */
+/**
+ * 工具实例（对齐后端 ToolInfoVO，GET /agent-api/tools）。
+ * 仅承载定义与配置；图标、颜色、页面路径等展示细节由端上按 toolType 固定映射。
+ */
 export interface ToolInfo {
   id?: number;
   toolCode: string;
   toolName: string;
-  /** pension/gap/ai_creator/ai_qa */
+  /** pension/gap/aiartist/aichat */
   toolType?: string;
   toolDesc?: string;
-  icon?: string;
-  entryPath: string;
   /** 工具实例基础配置 JSON */
   configJson?: string;
-  visibleScope?: string;
-  sortOrder?: number;
   status?: number;
 }
 
@@ -766,8 +765,8 @@ export interface SceneScheduleItem {
 
 // ===== AI 问答 =====
 
-/** 引用出处（对齐后端 QaCitation） */
-export interface QaCitation {
+/** 引用出处（对齐后端 AichatCitation） */
+export interface AichatCitation {
   text: string;
   score?: number;
   repoId?: number;
@@ -776,21 +775,20 @@ export interface QaCitation {
   docName?: string;
 }
 
-/** 会话消息（对齐后端 QaMessage） */
-export interface QaMessage {
+/** 会话消息（对齐后端 AichatMessage） */
+export interface AichatMessage {
   id: number;
   sessionCode: string;
   role: 'user' | 'assistant';
   content: string;
-  citations?: QaCitation[];
+  citations?: AichatCitation[];
 }
 
-/** AI 问答会话（对齐后端 QaSession） */
-export interface QaSession {
+/** AI 问答会话（对齐后端 AichatSession） */
+export interface AichatSession {
   id: number;
   sessionCode: string;
-  configId: number;
-  configCode: string;
+  toolCode: string;
   personaName: string;
   title: string;
   messageCount: number;
@@ -798,22 +796,22 @@ export interface QaSession {
   createdAt?: string;
 }
 
-/** AI 问答助手人物（对齐后端 QaConfig） */
-export interface QaConfig {
-  id: number;
-  configCode: string;
+/**
+ * AI 问答助手人物（对齐后端 AichatPersona，人物 = tool_info 的 aichat 实例）。
+ * toolCode 为人物标识（后端按实例组装，属性来自 config_json）。
+ */
+export interface AichatPersona {
+  toolCode: string;
   personaName: string;
   icon?: string;
   iconColor?: string;
-  systemPrompt: string;
   welcomeMsg?: string;
   recommendQuestions?: string[];
-  repoIds?: number[];
 }
 
-/** AI 问答单轮结果（POST /agent-api/tools/qa/chat） */
-export interface QaChatResult {
+/** AI 问答单轮结果（POST /agent-api/tools/aichat/chat） */
+export interface AichatChatResult {
   answer: string;
-  citations?: QaCitation[];
+  citations?: AichatCitation[];
   sessionCode: string;
 }

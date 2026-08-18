@@ -218,7 +218,7 @@ async function handleDelete(row: KnowledgeRepo) {
       <template #header>
         <div class="card-header">
           <span class="card-title">知识仓库列表</span>
-          <el-button type="primary" :icon="'Plus'" v-permission="'knowledge:repo:create'" @click="openCreate">
+          <el-button type="primary" :icon="'Plus'" v-permission="'system:knowledge:repo:create'" @click="openCreate">
             新建知识仓库
           </el-button>
         </div>
@@ -262,10 +262,10 @@ async function handleDelete(row: KnowledgeRepo) {
         <el-table-column label="操作" width="170" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="goDetail(row)">详情</el-button>
-            <el-button link type="success" size="small" v-permission="'knowledge:repo:sync'" @click="handleSync(row)">
+            <el-button link type="success" size="small" v-permission="'system:knowledge:repo:sync'" @click="handleSync(row)">
               同步
             </el-button>
-            <el-button link type="danger" size="small" v-permission="'knowledge:repo:delete'" @click="handleDelete(row)">
+            <el-button link type="danger" size="small" v-permission="'system:knowledge:repo:delete'" @click="handleDelete(row)">
               删除
             </el-button>
           </template>

@@ -50,10 +50,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getAiProject, getAiPreview, saveAiProject } from '@/api/toolAiCreator'
+import { getAiProject, getAiPreview, saveAiProject } from '@/api/toolAiartist'
 import { postSseStream } from '@/utils/sse'
 import { copyText } from '@/utils/clipboard'
-import type { AiProject, AiProjectImage } from '@/types/toolAiCreator'
+import type { AiProject, AiProjectImage } from '@/types/toolAiartist'
 
 /**
  * 第 5-6 步：配图生成（SSE 逐张进度）+ 图文成品预览 + 保存内容中心。

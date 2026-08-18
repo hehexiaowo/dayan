@@ -1,15 +1,15 @@
 import request from '@/utils/request'
 import type { KnowledgeDocOption, KnowledgeRepoOption } from '@/types/aiContent'
 
-/** 当前渠道可见知识仓库（GET /agent-api/knowledge/repos） */
+/** 当前渠道可见知识仓库（GET /agent-api/system/knowledge/repos） */
 export function getMyKnowledgeRepos(): Promise<KnowledgeRepoOption[]> {
-  return request<KnowledgeRepoOption[]>({ url: '/knowledge/repos', method: 'GET' })
+  return request<KnowledgeRepoOption[]>({ url: '/system/knowledge/repos', method: 'GET' })
 }
 
-/** 可见仓库文档合并列表（GET /agent-api/knowledge/docs?keyword=） */
+/** 可见仓库文档合并列表（GET /agent-api/system/knowledge/docs?keyword=） */
 export function getKnowledgeDocs(keyword?: string): Promise<KnowledgeDocOption[]> {
   return request<KnowledgeDocOption[]>({
-    url: '/knowledge/docs',
+    url: '/system/knowledge/docs',
     method: 'GET',
     data: keyword ? { keyword } : {}
   })
@@ -21,12 +21,12 @@ export interface KnowledgeCitation {
   score?: number
 }
 
-/** 知识检索（POST /agent-api/knowledge/retrieve，AI 创作前端供材；可见性同 /repos） */
+/** 知识检索（POST /agent-api/system/knowledge/retrieve，AI 创作前端供材；可见性同 /repos） */
 export function retrieveKnowledge(params: {
   repoId: number
   query: string
   docFileIds?: string[]
   topK?: number
 }): Promise<KnowledgeCitation[]> {
-  return request<KnowledgeCitation[]>({ url: '/knowledge/retrieve', method: 'POST', data: params })
+  return request<KnowledgeCitation[]>({ url: '/system/knowledge/retrieve', method: 'POST', data: params })
 }

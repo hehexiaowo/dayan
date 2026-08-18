@@ -9,7 +9,7 @@
  *   无独立库但有继承 → 摘要 + 问答（继承库只读使用）；
  *   无库 → 空态 + 创建弹窗（按选中渠道简称预填「{简称}知识库」）。
  *
- * 数据走 admin 自身接口（/admin-api/knowledge/repos/tree），与 channel 端各自独立。
+ * 数据走 admin 自身接口（/admin-api/system/knowledge/repos/tree），与 channel 端各自独立。
  */
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -207,7 +207,7 @@ function onSelectNode(node: KnowledgeRepoTreeNode) {
           <div class="empty-tip">
             创建后即可上传产品手册、服务说明等资料；上传首个文档并解析成功后自动在百炼云端建库，随后可进行 AI 问答。
           </div>
-          <el-button type="primary" v-permission="'knowledge:repo:create'" @click="openCreate">
+          <el-button type="primary" v-permission="'system:knowledge:repo:create'" @click="openCreate">
             创建知识仓库
           </el-button>
         </el-empty>
@@ -230,11 +230,11 @@ function onSelectNode(node: KnowledgeRepoTreeNode) {
             <div class="summary-actions">
               <!-- admin 全权：仅独立库可管理；继承库只读 -->
               <template v-if="ownRepo">
-                <el-button size="small" v-permission="'knowledge:repo:update'" @click="openEdit">编辑</el-button>
-                <el-button size="small" type="success" v-permission="'knowledge:repo:sync'" @click="handleSync">
+                <el-button size="small" v-permission="'system:knowledge:repo:update'" @click="openEdit">编辑</el-button>
+                <el-button size="small" type="success" v-permission="'system:knowledge:repo:sync'" @click="handleSync">
                   同步
                 </el-button>
-                <el-button size="small" type="danger" v-permission="'knowledge:repo:delete'" @click="handleDelete">
+                <el-button size="small" type="danger" v-permission="'system:knowledge:repo:delete'" @click="handleDelete">
                   删除
                 </el-button>
               </template>

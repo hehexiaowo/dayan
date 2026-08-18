@@ -2,14 +2,30 @@
   <view class="page">
     <view class="hero">
       <text class="hero-title">AI 创作</text>
-      <text class="hero-sub">六阶段流水线：策略 → 大纲 → 正文 → 审计润色 → 配图 → 成品</text>
-      <view class="hero-btn dy-clickable" @click="goNew"><text class="hero-btn-text">＋ 新建创作</text></view>
+      <text class="hero-sub">选择创作分类，六阶段流水线：策略 → 大纲 → 正文 → 审计润色 → 配图 → 成品</text>
     </view>
 
+    <!-- 创作分类选择 -->
+    <view class="dy-section-title">选择创作分类</view>
+    <view
+      v-for="c in configs"
+      :key="c.toolCode"
+      class="cat-card dy-card dy-clickable"
+      @click="goCategory(c)"
+    >
+      <DyIconBlock :text="c.icon || '创'" :color="catColor(c.iconColor)" size="lg" shape="circle" />
+      <view class="cat-info">
+        <text class="cat-name">{{ c.toolName }}</text>
+        <text class="cat-desc">{{ c.toolDesc || '六阶段 AI 图文创作' }}</text>
+      </view>
+      <text class="cat-arrow">›</text>
+    </view>
+
+    <!-- 未完成创作草稿 -->
     <view class="dy-section-title" v-if="drafts.length">未完成创作</view>
     <view v-for="d in drafts" :key="d.id" class="draft dy-card dy-clickable" @click="goDraft(d)">
       <view class="draft-top">
-        <text class="dy-tag dy-tag-blue">{{ purposeLabel(d.purpose) }}</text>
+        <text class="dy-tag dy-tag-blue">{{ categoryName(d.toolCode) }}</text>
         <text class="draft-phase">{{ AI_PHASE_LABELS[d.status] ?? d.status }}</text>
       </view>
       <text class="draft-title">{{ d.selectedTitle || d.topic || '（未定主题）' }}</text>
@@ -19,7 +35,7 @@
       </view>
     </view>
 
-    <DyEmpty v-if="!loading && !drafts.length" text="还没有进行中的创作" icon="AI" color="blue" action-text="新建创作" @action="goNew" />
+    <DyEmpty v-if="!configLoading && !configs.length" text="暂无可用的创作分类" icon="AI" color="blue" />
     <view v-if="loading" class="loading"><text class="loading-text">加载中…</text></view>
   </view>
 </template>
@@ -27,18 +43,59 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getAiProjects, deleteAiProject } from '@/api/toolAiCreator'
-import type { AiProjectListItem } from '@/types/toolAiCreator'
-import { AI_PHASE_LABELS, phaseStep, purposeLabel } from '@/types/toolAiCreator'
+import { getAiProjects, deleteAiProject, getAiartistConfigs } from '@/api/toolAiartist'
+import type { AiProjectListItem, AiartistConfig } from '@/types/toolAiartist'
+import { AI_PHASE_LABELS, phaseStep } from '@/types/toolAiartist'
+import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue'
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue'
 
 /**
- * AI 创作入口页：六阶段流水线草稿列表 + 新建入口。
+ * AI 创作入口页：创作分类选择（tool_info 的 aiartist 实例）+ 未完成创作草稿续写。
  */
+type CatColor = 'blue' | 'green' | 'orange' | 'red' | 'gray'
+
+const COLOR_SET: readonly CatColor[] = ['blue', 'green', 'orange', 'red', 'gray']
+
+function catColor(color?: string): CatColor {
+  const hit = COLOR_SET.find((x) => x === color)
+  return hit || 'blue'
+}
+
+/** 兜底分类列表 — 接口不可用/未配置时保证页面不空白（与 tool_info 预置种子一致） */
+const FALLBACK_CONFIGS: AiartistConfig[] = [
+  {
+    toolCode: 'TL00003',
+    toolName: 'AI创作（主题创作）',
+    toolDesc: '选择、上传或粘贴文章，进行内容转写与再创作',
+    purpose: 'science',
+    icon: '主',
+    iconColor: 'blue',
+  },
+  {
+    toolCode: 'TL90006',
+    toolName: 'AI创作（机构介绍）',
+    toolDesc: '选择某个养老机构，进行机构的介绍与亮点总结',
+    purpose: 'park',
+    icon: '机',
+    iconColor: 'green',
+  },
+  {
+    toolCode: 'TL90007',
+    toolName: 'AI创作（保险计划）',
+    toolDesc: '上传已有的保险计划书，进行计划书的重新组织与表达丰富',
+    purpose: 'product',
+    icon: '保',
+    iconColor: 'orange',
+  },
+]
+
+const configs = ref<AiartistConfig[]>(FALLBACK_CONFIGS)
+const configLoading = ref(false)
 const drafts = ref<AiProjectListItem[]>([])
 const loading = ref(false)
 
 onShow(async () => {
+  loadConfigs()
   loading.value = true
   try {
     const res = await getAiProjects({ current: 1, size: 50 })
@@ -48,8 +105,28 @@ onShow(async () => {
   }
 })
 
-function goNew() {
-  uni.navigateTo({ url: '/pages/acquisition/tools/ai-create/step-material' })
+async function loadConfigs() {
+  configLoading.value = true
+  try {
+    const list = await getAiartistConfigs()
+    // 后台已配置则以后台为准；空结果保留兜底
+    if (list && list.length > 0) {
+      configs.value = list
+    }
+  } catch {
+    // 接口异常时保留兜底列表
+  } finally {
+    configLoading.value = false
+  }
+}
+
+function goCategory(c: AiartistConfig) {
+  uni.navigateTo({ url: `/pages/acquisition/tools/aiartist/step-material?toolCode=${c.toolCode}` })
+}
+
+function categoryName(toolCode?: string): string {
+  if (!toolCode) return 'AI 创作'
+  return configs.value.find((c) => c.toolCode === toolCode)?.toolName || toolCode
 }
 
 function goDraft(d: AiProjectListItem) {
@@ -79,9 +156,12 @@ function formatTime(dt?: string) {
 .page { padding: $spacing-md $spacing-md 60rpx; background: $bg-page; min-height: 100vh; }
 .hero { background: $gradient-blue; border-radius: $radius-lg; padding: $spacing-xl $spacing-lg; margin-bottom: $spacing-md; }
 .hero-title { display: block; font-size: 38rpx; font-weight: 700; color: #fff; }
-.hero-sub { display: block; font-size: 24rpx; color: rgba(255, 255, 255, 0.85); margin: 12rpx 0 24rpx; }
-.hero-btn { align-self: flex-start; background: rgba(255, 255, 255, 0.2); border: 1rpx solid rgba(255, 255, 255, 0.6); border-radius: $radius-md; padding: 14rpx 32rpx; }
-.hero-btn-text { color: #fff; font-size: 28rpx; font-weight: 600; }
+.hero-sub { display: block; font-size: 24rpx; color: rgba(255, 255, 255, 0.85); margin-top: 12rpx; }
+.cat-card { display: flex; align-items: center; padding: $spacing-md; margin-bottom: $spacing-sm; }
+.cat-info { flex: 1; margin-left: $spacing-md; display: flex; flex-direction: column; min-width: 0; }
+.cat-name { font-size: 30rpx; font-weight: 600; color: $text-primary; }
+.cat-desc { margin-top: 6rpx; font-size: 24rpx; color: $text-secondary; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-arrow { font-size: 40rpx; color: $text-placeholder; margin-left: $spacing-sm; }
 .draft { margin-bottom: $spacing-sm; padding: $spacing-md; }
 .draft-top { display: flex; justify-content: space-between; align-items: center; }
 .draft-phase { font-size: 24rpx; color: $text-secondary; }

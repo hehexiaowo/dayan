@@ -75,20 +75,20 @@
 import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import {
-  getQaConfigs,
-  getQaSessions,
-  createQaSession,
-  deleteQaSession,
-  getQaMessages,
-  chatQa,
-} from '@/api/toolQa';
-import type { QaConfig, QaSession, QaMessage } from '@/types';
+  getAichatPersonas,
+  getAichatSessions,
+  createAichatSession,
+  deleteAichatSession,
+  getAichatMessages,
+  chatAichat,
+} from '@/api/toolChat';
+import type { AichatPersona, AichatSession, AichatMessage } from '@/types';
 
-const configId = ref(0);
-const persona = ref<QaConfig | null>(null);
+const toolCode = ref('');
+const persona = ref<AichatPersona | null>(null);
 const sessionCode = ref('');
-const messages = ref<QaMessage[]>([]);
-const sessions = ref<QaSession[]>([]);
+const messages = ref<AichatMessage[]>([]);
+const sessions = ref<AichatSession[]>([]);
 const question = ref('');
 const scrollInto = ref('');
 const openCite = ref(-1);
@@ -101,8 +101,8 @@ const sending = ref(false);
 let tmpId = -1;
 
 onLoad(async (opts) => {
-  configId.value = Number(opts?.configId || 0);
-  if (configId.value) {
+  toolCode.value = opts?.toolCode || '';
+  if (toolCode.value) {
     await loadPersona();
     await loadSessions();
     // 若存在上一个会话，默认进入
@@ -114,8 +114,8 @@ onLoad(async (opts) => {
 
 async function loadPersona() {
   try {
-    const list = await getQaConfigs();
-    persona.value = list.find((c) => c.id === configId.value) || null;
+    const list = await getAichatPersonas();
+    persona.value = list.find((c) => c.toolCode === toolCode.value) || null;
   } catch {
     persona.value = null;
   }
@@ -127,7 +127,7 @@ async function loadMessagesFromApi() {
     return;
   }
   try {
-    const list = await getQaMessages(sessionCode.value);
+    const list = await getAichatMessages(sessionCode.value);
     messages.value = list;
   } catch {
     messages.value = [];
@@ -135,9 +135,9 @@ async function loadMessagesFromApi() {
 }
 
 async function loadSessions() {
-  if (!configId.value) return;
+  if (!toolCode.value) return;
   try {
-    sessions.value = await getQaSessions(configId.value);
+    sessions.value = await getAichatSessions(toolCode.value);
   } catch {
     sessions.value = [];
   }
@@ -164,14 +164,14 @@ function newSession() {
 }
 
 /** 切换到指定会话，拉取其历史消息 */
-async function switchSession(s: QaSession) {
+async function switchSession(s: AichatSession) {
   sessionCode.value = s.sessionCode;
   showSessions.value = false;
   openCite.value = -1;
   await loadMessagesFromApi();
 }
 
-async function enterSession(s: QaSession) {
+async function enterSession(s: AichatSession) {
   sessionCode.value = s.sessionCode;
   await loadMessagesFromApi();
 }
@@ -183,7 +183,7 @@ async function removeSession(code: string) {
     success: async (res) => {
       if (!res.confirm) return;
       try {
-        await deleteQaSession(code);
+        await deleteAichatSession(code);
         sessions.value = sessions.value.filter((s) => s.sessionCode !== code);
         if (sessionCode.value === code) {
           sessionCode.value = '';
@@ -209,7 +209,7 @@ function ask(q: string) {
 
 async function send() {
   const q = question.value.trim();
-  if (!q || sending.value || !configId.value) return;
+  if (!q || sending.value || !toolCode.value) return;
   if (!persona.value) return;
 
   question.value = '';
@@ -221,9 +221,9 @@ async function send() {
   try {
     // 首次发送时新建后端会话
     if (!sessionCode.value) {
-      sessionCode.value = await createQaSession(configId.value);
+      sessionCode.value = await createAichatSession(toolCode.value);
     }
-    const res = await chatQa({ configId: configId.value, toolCode: 'TL00004', sessionCode: sessionCode.value, question: q });
+    const res = await chatAichat({ toolCode: toolCode.value, sessionCode: sessionCode.value, question: q });
     messages.value.push({
       id: tmpId--,
       sessionCode: sessionCode.value,

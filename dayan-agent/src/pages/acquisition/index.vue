@@ -3,12 +3,12 @@
     <!-- 渐变 header（与展业中心一致） -->
     <view class="header">
       <text class="header-title">获客工具</text>
-      <text class="header-sub">内容获客、线索管理、AI 创作</text>
+      <text class="header-sub">内容获客、线索管理、专业工具</text>
     </view>
 
-    <!-- ===== 获客工具（每行 4 个菜单卡） ===== -->
+    <!-- ===== 常用功能（每行 4 个菜单卡） ===== -->
     <view class="tools-card">
-      <view class="tools-title">获客工具</view>
+      <view class="tools-title">常用功能</view>
       <view class="tools-grid">
         <view class="tool-item dy-clickable" @click="onTool('lead')">
           <DyIconBlock text="线" color="blue" size="md" />
@@ -18,10 +18,6 @@
           <DyIconBlock text="文" color="green" size="md" />
           <text class="tool-label">内容获客</text>
         </view>
-        <view class="tool-item dy-clickable" @click="onTool('tools')">
-          <DyIconBlock text="具" color="blue" size="md" />
-          <text class="tool-label">工具获客</text>
-        </view>
         <view class="tool-item dy-clickable" @click="onTool('poster')">
           <DyIconBlock text="海" color="orange" size="md" />
           <text class="tool-label">营销海报</text>
@@ -30,11 +26,19 @@
           <DyIconBlock text="名" color="blue" size="md" />
           <text class="tool-label">电子名片</text>
         </view>
-        <view class="tool-item dy-clickable" @click="onTool('ai')">
+        <view class="tool-item dy-clickable" @click="onTool('pensioncal')">
+          <DyIconBlock text="退" color="orange" size="md" />
+          <text class="tool-label">养老计算</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('gapcal')">
+          <DyIconBlock text="缺" color="red" size="md" />
+          <text class="tool-label">缺口计算</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('aiartist')">
           <DyIconBlock text="AI" color="red" size="md" />
           <text class="tool-label">AI 创作</text>
         </view>
-        <view class="tool-item dy-clickable" @click="onTool('qa')">
+        <view class="tool-item dy-clickable" @click="onTool('aichat')">
           <DyIconBlock text="答" color="red" size="md" />
           <text class="tool-label">你问我答</text>
         </view>
@@ -129,7 +133,8 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 /**
  * 获客中心首页（tab 页）。
  *
- * - 风格与展业中心统一：渐变 header + 整行功能卡；
+ * - 风格与展业中心统一：渐变 header + 常用功能宫格（含四个工具直达入口）；
+ * - 你问我答的问答人物为其二级页面（aichat/index 人物选择），不在本页平铺；
  * - 「今日热点」独立区块：最新/最热内容（前 4）+ 海报模板（前 2），横向滑动；
  * - 线索清单/搜索已拆至独立「线索管理」页（个人中心「线索记录」同入口）。
  */
@@ -185,20 +190,24 @@ function onTool(type: string) {
     uni.navigateTo({ url: '/pages/acquisition/card/index' });
     return;
   }
-  if (type === 'tools') {
-    uni.navigateTo({ url: '/pages/acquisition/tools/index' });
-    return;
-  }
-  if (type === 'ai') {
-    uni.navigateTo({ url: '/pages/acquisition/tools/ai-create/index' });
-    return;
-  }
   if (type === 'poster') {
     uni.navigateTo({ url: '/pages/acquisition/poster/index' });
     return;
   }
-  if (type === 'qa') {
-    uni.navigateTo({ url: '/pages/acquisition/qa/index' });
+  if (type === 'pensioncal') {
+    uni.navigateTo({ url: '/pages/acquisition/tools/pensioncal' });
+    return;
+  }
+  if (type === 'gapcal') {
+    uni.navigateTo({ url: '/pages/acquisition/tools/gapcal' });
+    return;
+  }
+  if (type === 'aiartist') {
+    uni.navigateTo({ url: '/pages/acquisition/tools/aiartist/index' });
+    return;
+  }
+  if (type === 'aichat') {
+    uni.navigateTo({ url: '/pages/acquisition/aichat/index' });
     return;
   }
   if (type === 'network') {

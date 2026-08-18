@@ -22,7 +22,7 @@
     <view v-else class="persona-list">
       <view
         v-for="c in configs"
-        :key="c.id"
+        :key="c.toolCode"
         class="persona-card dy-clickable"
         @click="openChat(c)"
       >
@@ -51,16 +51,16 @@
 import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
-import { getQaConfigs } from '@/api/toolQa';
-import type { QaConfig } from '@/types';
+import { getAichatPersonas } from '@/api/toolChat';
+import type { AichatPersona } from '@/types';
 
-const configs = ref<QaConfig[]>([]);
+const configs = ref<AichatPersona[]>([]);
 const loading = ref(false);
 
 onShow(async () => {
   loading.value = true;
   try {
-    configs.value = await getQaConfigs();
+    configs.value = await getAichatPersonas();
   } catch {
     configs.value = [];
   } finally {
@@ -68,19 +68,19 @@ onShow(async () => {
   }
 });
 
-function openChat(c: QaConfig) {
-  uni.navigateTo({ url: `/pages/acquisition/qa/chat?configId=${c.id}` });
+function openChat(c: AichatPersona) {
+  uni.navigateTo({ url: `/pages/acquisition/aichat/chat?toolCode=${c.toolCode}` });
 }
 
 /** 头像文字：优先 icon，回退人物名首字 */
-function iconText(c: QaConfig): string {
+function iconText(c: AichatPersona): string {
   if (c.icon) return c.icon;
   return c.personaName ? c.personaName.charAt(0) : '问';
 }
 
 /** 头像颜色：映射 DyIconBlock 支持的主题色，未知色回退 blue */
 const COLOR_SET = ['blue', 'green', 'orange', 'red', 'gray'] as const;
-function iconColor(c: QaConfig) {
+function iconColor(c: AichatPersona) {
   const hit = COLOR_SET.find((x) => x === c.iconColor);
   return hit || 'blue';
 }

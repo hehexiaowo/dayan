@@ -351,7 +351,7 @@ function formatNum(n: number): string {
 function onShareTool() {
   // #ifdef H5
   const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
-  const url = `${window.location.origin}/#/pages/acquisition/tools/gap-calculator?agent=${agentCode}`;
+  const url = `${window.location.origin}/#/pages/acquisition/tools/gapcal?agent=${agentCode}`;
   uni.setClipboardData({
     data: url,
     success: () => uni.showToast({ title: '链接已复制，可粘贴发给客户', icon: 'none', duration: 2500 }),
@@ -376,7 +376,7 @@ onLoad((opts) => {
     trackShare({
       agentCode: agent,
       shareType: 2,
-      bizCode: 'gap-calculator',
+      bizCode: 'gapcal',
       bizTitle: '养老缺口计算器',
     });
   }

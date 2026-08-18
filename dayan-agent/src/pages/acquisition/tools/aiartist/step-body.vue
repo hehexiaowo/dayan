@@ -77,9 +77,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getAiProject, reviseAiBody, saveAiProject, genAiBody } from '@/api/toolAiCreator'
+import { getAiProject, reviseAiBody, saveAiProject, genAiBody } from '@/api/toolAiartist'
 import { postSseStream } from '@/utils/sse'
-import type { AiProject } from '@/types/toolAiCreator'
+import type { AiProject } from '@/types/toolAiartist'
 
 /**
  * 第 4 步：正文生成（H5 SSE 流式打字机 + 阶段条）→ 审计/打分 → 段落勘误。
@@ -173,7 +173,7 @@ async function doRevise() {
 }
 
 function goPreview() {
-  uni.redirectTo({ url: `/pages/acquisition/tools/ai-create/step-preview?id=${projectId.value}` })
+  uni.redirectTo({ url: `/pages/acquisition/tools/aiartist/step-preview?id=${projectId.value}` })
 }
 
 async function save() {

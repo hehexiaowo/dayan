@@ -321,7 +321,7 @@ function formatNum(n: number): string {
 function onShareTool() {
   // #ifdef H5
   const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
-  const url = `${window.location.origin}/#/pages/acquisition/tools/pension-calculator?agent=${agentCode}`;
+  const url = `${window.location.origin}/#/pages/acquisition/tools/pensioncal?agent=${agentCode}`;
   uni.setClipboardData({
     data: url,
     success: () => uni.showToast({ title: '链接已复制，可粘贴发给客户', icon: 'none', duration: 2500 }),
@@ -346,7 +346,7 @@ onLoad((opts) => {
     trackShare({
       agentCode: agent,
       shareType: 2,
-      bizCode: 'pension-calculator',
+      bizCode: 'pensioncal',
       bizTitle: '社保养老计算器',
     });
   }

@@ -1,7 +1,7 @@
 /**
  * 知识仓库类型（Channel 端本渠道知识库管理）。
  *
- * 对齐后端 ChannelKnowledgeController（/channel-api/knowledge/repos）。
+ * 对齐后端 ChannelKnowledgeController（/channel-api/system/knowledge/repos）。
  * 从 admin 端 src/types/knowledge.ts 精简：渠道端仅操作本渠道一个仓库，
  * 无平台/渠道归属切换，故去掉 repoType/channelCode/channelName 等归属字段。
  */
