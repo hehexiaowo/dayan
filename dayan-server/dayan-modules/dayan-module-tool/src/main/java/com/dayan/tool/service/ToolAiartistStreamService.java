@@ -2,7 +2,7 @@ package com.dayan.tool.service;
 
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.mybatis.context.ContextHolder;
-import com.dayan.tool.vo.ToolAiCreatorVO;
+import com.dayan.tool.vo.ToolAiartistVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -21,12 +21,12 @@ import java.util.function.Supplier;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ToolAiCreatorStreamService {
+public class ToolAiartistStreamService {
 
     /** SSE 超时（正文三步 + 配图轮询最长耗时） */
     private static final long SSE_TIMEOUT_MS = 300_000L;
 
-    private final ToolAiCreatorPipelineService pipelineService;
+    private final ToolAiartistPipelineService pipelineService;
 
     /** 正文流式（body→audit→polish）：事件 stage/delta/done/error */
     public SseEmitter bodyStream(Long id) {
@@ -110,7 +110,7 @@ public class ToolAiCreatorStreamService {
      * （channelCode 空→渠道校验失败；accountType 空→租户拦截器误判放行）。
      */
     private void runAsync(SseEmitter emitter, String threadName, String failMessage,
-                          Supplier<ToolAiCreatorVO> task) {
+                          Supplier<ToolAiartistVO> task) {
         final String ctxChannelCode = ContextHolder.getChannelCode();
         final String ctxAccountCode = ContextHolder.getAccountCode();
         final String ctxAccountType = ContextHolder.getAccountType();
@@ -121,7 +121,7 @@ public class ToolAiCreatorStreamService {
             ContextHolder.setAccountType(ctxAccountType);
             ContextHolder.setAccountName(ctxAccountName);
             try {
-                ToolAiCreatorVO result = task.get();
+                ToolAiartistVO result = task.get();
                 emitter.send(SseEmitter.event().name("done").data(result, MediaType.APPLICATION_JSON));
                 emitter.complete();
             } catch (Exception e) {

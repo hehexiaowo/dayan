@@ -1,4 +1,4 @@
-package com.dayan.knowledge.dto;
+package com.dayan.system.dto;
 
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.Data;
  * 知识仓库更新 DTO（仅允许改名称/描述/排序；归属与远端索引不可改）。
  */
 @Data
-public class KnowledgeRepoUpdateDTO {
+public class SystemKnowledgeRepoUpdateDTO {
 
     @Size(max = 100, message = "仓库名称最长 100 字")
     private String repoName;

@@ -1,4 +1,4 @@
-package com.dayan.knowledge.vo;
+package com.dayan.system.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class KnowledgeChatVO {
+public class SystemKnowledgeChatVO {
 
     /** 模型生成的回答 */
     private String answer;

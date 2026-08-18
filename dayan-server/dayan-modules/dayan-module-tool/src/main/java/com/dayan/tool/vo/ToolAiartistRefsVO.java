@@ -6,7 +6,7 @@ import java.util.List;
 
 /** 素材引用（material_refs JSON 结构，前端随创建提交并带展示名；旧数据 kbFileIds/goodsCodes/parkCodes 反序列化为 null 不影响流程） */
 @Data
-public class ToolAiCreatorRefsVO {
+public class ToolAiartistRefsVO {
     /** 参考范文（TPL:模板码 或 内容 code） */
     private String refContentCode;
     /** 知识库文件（含文件名，保存成品 refKbFiles 用） */

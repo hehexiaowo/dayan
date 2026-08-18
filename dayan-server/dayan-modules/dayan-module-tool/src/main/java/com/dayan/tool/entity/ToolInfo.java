@@ -8,7 +8,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 表 tool_info 对应实体（工具实例配置，平台共享表）。
+ * 表 tool_info 对应实体（工具实例定义，平台共享表）。
+ *
+ * <p>仅承载定义与配置：展示/路由细节（图标、颜色、页面路径、可见端、排序）
+ * 由端上按 tool_type 固定映射，类型化配置走 config_json。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -25,26 +28,14 @@ public class ToolInfo extends BaseEntity {
     /** 工具名称 */
     private String toolName;
 
-    /** 工具类型（pension/gap/ai_creator/ai_qa） */
+    /** 工具类型（pension/gap/aiartist/aichat） */
     private String toolType;
 
     /** 工具简介 */
     private String toolDesc;
 
-    /** 图标（文字或图标名） */
-    private String icon;
-
-    /** 入口路径（端上页面路径） */
-    private String entryPath;
-
     /** 工具配置 JSON（按类型承载提示词/默认值等） */
     private String configJson;
-
-    /** 可见端（逗号分隔：agent/client） */
-    private String visibleScope;
-
-    /** 排序号 */
-    private Integer sortOrder;
 
     /** 状态（0=禁用, 1=启用） */
     private Integer status;

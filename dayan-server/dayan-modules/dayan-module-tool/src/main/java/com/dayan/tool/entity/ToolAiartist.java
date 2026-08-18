@@ -16,8 +16,8 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("tool_ai_creator_record")
-public class ToolAiCreator extends BaseEntity {
+@TableName("tool_aiartist_record")
+public class ToolAiartist extends BaseEntity {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -41,7 +41,7 @@ public class ToolAiCreator extends BaseEntity {
     private String materialRefs;
     /** JSON：素材快照 [{type,title,text}]（前端供材，digest 阶段一次性消费） */
     private String materials;
-    /** 见 ToolAiCreatorPhase 常量 */
+    /** 见 ToolAiartistPhase 常量 */
     private String status;
     /** JSON：hardFacts/softPoints/missing */
     private String factDigest;

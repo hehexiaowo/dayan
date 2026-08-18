@@ -4,7 +4,7 @@ import lombok.Data;
 
 /** AI 创作成品保存指令（port 传输，字段对应 AgentContentCreateDTO） */
 @Data
-public class ToolAiCreatorContentCmd {
+public class ToolAiartistContentCmd {
     private String title;
     private Integer contentType;
     private String contentBody;

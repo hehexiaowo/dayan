@@ -12,8 +12,8 @@ public final class ToolType {
 
     public static final String PENSION = "pension";
     public static final String GAP = "gap";
-    public static final String AI_CREATOR = "ai_creator";
-    public static final String AI_QA = "ai_qa";
+    public static final String AI_CREATOR = "aiartist";
+    public static final String AI_QA = "aichat";
 
     private static final Set<String> ALL = Set.of(PENSION, GAP, AI_CREATOR, AI_QA);
 
@@ -22,7 +22,7 @@ public final class ToolType {
 
     public static void requireValid(String toolType) {
         if (toolType == null || !ALL.contains(toolType)) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "工具类型仅支持 pension/gap/ai_creator/ai_qa");
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "工具类型仅支持 pension/gap/aiartist/aichat");
         }
     }
 

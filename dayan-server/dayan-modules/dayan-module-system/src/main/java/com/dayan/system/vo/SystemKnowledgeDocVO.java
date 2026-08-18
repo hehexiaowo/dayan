@@ -1,4 +1,4 @@
-package com.dayan.knowledge.vo;
+package com.dayan.system.vo;
 
 import lombok.Data;
 
@@ -6,7 +6,7 @@ import lombok.Data;
  * 知识库文档 VO（实时代理百炼：ListIndexDocuments / DescribeFile）。
  */
 @Data
-public class KnowledgeDocVO {
+public class SystemKnowledgeDocVO {
 
     /** 百炼文件/文档 ID */
     private String fileId;

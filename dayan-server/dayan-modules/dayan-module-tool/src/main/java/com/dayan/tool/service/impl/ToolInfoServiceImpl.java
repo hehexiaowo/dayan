@@ -1,5 +1,8 @@
 package com.dayan.tool.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dayan.common.core.code.SequenceProvider;
@@ -13,6 +16,8 @@ import com.dayan.tool.entity.ToolInfo;
 import com.dayan.tool.mapper.ToolInfoMapper;
 import com.dayan.tool.model.ToolType;
 import com.dayan.tool.service.ToolInfoService;
+import com.dayan.tool.vo.ToolAichatPersonaVO;
+import com.dayan.tool.vo.ToolAiartistConfigVO;
 import com.dayan.tool.vo.ToolInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +30,7 @@ import java.util.List;
  * 工具服务实现。
  *
  * <p>工具编码生成：{@code "TL" + String.format("%05d", sequenceProvider.next("code:seq:TL:0"))}，
- * 全表唯一。新建默认 status=1（启用）、visibleScope=agent。
+ * 全表唯一。新建默认 status=1（启用）。
  */
 @Slf4j
 @Service
@@ -36,8 +41,6 @@ public class ToolInfoServiceImpl implements ToolInfoService {
     private static final String CODE_PREFIX = "TL";
     /** 序列键 */
     private static final String SEQ_KEY = "code:seq:TL:0";
-    /** 默认可见端 */
-    private static final String DEFAULT_VISIBLE_SCOPE = "agent";
     /** 默认状态：启用 */
     private static final int DEFAULT_STATUS = 1;
 
@@ -64,17 +67,47 @@ public class ToolInfoServiceImpl implements ToolInfoService {
     }
 
     @Override
-    public List<ToolInfoVO> listForEnd(String end) {
-        if (end == null || end.isEmpty()) {
-            return List.of();
-        }
+    public List<ToolInfoVO> listEnabled() {
         return toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
                         .eq(ToolInfo::getStatus, 1)
-                        // visible_scope 逗号分隔多值，用 CONCAT 包裹边界防子串误匹配
-                        .apply("CONCAT(',', `visible_scope`, ',') LIKE CONCAT('%,', {0}, ',%')", end)
-                        .orderByAsc(ToolInfo::getSortOrder)
                         .orderByAsc(ToolInfo::getId))
                 .stream().map(this::toVO).toList();
+    }
+
+    @Override
+    public List<ToolAichatPersonaVO> listQaPersonas() {
+        return toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
+                        .eq(ToolInfo::getToolType, ToolType.AI_QA)
+                        .eq(ToolInfo::getStatus, 1)
+                        .orderByAsc(ToolInfo::getId))
+                .stream().map(this::toPersona).toList();
+    }
+
+    @Override
+    public ToolAichatPersonaVO getQaPersona(String toolCode) {
+        ToolInfo tool = requireTool(toolCode);
+        if (!ToolType.AI_QA.equals(tool.getToolType())) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "问答人物不存在: " + toolCode);
+        }
+        return toPersona(tool);
+    }
+
+    @Override
+    public List<ToolAiartistConfigVO> listAiartistConfigs() {
+        return toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
+                        .eq(ToolInfo::getToolType, ToolType.AI_CREATOR)
+                        .eq(ToolInfo::getStatus, 1)
+                        .orderByAsc(ToolInfo::getId))
+                .stream().map(this::toAiartistConfig).toList();
+    }
+
+    @Override
+    public ToolAiartistConfigVO getAiartistConfig(String toolCode) {
+        ToolInfo tool = requireTool(toolCode);
+        if (!ToolType.AI_CREATOR.equals(tool.getToolType())) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "AI 创作分类不存在: " + toolCode);
+        }
+        return toAiartistConfig(tool);
     }
 
     @Override
@@ -84,18 +117,14 @@ public class ToolInfoServiceImpl implements ToolInfoService {
 
         ToolType.requireValid(dto.getToolType());
         validateConfigJson(dto.getConfigJson());
+        validateQaPersona(dto.getToolType(), dto.getConfigJson());
 
         ToolInfo entity = new ToolInfo();
         entity.setToolCode(toolCode);
         entity.setToolName(dto.getToolName());
         entity.setToolType(dto.getToolType());
         entity.setToolDesc(dto.getToolDesc());
-        entity.setIcon(dto.getIcon());
-        entity.setEntryPath(dto.getEntryPath());
         entity.setConfigJson(dto.getConfigJson());
-        entity.setVisibleScope(dto.getVisibleScope() == null || dto.getVisibleScope().isEmpty()
-                ? DEFAULT_VISIBLE_SCOPE : dto.getVisibleScope());
-        entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
         entity.setStatus(dto.getStatus() == null ? DEFAULT_STATUS : dto.getStatus());
         entity.setRemark(dto.getRemark());
 
@@ -117,14 +146,13 @@ public class ToolInfoServiceImpl implements ToolInfoService {
             update.setToolType(dto.getToolType());
         }
         if (dto.getToolDesc() != null) update.setToolDesc(dto.getToolDesc());
-        if (dto.getIcon() != null) update.setIcon(dto.getIcon());
-        if (dto.getEntryPath() != null) update.setEntryPath(dto.getEntryPath());
         if (dto.getConfigJson() != null) {
             validateConfigJson(dto.getConfigJson());
+            // 类型可能同步变更，校验用变更后的类型
+            validateQaPersona(dto.getToolType() != null ? dto.getToolType() : existing.getToolType(),
+                    dto.getConfigJson());
             update.setConfigJson(dto.getConfigJson());
         }
-        if (dto.getVisibleScope() != null) update.setVisibleScope(dto.getVisibleScope());
-        if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getStatus() != null) update.setStatus(dto.getStatus());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
 
@@ -151,7 +179,6 @@ public class ToolInfoServiceImpl implements ToolInfoService {
                 .eq(query.getToolType() != null && !query.getToolType().isEmpty(),
                         ToolInfo::getToolType, query.getToolType())
                 .eq(query.getStatus() != null, ToolInfo::getStatus, query.getStatus())
-                .orderByAsc(ToolInfo::getSortOrder)
                 .orderByDesc(ToolInfo::getCreatedAt);
     }
 
@@ -181,6 +208,55 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         }
     }
 
+    /** aichat 类型必须配置人设描述（config_json.systemPrompt） */
+    private void validateQaPersona(String toolType, String configJson) {
+        if (!ToolType.AI_QA.equals(toolType)) {
+            return;
+        }
+        String systemPrompt = StrUtil.isBlank(configJson)
+                ? null : JSONUtil.parseObj(configJson).getStr("systemPrompt");
+        if (StrUtil.isBlank(systemPrompt)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "你问我答类型必须配置人设描述（config_json.systemPrompt）");
+        }
+    }
+
+    /** 组装问答人物：personaName 取 toolName，其余属性来自 config_json */
+    private ToolAichatPersonaVO toPersona(ToolInfo tool) {
+        ToolAichatPersonaVO vo = new ToolAichatPersonaVO();
+        vo.setToolCode(tool.getToolCode());
+        vo.setPersonaName(tool.getToolName());
+        if (StrUtil.isNotBlank(tool.getConfigJson())) {
+            JSONObject cfg = JSONUtil.parseObj(tool.getConfigJson());
+            vo.setIcon(cfg.getStr("icon"));
+            vo.setIconColor(cfg.getStr("iconColor"));
+            vo.setSystemPrompt(cfg.getStr("systemPrompt"));
+            vo.setWelcomeMsg(cfg.getStr("welcomeMsg"));
+            if (cfg.getJSONArray("recommendQuestions") != null) {
+                vo.setRecommendQuestions(cfg.getJSONArray("recommendQuestions").toList(String.class));
+            }
+            if (cfg.getJSONArray("repoIds") != null) {
+                vo.setRepoIds(cfg.getJSONArray("repoIds").toList(Long.class));
+            }
+        }
+        return vo;
+    }
+
+    /** 组装 AI 创作分类：名称取 toolName，purpose/图标/人设来自 config_json */
+    private ToolAiartistConfigVO toAiartistConfig(ToolInfo tool) {
+        ToolAiartistConfigVO vo = new ToolAiartistConfigVO();
+        vo.setToolCode(tool.getToolCode());
+        vo.setToolName(tool.getToolName());
+        vo.setToolDesc(tool.getToolDesc());
+        if (StrUtil.isNotBlank(tool.getConfigJson())) {
+            JSONObject cfg = JSONUtil.parseObj(tool.getConfigJson());
+            vo.setPurpose(cfg.getStr("purpose"));
+            vo.setIcon(cfg.getStr("icon"));
+            vo.setIconColor(cfg.getStr("iconColor"));
+            vo.setSystemPrompt(cfg.getStr("systemPrompt"));
+        }
+        return vo;
+    }
+
     private ToolInfoVO toVO(ToolInfo entity) {
         ToolInfoVO vo = new ToolInfoVO();
         vo.setId(entity.getId());
@@ -188,11 +264,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         vo.setToolName(entity.getToolName());
         vo.setToolType(entity.getToolType());
         vo.setToolDesc(entity.getToolDesc());
-        vo.setIcon(entity.getIcon());
-        vo.setEntryPath(entity.getEntryPath());
         vo.setConfigJson(entity.getConfigJson());
-        vo.setVisibleScope(entity.getVisibleScope());
-        vo.setSortOrder(entity.getSortOrder());
         vo.setStatus(entity.getStatus());
         vo.setRemark(entity.getRemark());
         vo.setCreatedAt(entity.getCreatedAt());

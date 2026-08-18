@@ -1,4 +1,4 @@
-package com.dayan.knowledge.dto;
+package com.dayan.system.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +12,7 @@ import lombok.Data;
  * mode=bind：绑定百炼控制台已建索引（手填 IndexId），不做远端创建。
  */
 @Data
-public class KnowledgeRepoCreateDTO {
+public class SystemKnowledgeRepoCreateDTO {
 
     /** 仓库名称（如：大雁养老平台知识库 / xx渠道知识库） */
     @NotBlank(message = "仓库名称不能为空")

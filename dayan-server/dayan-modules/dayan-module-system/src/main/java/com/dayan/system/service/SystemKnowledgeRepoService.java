@@ -1,16 +1,16 @@
-package com.dayan.knowledge.service;
+package com.dayan.system.service;
 
 import com.dayan.common.core.resp.PageResult;
-import com.dayan.knowledge.dto.KnowledgeChatDTO;
-import com.dayan.knowledge.dto.KnowledgeDocImportDTO;
-import com.dayan.knowledge.dto.KnowledgeRepoCreateDTO;
-import com.dayan.knowledge.dto.KnowledgeRepoQueryDTO;
-import com.dayan.knowledge.dto.KnowledgeRepoUpdateDTO;
-import com.dayan.knowledge.entity.KnowledgeRepo;
-import com.dayan.knowledge.vo.KnowledgeChatVO;
-import com.dayan.knowledge.vo.KnowledgeDocVO;
-import com.dayan.knowledge.vo.KnowledgeRepoTreeNodeVO;
-import com.dayan.knowledge.vo.KnowledgeRepoVO;
+import com.dayan.system.dto.SystemKnowledgeChatDTO;
+import com.dayan.system.dto.SystemKnowledgeDocImportDTO;
+import com.dayan.system.dto.SystemKnowledgeRepoCreateDTO;
+import com.dayan.system.dto.SystemKnowledgeRepoQueryDTO;
+import com.dayan.system.dto.SystemKnowledgeRepoUpdateDTO;
+import com.dayan.system.entity.SystemKnowledgeRepo;
+import com.dayan.system.vo.SystemKnowledgeChatVO;
+import com.dayan.system.vo.SystemKnowledgeDocVO;
+import com.dayan.system.vo.SystemKnowledgeRepoTreeNodeVO;
+import com.dayan.system.vo.SystemKnowledgeRepoVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -18,19 +18,19 @@ import java.util.List;
 /**
  * 知识仓库服务：仓库与百炼远端同步 + 文档管理（上传/解析/导入索引）+ RAG 问答。
  */
-public interface KnowledgeRepoService {
+public interface SystemKnowledgeRepoService {
 
     /** 仓库分页（平台/渠道筛选） */
-    PageResult<KnowledgeRepoVO> page(KnowledgeRepoQueryDTO query);
+    PageResult<SystemKnowledgeRepoVO> page(SystemKnowledgeRepoQueryDTO query);
 
     /** 仓库详情 */
-    KnowledgeRepoVO getDetail(Long id);
+    SystemKnowledgeRepoVO getDetail(Long id);
 
     /**
      * 创建仓库（mode=create：先落本地，上传首个文档解析成功后由 initIndex 在百炼建库；
      * mode=bind 绑定已有 IndexId）。一个渠道（或平台）仅允许一个仓库。
      */
-    Long create(KnowledgeRepoCreateDTO dto);
+    Long create(SystemKnowledgeRepoCreateDTO dto);
 
     /**
      * 懒建库：用已解析文件在百炼创建知识库并提交索引构建（CreateIndex + SubmitIndexJob），
@@ -39,7 +39,7 @@ public interface KnowledgeRepoService {
     String initIndex(Long id, List<String> fileIds);
 
     /** 更新仓库（仅名称/描述/排序） */
-    void update(Long id, KnowledgeRepoUpdateDTO dto);
+    void update(Long id, SystemKnowledgeRepoUpdateDTO dto);
 
     /** 删除仓库（先删百炼远端索引，成功后再删本地记录） */
     void delete(Long id);
@@ -51,17 +51,17 @@ public interface KnowledgeRepoService {
     String getBuildStatus(Long id);
 
     /** 文档列表（实时代理百炼 ListIndexDocuments） */
-    List<KnowledgeDocVO> listDocuments(Long id, int pageNumber, int pageSize,
+    List<SystemKnowledgeDocVO> listDocuments(Long id, int pageNumber, int pageSize,
                                        String documentName, String documentStatus);
 
     /** 上传文档：申请租约 → 直传 OSS → 导入解析，返回 FileId（解析异步） */
     String uploadDocument(Long id, MultipartFile file);
 
     /** 查询文件解析状态（DescribeFile） */
-    KnowledgeDocVO getDocumentParseStatus(Long id, String fileId);
+    SystemKnowledgeDocVO getDocumentParseStatus(Long id, String fileId);
 
     /** 已解析文档导入索引，返回任务 JobId */
-    String importDocuments(Long id, KnowledgeDocImportDTO dto);
+    String importDocuments(Long id, SystemKnowledgeDocImportDTO dto);
 
     /** 查询文档导入索引任务状态（GetIndexJobStatus） */
     String getImportStatus(Long id, String jobId);
@@ -73,10 +73,10 @@ public interface KnowledgeRepoService {
     com.dayan.common.aliyun.bailian.BailianKnowledgeClient.ChunkPage listChunks(Long id, String fileId, int pageNum, int pageSize);
 
     /** Agent 端：当前渠道可见仓库（平台库 + 本渠道库，按排序） */
-    List<KnowledgeRepoVO> listForAgent(String channelCode);
+    List<SystemKnowledgeRepoVO> listForAgent(String channelCode);
 
     /** 按渠道编码查本渠道仓库（repo_type=2 且 channel_code 匹配；未创建返回 null） */
-    KnowledgeRepoVO getByChannelCode(String channelCode);
+    SystemKnowledgeRepoVO getByChannelCode(String channelCode);
 
     /**
      * 渠道树形知识库（root + 全部后代）。
@@ -84,7 +84,7 @@ public interface KnowledgeRepoService {
      * <p>每节点解析独立仓库与沿祖先链最近继承源；跳过租户拦截批量查仓库，
      * 可见性以「root 及其后代」的渠道树范围为准（调用方保证 root 是当前渠道或其后代）。
      */
-    List<KnowledgeRepoTreeNodeVO> getRepoTree(String rootChannelCode);
+    List<SystemKnowledgeRepoTreeNodeVO> getRepoTree(String rootChannelCode);
 
     /**
      * 校验仓库对当前登录渠道可见（当前渠道 ∪ 祖先 ∪ 后代），返回仓库实体。
@@ -92,14 +92,14 @@ public interface KnowledgeRepoService {
      * <p>用于 chat/retrieve 等「使用」操作：channel 端可对继承库（祖先渠道的库）问答，
      * 可对本渠道及后代渠道的库问答；不可见时抛 NOT_FOUND。未登录渠道上下文（admin）放行。
      */
-    KnowledgeRepo requireRepoVisible(Long id);
+    SystemKnowledgeRepo requireRepoVisible(Long id);
 
     /** RAG 问答（检索命中 + 大模型生成） */
-    KnowledgeChatVO chat(Long id, KnowledgeChatDTO dto);
+    SystemKnowledgeChatVO chat(Long id, SystemKnowledgeChatDTO dto);
 
     /** 检索测试（仅返回命中片段，不调模型） */
-    List<KnowledgeChatVO.Citation> retrieve(Long id, String query, Integer topK);
+    List<SystemKnowledgeChatVO.Citation> retrieve(Long id, String query, Integer topK);
 
     /** 按文档 ID 过滤检索（勾选文档精准召回；documentIds 须属于该仓库） */
-    List<KnowledgeChatVO.Citation> retrieveByDocuments(Long id, String query, Integer topK, List<String> documentIds);
+    List<SystemKnowledgeChatVO.Citation> retrieveByDocuments(Long id, String query, Integer topK, List<String> documentIds);
 }

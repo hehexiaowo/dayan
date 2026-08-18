@@ -1,4 +1,4 @@
-package com.dayan.knowledge.mapper;
+package com.dayan.system.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;

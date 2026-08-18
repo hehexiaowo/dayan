@@ -5,12 +5,10 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class ToolAiQaSessionVO {
+public class ToolAichatSessionVO {
     private Long id;
     private String sessionCode;
     private String toolCode;
-    private Long configId;
-    private String configCode;
     private String personaName;
     private String title;
     private Integer messageCount;

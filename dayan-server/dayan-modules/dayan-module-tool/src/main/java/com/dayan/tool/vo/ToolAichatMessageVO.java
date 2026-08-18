@@ -5,10 +5,10 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class ToolAiQaMessageVO {
+public class ToolAichatMessageVO {
     private Long id;
     private String sessionCode;
     private String role;
     private String content;
-    private List<ToolAiQaChatResultVO.Citation> citations;
+    private List<ToolAichatChatResultVO.Citation> citations;
 }

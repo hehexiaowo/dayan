@@ -1,4 +1,4 @@
-package com.dayan.knowledge.dto;
+package com.dayan.system.dto;
 
 import lombok.Data;
 
@@ -6,7 +6,7 @@ import lombok.Data;
  * 知识仓库分页查询 DTO（内嵌分页，对齐 ParkDisplayBlockQueryDTO 模式）。
  */
 @Data
-public class KnowledgeRepoQueryDTO {
+public class SystemKnowledgeRepoQueryDTO {
 
     private long current = 1L;
 

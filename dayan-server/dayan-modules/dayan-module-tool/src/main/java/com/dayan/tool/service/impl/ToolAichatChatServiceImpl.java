@@ -8,21 +8,21 @@ import com.dayan.common.aliyun.bailian.BailianChatClient;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.mybatis.context.ContextHolder;
-import com.dayan.knowledge.service.KnowledgeRepoService;
-import com.dayan.knowledge.vo.KnowledgeChatVO;
+import com.dayan.system.service.SystemKnowledgeRepoService;
+import com.dayan.system.vo.SystemKnowledgeChatVO;
 import com.dayan.system.service.SystemConfigService;
-import com.dayan.tool.dto.ToolAiQaChatDTO;
-import com.dayan.tool.entity.ToolAiQaConfig;
-import com.dayan.tool.entity.ToolAiQaMessage;
-import com.dayan.tool.entity.ToolAiQaSession;
-import com.dayan.tool.mapper.ToolAiQaConfigMapper;
-import com.dayan.tool.mapper.ToolAiQaMessageMapper;
-import com.dayan.tool.mapper.ToolAiQaSessionMapper;
-import com.dayan.tool.service.ToolAiQaChatListener;
-import com.dayan.tool.service.ToolAiQaChatService;
-import com.dayan.tool.service.ToolAiQaSessionService;
-import com.dayan.tool.vo.ToolAiQaChatResultVO;
-import com.dayan.tool.vo.ToolAiQaMessageVO;
+import com.dayan.tool.dto.ToolAichatChatDTO;
+import com.dayan.tool.entity.ToolAichatMessage;
+import com.dayan.tool.entity.ToolAichatSession;
+import com.dayan.tool.mapper.ToolAichatMessageMapper;
+import com.dayan.tool.mapper.ToolAichatSessionMapper;
+import com.dayan.tool.service.ToolAichatChatListener;
+import com.dayan.tool.service.ToolAichatChatService;
+import com.dayan.tool.service.ToolAichatSessionService;
+import com.dayan.tool.service.ToolInfoService;
+import com.dayan.tool.vo.ToolAichatChatResultVO;
+import com.dayan.tool.vo.ToolAichatMessageVO;
+import com.dayan.tool.vo.ToolAichatPersonaVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,14 +38,14 @@ import java.util.stream.Collectors;
 /**
  * AI 问答核心服务实现。
  *
- * <p>流程：加载人物配置 → 解析绑定知识库 → 跨库检索（每库 try-catch 跳过不可见/异常库）→
- * 引用去重合并后取 top 5 → 无命中兜底 → 组装 system/user prompt → 百炼生成（chat / chatStream）→
- * 落库 user+assistant 两条消息 → 更新 session（lastMessageAt=now，messageCount+=2）。</p>
+ * <p>流程：加载问答人物（tool_info 的 aichat 实例）→ 解析绑定知识库 → 跨库检索（每库 try-catch 跳过
+ * 不可见/异常库）→ 引用去重合并后取 top 5 → 无命中兜底 → 组装 system/user prompt → 百炼生成
+ * （chat / chatStream）→ 落库 user+assistant 两条消息 → 更新 session（lastMessageAt=now，messageCount+=2）。</p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
+public class ToolAichatChatServiceImpl implements ToolAichatChatService {
 
     private static final int TOP_K_PER_REPO = 3;
     private static final int TOP_K_TOTAL = 5;
@@ -56,25 +56,25 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
     private static final int HISTORY_LIMIT = 12;
     private static final int HISTORY_CONTENT_LIMIT = 4000;
 
-    private final ToolAiQaConfigMapper configMapper;
-    private final ToolAiQaSessionMapper sessionMapper;
-    private final ToolAiQaMessageMapper messageMapper;
-    private final ToolAiQaSessionService sessionService;
-    private final KnowledgeRepoService knowledgeRepoService;
+    private final ToolAichatSessionMapper sessionMapper;
+    private final ToolAichatMessageMapper messageMapper;
+    private final ToolAichatSessionService sessionService;
+    private final ToolInfoService toolInfoService;
+    private final SystemKnowledgeRepoService knowledgeRepoService;
     private final SystemConfigService systemConfigService;
     private final BailianChatClient bailianChatClient = new BailianChatClient();
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ToolAiQaChatResultVO chat(ToolAiQaChatDTO dto) {
+    public ToolAichatChatResultVO chat(ToolAichatChatDTO dto) {
         String agentCode = ContextHolder.getAccountCode();
         String channelCode = ContextHolder.getChannelCode();
-        ToolAiQaConfig config = requireConfig(dto.getConfigId());
-        String sessionCode = resolveSession(dto, agentCode, channelCode, config);
+        ToolAichatPersonaVO persona = requirePersona(dto.getToolCode());
+        String sessionCode = resolveSession(dto, agentCode, channelCode, persona);
 
         // 1. 跨库检索 + 引用合并去重
         List<String> texts = new ArrayList<>();
-        List<ToolAiQaChatResultVO.Citation> citations = retrieveCitations(dto, config, texts);
+        List<ToolAichatChatResultVO.Citation> citations = retrieveCitations(dto, persona, texts);
 
         // 2. 无命中兜底：落 user + assistant 兜底消息后返回
         if (citations.isEmpty()) {
@@ -85,7 +85,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         }
 
         // 3. 组装 prompt + 生成
-        String systemPrompt = buildSystemPrompt(config, texts);
+        String systemPrompt = buildSystemPrompt(persona, texts);
         String answer = bailianChatClient.chat(
                 getConfig("llm.api-key"), getConfig("llm.api-host"),
                 StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
@@ -100,15 +100,15 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ToolAiQaChatResultVO chatStreamBlocking(ToolAiQaChatDTO dto, ToolAiQaChatListener listener) {
+    public ToolAichatChatResultVO chatStreamBlocking(ToolAichatChatDTO dto, ToolAichatChatListener listener) {
         String agentCode = ContextHolder.getAccountCode();
         String channelCode = ContextHolder.getChannelCode();
-        ToolAiQaConfig config = requireConfig(dto.getConfigId());
-        String sessionCode = resolveSession(dto, agentCode, channelCode, config);
+        ToolAichatPersonaVO persona = requirePersona(dto.getToolCode());
+        String sessionCode = resolveSession(dto, agentCode, channelCode, persona);
 
         // 1. 跨库检索 + 引用合并去重
         List<String> texts = new ArrayList<>();
-        List<ToolAiQaChatResultVO.Citation> citations = retrieveCitations(dto, config, texts);
+        List<ToolAichatChatResultVO.Citation> citations = retrieveCitations(dto, persona, texts);
 
         // 2. 无命中兜底：落 user + assistant 兜底消息后返回
         if (citations.isEmpty()) {
@@ -127,7 +127,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
             listener.onStage("retrieval", "done");
             listener.onStage("generate", "stream");
         }
-        String systemPrompt = buildSystemPrompt(config, texts);
+        String systemPrompt = buildSystemPrompt(persona, texts);
         String answer = bailianChatClient.chatStream(
                 getConfig("llm.api-key"), getConfig("llm.api-host"),
                 StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
@@ -142,70 +142,71 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
     }
 
     @Override
-    public List<ToolAiQaMessageVO> listMessages(String sessionCode) {
+    public List<ToolAichatMessageVO> listMessages(String sessionCode) {
         String agentCode = ContextHolder.getAccountCode();
         // session 归属校验（防越权）
-        ToolAiQaSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAiQaSession>()
-                .eq(ToolAiQaSession::getSessionCode, sessionCode)
-                .eq(ToolAiQaSession::getAgentCode, agentCode)
+        ToolAichatSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAichatSession>()
+                .eq(ToolAichatSession::getSessionCode, sessionCode)
+                .eq(ToolAichatSession::getAgentCode, agentCode)
                 .last("LIMIT 1"));
         if (session == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "会话不存在");
         }
-        List<ToolAiQaMessage> messages = messageMapper.selectList(new LambdaQueryWrapper<ToolAiQaMessage>()
-                .eq(ToolAiQaMessage::getSessionCode, sessionCode)
-                .orderByAsc(ToolAiQaMessage::getId));
+        List<ToolAichatMessage> messages = messageMapper.selectList(new LambdaQueryWrapper<ToolAichatMessage>()
+                .eq(ToolAichatMessage::getSessionCode, sessionCode)
+                .orderByAsc(ToolAichatMessage::getId));
         return messages.stream().map(this::toMessageVO).collect(Collectors.toList());
     }
 
     // ==================== 内部工具 ====================
 
-    /** 加载人物配置，不存在抛 NOT_FOUND */
-    private ToolAiQaConfig requireConfig(Long configId) {
-        ToolAiQaConfig config = configMapper.selectById(configId);
-        if (config == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "人物配置不存在: " + configId);
+    /** 加载问答人物（tool_info 的 aichat 实例），不存在抛 NOT_FOUND */
+    private ToolAichatPersonaVO requirePersona(String toolCode) {
+        ToolAichatPersonaVO persona = toolInfoService.getQaPersona(toolCode);
+        if (persona == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "问答人物不存在: " + toolCode);
         }
-        return config;
+        return persona;
     }
 
     /**
      * 解析会话：sessionCode 非空时校验归属 + 人物一致；为空时新建会话（首轮问答）。
      */
-    private String resolveSession(ToolAiQaChatDTO dto, String agentCode, String channelCode, ToolAiQaConfig config) {
+    private String resolveSession(ToolAichatChatDTO dto, String agentCode, String channelCode,
+                                  ToolAichatPersonaVO persona) {
         if (StrUtil.isBlank(dto.getSessionCode())) {
-            return sessionService.create(agentCode, channelCode, config.getId(), dto.getToolCode());
+            return sessionService.create(agentCode, channelCode, persona.getToolCode());
         }
-        ToolAiQaSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAiQaSession>()
-                .eq(ToolAiQaSession::getSessionCode, dto.getSessionCode())
-                .eq(ToolAiQaSession::getAgentCode, agentCode)
+        ToolAichatSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAichatSession>()
+                .eq(ToolAichatSession::getSessionCode, dto.getSessionCode())
+                .eq(ToolAichatSession::getAgentCode, agentCode)
                 .last("LIMIT 1"));
         if (session == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "会话不存在");
         }
-        if (session.getConfigId() == null || !session.getConfigId().equals(config.getId())) {
+        if (session.getToolCode() == null || !session.getToolCode().equals(persona.getToolCode())) {
             throw new BusinessException(ErrorCode.BUSINESS, "会话人物与请求人物不一致");
         }
         return session.getSessionCode();
     }
 
     /** 跨库检索：每库 try-catch 跳过不可见/异常库，text 去重，合并后取 top 5 */
-    private List<ToolAiQaChatResultVO.Citation> retrieveCitations(ToolAiQaChatDTO dto, ToolAiQaConfig config,
+    private List<ToolAichatChatResultVO.Citation> retrieveCitations(ToolAichatChatDTO dto, ToolAichatPersonaVO persona,
                                                                    List<String> texts) {
-        List<ToolAiQaChatResultVO.Citation> citations = new ArrayList<>();
+        List<ToolAichatChatResultVO.Citation> citations = new ArrayList<>();
         Set<String> seen = new HashSet<>();
-        List<Long> repoIds = parseLongList(config.getRepoIds());
+        List<Long> repoIds = persona.getRepoIds() == null ? List.of() : persona.getRepoIds();
         for (Long repoId : repoIds) {
             try {
                 knowledgeRepoService.requireRepoVisible(repoId);  // 显式渠道可见性校验
-                List<KnowledgeChatVO.Citation> cites =
+                List<SystemKnowledgeChatVO.Citation> cites =
                         knowledgeRepoService.retrieve(repoId, dto.getQuestion(), TOP_K_PER_REPO);
-                for (KnowledgeChatVO.Citation c : cites) {
+                for (SystemKnowledgeChatVO.Citation c : cites) {
                     String text = StrUtil.cleanBlank(c.getText());
                     if (StrUtil.isBlank(text) || !seen.add(text)) {
                         continue;
                     }
-                    ToolAiQaChatResultVO.Citation cl = new ToolAiQaChatResultVO.Citation();
+                    ToolAichatChatResultVO.Citation cl = new ToolAichatChatResultVO.Citation();
                     cl.setText(text);
                     cl.setScore(c.getScore());
                     cl.setRepoId(repoId);
@@ -234,8 +235,8 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
     }
 
     /** 组装 system prompt：人设 + 引用约束 + 编号后的检索文本 */
-    private String buildSystemPrompt(ToolAiQaConfig config, List<String> texts) {
-        return config.getSystemPrompt()
+    private String buildSystemPrompt(ToolAichatPersonaVO persona, List<String> texts) {
+        return persona.getSystemPrompt()
                 + "\n\n回答时必须仅依据下方【知识库资料】，不得编造资料外内容；回答用简体中文，条理清晰。\n【知识库资料】\n"
                 + String.join("\n", texts);
     }
@@ -244,7 +245,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
                                                                         String systemPrompt) {
         List<BailianChatClient.Message> messages = new ArrayList<>();
         messages.add(new BailianChatClient.Message("system", systemPrompt));
-        for (ToolAiQaMessage message : loadHistory(sessionCode, question)) {
+        for (ToolAichatMessage message : loadHistory(sessionCode, question)) {
             messages.add(new BailianChatClient.Message(message.getRole(), limitContent(message.getContent())));
         }
         messages.add(new BailianChatClient.Message("user", question));
@@ -253,7 +254,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
 
     private String buildConversationPrompt(String sessionCode, String question) {
         StringBuilder prompt = new StringBuilder();
-        for (ToolAiQaMessage message : loadHistory(sessionCode, question)) {
+        for (ToolAichatMessage message : loadHistory(sessionCode, question)) {
             prompt.append("user".equals(message.getRole()) ? "用户" : "助手")
                     .append("：").append(limitContent(message.getContent())).append("\n");
         }
@@ -261,11 +262,11 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         return prompt.toString();
     }
 
-    private List<ToolAiQaMessage> loadHistory(String sessionCode, String question) {
-        List<ToolAiQaMessage> history = messageMapper.selectList(new LambdaQueryWrapper<ToolAiQaMessage>()
-                .eq(ToolAiQaMessage::getSessionCode, sessionCode)
-                .in(ToolAiQaMessage::getRole, List.of("user", "assistant"))
-                .orderByDesc(ToolAiQaMessage::getId)
+    private List<ToolAichatMessage> loadHistory(String sessionCode, String question) {
+        List<ToolAichatMessage> history = messageMapper.selectList(new LambdaQueryWrapper<ToolAichatMessage>()
+                .eq(ToolAichatMessage::getSessionCode, sessionCode)
+                .in(ToolAichatMessage::getRole, List.of("user", "assistant"))
+                .orderByDesc(ToolAichatMessage::getId)
                 .last("LIMIT " + HISTORY_LIMIT));
         java.util.Collections.reverse(history);
         return history;
@@ -276,15 +277,15 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
     }
 
     private void saveUserMessage(String sessionCode, String content) {
-        ToolAiQaMessage msg = new ToolAiQaMessage();
+        ToolAichatMessage msg = new ToolAichatMessage();
         msg.setSessionCode(sessionCode);
         msg.setRole("user");
         msg.setContent(content);
         messageMapper.insert(msg);
     }
 
-    private void saveAssistantMessage(String sessionCode, String content, List<ToolAiQaChatResultVO.Citation> citations) {
-        ToolAiQaMessage msg = new ToolAiQaMessage();
+    private void saveAssistantMessage(String sessionCode, String content, List<ToolAichatChatResultVO.Citation> citations) {
+        ToolAichatMessage msg = new ToolAichatMessage();
         msg.setSessionCode(sessionCode);
         msg.setRole("assistant");
         msg.setContent(content);
@@ -294,24 +295,24 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
 
     /** 更新会话：lastMessageAt=now，messageCount 原子增量 delta（每次问答 +2，无命中历史兼容 +1） */
     private void touchSession(String sessionCode, int delta) {
-        ToolAiQaSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAiQaSession>()
-                .eq(ToolAiQaSession::getSessionCode, sessionCode).last("LIMIT 1"));
+        ToolAichatSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAichatSession>()
+                .eq(ToolAichatSession::getSessionCode, sessionCode).last("LIMIT 1"));
         if (session != null && (session.getMessageCount() == null || session.getMessageCount() == 0)) {
-            ToolAiQaMessage firstQuestion = messageMapper.selectOne(new LambdaQueryWrapper<ToolAiQaMessage>()
-                    .eq(ToolAiQaMessage::getSessionCode, sessionCode)
-                    .eq(ToolAiQaMessage::getRole, "user")
-                    .orderByAsc(ToolAiQaMessage::getId).last("LIMIT 1"));
+            ToolAichatMessage firstQuestion = messageMapper.selectOne(new LambdaQueryWrapper<ToolAichatMessage>()
+                    .eq(ToolAichatMessage::getSessionCode, sessionCode)
+                    .eq(ToolAichatMessage::getRole, "user")
+                    .orderByAsc(ToolAichatMessage::getId).last("LIMIT 1"));
             if (firstQuestion != null && StrUtil.isNotBlank(firstQuestion.getContent())) {
-                sessionMapper.update(null, new LambdaUpdateWrapper<ToolAiQaSession>()
-                        .eq(ToolAiQaSession::getSessionCode, sessionCode)
-                        .eq(ToolAiQaSession::getMessageCount, 0)
-                        .set(ToolAiQaSession::getTitle, limitTitle(firstQuestion.getContent())));
+                sessionMapper.update(null, new LambdaUpdateWrapper<ToolAichatSession>()
+                        .eq(ToolAichatSession::getSessionCode, sessionCode)
+                        .eq(ToolAichatSession::getMessageCount, 0)
+                        .set(ToolAichatSession::getTitle, limitTitle(firstQuestion.getContent())));
             }
         }
-        sessionMapper.update(null, new LambdaUpdateWrapper<ToolAiQaSession>()
-                .eq(ToolAiQaSession::getSessionCode, sessionCode)
+        sessionMapper.update(null, new LambdaUpdateWrapper<ToolAichatSession>()
+                .eq(ToolAichatSession::getSessionCode, sessionCode)
                 .setSql("message_count = IFNULL(message_count, 0) + " + delta)
-                .set(ToolAiQaSession::getLastMessageAt, LocalDateTime.now()));
+                .set(ToolAichatSession::getLastMessageAt, LocalDateTime.now()));
     }
 
     private String limitTitle(String title) {
@@ -319,32 +320,28 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         return count <= 30 ? title : title.substring(0, title.offsetByCodePoints(0, 30));
     }
 
-    private ToolAiQaChatResultVO result(String answer, List<ToolAiQaChatResultVO.Citation> citations, String sessionCode) {
-        ToolAiQaChatResultVO vo = new ToolAiQaChatResultVO();
+    private ToolAichatChatResultVO result(String answer, List<ToolAichatChatResultVO.Citation> citations, String sessionCode) {
+        ToolAichatChatResultVO vo = new ToolAichatChatResultVO();
         vo.setAnswer(answer);
         vo.setCitations(citations);
         vo.setSessionCode(sessionCode);
         return vo;
     }
 
-    private ToolAiQaMessageVO toMessageVO(ToolAiQaMessage m) {
-        ToolAiQaMessageVO vo = new ToolAiQaMessageVO();
+    private ToolAichatMessageVO toMessageVO(ToolAichatMessage m) {
+        ToolAichatMessageVO vo = new ToolAichatMessageVO();
         vo.setId(m.getId());
         vo.setSessionCode(m.getSessionCode());
         vo.setRole(m.getRole());
         vo.setContent(m.getContent());
         vo.setCitations(StrUtil.isBlank(m.getCitations())
                 ? null
-                : JSONUtil.toList(m.getCitations(), ToolAiQaChatResultVO.Citation.class));
+                : JSONUtil.toList(m.getCitations(), ToolAichatChatResultVO.Citation.class));
         return vo;
     }
 
     /** 读取 llm 分组配置 */
     private String getConfig(String configKey) {
         return systemConfigService.getValue("llm", configKey);
-    }
-
-    private List<Long> parseLongList(String json) {
-        return StrUtil.isBlank(json) ? List.of() : JSONUtil.toList(json, Long.class);
     }
 }

@@ -18,18 +18,7 @@ public class ToolInfoUpdateDTO {
     @Size(max = 500)
     private String toolDesc;
 
-    @Size(max = 100)
-    private String icon;
-
-    @Size(max = 200)
-    private String entryPath;
-
     private String configJson;
-
-    @Size(max = 50)
-    private String visibleScope;
-
-    private Integer sortOrder;
 
     private Integer status;
 

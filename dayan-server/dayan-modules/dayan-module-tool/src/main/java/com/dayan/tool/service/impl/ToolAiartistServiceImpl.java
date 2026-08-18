@@ -8,13 +8,14 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.mybatis.context.ContextHolder;
-import com.dayan.tool.dto.ToolAiCreatorCreateDTO;
-import com.dayan.tool.dto.ToolAiCreatorQueryDTO;
-import com.dayan.tool.entity.ToolAiCreator;
-import com.dayan.tool.mapper.ToolAiCreatorMapper;
+import com.dayan.tool.dto.ToolAiartistCreateDTO;
+import com.dayan.tool.dto.ToolAiartistQueryDTO;
+import com.dayan.tool.entity.ToolAiartist;
+import com.dayan.tool.mapper.ToolAiartistMapper;
 import com.dayan.tool.model.AiPurpose;
-import com.dayan.tool.model.ToolAiCreatorPhase;
-import com.dayan.tool.service.ToolAiCreatorService;
+import com.dayan.tool.model.ToolAiartistPhase;
+import com.dayan.tool.service.ToolAiartistService;
+import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.AiFactDigestVO;
 import com.dayan.tool.vo.AiAuditItemVO;
 import com.dayan.tool.vo.AiImageVO;
@@ -22,9 +23,10 @@ import com.dayan.tool.vo.AiOutlineVO;
 import com.dayan.tool.vo.AiScoresVO;
 import com.dayan.tool.vo.AiStrategyVO;
 import com.dayan.tool.vo.AiTitleVO;
-import com.dayan.tool.vo.ToolAiCreatorListVO;
-import com.dayan.tool.vo.ToolAiCreatorRefsVO;
-import com.dayan.tool.vo.ToolAiCreatorVO;
+import com.dayan.tool.vo.ToolAiartistListVO;
+import com.dayan.tool.vo.ToolAiartistRefsVO;
+import com.dayan.tool.vo.ToolAiartistVO;
+import com.dayan.tool.vo.ToolAiartistConfigVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -38,17 +40,21 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
+public class ToolAiartistServiceImpl implements ToolAiartistService {
 
-    private final ToolAiCreatorMapper mapper;
+    private final ToolAiartistMapper mapper;
+    private final ToolInfoService toolInfoService;
 
     @Override
-    public Long create(ToolAiCreatorCreateDTO dto) {
+    public Long create(ToolAiartistCreateDTO dto) {
         String agentCode = requireAgentCode();
-        AiPurpose.requireValid(dto.getPurpose());
+        // 创作分类 = tool_info 的 aiartist 实例；目的以实例 config_json 预置为准（前端不再选目的）
+        ToolAiartistConfigVO config = toolInfoService.getAiartistConfig(dto.getToolCode());
+        String purpose = StrUtil.blankToDefault(dto.getPurpose(), config.getPurpose());
+        AiPurpose.requireValid(purpose);
         // 目的 → 必填素材校验（空素材跑流水线只会产出幻觉）
-        ToolAiCreatorRefsVO refs = dto.getMaterialRefs() == null ? new ToolAiCreatorRefsVO() : dto.getMaterialRefs();
-        switch (dto.getPurpose()) {
+        ToolAiartistRefsVO refs = dto.getMaterialRefs() == null ? new ToolAiartistRefsVO() : dto.getMaterialRefs();
+        switch (purpose) {
             case AiPurpose.PRODUCT -> {
                 if (refs.getKbFiles() == null || refs.getKbFiles().isEmpty()) {
                     throw new BusinessException(ErrorCode.PARAM_ERROR, "产品宣传需在渠道知识库勾选保险产品/政策资料");
@@ -67,13 +73,13 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
                     throw new BusinessException(ErrorCode.PARAM_ERROR, "科普获客需填写主题/切入话题");
                 }
             }
-            default -> AiPurpose.requireValid(dto.getPurpose());
+            default -> AiPurpose.requireValid(purpose);
         }
-        ToolAiCreator entity = new ToolAiCreator();
-        entity.setToolCode(StrUtil.blankToDefault(dto.getToolCode(), "TL00003"));
+        ToolAiartist entity = new ToolAiartist();
+        entity.setToolCode(dto.getToolCode());
         entity.setAgentCode(agentCode);
         entity.setChannelCode(StrUtil.nullToEmpty(ContextHolder.getChannelCode()));
-        entity.setPurpose(dto.getPurpose());
+        entity.setPurpose(purpose);
         entity.setContentType(dto.getContentType());
         entity.setStyleCode(dto.getStyleCode());
         entity.setAudience(StrUtil.blankToDefault(dto.getAudience(), "general"));
@@ -82,26 +88,26 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
         if (dto.getMaterials() != null && !dto.getMaterials().isEmpty()) {
             entity.setMaterials(JSONUtil.toJsonStr(dto.getMaterials()));
         }
-        entity.setStatus(ToolAiCreatorPhase.CREATED);
+        entity.setStatus(ToolAiartistPhase.CREATED);
         mapper.insert(entity);
         return entity.getId();
     }
 
     @Override
-    public ToolAiCreatorVO getDetail(Long id) {
+    public ToolAiartistVO getDetail(Long id) {
         return toVO(requireOwned(id));
     }
 
     @Override
-    public PageResult<ToolAiCreatorListVO> page(ToolAiCreatorQueryDTO dto) {
+    public PageResult<ToolAiartistListVO> page(ToolAiartistQueryDTO dto) {
         String agentCode = requireAgentCode();
-        LambdaQueryWrapper<ToolAiCreator> wrapper = new LambdaQueryWrapper<ToolAiCreator>()
-                .eq(ToolAiCreator::getAgentCode, agentCode)
-                .eq(StrUtil.isNotBlank(dto.getStatus()), ToolAiCreator::getStatus, dto.getStatus())
-                .orderByDesc(ToolAiCreator::getId);
-        Page<ToolAiCreator> page = mapper.selectPage(new Page<>(dto.getCurrent(), dto.getSize()), wrapper);
-        List<ToolAiCreatorListVO> records = page.getRecords().stream().map(e -> {
-            ToolAiCreatorListVO vo = new ToolAiCreatorListVO();
+        LambdaQueryWrapper<ToolAiartist> wrapper = new LambdaQueryWrapper<ToolAiartist>()
+                .eq(ToolAiartist::getAgentCode, agentCode)
+                .eq(StrUtil.isNotBlank(dto.getStatus()), ToolAiartist::getStatus, dto.getStatus())
+                .orderByDesc(ToolAiartist::getId);
+        Page<ToolAiartist> page = mapper.selectPage(new Page<>(dto.getCurrent(), dto.getSize()), wrapper);
+        List<ToolAiartistListVO> records = page.getRecords().stream().map(e -> {
+            ToolAiartistListVO vo = new ToolAiartistListVO();
             vo.setId(e.getId());
             vo.setPurpose(e.getPurpose());
             vo.setContentType(e.getContentType());
@@ -120,8 +126,8 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
     }
 
     @Override
-    public ToolAiCreator requireOwned(Long id) {
-        ToolAiCreator entity = mapper.selectById(id);
+    public ToolAiartist requireOwned(Long id) {
+        ToolAiartist entity = mapper.selectById(id);
         if (entity == null || !requireAgentCode().equals(entity.getAgentCode())) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "创作项目不存在");
         }
@@ -129,13 +135,13 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
     }
 
     @Override
-    public int updateById(ToolAiCreator entity) {
+    public int updateById(ToolAiartist entity) {
         return mapper.updateById(entity);
     }
 
     @Override
-    public ToolAiCreatorVO toVO(ToolAiCreator e) {
-        ToolAiCreatorVO vo = new ToolAiCreatorVO();
+    public ToolAiartistVO toVO(ToolAiartist e) {
+        ToolAiartistVO vo = new ToolAiartistVO();
         vo.setId(e.getId());
         vo.setToolCode(e.getToolCode());
         vo.setPurpose(e.getPurpose());
@@ -148,7 +154,7 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
         vo.setBody(e.getBody());
         vo.setCreatedAt(e.getCreatedAt());
         vo.setUpdatedAt(e.getUpdatedAt());
-        ToolAiCreatorRefsVO refs = parse(e.getMaterialRefs(), ToolAiCreatorRefsVO.class);
+        ToolAiartistRefsVO refs = parse(e.getMaterialRefs(), ToolAiartistRefsVO.class);
         vo.setMaterialRefs(refs);
         vo.setFactDigest(parse(e.getFactDigest(), AiFactDigestVO.class));
         vo.setStrategy(parse(e.getStrategy(), AiStrategyVO.class));
@@ -163,7 +169,7 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
     }
 
     /** 素材名回显：refs 带展示名直读（旧数据字段为 null 时安全降级为空） */
-    private void resolveRefNames(ToolAiCreatorVO vo, ToolAiCreatorRefsVO refs) {
+    private void resolveRefNames(ToolAiartistVO vo, ToolAiartistRefsVO refs) {
         if (refs == null) {
             return;
         }
@@ -172,15 +178,15 @@ public class ToolAiCreatorServiceImpl implements ToolAiCreatorService {
         }
         if (refs.getKbFiles() != null) {
             vo.setKbFileNames(refs.getKbFiles().stream()
-                    .map(ToolAiCreatorRefsVO.KbFileRef::getFileName).toList());
+                    .map(ToolAiartistRefsVO.KbFileRef::getFileName).toList());
         }
         if (refs.getGoods() != null) {
             vo.setGoodsNames(refs.getGoods().stream()
-                    .map(ToolAiCreatorRefsVO.CodeNameRef::getName).toList());
+                    .map(ToolAiartistRefsVO.CodeNameRef::getName).toList());
         }
         if (refs.getParks() != null) {
             vo.setParkNames(refs.getParks().stream()
-                    .map(ToolAiCreatorRefsVO.CodeNameRef::getName).toList());
+                    .map(ToolAiartistRefsVO.CodeNameRef::getName).toList());
         }
     }
 

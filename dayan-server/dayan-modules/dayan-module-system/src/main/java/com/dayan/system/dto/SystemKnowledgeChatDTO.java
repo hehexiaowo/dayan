@@ -1,4 +1,4 @@
-package com.dayan.knowledge.dto;
+package com.dayan.system.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.Data;
  * 知识库问答 DTO（RAG：检索命中 + 大模型生成）。
  */
 @Data
-public class KnowledgeChatDTO {
+public class SystemKnowledgeChatDTO {
 
     /** 用户问题 */
     @NotBlank(message = "问题不能为空")

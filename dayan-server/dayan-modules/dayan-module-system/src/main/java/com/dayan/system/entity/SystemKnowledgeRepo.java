@@ -1,4 +1,4 @@
-package com.dayan.knowledge.entity;
+package com.dayan.system.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -17,8 +17,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("knowledge_repo")
-public class KnowledgeRepo extends BaseEntity {
+@TableName("system_knowledge_repo")
+public class SystemKnowledgeRepo extends BaseEntity {
 
     @TableId(type = IdType.AUTO)
     private Long id;

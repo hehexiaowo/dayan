@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 /** AI 创作列表项 */
 @Data
-public class ToolAiCreatorListVO {
+public class ToolAiartistListVO {
     private Long id;
     private String purpose;
     private Integer contentType;

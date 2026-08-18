@@ -8,14 +8,15 @@ import com.dayan.tool.dto.AiOutlineRegenDTO;
 import com.dayan.tool.dto.AiReviseDTO;
 import com.dayan.tool.dto.AiStrategyConfirmDTO;
 import com.dayan.tool.dto.AiTitleRegenDTO;
-import com.dayan.tool.dto.ToolAiCreatorContentCmd;
-import com.dayan.tool.entity.ToolAiCreator;
-import com.dayan.tool.model.ToolAiCreatorPhase;
+import com.dayan.tool.dto.ToolAiartistContentCmd;
+import com.dayan.tool.entity.ToolAiartist;
+import com.dayan.tool.model.ToolAiartistPhase;
 import com.dayan.tool.model.AiPurpose;
 import com.dayan.tool.service.AiClientHolder;
-import com.dayan.tool.service.ToolAiCreatorContentSaver;
-import com.dayan.tool.service.ToolAiCreatorService;
-import com.dayan.tool.service.ToolAiCreatorPipelineService;
+import com.dayan.tool.service.ToolAiartistContentSaver;
+import com.dayan.tool.service.ToolAiartistService;
+import com.dayan.tool.service.ToolInfoService;
+import com.dayan.tool.service.ToolAiartistPipelineService;
 import com.dayan.tool.service.AiGenerateProgressListener;
 import com.dayan.tool.service.AiImageProgressListener;
 import com.dayan.tool.util.AiPrompts;
@@ -46,7 +47,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineService {
+public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineService {
 
     private static final double DIGEST_TEMPERATURE = 0.2;
     private static final double STRATEGY_TEMPERATURE = 0.7;
@@ -84,37 +85,38 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     /** 标题字数上限（titles-regen 用） */
     private static final Map<Integer, Integer> TITLE_LIMITS = Map.of(1, 30, 2, 20, 3, 15, 4, 20);
 
-    private final ToolAiCreatorService projectService;
+    private final ToolAiartistService projectService;
     private final StorageService storageService;
     private final AiClientHolder aiClientHolder;
-    private final ToolAiCreatorContentSaver contentSaver;
+    private final ToolAiartistContentSaver contentSaver;
+    private final ToolInfoService toolInfoService;
 
     @Override
-    public ToolAiCreatorVO digest(Long id) {
-        ToolAiCreator p = projectService.requireOwned(id);
+    public ToolAiartistVO digest(Long id) {
+        ToolAiartist p = projectService.requireOwned(id);
         List<String> warnings = new ArrayList<>();
         String material = materialsText(p, warnings);
-        AiFactDigestVO digest = LlmJson.parse(chat(render("digest", Map.of(
+        AiFactDigestVO digest = LlmJson.parse(chat(p, render("digest", Map.of(
                 "purpose_rule", purposeRule(p.getPurpose()),
                 "material", material)), DIGEST_TEMPERATURE),
                 AiFactDigestVO.class);
         p.setFactDigest(JSONUtil.toJsonStr(digest));
         p.setWarnings(JSONUtil.toJsonStr(warnings));
-        if (ToolAiCreatorPhase.CREATED.equals(p.getStatus())) {
-            p.setStatus(ToolAiCreatorPhase.DIGESTED);
+        if (ToolAiartistPhase.CREATED.equals(p.getStatus())) {
+            p.setStatus(ToolAiartistPhase.DIGESTED);
         }
         projectService.updateById(p);
         return projectService.toVO(p);
     }
 
     @Override
-    public ToolAiCreatorVO strategy(Long id) {
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.CREATED, ToolAiCreatorPhase.DIGESTED, ToolAiCreatorPhase.STRATEGY_CONFIRMED);
+    public ToolAiartistVO strategy(Long id) {
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.CREATED, ToolAiartistPhase.DIGESTED, ToolAiartistPhase.STRATEGY_CONFIRMED);
         resetDownstreamIfNeeded(p);
         ensureDigest(p);
         List<String> warnings = new ArrayList<>();
         String material = materialsText(p, warnings);
-        AiStrategyBundleVO out = LlmJson.parse(chat(render("strategy", Map.of(
+        AiStrategyBundleVO out = LlmJson.parse(chat(p, render("strategy", Map.of(
                 "purpose_rule", purposeRule(p.getPurpose()),
                 "form", formInstruction(p.getContentType()),
                 "style", styleInstruction(p.getStyleCode()),
@@ -128,14 +130,14 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         p.setStrategy(JSONUtil.toJsonStr(strategy));
         p.setTitles(JSONUtil.toJsonStr(sanitizeTitles(out.getGeneratedTitles())));
         p.setWarnings(JSONUtil.toJsonStr(warnings));
-        p.setStatus(ToolAiCreatorPhase.DIGESTED);
+        p.setStatus(ToolAiartistPhase.DIGESTED);
         projectService.updateById(p);
         return projectService.toVO(p);
     }
 
     @Override
-    public ToolAiCreatorVO regenerateTitles(Long id, AiTitleRegenDTO dto) {
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.DIGESTED, ToolAiCreatorPhase.STRATEGY_CONFIRMED);
+    public ToolAiartistVO regenerateTitles(Long id, AiTitleRegenDTO dto) {
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.DIGESTED, ToolAiartistPhase.STRATEGY_CONFIRMED);
         resetDownstreamIfNeeded(p);
         AiStrategyVO strategy = parseStrategy(p);
         String prompt = render("titles-regen", Map.of(
@@ -143,16 +145,16 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
                 "previous_titles", StrUtil.blankToDefault(p.getTitles(), "（无）"),
                 "feedback", StrUtil.blankToDefault(dto == null ? null : dto.getFeedback(), "换一批差异化角度"),
                 "title_limit", String.valueOf(TITLE_LIMITS.getOrDefault(p.getContentType(), 30))));
-        AiStrategyBundleVO out = LlmJson.parse(chat(prompt, STRATEGY_TEMPERATURE), AiStrategyBundleVO.class);
+        AiStrategyBundleVO out = LlmJson.parse(chat(p, prompt, STRATEGY_TEMPERATURE), AiStrategyBundleVO.class);
         p.setTitles(JSONUtil.toJsonStr(sanitizeTitles(out.getGeneratedTitles())));
-        p.setStatus(ToolAiCreatorPhase.DIGESTED);
+        p.setStatus(ToolAiartistPhase.DIGESTED);
         projectService.updateById(p);
         return projectService.toVO(p);
     }
 
     @Override
-    public ToolAiCreatorVO confirmStrategy(Long id, AiStrategyConfirmDTO dto) {
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.DIGESTED, ToolAiCreatorPhase.STRATEGY_CONFIRMED);
+    public ToolAiartistVO confirmStrategy(Long id, AiStrategyConfirmDTO dto) {
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.DIGESTED, ToolAiartistPhase.STRATEGY_CONFIRMED);
         resetDownstreamIfNeeded(p);
         AiStrategyVO strategy = parseStrategy(p);
         if (StrUtil.isNotBlank(dto.getTargetAudience())) strategy.setTargetAudience(dto.getTargetAudience());
@@ -161,14 +163,14 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         if (StrUtil.isNotBlank(dto.getAdvantageHook())) strategy.setAdvantageHook(dto.getAdvantageHook());
         p.setStrategy(JSONUtil.toJsonStr(strategy));
         p.setSelectedTitle(dto.getSelectedTitle().trim());
-        p.setStatus(ToolAiCreatorPhase.STRATEGY_CONFIRMED);
+        p.setStatus(ToolAiartistPhase.STRATEGY_CONFIRMED);
         projectService.updateById(p);
         return projectService.toVO(p);
     }
 
     @Override
-    public ToolAiCreatorVO outline(Long id) {
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.STRATEGY_CONFIRMED, ToolAiCreatorPhase.OUTLINE_CONFIRMED);
+    public ToolAiartistVO outline(Long id) {
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.STRATEGY_CONFIRMED, ToolAiartistPhase.OUTLINE_CONFIRMED);
         if (Integer.valueOf(2).equals(p.getContentType())) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "朋友圈文案无大纲阶段，请直接生成正文");
         }
@@ -176,18 +178,18 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         AiStrategyVO strategy = parseStrategy(p);
         AiOutlineVO outline = callOutline(p, strategy, materialsText(p, new ArrayList<>()), null);
         p.setOutline(JSONUtil.toJsonStr(outline));
-        p.setStatus(ToolAiCreatorPhase.STRATEGY_CONFIRMED);
+        p.setStatus(ToolAiartistPhase.STRATEGY_CONFIRMED);
         projectService.updateById(p);
         return projectService.toVO(p);
     }
 
     @Override
-    public ToolAiCreatorVO regenerateOutline(Long id, AiOutlineRegenDTO dto) {
+    public ToolAiartistVO regenerateOutline(Long id, AiOutlineRegenDTO dto) {
         // 反馈为空 = 直接重跑 outline()
         if (dto == null || StrUtil.isBlank(dto.getFeedback())) {
             return outline(id);
         }
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.STRATEGY_CONFIRMED, ToolAiCreatorPhase.OUTLINE_CONFIRMED);
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.STRATEGY_CONFIRMED, ToolAiartistPhase.OUTLINE_CONFIRMED);
         if (Integer.valueOf(2).equals(p.getContentType())) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "朋友圈文案无大纲阶段，请直接生成正文");
         }
@@ -195,14 +197,14 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         AiStrategyVO strategy = parseStrategy(p);
         AiOutlineVO outline = callOutline(p, strategy, materialsText(p, new ArrayList<>()), dto.getFeedback());
         p.setOutline(JSONUtil.toJsonStr(outline));
-        p.setStatus(ToolAiCreatorPhase.STRATEGY_CONFIRMED);
+        p.setStatus(ToolAiartistPhase.STRATEGY_CONFIRMED);
         projectService.updateById(p);
         return projectService.toVO(p);
     }
 
     @Override
-    public ToolAiCreatorVO confirmOutline(Long id, AiOutlineConfirmDTO dto) {
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.STRATEGY_CONFIRMED, ToolAiCreatorPhase.OUTLINE_CONFIRMED);
+    public ToolAiartistVO confirmOutline(Long id, AiOutlineConfirmDTO dto) {
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.STRATEGY_CONFIRMED, ToolAiartistPhase.OUTLINE_CONFIRMED);
         AiOutlineVO outline;
         try {
             outline = JSONUtil.toBean(dto.getOutline(), AiOutlineVO.class);
@@ -211,22 +213,22 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         }
         sanitizeOutline(outline);
         p.setOutline(JSONUtil.toJsonStr(outline));
-        p.setStatus(ToolAiCreatorPhase.OUTLINE_CONFIRMED);
+        p.setStatus(ToolAiartistPhase.OUTLINE_CONFIRMED);
         projectService.updateById(p);
         return projectService.toVO(p);
     }
 
     @Override
-    public ToolAiCreatorVO bodyStream(Long id, AiGenerateProgressListener listener) {
-        ToolAiCreator p = projectService.requireOwned(id);
+    public ToolAiartistVO bodyStream(Long id, AiGenerateProgressListener listener) {
+        ToolAiartist p = projectService.requireOwned(id);
         // 朋友圈无大纲阶段，策略确认后直接写正文；其余形态需大纲确认后进入（BODY_DONE=重生成）
         if (Integer.valueOf(2).equals(p.getContentType())) {
-            checkPhase(p, ToolAiCreatorPhase.STRATEGY_CONFIRMED, ToolAiCreatorPhase.BODY_DONE);
+            checkPhase(p, ToolAiartistPhase.STRATEGY_CONFIRMED, ToolAiartistPhase.BODY_DONE);
         } else {
-            checkPhase(p, ToolAiCreatorPhase.OUTLINE_CONFIRMED, ToolAiCreatorPhase.BODY_DONE);
+            checkPhase(p, ToolAiartistPhase.OUTLINE_CONFIRMED, ToolAiartistPhase.BODY_DONE);
         }
         long startMillis = System.currentTimeMillis();
-        if (ToolAiCreatorPhase.BODY_DONE.equals(p.getStatus())) {
+        if (ToolAiartistPhase.BODY_DONE.equals(p.getStatus())) {
             p.setImages(null); // 重生成正文使旧配图失效
         }
         AiStrategyVO strategy = parseStrategy(p);
@@ -249,16 +251,16 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         bodyVars.put("material", material);
         String bodyPrompt = render("body", bodyVars);
         String body = listener == null
-                ? chat(bodyPrompt, BODY_TEMPERATURE)
+                ? chat(p, bodyPrompt, BODY_TEMPERATURE)
                 : aiClientHolder.chatClient().chatStream(
                         aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
                         aiClientHolder.requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
-                        aiClientHolder.chatModel(), AiPrompts.load("system"), bodyPrompt, BODY_TEMPERATURE, listener::onDelta);
+                        aiClientHolder.chatModel(), categoryPrefix(p) + AiPrompts.load("system"), bodyPrompt, BODY_TEMPERATURE, listener::onDelta);
         body = cleanBody(body);
         warnings.addAll(ruleCheck(body, p));
         // 2. 审计（独立 LLM 关卡）
         notifyStage(listener, "audit", "事实核查与合规审计…");
-        String auditOut = chat(render("audit", Map.of(
+        String auditOut = chat(p, render("audit", Map.of(
                 "fact_digest", digestText(p),
                 "material", material,
                 "body", body)), AUDIT_TEMPERATURE);
@@ -284,7 +286,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         }
         // 3. 润色 + 打分（防删减：字数 < 95% 丢弃润色版）
         notifyStage(listener, "polish", "润色去 AI 味 + 五维打分…");
-        String polishOut = chat(render("polish", Map.of(
+        String polishOut = chat(p, render("polish", Map.of(
                 "core_pain_point", StrUtil.nullToEmpty(strategy.getCorePainPoint()),
                 "advantage_hook", StrUtil.nullToEmpty(strategy.getAdvantageHook()),
                 "platform_rules", platformRules(p.getContentType()),
@@ -320,7 +322,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         p.setAuditLog(JSONUtil.toJsonStr(auditLog));
         p.setScores(JSONUtil.toJsonStr(scores));
         p.setWarnings(JSONUtil.toJsonStr(warnings));
-        p.setStatus(ToolAiCreatorPhase.BODY_DONE);
+        p.setStatus(ToolAiartistPhase.BODY_DONE);
         projectService.updateById(p);
         log.info("AI 正文完成 projectId={} type={} bodyLen={} auditItems={} warnings={} costMs={}",
                 id, p.getContentType(), plainLength(finalBody), auditLog.size(), warnings.size(),
@@ -329,8 +331,8 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     @Override
-    public ToolAiCreatorVO revise(Long id, AiReviseDTO dto) {
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.BODY_DONE, ToolAiCreatorPhase.IMAGES_DONE);
+    public ToolAiartistVO revise(Long id, AiReviseDTO dto) {
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.BODY_DONE, ToolAiartistPhase.IMAGES_DONE);
         AiStrategyVO strategy = parseStrategy(p);
         StringBuilder prompt = new StringBuilder(render("revise", Map.of(
                 "core_pain_point", StrUtil.nullToEmpty(strategy.getCorePainPoint()),
@@ -339,7 +341,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         if (StrUtil.isNotBlank(dto.getAnchor())) {
             prompt.append("\n【定位】重点修正包含「").append(dto.getAnchor().trim()).append("」的段落。");
         }
-        String revised = cleanBody(chat(prompt.toString(), REVISE_TEMPERATURE));
+        String revised = cleanBody(chat(p, prompt.toString(), REVISE_TEMPERATURE));
         if (StrUtil.isBlank(revised)) {
             throw new BusinessException(ErrorCode.BUSINESS, "修订失败，请重试");
         }
@@ -348,8 +350,8 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
                 : new ArrayList<>(JSONUtil.toList(JSONUtil.parseArray(p.getAuditLog()), AiAuditItemVO.class));
         auditLog.add(auditItem("人工勘误", dto.getFeedback().trim()));
         p.setAuditLog(JSONUtil.toJsonStr(auditLog));
-        if (ToolAiCreatorPhase.IMAGES_DONE.equals(p.getStatus())) {
-            p.setStatus(ToolAiCreatorPhase.BODY_DONE); // 正文已变，配图需重做
+        if (ToolAiartistPhase.IMAGES_DONE.equals(p.getStatus())) {
+            p.setStatus(ToolAiartistPhase.BODY_DONE); // 正文已变，配图需重做
             p.setImages(null);
         }
         projectService.updateById(p);
@@ -357,8 +359,8 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     @Override
-    public ToolAiCreatorVO imagesStream(Long id, AiImageProgressListener listener) {
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.BODY_DONE, ToolAiCreatorPhase.IMAGES_DONE);
+    public ToolAiartistVO imagesStream(Long id, AiImageProgressListener listener) {
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.BODY_DONE, ToolAiartistPhase.IMAGES_DONE);
         List<String> placeholders = extractPlaceholders(p);
         if (placeholders.isEmpty()) {
             throw new BusinessException(ErrorCode.BUSINESS, "正文没有配图位，无需生成配图");
@@ -431,7 +433,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
             projectService.updateById(p); // 逐张落库，中断可续看结果
         }
         if (success > 0) {
-            p.setStatus(ToolAiCreatorPhase.IMAGES_DONE);
+            p.setStatus(ToolAiartistPhase.IMAGES_DONE);
         } else {
             warnings.add("配图全部失败，可重试或使用 prompt 清单自行出图");
         }
@@ -443,7 +445,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
 
     @Override
     public String previewHtml(Long id) {
-        ToolAiCreator p = projectService.requireOwned(id);
+        ToolAiartist p = projectService.requireOwned(id);
         if (StrUtil.isBlank(p.getBody())) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "正文尚未生成");
         }
@@ -484,7 +486,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 配图整体降级：生成过但全部 failed/skipped（无 pending/generating/done），允许剔除占位符后保存 */
-    boolean imagesAllSettledWithoutSuccess(ToolAiCreator p) {
+    boolean imagesAllSettledWithoutSuccess(ToolAiartist p) {
         if (StrUtil.isBlank(p.getImages())) {
             return false;
         }
@@ -494,16 +496,16 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
 
     @Override
     public Long saveToContent(Long id) {
-        ToolAiCreator p = requirePhase(id, ToolAiCreatorPhase.IMAGES_DONE, ToolAiCreatorPhase.BODY_DONE);
+        ToolAiartist p = requirePhase(id, ToolAiartistPhase.IMAGES_DONE, ToolAiartistPhase.BODY_DONE);
         if (StrUtil.isBlank(p.getBody())) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "正文尚未生成");
         }
-        if (countPlaceholders(p.getBody()) > 0 && !ToolAiCreatorPhase.IMAGES_DONE.equals(p.getStatus())
+        if (countPlaceholders(p.getBody()) > 0 && !ToolAiartistPhase.IMAGES_DONE.equals(p.getStatus())
                 && !imagesAllSettledWithoutSuccess(p)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "正文含配图位，请先完成配图（或处理失败降级）再保存");
         }
-        ToolAiCreatorRefsVO refs = refs(p);
-        ToolAiCreatorContentCmd cmd = new ToolAiCreatorContentCmd();
+        ToolAiartistRefsVO refs = refs(p);
+        ToolAiartistContentCmd cmd = new ToolAiartistContentCmd();
         cmd.setTitle(p.getSelectedTitle());
         cmd.setContentType(p.getContentType());
         cmd.setContentBody(finalizeBody(p));
@@ -516,7 +518,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         }
         if (refs.getGoods() != null && !refs.getGoods().isEmpty()) {
             cmd.setRefGoodsCodes(JSONUtil.toJsonStr(refs.getGoods().stream()
-                    .map(ToolAiCreatorRefsVO.CodeNameRef::getCode).toList()));
+                    .map(ToolAiartistRefsVO.CodeNameRef::getCode).toList()));
         }
         // 封面取已生成的 cover 图
         if (StrUtil.isNotBlank(p.getImages())) {
@@ -526,7 +528,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
                     .findFirst().ifPresent(i -> cmd.setCoverImage(i.getFileKey()));
         }
         Long contentId = contentSaver.save(cmd);
-        p.setStatus(ToolAiCreatorPhase.SAVED);
+        p.setStatus(ToolAiartistPhase.SAVED);
         projectService.updateById(p);
         return contentId;
     }
@@ -534,7 +536,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     // ---------- 配图阶段工具 ----------
 
     /** 正文占位符（有序去重）；contentType=3 无正文占位符 → 取 outline.coverImage（有 prompt 才算） */
-    List<String> extractPlaceholders(ToolAiCreator p) {
+    List<String> extractPlaceholders(ToolAiartist p) {
         List<String> list = new ArrayList<>();
         if (StrUtil.isNotBlank(p.getBody())) {
             Matcher m = PLACEHOLDER_PATTERN.matcher(p.getBody());
@@ -561,7 +563,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 占位符 → 大纲配图规格（COVER→coverImage；N→第 N 个带 imageInsertion 的节点） */
-    AiOutlineVO.AiImageSpec specOf(ToolAiCreator p, String placeholder) {
+    AiOutlineVO.AiImageSpec specOf(ToolAiartist p, String placeholder) {
         if (StrUtil.isBlank(p.getOutline())) return null;
         AiOutlineVO outline = JSONUtil.toBean(p.getOutline(), AiOutlineVO.class);
         if ("[AI_IMAGE_COVER]".equals(placeholder)) {
@@ -585,7 +587,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 正文占位符 → <img>（done 的图）/ 剔除（失败/未生成）；朋友圈等无图形态原样返回 */
-    String finalizeBody(ToolAiCreator p) {
+    String finalizeBody(ToolAiartist p) {
         String body = StrUtil.nullToEmpty(p.getBody());
         if (countPlaceholders(body) == 0 || StrUtil.isBlank(p.getImages())) {
             return body.replaceAll(Pattern.quote("[AI_IMAGE_COVER]") + "|" + PLACEHOLDER_PATTERN.pattern(), "");
@@ -630,7 +632,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
 
     // ---------- 正文阶段私有工具 ----------
 
-    String outlineText(ToolAiCreator p) {
+    String outlineText(ToolAiartist p) {
         if (Integer.valueOf(2).equals(p.getContentType())) {
             return "（朋友圈文案无大纲，按策略直出）";
         }
@@ -687,7 +689,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 规则自检（不重写，产出 warnings）：篇幅窗口/禁语/商品融入 */
-    List<String> ruleCheck(String body, ToolAiCreator p) {
+    List<String> ruleCheck(String body, ToolAiartist p) {
         List<String> warnings = new ArrayList<>();
         int len = plainLength(body);
         int type = p.getContentType() == null ? 1 : p.getContentType();
@@ -703,10 +705,10 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
             }
         }
         if (AiPurpose.PRODUCT.equals(p.getPurpose()) && p.getMaterialRefs() != null) {
-            ToolAiCreatorRefsVO refs = refs(p);
+            ToolAiartistRefsVO refs = refs(p);
             if (refs.getGoods() != null && !refs.getGoods().isEmpty()) {
                 boolean mentioned = refs.getGoods().stream()
-                        .map(ToolAiCreatorRefsVO.CodeNameRef::getName)
+                        .map(ToolAiartistRefsVO.CodeNameRef::getName)
                         .anyMatch(nm -> StrUtil.isNotBlank(nm) && body.contains(nm));
                 if (!mentioned) warnings.add("勾选的权益商品未融入正文，建议重新生成");
             }
@@ -756,16 +758,16 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 大纲 LLM 调用（生成/重生成共用；图文/小红书若未规划任何节点配图位，带强调指令重试一次） */
-    private AiOutlineVO callOutline(ToolAiCreator p, AiStrategyVO strategy,
+    private AiOutlineVO callOutline(ToolAiartist p, AiStrategyVO strategy,
                                     String material, String extraDirective) {
         String prompt = outlinePrompt(p, strategy, material);
         if (StrUtil.isNotBlank(extraDirective)) {
             prompt = prompt + "\n\n【重生成要求（最高优先级）】" + extraDirective.trim();
         }
-        AiOutlineVO outline = LlmJson.parse(chat(prompt, OUTLINE_TEMPERATURE), AiOutlineVO.class);
+        AiOutlineVO outline = LlmJson.parse(chat(p, prompt, OUTLINE_TEMPERATURE), AiOutlineVO.class);
         sanitizeOutline(outline);
         if (StrUtil.isBlank(extraDirective) && needsImageRetry(p, outline)) {
-            AiOutlineVO retry = LlmJson.parse(chat(prompt + "\n\n【重生成要求（最高优先级）】"
+            AiOutlineVO retry = LlmJson.parse(chat(p, prompt + "\n\n【重生成要求（最高优先级）】"
                     + "按配图位规划为 3-4 个主体节点补充 imageInsertion：英文 prompt 以 Warm/Bright/Muted lifestyle photograph "
                     + "开头、≤60 词、单一场景并含摄影术语；size 用 1280*720；无需配图的节点保持 null。", OUTLINE_TEMPERATURE),
                     AiOutlineVO.class);
@@ -776,7 +778,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 图文/小红书一个配图位都没有 → 重试（朋友圈/脚本无正文配图位，不重试） */
-    private boolean needsImageRetry(ToolAiCreator p, AiOutlineVO outline) {
+    private boolean needsImageRetry(ToolAiartist p, AiOutlineVO outline) {
         if (Integer.valueOf(2).equals(p.getContentType()) || Integer.valueOf(3).equals(p.getContentType())) {
             return false;
         }
@@ -784,7 +786,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 大纲 prompt 渲染（生成/重生成共用，重生成在尾部追加反馈指令） */
-    private String outlinePrompt(ToolAiCreator p, AiStrategyVO strategy,
+    private String outlinePrompt(ToolAiartist p, AiStrategyVO strategy,
                                  String material) {
         Map<String, String> vars = new java.util.HashMap<>();
         vars.put("core_execution_prompt", StrUtil.nullToEmpty(strategy.getCoreExecutionPrompt()));
@@ -827,13 +829,13 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** outline/body 重入前清空 body 侧产物（保留 strategy/titles） */
-    void clearBodyDownstream(ToolAiCreator p) {
-        if (!ToolAiCreatorPhase.STRATEGY_CONFIRMED.equals(p.getStatus())) {
+    void clearBodyDownstream(ToolAiartist p) {
+        if (!ToolAiartistPhase.STRATEGY_CONFIRMED.equals(p.getStatus())) {
             p.setBody(null);
             p.setAuditLog(null);
             p.setScores(null);
             p.setImages(null);
-            p.setStatus(ToolAiCreatorPhase.STRATEGY_CONFIRMED);
+            p.setStatus(ToolAiartistPhase.STRATEGY_CONFIRMED);
         }
     }
 
@@ -858,6 +860,27 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
                 aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
                 aiClientHolder.requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
                 aiClientHolder.chatModel(), AiPrompts.load("system"), prompt, temperature);
+    }
+
+    /** 非流式 chat（带创作分类人设：分类设定拼入用户 prompt 开头，语义等价系统人设） */
+    String chat(ToolAiartist p, String prompt, double temperature) {
+        return chat(categoryPrefix(p) + prompt, temperature);
+    }
+
+    /** 创作分类人设前缀（tool_info.config_json.systemPrompt），配置缺失时返回空串 */
+    String categoryPrefix(ToolAiartist p) {
+        if (p == null || StrUtil.isBlank(p.getToolCode())) {
+            return "";
+        }
+        try {
+            ToolAiartistConfigVO config = toolInfoService.getAiartistConfig(p.getToolCode());
+            if (StrUtil.isNotBlank(config.getSystemPrompt())) {
+                return "【创作分类设定】" + config.getSystemPrompt() + "\n\n";
+            }
+        } catch (Exception e) {
+            log.warn("读取创作分类配置失败 toolCode={}: {}", p.getToolCode(), e.getMessage());
+        }
+        return "";
     }
 
     String purposeRule(String purpose) {
@@ -890,19 +913,19 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         };
     }
 
-    ToolAiCreatorRefsVO refs(ToolAiCreator p) {
-        return StrUtil.isBlank(p.getMaterialRefs()) ? new ToolAiCreatorRefsVO()
-                : JSONUtil.toBean(p.getMaterialRefs(), ToolAiCreatorRefsVO.class);
+    ToolAiartistRefsVO refs(ToolAiartist p) {
+        return StrUtil.isBlank(p.getMaterialRefs()) ? new ToolAiartistRefsVO()
+                : JSONUtil.toBean(p.getMaterialRefs(), ToolAiartistRefsVO.class);
     }
 
-    AiStrategyVO parseStrategy(ToolAiCreator p) {
+    AiStrategyVO parseStrategy(ToolAiartist p) {
         if (StrUtil.isBlank(p.getStrategy())) {
             throw new BusinessException(ErrorCode.BUSINESS, "请先生成策略");
         }
         return JSONUtil.toBean(p.getStrategy(), AiStrategyVO.class);
     }
 
-    String digestText(ToolAiCreator p) {
+    String digestText(ToolAiartist p) {
         return StrUtil.isBlank(p.getFactDigest()) ? "（无）" : p.getFactDigest();
     }
 
@@ -912,45 +935,45 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 从 STRATEGY_CONFIRMED 重入：清空下游产物（改策略=全文重做） */
-    void resetDownstreamIfNeeded(ToolAiCreator p) {
-        if (ToolAiCreatorPhase.STRATEGY_CONFIRMED.equals(p.getStatus())
-                || ToolAiCreatorPhase.OUTLINE_CONFIRMED.equals(p.getStatus())
-                || ToolAiCreatorPhase.BODY_DONE.equals(p.getStatus())
-                || ToolAiCreatorPhase.IMAGES_DONE.equals(p.getStatus())) {
+    void resetDownstreamIfNeeded(ToolAiartist p) {
+        if (ToolAiartistPhase.STRATEGY_CONFIRMED.equals(p.getStatus())
+                || ToolAiartistPhase.OUTLINE_CONFIRMED.equals(p.getStatus())
+                || ToolAiartistPhase.BODY_DONE.equals(p.getStatus())
+                || ToolAiartistPhase.IMAGES_DONE.equals(p.getStatus())) {
             p.setOutline(null);
             p.setBody(null);
             p.setAuditLog(null);
             p.setScores(null);
             p.setImages(null);
             p.setSelectedTitle(null);
-            p.setStatus(ToolAiCreatorPhase.DIGESTED);
+            p.setStatus(ToolAiartistPhase.DIGESTED);
         }
     }
 
     /** factDigest 为空先消化（strategy 自动前置） */
-    void ensureDigest(ToolAiCreator p) {
+    void ensureDigest(ToolAiartist p) {
         if (StrUtil.isBlank(p.getFactDigest())) {
             List<String> warnings = new ArrayList<>();
-            AiFactDigestVO digest = LlmJson.parse(chat(render("digest", Map.of(
+            AiFactDigestVO digest = LlmJson.parse(chat(p, render("digest", Map.of(
                     "purpose_rule", purposeRule(p.getPurpose()),
                     "material", materialsText(p, warnings))), DIGEST_TEMPERATURE),
                     AiFactDigestVO.class);
             p.setFactDigest(JSONUtil.toJsonStr(digest));
             p.setWarnings(JSONUtil.toJsonStr(warnings));
-            if (ToolAiCreatorPhase.CREATED.equals(p.getStatus())) {
-                p.setStatus(ToolAiCreatorPhase.DIGESTED);
+            if (ToolAiartistPhase.CREATED.equals(p.getStatus())) {
+                p.setStatus(ToolAiartistPhase.DIGESTED);
             }
         }
     }
 
     /** 状态守卫：加载并校验（仅允许预期状态进入） */
-    ToolAiCreator requirePhase(Long id, String... expected) {
-        ToolAiCreator p = projectService.requireOwned(id);
+    ToolAiartist requirePhase(Long id, String... expected) {
+        ToolAiartist p = projectService.requireOwned(id);
         return checkPhase(p, expected);
     }
 
     /** 已加载实体的状态守卫（免二次查库） */
-    ToolAiCreator checkPhase(ToolAiCreator p, String... expected) {
+    ToolAiartist checkPhase(ToolAiartist p, String... expected) {
         for (String s : expected) {
             if (s.equals(p.getStatus())) return p;
         }
@@ -988,7 +1011,7 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     }
 
     /** 前端供材快照渲染为素材文本（8000 字上限，超限截断+warning） */
-    String materialsText(ToolAiCreator p, List<String> warnings) {
+    String materialsText(ToolAiartist p, List<String> warnings) {
         if (StrUtil.isBlank(p.getMaterials())) {
             return "（无素材）";
         }

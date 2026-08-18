@@ -12,8 +12,8 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("tool_pension_calculator_record")
-public class ToolPensionCalculatorRecord extends BaseEntity {
+@TableName("tool_pensioncal_record")
+public class ToolPensioncalRecord extends BaseEntity {
 
     @TableId(type = IdType.AUTO)
     private Long id;

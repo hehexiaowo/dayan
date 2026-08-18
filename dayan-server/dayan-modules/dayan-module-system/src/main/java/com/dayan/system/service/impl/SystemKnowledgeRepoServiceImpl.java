@@ -1,4 +1,4 @@
-package com.dayan.knowledge.service.impl;
+package com.dayan.system.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -11,20 +11,20 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.mybatis.context.ContextHolder;
-import com.dayan.knowledge.dto.KnowledgeChatDTO;
-import com.dayan.knowledge.dto.KnowledgeDocImportDTO;
-import com.dayan.knowledge.dto.KnowledgeRepoCreateDTO;
-import com.dayan.knowledge.dto.KnowledgeRepoQueryDTO;
-import com.dayan.knowledge.dto.KnowledgeRepoUpdateDTO;
-import com.dayan.knowledge.entity.KnowledgeRepo;
-import com.dayan.knowledge.mapper.ChannelInfoLight;
-import com.dayan.knowledge.mapper.ChannelInfoLightMapper;
-import com.dayan.knowledge.mapper.KnowledgeRepoMapper;
-import com.dayan.knowledge.service.KnowledgeRepoService;
-import com.dayan.knowledge.vo.KnowledgeChatVO;
-import com.dayan.knowledge.vo.KnowledgeDocVO;
-import com.dayan.knowledge.vo.KnowledgeRepoTreeNodeVO;
-import com.dayan.knowledge.vo.KnowledgeRepoVO;
+import com.dayan.system.dto.SystemKnowledgeChatDTO;
+import com.dayan.system.dto.SystemKnowledgeDocImportDTO;
+import com.dayan.system.dto.SystemKnowledgeRepoCreateDTO;
+import com.dayan.system.dto.SystemKnowledgeRepoQueryDTO;
+import com.dayan.system.dto.SystemKnowledgeRepoUpdateDTO;
+import com.dayan.system.entity.SystemKnowledgeRepo;
+import com.dayan.system.mapper.ChannelInfoLight;
+import com.dayan.system.mapper.ChannelInfoLightMapper;
+import com.dayan.system.mapper.SystemKnowledgeRepoMapper;
+import com.dayan.system.service.SystemKnowledgeRepoService;
+import com.dayan.system.vo.SystemKnowledgeChatVO;
+import com.dayan.system.vo.SystemKnowledgeDocVO;
+import com.dayan.system.vo.SystemKnowledgeRepoTreeNodeVO;
+import com.dayan.system.vo.SystemKnowledgeRepoVO;
 import com.dayan.system.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
+public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoService {
 
     /** 平台归属类型 */
     private static final int TYPE_PLATFORM = 1;
@@ -74,7 +74,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     /** 默认召回片段数 */
     private static final int DEFAULT_TOP_K = 4;
 
-    private final KnowledgeRepoMapper knowledgeRepoMapper;
+    private final SystemKnowledgeRepoMapper knowledgeRepoMapper;
     private final ChannelInfoLightMapper channelInfoLightMapper;
     private final SystemConfigService systemConfigService;
     private final CodeGenerator codeGenerator;
@@ -83,52 +83,52 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     // ==================== 仓库 CRUD（含远端同步） ====================
 
     @Override
-    public PageResult<KnowledgeRepoVO> page(KnowledgeRepoQueryDTO query) {
-        LambdaQueryWrapper<KnowledgeRepo> wrapper = new LambdaQueryWrapper<KnowledgeRepo>()
-                .eq(query.getRepoType() != null, KnowledgeRepo::getRepoType, query.getRepoType())
-                .eq(StrUtil.isNotBlank(query.getChannelCode()), KnowledgeRepo::getChannelCode, query.getChannelCode())
-                .eq(query.getStatus() != null, KnowledgeRepo::getStatus, query.getStatus())
-                .like(StrUtil.isNotBlank(query.getRepoName()), KnowledgeRepo::getRepoName, query.getRepoName())
-                .orderByAsc(KnowledgeRepo::getSortOrder)
-                .orderByDesc(KnowledgeRepo::getId);
-        Page<KnowledgeRepo> page = knowledgeRepoMapper.selectPage(
+    public PageResult<SystemKnowledgeRepoVO> page(SystemKnowledgeRepoQueryDTO query) {
+        LambdaQueryWrapper<SystemKnowledgeRepo> wrapper = new LambdaQueryWrapper<SystemKnowledgeRepo>()
+                .eq(query.getRepoType() != null, SystemKnowledgeRepo::getRepoType, query.getRepoType())
+                .eq(StrUtil.isNotBlank(query.getChannelCode()), SystemKnowledgeRepo::getChannelCode, query.getChannelCode())
+                .eq(query.getStatus() != null, SystemKnowledgeRepo::getStatus, query.getStatus())
+                .like(StrUtil.isNotBlank(query.getRepoName()), SystemKnowledgeRepo::getRepoName, query.getRepoName())
+                .orderByAsc(SystemKnowledgeRepo::getSortOrder)
+                .orderByDesc(SystemKnowledgeRepo::getId);
+        Page<SystemKnowledgeRepo> page = knowledgeRepoMapper.selectPage(
                 new Page<>(query.getCurrent(), query.getSize()), wrapper);
-        List<KnowledgeRepoVO> records = page.getRecords().stream()
+        List<SystemKnowledgeRepoVO> records = page.getRecords().stream()
                 .map(this::toVO).collect(Collectors.toList());
         return new PageResult<>(query.getCurrent(), query.getSize(), page.getTotal(), records);
     }
 
     @Override
-    public KnowledgeRepoVO getDetail(Long id) {
+    public SystemKnowledgeRepoVO getDetail(Long id) {
         return toVO(requireRepo(id));
     }
 
     @Override
-    public List<KnowledgeRepoVO> listForAgent(String channelCode) {
-        LambdaQueryWrapper<KnowledgeRepo> wrapper = new LambdaQueryWrapper<KnowledgeRepo>()
-                .eq(KnowledgeRepo::getRepoType, TYPE_PLATFORM)
-                .or(w -> w.eq(KnowledgeRepo::getRepoType, TYPE_CHANNEL)
-                        .eq(KnowledgeRepo::getChannelCode, channelCode))
-                .orderByAsc(KnowledgeRepo::getSortOrder)
-                .orderByDesc(KnowledgeRepo::getId);
+    public List<SystemKnowledgeRepoVO> listForAgent(String channelCode) {
+        LambdaQueryWrapper<SystemKnowledgeRepo> wrapper = new LambdaQueryWrapper<SystemKnowledgeRepo>()
+                .eq(SystemKnowledgeRepo::getRepoType, TYPE_PLATFORM)
+                .or(w -> w.eq(SystemKnowledgeRepo::getRepoType, TYPE_CHANNEL)
+                        .eq(SystemKnowledgeRepo::getChannelCode, channelCode))
+                .orderByAsc(SystemKnowledgeRepo::getSortOrder)
+                .orderByDesc(SystemKnowledgeRepo::getId);
         return knowledgeRepoMapper.selectList(wrapper).stream()
                 .map(this::toVO).collect(Collectors.toList());
     }
 
     @Override
-    public KnowledgeRepoVO getByChannelCode(String channelCode) {
+    public SystemKnowledgeRepoVO getByChannelCode(String channelCode) {
         if (StrUtil.isBlank(channelCode)) {
             return null;
         }
-        KnowledgeRepo repo = knowledgeRepoMapper.selectOne(new LambdaQueryWrapper<KnowledgeRepo>()
-                .eq(KnowledgeRepo::getRepoType, TYPE_CHANNEL)
-                .eq(KnowledgeRepo::getChannelCode, channelCode)
+        SystemKnowledgeRepo repo = knowledgeRepoMapper.selectOne(new LambdaQueryWrapper<SystemKnowledgeRepo>()
+                .eq(SystemKnowledgeRepo::getRepoType, TYPE_CHANNEL)
+                .eq(SystemKnowledgeRepo::getChannelCode, channelCode)
                 .last("LIMIT 1"));
         return repo == null ? null : toVO(repo);
     }
 
     @Override
-    public List<KnowledgeRepoTreeNodeVO> getRepoTree(String rootChannelCode) {
+    public List<SystemKnowledgeRepoTreeNodeVO> getRepoTree(String rootChannelCode) {
         List<ChannelInfoLight> channels = channelInfoLightMapper.selectAll();
         if (channels.isEmpty()) {
             return List.of();
@@ -156,15 +156,15 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
                 }
             }
         }
-        Map<String, KnowledgeRepo> repoByChannel = new HashMap<>();
-        for (KnowledgeRepo r : knowledgeRepoMapper.selectByChannelCodes(queryCodes)) {
+        Map<String, SystemKnowledgeRepo> repoByChannel = new HashMap<>();
+        for (SystemKnowledgeRepo r : knowledgeRepoMapper.selectByChannelCodes(queryCodes)) {
             repoByChannel.putIfAbsent(r.getChannelCode(), r);
         }
 
         // 按祖先链从近到远找最近建有仓库的渠道（继承源）
-        Map<String, KnowledgeRepo> effectiveByChannel = new HashMap<>();
+        Map<String, SystemKnowledgeRepo> effectiveByChannel = new HashMap<>();
         for (String code : scope) {
-            KnowledgeRepo own = repoByChannel.get(code);
+            SystemKnowledgeRepo own = repoByChannel.get(code);
             if (own != null) {
                 effectiveByChannel.put(code, own);
                 continue;
@@ -173,7 +173,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
             if (c != null && StrUtil.isNotBlank(c.getAncestors())) {
                 String[] ancestors = c.getAncestors().split(",");
                 for (int i = ancestors.length - 1; i >= 0; i--) {
-                    KnowledgeRepo ancRepo = repoByChannel.get(ancestors[i].trim());
+                    SystemKnowledgeRepo ancRepo = repoByChannel.get(ancestors[i].trim());
                     if (ancRepo != null) {
                         effectiveByChannel.put(code, ancRepo);
                         break;
@@ -183,12 +183,12 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
         }
 
         // 组装树：parent_code 挂接，root 为顶层
-        Map<String, KnowledgeRepoTreeNodeVO> nodes = new LinkedHashMap<>();
+        Map<String, SystemKnowledgeRepoTreeNodeVO> nodes = new LinkedHashMap<>();
         for (ChannelInfoLight c : channels) {
             if (!scope.contains(c.getChannelCode())) {
                 continue;
             }
-            KnowledgeRepoTreeNodeVO node = new KnowledgeRepoTreeNodeVO();
+            SystemKnowledgeRepoTreeNodeVO node = new SystemKnowledgeRepoTreeNodeVO();
             node.setChannelCode(c.getChannelCode());
             node.setFullName(c.getFullName());
             node.setShortName(c.getShortName());
@@ -196,7 +196,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
             node.setRepo(repoByChannel.get(c.getChannelCode()) == null ? null : toVO(repoByChannel.get(c.getChannelCode())));
             node.setEffectiveRepo(effectiveByChannel.get(c.getChannelCode()) == null ? null
                     : toVO(effectiveByChannel.get(c.getChannelCode())));
-            KnowledgeRepo effective = effectiveByChannel.get(c.getChannelCode());
+            SystemKnowledgeRepo effective = effectiveByChannel.get(c.getChannelCode());
             if (effective != null && !c.getChannelCode().equals(effective.getChannelCode())) {
                 node.setInheritedFrom(effective.getChannelCode());
                 ChannelInfoLight src = byCode.get(effective.getChannelCode());
@@ -205,8 +205,8 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
             nodes.put(c.getChannelCode(), node);
         }
         // 挂 children
-        List<KnowledgeRepoTreeNodeVO> roots = new ArrayList<>();
-        for (KnowledgeRepoTreeNodeVO node : nodes.values()) {
+        List<SystemKnowledgeRepoTreeNodeVO> roots = new ArrayList<>();
+        for (SystemKnowledgeRepoTreeNodeVO node : nodes.values()) {
             ChannelInfoLight c = byCode.get(node.getChannelCode());
             String parent = c == null ? null : c.getParentCode();
             if (parent != null && nodes.containsKey(parent)) {
@@ -219,8 +219,8 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     }
 
     @Override
-    public KnowledgeRepo requireRepoVisible(Long id) {
-        KnowledgeRepo repo = knowledgeRepoMapper.selectByIdIgnoreTenant(id);
+    public SystemKnowledgeRepo requireRepoVisible(Long id) {
+        SystemKnowledgeRepo repo = knowledgeRepoMapper.selectByIdIgnoreTenant(id);
         if (repo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "知识仓库不存在: " + id);
         }
@@ -263,11 +263,11 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(KnowledgeRepoCreateDTO dto) {
+    public Long create(SystemKnowledgeRepoCreateDTO dto) {
         // 归属唯一性：平台/渠道各自仅允许一个仓库
-        Long existed = knowledgeRepoMapper.selectCount(new LambdaQueryWrapper<KnowledgeRepo>()
-                .eq(KnowledgeRepo::getRepoType, dto.getRepoType())
-                .eq(dto.getRepoType() == TYPE_CHANNEL, KnowledgeRepo::getChannelCode, dto.getChannelCode()));
+        Long existed = knowledgeRepoMapper.selectCount(new LambdaQueryWrapper<SystemKnowledgeRepo>()
+                .eq(SystemKnowledgeRepo::getRepoType, dto.getRepoType())
+                .eq(dto.getRepoType() == TYPE_CHANNEL, SystemKnowledgeRepo::getChannelCode, dto.getChannelCode()));
         if (existed != null && existed > 0) {
             throw new BusinessException(ErrorCode.BUSINESS,
                     dto.getRepoType() == TYPE_CHANNEL ? "该渠道已存在知识仓库，一个渠道仅允许一个" : "平台知识仓库已存在");
@@ -293,7 +293,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
             indexId = null;
         }
 
-        KnowledgeRepo repo = new KnowledgeRepo();
+        SystemKnowledgeRepo repo = new SystemKnowledgeRepo();
         repo.setRepoCode(codeGenerator.generate("KB"));
         repo.setRepoName(dto.getRepoName());
         repo.setRepoType(dto.getRepoType());
@@ -311,7 +311,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String initIndex(Long id, List<String> fileIds) {
-        KnowledgeRepo repo = requireRepo(id);
+        SystemKnowledgeRepo repo = requireRepo(id);
         if (StrUtil.isNotBlank(repo.getIndexId())) {
             throw new BusinessException(ErrorCode.BUSINESS, "仓库「" + repo.getRepoName() + "」已在百炼建库，无需重复初始化");
         }
@@ -329,8 +329,8 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, KnowledgeRepoUpdateDTO dto) {
-        KnowledgeRepo repo = requireRepo(id);
+    public void update(Long id, SystemKnowledgeRepoUpdateDTO dto) {
+        SystemKnowledgeRepo repo = requireRepo(id);
         // 名称/描述变化且已建库时先同步百炼远端（失败中止，保证本地与远端一致）
         if (dto.getRepoName() != null || dto.getDescription() != null) {
             String newName = dto.getRepoName() != null ? dto.getRepoName() : repo.getRepoName();
@@ -355,7 +355,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        KnowledgeRepo repo = requireRepo(id);
+        SystemKnowledgeRepo repo = requireRepo(id);
         // 先删远端，失败则中止（避免本地删了远端成孤儿）
         if (StrUtil.isNotBlank(repo.getIndexId())) {
             requireClient().deleteIndex(repo.getIndexId());
@@ -366,7 +366,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
 
     @Override
     public void sync(Long id) {
-        KnowledgeRepo repo = requireRepo(id);
+        SystemKnowledgeRepo repo = requireRepo(id);
         if (StrUtil.isBlank(repo.getIndexId())) {
             throw new BusinessException(ErrorCode.BUSINESS, "仓库「" + repo.getRepoName() + "」尚未在百炼建库，上传首个文档并初始化后再同步");
         }
@@ -387,7 +387,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
 
     @Override
     public String getBuildStatus(Long id) {
-        KnowledgeRepo repo = requireRepo(id);
+        SystemKnowledgeRepo repo = requireRepo(id);
         if (StrUtil.isBlank(repo.getIndexId())) {
             return "UNBOUND";
         }
@@ -410,9 +410,9 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     // ==================== 文档管理（远端代理） ====================
 
     @Override
-    public List<KnowledgeDocVO> listDocuments(Long id, int pageNumber, int pageSize,
+    public List<SystemKnowledgeDocVO> listDocuments(Long id, int pageNumber, int pageSize,
                                               String documentName, String documentStatus) {
-        KnowledgeRepo repo = requireRepo(id);
+        SystemKnowledgeRepo repo = requireRepo(id);
         // 未建库（懒建库模式，首个文档尚未初始化）时列表为空
         if (StrUtil.isBlank(repo.getIndexId())) {
             return List.of();
@@ -420,7 +420,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
         BailianKnowledgeClient.DocumentPage docs = requireClient().listDocuments(
                 repo.getIndexId(), pageNumber, pageSize, documentName, documentStatus);
         return docs.getDocuments().stream().map(d -> {
-            KnowledgeDocVO vo = new KnowledgeDocVO();
+            SystemKnowledgeDocVO vo = new SystemKnowledgeDocVO();
             vo.setFileId(d.getId());
             vo.setFileName(d.getName());
             vo.setIndexStatus(d.getStatus());
@@ -458,10 +458,10 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     }
 
     @Override
-    public KnowledgeDocVO getDocumentParseStatus(Long id, String fileId) {
+    public SystemKnowledgeDocVO getDocumentParseStatus(Long id, String fileId) {
         requireRepo(id);
         BailianKnowledgeClient.FileStatusInfo info = requireClient().describeFile(fileId);
-        KnowledgeDocVO vo = new KnowledgeDocVO();
+        SystemKnowledgeDocVO vo = new SystemKnowledgeDocVO();
         vo.setFileId(info.getFileId());
         vo.setFileName(info.getFileName());
         vo.setParseStatus(info.getStatus());
@@ -470,15 +470,15 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     }
 
     @Override
-    public String importDocuments(Long id, KnowledgeDocImportDTO dto) {
-        KnowledgeRepo repo = requireRepo(id);
+    public String importDocuments(Long id, SystemKnowledgeDocImportDTO dto) {
+        SystemKnowledgeRepo repo = requireRepo(id);
         requireIndexId(repo);
         return requireClient().submitAddDocumentsJob(repo.getIndexId(), dto.getFileIds());
     }
 
     @Override
     public String getImportStatus(Long id, String jobId) {
-        KnowledgeRepo repo = requireRepo(id);
+        SystemKnowledgeRepo repo = requireRepo(id);
         requireIndexId(repo);
         BailianKnowledgeClient.IndexJobStatus status =
                 requireClient().getIndexJobStatus(repo.getIndexId(), jobId);
@@ -487,14 +487,14 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
 
     @Override
     public void deleteDocument(Long id, String fileId) {
-        KnowledgeRepo repo = requireRepo(id);
+        SystemKnowledgeRepo repo = requireRepo(id);
         requireIndexId(repo);
         requireClient().deleteDocuments(repo.getIndexId(), List.of(fileId));
     }
 
     @Override
     public BailianKnowledgeClient.ChunkPage listChunks(Long id, String fileId, int pageNum, int pageSize) {
-        KnowledgeRepo repo = requireRepo(id);
+        SystemKnowledgeRepo repo = requireRepo(id);
         requireIndexId(repo);
         if (fileId == null || fileId.isBlank()) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "切片查询必须指定文档 ID");
@@ -505,34 +505,34 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     // ==================== RAG 问答 / 检索 ====================
 
     @Override
-    public KnowledgeChatVO chat(Long id, KnowledgeChatDTO dto) {
-        KnowledgeRepo repo = requireRepoVisible(id);
+    public SystemKnowledgeChatVO chat(Long id, SystemKnowledgeChatDTO dto) {
+        SystemKnowledgeRepo repo = requireRepoVisible(id);
         requireIndexId(repo);
         int topK = dto.getTopK() == null || dto.getTopK() < 1 ? DEFAULT_TOP_K : dto.getTopK();
         List<BailianKnowledgeClient.RetrieveNode> nodes =
                 requireClient().retrieve(repo.getIndexId(), dto.getQuestion(), topK, true);
         if (nodes == null || nodes.isEmpty()) {
-            return KnowledgeChatVO.builder()
+            return SystemKnowledgeChatVO.builder()
                     .answer("知识库中未检索到与该问题相关的内容，请补充资料后重试或换一种问法。")
                     .citations(List.of())
                     .build();
         }
 
         StringBuilder context = new StringBuilder();
-        List<KnowledgeChatVO.Citation> citations = new java.util.ArrayList<>();
+        List<SystemKnowledgeChatVO.Citation> citations = new java.util.ArrayList<>();
         for (int i = 0; i < nodes.size(); i++) {
             String text = StrUtil.cleanBlank(nodes.get(i).getText());
             if (StrUtil.isBlank(text)) {
                 continue;
             }
             context.append('[').append(i + 1).append("] ").append(text).append('\n');
-            citations.add(KnowledgeChatVO.Citation.builder()
+            citations.add(SystemKnowledgeChatVO.Citation.builder()
                     .text(text)
                     .score(nodes.get(i).getScore())
                     .build());
         }
         if (context.isEmpty()) {
-            return KnowledgeChatVO.builder()
+            return SystemKnowledgeChatVO.builder()
                     .answer("知识库中未检索到有效内容，请补充资料后重试。")
                     .citations(List.of())
                     .build();
@@ -551,19 +551,19 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
                 getConfig("llm.api-key"), getConfig("llm.api-host"),
                 StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
                 systemPrompt, dto.getQuestion());
-        return KnowledgeChatVO.builder().answer(answer).citations(citations).build();
+        return SystemKnowledgeChatVO.builder().answer(answer).citations(citations).build();
     }
 
     @Override
-    public List<KnowledgeChatVO.Citation> retrieve(Long id, String query, Integer topK) {
-        KnowledgeRepo repo = requireRepoVisible(id);
+    public List<SystemKnowledgeChatVO.Citation> retrieve(Long id, String query, Integer topK) {
+        SystemKnowledgeRepo repo = requireRepoVisible(id);
         requireIndexId(repo);
         if (StrUtil.isBlank(query)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "检索词不能为空");
         }
         int k = topK == null || topK < 1 ? DEFAULT_TOP_K : topK;
         return requireClient().retrieve(repo.getIndexId(), query, k, true).stream()
-                .map(n -> KnowledgeChatVO.Citation.builder()
+                .map(n -> SystemKnowledgeChatVO.Citation.builder()
                         .text(StrUtil.cleanBlank(n.getText()))
                         .score(n.getScore())
                         .build())
@@ -571,8 +571,8 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
     }
 
     @Override
-    public List<KnowledgeChatVO.Citation> retrieveByDocuments(Long id, String query, Integer topK, List<String> documentIds) {
-        KnowledgeRepo repo = requireRepoVisible(id);
+    public List<SystemKnowledgeChatVO.Citation> retrieveByDocuments(Long id, String query, Integer topK, List<String> documentIds) {
+        SystemKnowledgeRepo repo = requireRepoVisible(id);
         requireIndexId(repo);
         if (StrUtil.isBlank(query)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "检索词不能为空");
@@ -582,7 +582,7 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
         }
         int k = topK == null || topK < 1 ? DEFAULT_TOP_K : topK;
         return requireClient().retrieve(repo.getIndexId(), query, k, true, documentIds).stream()
-                .map(n -> KnowledgeChatVO.Citation.builder()
+                .map(n -> SystemKnowledgeChatVO.Citation.builder()
                         .text(StrUtil.cleanBlank(n.getText()))
                         .score(n.getScore())
                         .build())
@@ -595,15 +595,15 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
         return JOB_STATUS_FINISH.equalsIgnoreCase(status) || JOB_STATUS_COMPLETED.equalsIgnoreCase(status);
     }
 
-    private KnowledgeRepo requireRepo(Long id) {
-        KnowledgeRepo repo = knowledgeRepoMapper.selectById(id);
+    private SystemKnowledgeRepo requireRepo(Long id) {
+        SystemKnowledgeRepo repo = knowledgeRepoMapper.selectById(id);
         if (repo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "知识仓库不存在: " + id);
         }
         return repo;
     }
 
-    private void requireIndexId(KnowledgeRepo repo) {
+    private void requireIndexId(SystemKnowledgeRepo repo) {
         if (StrUtil.isBlank(repo.getIndexId())) {
             throw new BusinessException(ErrorCode.BUSINESS, "仓库「" + repo.getRepoName() + "」未绑定百炼远端索引，无法执行该操作");
         }
@@ -625,8 +625,8 @@ public class KnowledgeRepoServiceImpl implements KnowledgeRepoService {
         return systemConfigService.getValue("llm", configKey);
     }
 
-    private KnowledgeRepoVO toVO(KnowledgeRepo repo) {
-        KnowledgeRepoVO vo = new KnowledgeRepoVO();
+    private SystemKnowledgeRepoVO toVO(SystemKnowledgeRepo repo) {
+        SystemKnowledgeRepoVO vo = new SystemKnowledgeRepoVO();
         vo.setId(repo.getId());
         vo.setRepoCode(repo.getRepoCode());
         vo.setRepoName(repo.getRepoName());

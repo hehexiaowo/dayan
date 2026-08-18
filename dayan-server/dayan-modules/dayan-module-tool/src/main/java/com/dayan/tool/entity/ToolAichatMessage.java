@@ -7,12 +7,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 表 tool_ai_qa_message 对应实体（AI 问答消息，含引用溯源）。
+ * 表 tool_aichat_message 对应实体（AI 问答消息，含引用溯源）。
  */
 @Data
 @EqualsAndHashCode
-@TableName("tool_ai_qa_message")
-public class ToolAiQaMessage {
+@TableName("tool_aichat_message")
+public class ToolAichatMessage {
 
     @TableId(type = IdType.AUTO)
     private Long id;

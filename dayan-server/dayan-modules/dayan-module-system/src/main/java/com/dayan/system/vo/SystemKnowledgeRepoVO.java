@@ -1,4 +1,4 @@
-package com.dayan.knowledge.vo;
+package com.dayan.system.vo;
 
 import lombok.Data;
 
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
  * 知识仓库 VO（含渠道名展示）。
  */
 @Data
-public class KnowledgeRepoVO {
+public class SystemKnowledgeRepoVO {
 
     private Long id;
 

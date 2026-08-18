@@ -1,4 +1,4 @@
-package com.dayan.knowledge.vo;
+package com.dayan.system.vo;
 
 import lombok.Data;
 
@@ -16,7 +16,7 @@ import java.util.List;
  * </ul>
  */
 @Data
-public class KnowledgeRepoTreeNodeVO {
+public class SystemKnowledgeRepoTreeNodeVO {
 
     /** 渠道编码 */
     private String channelCode;
@@ -31,10 +31,10 @@ public class KnowledgeRepoTreeNodeVO {
     private Integer level;
 
     /** 本渠道独立配置的知识仓库（无则为 null） */
-    private KnowledgeRepoVO repo;
+    private SystemKnowledgeRepoVO repo;
 
     /** 实际可用仓库（独立库，或沿祖先链继承的最近仓库；无则为 null） */
-    private KnowledgeRepoVO effectiveRepo;
+    private SystemKnowledgeRepoVO effectiveRepo;
 
     /** 继承来源渠道编码（独立配置或未继承时为 null） */
     private String inheritedFrom;
@@ -43,5 +43,5 @@ public class KnowledgeRepoTreeNodeVO {
     private String inheritedFromName;
 
     /** 子节点（后代渠道） */
-    private List<KnowledgeRepoTreeNodeVO> children = new ArrayList<>();
+    private List<SystemKnowledgeRepoTreeNodeVO> children = new ArrayList<>();
 }

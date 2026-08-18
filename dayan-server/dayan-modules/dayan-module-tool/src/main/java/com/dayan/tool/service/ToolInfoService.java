@@ -4,6 +4,8 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.tool.dto.ToolInfoCreateDTO;
 import com.dayan.tool.dto.ToolInfoQueryDTO;
 import com.dayan.tool.dto.ToolInfoUpdateDTO;
+import com.dayan.tool.vo.ToolAichatPersonaVO;
+import com.dayan.tool.vo.ToolAiartistConfigVO;
 import com.dayan.tool.vo.ToolInfoVO;
 
 import java.util.List;
@@ -23,11 +25,22 @@ public interface ToolInfoService {
     ToolInfoVO getDetail(String toolCode);
 
     /**
-     * 端上工具列表：启用且 visibleScope 含指定端标识，按 sortOrder 升序。
-     *
-     * @param end 端标识（agent/client）
+     * 端上工具列表：全部启用工具，按 id 升序。
+     * 展示/路由细节由端上按 tool_type 固定映射，不在此过滤。
      */
-    List<ToolInfoVO> listForEnd(String end);
+    List<ToolInfoVO> listEnabled();
+
+    /** 问答人物列表（tool_type=aichat 且启用，按 id 升序） */
+    List<ToolAichatPersonaVO> listQaPersonas();
+
+    /** 问答人物详情（tool_code 对应的 aichat 实例，不存在抛 NOT_FOUND） */
+    ToolAichatPersonaVO getQaPersona(String toolCode);
+
+    /** AI 创作分类列表（tool_type=aiartist 且启用，按 id 升序） */
+    List<ToolAiartistConfigVO> listAiartistConfigs();
+
+    /** AI 创作分类详情（tool_code 对应的 aiartist 实例，不存在抛 NOT_FOUND） */
+    ToolAiartistConfigVO getAiartistConfig(String toolCode);
 
     String create(ToolInfoCreateDTO dto);
 

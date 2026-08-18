@@ -15,20 +15,12 @@ public class ToolInfoVO {
     private String toolCode;
     /** 工具名称 */
     private String toolName;
-    /** 工具类型（pension/gap/ai_creator/ai_qa） */
+    /** 工具类型（pension/gap/aiartist/aichat） */
     private String toolType;
     /** 工具简介 */
     private String toolDesc;
-    /** 图标 */
-    private String icon;
-    /** 入口路径 */
-    private String entryPath;
     /** 工具配置 JSON */
     private String configJson;
-    /** 可见端（逗号分隔：agent/client） */
-    private String visibleScope;
-    /** 排序号 */
-    private Integer sortOrder;
     /** 状态：0=禁用 / 1=启用 */
     private Integer status;
     /** 备注 */

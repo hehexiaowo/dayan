@@ -24,7 +24,6 @@
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-client</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-lead</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-goods</artifactId></dependency>
-        <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-knowledge</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-park</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-system</artifactId></dependency>
         <dependency><groupId>com.dayan</groupId><artifactId>dayan-module-tool</artifactId></dependency>

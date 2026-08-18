@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class ToolAiQaChatResultVO {
+public class ToolAichatChatResultVO {
     private String answer;
     private List<Citation> citations;
     private String sessionCode;

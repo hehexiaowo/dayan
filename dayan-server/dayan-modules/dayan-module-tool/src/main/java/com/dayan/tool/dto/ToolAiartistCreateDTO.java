@@ -1,6 +1,6 @@
 package com.dayan.tool.dto;
 
-import com.dayan.tool.vo.ToolAiCreatorRefsVO;
+import com.dayan.tool.vo.ToolAiartistRefsVO;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -11,13 +11,14 @@ import lombok.Data;
 
 import java.util.List;
 
-/** 创建 AI 创作项目（目的+素材引用与快照+形态/风格/读者+主题）；素材由前端聚合提交 */
+/** 创建 AI 创作项目（分类=工具实例，目的由实例 config_json 决定；素材引用与快照/形态/风格/读者/主题） */
 @Data
-public class ToolAiCreatorCreateDTO {
-    /** 所属工具实例；为空时回落 TL00003 */
+public class ToolAiartistCreateDTO {
+    /** 所属创作分类（tool_info.tool_code，tool_type=aiartist，必填） */
+    @NotBlank(message = "创作分类不能为空")
     @Size(max = 50)
     private String toolCode;
-    @NotBlank(message = "文章目的必选")
+    /** 创作目的（product/park/science）；为空时取分类实例 config_json 预置值 */
     private String purpose;
     /** 1图文 2朋友圈 3视频脚本 4小红书 */
     @NotNull(message = "内容形态必选")
@@ -31,7 +32,7 @@ public class ToolAiCreatorCreateDTO {
     private String topic;
     /** 素材引用（含展示名，保存成品与回显用） */
     @Valid
-    private ToolAiCreatorRefsVO materialRefs;
+    private ToolAiartistRefsVO materialRefs;
     /** 素材快照（前端聚合 {type,title,text} 块，digest 阶段一次性消费） */
     @Valid
     private List<AiMaterialBlockDTO> materials;

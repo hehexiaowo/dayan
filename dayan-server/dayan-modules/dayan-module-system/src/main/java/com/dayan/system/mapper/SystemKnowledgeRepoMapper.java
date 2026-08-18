@@ -1,8 +1,8 @@
-package com.dayan.knowledge.mapper;
+package com.dayan.system.mapper;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.dayan.knowledge.entity.KnowledgeRepo;
+import com.dayan.system.entity.SystemKnowledgeRepo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -14,7 +14,7 @@ import java.util.List;
  * 知识仓库 Mapper。
  */
 @Mapper
-public interface KnowledgeRepoMapper extends BaseMapper<KnowledgeRepo> {
+public interface SystemKnowledgeRepoMapper extends BaseMapper<SystemKnowledgeRepo> {
 
     /**
      * 查渠道全称（VO 展示用；直接读 channel_info 表避免 knowledge → channel 模块依赖）。
@@ -37,10 +37,10 @@ public interface KnowledgeRepoMapper extends BaseMapper<KnowledgeRepo> {
      */
     @InterceptorIgnore(tenantLine = "true")
     @Select("<script>" +
-            "SELECT * FROM knowledge_repo WHERE deleted = 0 AND repo_type = 2 AND channel_code IN " +
+            "SELECT * FROM system_knowledge_repo WHERE deleted = 0 AND repo_type = 2 AND channel_code IN " +
             "<foreach collection='channelCodes' item='code' open='(' separator=',' close=')'>#{code}</foreach>" +
             "</script>")
-    List<KnowledgeRepo> selectByChannelCodes(@Param("channelCodes") Collection<String> channelCodes);
+    List<SystemKnowledgeRepo> selectByChannelCodes(@Param("channelCodes") Collection<String> channelCodes);
 
     /**
      * 按 id 查仓库（跳过租户拦截；chat/retrieve 使用继承库时需跨渠道读取）。
@@ -48,6 +48,6 @@ public interface KnowledgeRepoMapper extends BaseMapper<KnowledgeRepo> {
      * <p>可见性由业务层 {@code requireRepoVisible} 校验（仓库所属渠道 ∈ 当前渠道 ∪ 祖先 ∪ 后代）。
      */
     @InterceptorIgnore(tenantLine = "true")
-    @Select("SELECT * FROM knowledge_repo WHERE id = #{id} AND deleted = 0 LIMIT 1")
-    KnowledgeRepo selectByIdIgnoreTenant(@Param("id") Long id);
+    @Select("SELECT * FROM system_knowledge_repo WHERE id = #{id} AND deleted = 0 LIMIT 1")
+    SystemKnowledgeRepo selectByIdIgnoreTenant(@Param("id") Long id);
 }

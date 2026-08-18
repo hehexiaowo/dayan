@@ -1,4 +1,4 @@
-package com.dayan.knowledge.mapper;
+package com.dayan.system.mapper;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;

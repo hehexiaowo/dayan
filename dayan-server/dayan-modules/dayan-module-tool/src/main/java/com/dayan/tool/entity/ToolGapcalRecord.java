@@ -12,8 +12,8 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("tool_gap_calculator_record")
-public class ToolGapCalculatorRecord extends BaseEntity {
+@TableName("tool_gapcal_record")
+public class ToolGapcalRecord extends BaseEntity {
 
     @TableId(type = IdType.AUTO)
     private Long id;

@@ -6,10 +6,10 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.tool.dto.ToolCalculatorRecordCreateDTO;
-import com.dayan.tool.entity.ToolGapCalculatorRecord;
-import com.dayan.tool.entity.ToolPensionCalculatorRecord;
-import com.dayan.tool.mapper.ToolGapCalculatorRecordMapper;
-import com.dayan.tool.mapper.ToolPensionCalculatorRecordMapper;
+import com.dayan.tool.entity.ToolGapcalRecord;
+import com.dayan.tool.entity.ToolPensioncalRecord;
+import com.dayan.tool.mapper.ToolGapcalRecordMapper;
+import com.dayan.tool.mapper.ToolPensioncalRecordMapper;
 import com.dayan.tool.service.ToolCalculatorRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,13 +18,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ToolCalculatorRecordServiceImpl implements ToolCalculatorRecordService {
 
-    private final ToolPensionCalculatorRecordMapper pensionMapper;
-    private final ToolGapCalculatorRecordMapper gapMapper;
+    private final ToolPensioncalRecordMapper pensionMapper;
+    private final ToolGapcalRecordMapper gapMapper;
     private final CodeGenerator codeGenerator;
 
     @Override
     public String savePension(ToolCalculatorRecordCreateDTO dto) {
-        ToolPensionCalculatorRecord record = new ToolPensionCalculatorRecord();
+        ToolPensioncalRecord record = new ToolPensioncalRecord();
         record.setRecordCode(codeGenerator.generate("TPC"));
         record.setToolCode(StrUtil.blankToDefault(dto.getToolCode(), "TL00001"));
         record.setAgentCode(requireAgentCode());
@@ -37,7 +37,7 @@ public class ToolCalculatorRecordServiceImpl implements ToolCalculatorRecordServ
 
     @Override
     public String saveGap(ToolCalculatorRecordCreateDTO dto) {
-        ToolGapCalculatorRecord record = new ToolGapCalculatorRecord();
+        ToolGapcalRecord record = new ToolGapcalRecord();
         record.setRecordCode(codeGenerator.generate("TGC"));
         record.setToolCode(StrUtil.blankToDefault(dto.getToolCode(), "TL00002"));
         record.setAgentCode(requireAgentCode());

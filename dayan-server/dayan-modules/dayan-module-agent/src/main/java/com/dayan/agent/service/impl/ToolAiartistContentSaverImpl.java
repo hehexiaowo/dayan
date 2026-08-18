@@ -2,8 +2,8 @@ package com.dayan.agent.service.impl;
 
 import com.dayan.agent.dto.AgentContentCreateDTO;
 import com.dayan.agent.service.AgentContentService;
-import com.dayan.tool.dto.ToolAiCreatorContentCmd;
-import com.dayan.tool.service.ToolAiCreatorContentSaver;
+import com.dayan.tool.dto.ToolAiartistContentCmd;
+import com.dayan.tool.service.ToolAiartistContentSaver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,12 +12,12 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class ToolAiCreatorContentSaverImpl implements ToolAiCreatorContentSaver {
+public class ToolAiartistContentSaverImpl implements ToolAiartistContentSaver {
 
     private final AgentContentService agentContentService;
 
     @Override
-    public Long save(ToolAiCreatorContentCmd cmd) {
+    public Long save(ToolAiartistContentCmd cmd) {
         AgentContentCreateDTO dto = new AgentContentCreateDTO();
         dto.setTitle(cmd.getTitle());
         dto.setContentType(cmd.getContentType());

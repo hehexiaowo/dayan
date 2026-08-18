@@ -16,7 +16,7 @@ import java.util.List;
  * Agent 端工具接口。
  *
  * <p>路径：{@code /tools}（agent starter context-path 拼接为 {@code /agent-api/tools}）。
- * 仅返回启用且 visibleScope 含 agent 的工具，按 sortOrder 升序。
+ * 返回全部启用工具，按 id 升序。
  */
 @Tag(name = "Agent 工具")
 @RestController
@@ -29,6 +29,6 @@ public class AgentToolController {
     @Operation(summary = "端上可用工具列表")
     @GetMapping
     public R<List<ToolInfoVO>> list() {
-        return R.ok(toolInfoService.listForEnd("agent"));
+        return R.ok(toolInfoService.listEnabled());
     }
 }

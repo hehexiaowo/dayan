@@ -7,7 +7,7 @@ import java.util.List;
 
 /** AI 创作项目详情（各 JSON 列解析后的聚合视图） */
 @Data
-public class ToolAiCreatorVO {
+public class ToolAiartistVO {
     private Long id;
     private String toolCode;
     private String purpose;
@@ -15,7 +15,7 @@ public class ToolAiCreatorVO {
     private String styleCode;
     private String audience;
     private String topic;
-    private ToolAiCreatorRefsVO materialRefs;
+    private ToolAiartistRefsVO materialRefs;
     private String status;
     private AiFactDigestVO factDigest;
     private AiStrategyVO strategy;

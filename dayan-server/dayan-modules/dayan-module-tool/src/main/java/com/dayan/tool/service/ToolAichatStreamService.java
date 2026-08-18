@@ -2,8 +2,8 @@ package com.dayan.tool.service;
 
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.mybatis.context.ContextHolder;
-import com.dayan.tool.dto.ToolAiQaChatDTO;
-import com.dayan.tool.vo.ToolAiQaChatResultVO;
+import com.dayan.tool.dto.ToolAichatChatDTO;
+import com.dayan.tool.vo.ToolAichatChatResultVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ToolAiQaStreamService {
+public class ToolAichatStreamService {
 
     private static final long SSE_TIMEOUT_MS = 120_000L;
-    private final ToolAiQaChatService chatService;
+    private final ToolAichatChatService chatService;
 
-    /** 问答流式：事件 stage/delta/done/error（复用 ToolAiCreatorStreamService 模式） */
-    public SseEmitter chatStream(ToolAiQaChatDTO dto) {
+    /** 问答流式：事件 stage/delta/done/error（复用 ToolAiartistStreamService 模式） */
+    public SseEmitter chatStream(ToolAichatChatDTO dto) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
         AtomicBoolean cancelled = new AtomicBoolean(false);
         emitter.onCompletion(() -> cancelled.set(true));
@@ -38,7 +38,7 @@ public class ToolAiQaStreamService {
             ContextHolder.setAccountType(ctxType);
             ContextHolder.setAccountName(ctxName);
             try {
-                ToolAiQaChatResultVO result = chatService.chatStreamBlocking(dto, new ToolAiQaChatListener() {
+                ToolAichatChatResultVO result = chatService.chatStreamBlocking(dto, new ToolAichatChatListener() {
                     @Override public void onStage(String s, String m) { send(emitter, "stage", Map.of("stage", s, "message", m)); }
                     @Override public void onDelta(String t) { if (!cancelled.get()) send(emitter, "delta", Map.of("text", t)); }
                 });

@@ -1,4 +1,4 @@
-package com.dayan.knowledge.dto;
+package com.dayan.system.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,7 +8,7 @@ import java.util.List;
 
 /** 知识检索（agent 端 AI 创作素材取材用；渠道可见性同 /repos） */
 @Data
-public class KnowledgeRetrieveDTO {
+public class SystemKnowledgeRetrieveDTO {
     /** 仓库 id（须为当前渠道可见库） */
     @NotNull(message = "仓库必选")
     private Long repoId;
