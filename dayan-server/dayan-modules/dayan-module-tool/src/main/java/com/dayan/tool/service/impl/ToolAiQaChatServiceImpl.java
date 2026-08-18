@@ -3,6 +3,7 @@ package com.dayan.tool.service.impl;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.dayan.common.aliyun.bailian.BailianChatClient;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
@@ -73,10 +74,11 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         List<String> texts = new ArrayList<>();
         List<ToolAiQaChatResultVO.Citation> citations = retrieveCitations(dto, config, texts);
 
-        // 2. 无命中兜底：落 user 消息后返回
+        // 2. 无命中兜底：落 user + assistant 兜底消息后返回
         if (citations.isEmpty()) {
             saveUserMessage(sessionCode, dto.getQuestion());
-            touchSession(sessionCode);
+            saveAssistantMessage(sessionCode, NO_HIT_ANSWER, List.of());
+            touchSession(sessionCode, 2);
             return result(NO_HIT_ANSWER, citations, sessionCode);
         }
 
@@ -90,7 +92,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         // 4. 落库 + 更新 session
         saveUserMessage(sessionCode, dto.getQuestion());
         saveAssistantMessage(sessionCode, answer, citations);
-        touchSession(sessionCode);
+        touchSession(sessionCode, 2);
         return result(answer, citations, sessionCode);
     }
 
@@ -106,14 +108,15 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         List<String> texts = new ArrayList<>();
         List<ToolAiQaChatResultVO.Citation> citations = retrieveCitations(dto, config, texts);
 
-        // 2. 无命中兜底：落 user 消息后返回
+        // 2. 无命中兜底：落 user + assistant 兜底消息后返回
         if (citations.isEmpty()) {
             if (listener != null) {
                 listener.onStage("retrieval", "done");
                 listener.onStage("generate", "empty");
             }
             saveUserMessage(sessionCode, dto.getQuestion());
-            touchSession(sessionCode);
+            saveAssistantMessage(sessionCode, NO_HIT_ANSWER, List.of());
+            touchSession(sessionCode, 2);
             return result(NO_HIT_ANSWER, citations, sessionCode);
         }
 
@@ -132,7 +135,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         // 4. 落库 + 更新 session
         saveUserMessage(sessionCode, dto.getQuestion());
         saveAssistantMessage(sessionCode, answer, citations);
-        touchSession(sessionCode);
+        touchSession(sessionCode, 2);
         return result(answer, citations, sessionCode);
     }
 
@@ -192,6 +195,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         List<Long> repoIds = parseLongList(config.getRepoIds());
         for (Long repoId : repoIds) {
             try {
+                knowledgeRepoService.requireRepoVisible(repoId);  // 显式渠道可见性校验
                 List<KnowledgeChatVO.Citation> cites =
                         knowledgeRepoService.retrieve(repoId, dto.getQuestion(), TOP_K_PER_REPO);
                 for (KnowledgeChatVO.Citation c : cites) {
@@ -251,17 +255,12 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         messageMapper.insert(msg);
     }
 
-    /** 更新会话：lastMessageAt=now，messageCount+=2 */
-    private void touchSession(String sessionCode) {
-        ToolAiQaSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAiQaSession>()
+    /** 更新会话：lastMessageAt=now，messageCount 原子增量 delta（每次问答 +2，无命中历史兼容 +1） */
+    private void touchSession(String sessionCode, int delta) {
+        sessionMapper.update(null, new LambdaUpdateWrapper<ToolAiQaSession>()
                 .eq(ToolAiQaSession::getSessionCode, sessionCode)
-                .last("LIMIT 1"));
-        if (session == null) {
-            return;
-        }
-        session.setLastMessageAt(LocalDateTime.now());
-        session.setMessageCount((session.getMessageCount() == null ? 0 : session.getMessageCount()) + 2);
-        sessionMapper.updateById(session);
+                .setSql("message_count = IFNULL(message_count, 0) + " + delta)
+                .set(ToolAiQaSession::getLastMessageAt, LocalDateTime.now()));
     }
 
     private ToolAiQaChatResultVO result(String answer, List<ToolAiQaChatResultVO.Citation> citations, String sessionCode) {
