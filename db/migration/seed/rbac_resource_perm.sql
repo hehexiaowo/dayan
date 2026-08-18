@@ -147,12 +147,7 @@ VALUES
   ('tool:info:query',  '工具详情', 'tool:info', 3, '/admin-api/tool/info/*',    'GET',    401, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
   ('tool:info:create', '新增工具', 'tool:info', 3, '/admin-api/tool/info',      'POST',   402, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
   ('tool:info:update', '修改工具', 'tool:info', 3, '/admin-api/tool/info/*',    'PUT',    403, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:info:delete', '删除工具', 'tool:info', 3, '/admin-api/tool/info/*',    'DELETE', 404, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:qa:list',     'AI 问答人物列表', 'tool:qa', 3, '/admin-api/tool/qa/config/page', 'GET',    405, 1, 'AI 问答人物', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:qa:query',    'AI 问答人物详情', 'tool:qa', 3, '/admin-api/tool/qa/config/*',    'GET',    406, 1, 'AI 问答人物', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:qa:create',   '新增 AI 问答人物', 'tool:qa', 3, '/admin-api/tool/qa/config',      'POST',   407, 1, 'AI 问答人物', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:qa:update',   '修改 AI 问答人物', 'tool:qa', 3, '/admin-api/tool/qa/config/*',    'PUT',    408, 1, 'AI 问答人物', NOW(), NOW(), 'system', 'system', 0),
-  ('tool:qa:delete',   '删除 AI 问答人物', 'tool:qa', 3, '/admin-api/tool/qa/config/*',    'DELETE', 409, 1, 'AI 问答人物', NOW(), NOW(), 'system', 'system', 0)
+  ('tool:info:delete', '删除工具', 'tool:info', 3, '/admin-api/tool/info/*',    'DELETE', 404, 1, '工具配置', NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ============================================================
