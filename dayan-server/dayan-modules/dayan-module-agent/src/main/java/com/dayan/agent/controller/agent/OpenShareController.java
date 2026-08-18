@@ -2,10 +2,8 @@ package com.dayan.agent.controller.agent;
 
 import com.dayan.agent.service.AgentCardService;
 import com.dayan.agent.service.AgentInfoService;
-import com.dayan.agent.service.PosterTemplateService;
 import com.dayan.agent.vo.AgentCardVO;
 import com.dayan.agent.vo.AgentInfoVO;
-import com.dayan.agent.vo.PosterTemplateVO;
 import com.dayan.client.service.ClientInfoService;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
@@ -15,6 +13,8 @@ import com.dayan.content.vo.ContentInfoVO;
 import com.dayan.lead.entity.LeadInfo;
 import com.dayan.lead.service.LeadInfoService;
 import com.dayan.lead.service.LeadTrackService;
+import com.dayan.tool.service.ToolPosterTemplateService;
+import com.dayan.tool.vo.ToolPosterTemplateVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,7 +46,7 @@ public class OpenShareController {
 
     private final ContentInfoService contentInfoService;
     private final AgentCardService agentCardService;
-    private final PosterTemplateService posterTemplateService;
+    private final ToolPosterTemplateService posterTemplateService;
     private final AgentInfoService agentInfoService;
     private final LeadTrackService leadTrackService;
     private final LeadInfoService leadInfoService;
@@ -77,7 +77,7 @@ public class OpenShareController {
             @PathVariable String templateCode,
             @RequestParam(required = false) String agent) {
 
-        PosterTemplateVO poster = posterTemplateService.getDetail(templateCode);
+        ToolPosterTemplateVO poster = posterTemplateService.getDetail(templateCode);
 
         AgentCardVO card = (agent != null && !agent.isEmpty())
                 ? agentCardService.getFirstByAgent(agent) : null;
