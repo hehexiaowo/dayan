@@ -30,11 +30,11 @@
               <text class="hero-play-triangle">▶</text>
             </view>
             <view class="hero-mask">
-              <text class="hero-title">{{ hero.title }}</text>
+              <text class="hero-title">{{ hero.courseName }}</text>
             </view>
           </view>
           <view class="hero-info">
-            <text v-if="hero.summary" class="hero-summary">{{ hero.summary }}</text>
+            <text v-if="hero.courseDescription" class="hero-summary">{{ hero.courseDescription }}</text>
             <view class="hero-meta">
               <text v-if="hero.author" class="hero-meta-author">{{ hero.author }}</text>
               <text v-if="contentMeta(hero)" class="hero-meta-item">{{ contentMeta(hero) }}</text>
@@ -46,14 +46,14 @@
         <!-- ===== 列表条目：左文右缩略图（公众号样式） ===== -->
         <view
           v-for="item in restItems"
-          :key="item.id"
+          :key="item.courseCode"
           class="content-card dy-clickable"
           @click="onItemClick(item)"
         >
           <!-- 左侧文字 -->
           <view class="content-body">
-            <text class="content-title">{{ item.title }}</text>
-            <text v-if="item.summary" class="content-summary">{{ item.summary }}</text>
+            <text class="content-title">{{ item.courseName }}</text>
+            <text v-if="item.courseDescription" class="content-summary">{{ item.courseDescription }}</text>
             <view class="content-meta">
               <text v-if="item.author" class="meta-author">{{ item.author }}</text>
               <text v-if="contentMeta(item)" class="meta-item">{{ contentMeta(item) }}</text>
@@ -79,43 +79,43 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app';
-import { getLearningContents } from '@/api/learning';
-import { LearningCategory } from '@/types';
-import type { LearningContent } from '@/types';
+import { getCourses } from '@/api/course';
+import { CourseSource } from '@/types';
+import type { Course } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 /**
- * 学习中心板块列表页（渠道课程 / 外部课程 / 雁鸣中国共用）。
+ * 学习中心板块列表页（渠道课程 / 外部课程 / 雁鸣中国共用，course_source 2/3/4）。
  *
  * - 布局仿微信公众号历史消息：头条大卡（封面 + 标题叠加 + 白底 meta 行），
  *   其余条目左文右缩略图；无图片字段，封面用板块色渐变 + 标题首字代替；
  * - 板块名由导航栏标题承载（onLoad setNavigationBarTitle），页内不再放说明卡；
  * - 渲染差异按板块：渠道=视频样式（播放钮/播放量），雁鸣=日期，
- *   外部=时长；大雁课程（course_info）在独立课程列表页。
+ *   外部=时长；大雁课程（course_source=1）在独立课程列表页。
  */
 
 interface BoardMeta {
   key: 'channel' | 'external' | 'yanming';
   title: string;
   icon: string;
-  category: LearningCategory;
+  source: CourseSource;
 }
 
 const BOARD_MAP: Record<string, BoardMeta> = {
-  '1': { key: 'channel', title: '渠道课程', icon: '渠', category: LearningCategory.CHANNEL },
-  '2': { key: 'external', title: '外部课程', icon: '外', category: LearningCategory.EXTERNAL },
-  '3': { key: 'yanming', title: '雁鸣中国', icon: '鸣', category: LearningCategory.YANMING },
+  '2': { key: 'channel', title: '渠道课程', icon: '渠', source: CourseSource.CHANNEL },
+  '3': { key: 'external', title: '外部课程', icon: '外', source: CourseSource.EXTERNAL },
+  '4': { key: 'yanming', title: '雁鸣中国', icon: '鸣', source: CourseSource.YANMING },
 };
 
-const board = ref<BoardMeta>(BOARD_MAP['1']);
-const items = ref<LearningContent[]>([]);
+const board = ref<BoardMeta>(BOARD_MAP['2']);
+const items = ref<Course[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
 
 /** 头条（排序即权重：sortOrder/publishTime 倒序的第一条） */
-const hero = computed<LearningContent>(() => items.value[0]);
-const restItems = computed<LearningContent[]>(() => items.value.slice(1));
+const hero = computed<Course>(() => items.value[0]);
+const restItems = computed<Course[]>(() => items.value.slice(1));
 
 /** 渠道板块按视频样式渲染（存量内容以视频课为主） */
 const isVideo = computed(() => board.value.key === 'channel');
@@ -123,16 +123,16 @@ const isVideo = computed(() => board.value.key === 'channel');
 const viewsLabel = computed(() => (isVideo.value ? '播放' : '阅读'));
 
 /** 缩略图首字：标题差异化的视觉锚点 */
-function coverChar(item: LearningContent): string {
-  return (item.title || '?').charAt(0);
+function coverChar(item: Course): string {
+  return (item.courseName || '?').charAt(0);
 }
 
 /** meta 副信息：渠道/外部=时长，雁鸣=日期 */
-function contentMeta(item: LearningContent): string {
+function contentMeta(item: Course): string {
   if (board.value.key === 'yanming') {
     return item.publishTime ? formatDate(item.publishTime) : '';
   }
-  return item.duration || '';
+  return item.durationText || '';
 }
 
 /** 阅读量 / 播放量格式化：>=10000 显示 x.x 万 */
@@ -160,7 +160,7 @@ async function loadList() {
   loading.value = true;
   loadError.value = false;
   try {
-    items.value = await getLearningContents(board.value.category);
+    items.value = await getCourses(undefined, board.value.source);
   } catch {
     loadError.value = true;
     items.value = [];
@@ -169,16 +169,16 @@ async function loadList() {
   }
 }
 
-function onItemClick(item: LearningContent) {
-  if (!item.contentCode) return;
-  uni.navigateTo({ url: `/pages/learning/board/detail?code=${item.contentCode}` });
+function onItemClick(item: Course) {
+  if (!item.courseCode) return;
+  uni.navigateTo({ url: `/pages/learning/board/detail?code=${item.courseCode}` });
 }
 
 // 深链入口：onLoad 仅解析 query，状态只存内存
 onLoad((options) => {
-  const cat = options?.category;
-  if (cat && BOARD_MAP[cat]) {
-    board.value = BOARD_MAP[cat];
+  const source = options?.source;
+  if (source && BOARD_MAP[source]) {
+    board.value = BOARD_MAP[source];
   }
   uni.setNavigationBarTitle({ title: board.value.title });
 });

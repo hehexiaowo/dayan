@@ -39,6 +39,22 @@ export const COURSE_STATUS_OPTIONS = [
   { label: '已结课', value: CourseStatus.FINISHED }
 ] as const
 
+/** 板块来源：1=平台自研大雁 2=渠道课程 3=外部课程 4=雁鸣中国资讯 */
+export enum CourseSource {
+  SELF = 1,
+  CHANNEL = 2,
+  EXTERNAL = 3,
+  YANMING = 4
+}
+
+/** 板块来源选项（学习中心四板块） */
+export const COURSE_SOURCE_OPTIONS = [
+  { label: '大雁课程', value: CourseSource.SELF },
+  { label: '渠道课程', value: CourseSource.CHANNEL },
+  { label: '外部课程', value: CourseSource.EXTERNAL },
+  { label: '雁鸣中国', value: CourseSource.YANMING }
+] as const
+
 /** 状态 el-tag type 映射 */
 export function courseStatusTagType(status?: number): 'info' | 'warning' | 'success' | 'danger' {
   switch (status) {
@@ -61,8 +77,10 @@ export interface CourseInfo {
   courseCode?: string
   /** 课程名称 */
   courseName: string
-  /** 课程类型 */
-  courseType: CourseType
+  /** 课程类型（非平台自研板块可为空） */
+  courseType?: CourseType
+  /** 板块来源：1=平台自研大雁 2=渠道课程 3=外部课程 4=雁鸣中国资讯 */
+  courseSource?: CourseSource
   /** 分类编码 */
   categoryCode?: string
   /** 封面图地址 */
@@ -71,12 +89,18 @@ export interface CourseInfo {
   videoUrl?: string
   /** 课程简介 */
   courseDescription?: string
+  /** 正文（详情页长文，纯文本） */
+  courseBody?: string
   /** 课程大纲 */
   courseOutline?: string
   /** 目标人群 */
   targetAudience?: string
   /** 学习目标 */
   learningObjectives?: string
+  /** 作者/来源（渠道/外部/资讯用，平台课程走讲师） */
+  author?: string
+  /** 时长展示文本（如 28:30 / 约 15 分钟） */
+  durationText?: string
   /** 讲师编码 */
   lecturerCode?: string
   /** 总课时数 */
@@ -86,9 +110,9 @@ export interface CourseInfo {
   /** 有效天数 */
   validDays?: number
   /** 原价 */
-  originalPrice: number
+  originalPrice?: number
   /** 售价 */
-  salePrice: number
+  salePrice?: number
   /** 最大学员数（线下/直播课，为空表示不限） */
   maxStudents?: number
   /** 当前学员数 */
@@ -107,6 +131,10 @@ export interface CourseInfo {
   courseStartDate?: string
   /** 课程结束日期（ISO 字符串） */
   courseEndDate?: string
+  /** 角标（热/新/要闻/人物/动态/洞察） */
+  badge?: string
+  /** 发布时间（资讯/内容用，课程走开课日期） */
+  publishTime?: string
   /** 排序号 */
   sortOrder?: number
   /** 状态：0=草稿 1=待上架 2=已上架 3=已下架 4=已结课 */
@@ -127,6 +155,8 @@ export interface CourseInfoQuery extends PageQuery {
   courseName?: string
   /** 课程类型 */
   courseType?: CourseType
+  /** 板块来源 */
+  courseSource?: CourseSource
   /** 分类编码 */
   categoryCode?: string
   /** 讲师编码 */

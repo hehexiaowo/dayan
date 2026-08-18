@@ -58,19 +58,17 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
-import { getLearningContents } from '@/api/learning';
 import { getCourses } from '@/api/course';
-import { LearningCategory } from '@/types';
-import type { Course, LearningContent } from '@/types';
+import { CourseSource } from '@/types';
+import type { Course } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 /**
  * 学习中心首页：四大课程板块宫格（2×2）。
  *
- * - 大雁课程 = course_info 平台自研课程（讲师/价格/大纲体系）；
- * - 渠道课程 / 外部课程 / 雁鸣中国 = learning_content 板块分类（1/2/3）；
- * - 计数：大雁走 /courses，其余一次拉全量 /learning/contents 后本地分桶；
+ * - 四板块统一 course_info，course_source 区隔（1=大雁 2=渠道 3=外部 4=雁鸣）；
+ * - 计数：一次拉全量 /courses（仅上架）后按 courseSource 本地分桶；
  * - tab 页统一 onShow 加载（首次进入也触发，避免 onMounted+onShow 双请求）。
  */
 
@@ -80,8 +78,8 @@ interface BoardDef {
   subtitle: string;
   icon: string;
   unit: string;
-  /** learning_content 板块分类；大雁课程走独立课程列表页 */
-  category?: LearningCategory;
+  /** 板块来源；大雁课程走独立课程列表页 */
+  source?: CourseSource;
   url: string;
 }
 
@@ -100,8 +98,8 @@ const boards: BoardDef[] = [
     subtitle: '渠道培训 · 实战进阶',
     icon: '渠',
     unit: '门',
-    category: LearningCategory.CHANNEL,
-    url: '/pages/learning/board/index?category=1',
+    source: CourseSource.CHANNEL,
+    url: '/pages/learning/board/index?source=2',
   },
   {
     key: 'external',
@@ -109,8 +107,8 @@ const boards: BoardDef[] = [
     subtitle: '精选引进 · 拓展视野',
     icon: '外',
     unit: '门',
-    category: LearningCategory.EXTERNAL,
-    url: '/pages/learning/board/index?category=2',
+    source: CourseSource.EXTERNAL,
+    url: '/pages/learning/board/index?source=3',
   },
   {
     key: 'yanming',
@@ -118,8 +116,8 @@ const boards: BoardDef[] = [
     subtitle: '品牌资讯 · 行业洞察',
     icon: '鸣',
     unit: '条',
-    category: LearningCategory.YANMING,
-    url: '/pages/learning/board/index?category=3',
+    source: CourseSource.YANMING,
+    url: '/pages/learning/board/index?source=4',
   },
 ];
 
@@ -136,14 +134,11 @@ async function loadCounts() {
   loading.value = true;
   loadError.value = false;
   try {
-    const [courses, contents] = await Promise.all([
-      getCourses().catch(() => [] as Course[]),
-      getLearningContents().catch(() => [] as LearningContent[]),
-    ]);
-    counts.dayan = courses.length;
-    counts.channel = contents.filter((c) => c.category === LearningCategory.CHANNEL).length;
-    counts.external = contents.filter((c) => c.category === LearningCategory.EXTERNAL).length;
-    counts.yanming = contents.filter((c) => c.category === LearningCategory.YANMING).length;
+    const courses = await getCourses().catch(() => [] as Course[]);
+    counts.dayan = courses.filter((c) => (c.courseSource ?? CourseSource.SELF) === CourseSource.SELF).length;
+    counts.channel = courses.filter((c) => c.courseSource === CourseSource.CHANNEL).length;
+    counts.external = courses.filter((c) => c.courseSource === CourseSource.EXTERNAL).length;
+    counts.yanming = courses.filter((c) => c.courseSource === CourseSource.YANMING).length;
   } catch {
     loadError.value = true;
   } finally {

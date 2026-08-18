@@ -18,27 +18,28 @@ import {
   COURSE_TYPE_OPTIONS,
   CourseStatus,
   COURSE_STATUS_OPTIONS,
+  CourseSource,
   courseStatusTagType
 } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
 import LecturerManageDrawer from './components/LecturerManageDrawer.vue'
-import LearningContentTab from './components/LearningContentTab.vue'
+import CourseBoardTab from './components/CourseBoardTab.vue'
 import { useDictOptions } from '@/composables/useDict'
 
 /** 课程分类选项（业务字典 course_category，管理入口：系统管理-业务字典） */
 const { options: categoryOptions } = useDictOptions('course_category')
 
 /**
- * 课程管理页（四大板块 tab）。
+ * 课程管理页（四大板块 tab，统一 course_info）。
  *
- * - 大雁课程 = course_info（平台自研）：标准 CRUD + 上/下架 + 讲师管理抽屉；
- * - 渠道课程 / 外部课程 / 雁鸣中国 = learning_content 板块分类（1/2/3），
- *   共用 LearningContentTab 组件，tab 懒加载时才发请求；
+ * - 大雁课程 = course_source=1（平台自研）：标准 CRUD + 上/下架 + 讲师管理抽屉；
+ * - 渠道课程 / 外部课程 / 雁鸣中国 = course_source 2/3/4，
+ *   共用 CourseBoardTab 组件（轻量表单 + 正文），tab 懒加载时才发请求；
  * - 所有 el-tab-pane 必须 lazy（避免 4 tab 同挂载 + 未捕获错误整页崩）；
  * - 路由由后端菜单 menu_seed（component='resource/course/index'）+ router/dynamic.ts 自动解析，无需改路由。
  */
 
-/** 板块 tab：dayan=大雁课程(channel course_info)，其余为 learning_content 分类 */
+/** 板块 tab：dayan=大雁课程(course_source=1)，其余为 course_source 2/3/4 */
 const activeTab = ref('dayan')
 
 const { loading, tableData, total, query, loadPage, handleSearch, handlePageChange, handleSizeChange } =
@@ -50,7 +51,9 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
         courseType: undefined,
         courseStatus: undefined,
         lecturerCode: ''
-      }
+      },
+      // 大雁课程 tab 固定只看平台自研板块
+      fixedParams: { courseSource: CourseSource.SELF }
     }
   )
 
@@ -412,15 +415,15 @@ onMounted(() => {
         </div>
       </el-tab-pane>
 
-      <!-- ===== learning_content 三板块（共用组件，懒加载） ===== -->
+      <!-- ===== course_source 三板块（共用组件，懒加载） ===== -->
       <el-tab-pane label="渠道课程" name="channel" lazy>
-        <LearningContentTab :category="1" />
+        <CourseBoardTab :source="CourseSource.CHANNEL" />
       </el-tab-pane>
       <el-tab-pane label="外部课程" name="external" lazy>
-        <LearningContentTab :category="2" />
+        <CourseBoardTab :source="CourseSource.EXTERNAL" />
       </el-tab-pane>
       <el-tab-pane label="雁鸣中国" name="yanming" lazy>
-        <LearningContentTab :category="3" />
+        <CourseBoardTab :source="CourseSource.YANMING" />
       </el-tab-pane>
     </el-tabs>
 

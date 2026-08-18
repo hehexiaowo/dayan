@@ -19,15 +19,15 @@
     <template v-else-if="content">
       <!-- ===== 文章头部（公众号样式：标题 + meta 行） ===== -->
       <view class="article-head">
-        <text class="article-title">{{ content.title }}</text>
+        <text class="article-title">{{ content.courseName }}</text>
         <view class="article-meta">
           <text v-if="content.author" class="meta-author">{{ content.author }}</text>
           <text class="meta-item">{{ formatDate(content.publishTime) }}</text>
           <text v-if="content.viewCount != null" class="meta-item">{{ formatViews(content.viewCount) }} 阅读</text>
           <text v-if="content.badge" class="meta-badge">{{ content.badge }}</text>
         </view>
-        <view v-if="content.summary" class="article-summary">
-          <text class="summary-text">{{ content.summary }}</text>
+        <view v-if="content.courseDescription" class="article-summary">
+          <text class="summary-text">{{ content.courseDescription }}</text>
         </view>
       </view>
 
@@ -48,38 +48,38 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import { getLearningDetail } from '@/api/learning';
-import type { LearningContent } from '@/types';
+import { getCourseDetail } from '@/api/course';
+import type { Course } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 /**
  * 学习中心内容详情页（渠道课程 / 外部课程 / 雁鸣中国共用）。
  *
- * - 数据走真实详情接口（GET /agent-api/learning/contents/{code}，浏览量累加）；
- * - 正文 body 为纯文本，按空行分段渲染（公众号文章样式）；
+ * - 数据走真实课程详情接口（GET /agent-api/courses/{courseCode}，浏览量累加）；
+ * - 正文 courseBody 为纯文本，按空行分段渲染（公众号文章样式）；
  * - onLoad 仅解析深链 query，状态只存内存。
  */
 
-const content = ref<LearningContent | null>(null);
+const content = ref<Course | null>(null);
 const loading = ref(false);
 const loadError = ref(false);
 
 /** 正文分段：按空行拆分为段，过滤纯空白段 */
 const paragraphs = computed<string[]>(() => {
-  if (!content.value?.body) return [];
-  return content.value.body
+  if (!content.value?.courseBody) return [];
+  return content.value.courseBody
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean);
 });
 
 async function loadDetail() {
-  if (!content.value?.contentCode) return;
+  if (!content.value?.courseCode) return;
   loading.value = true;
   loadError.value = false;
   try {
-    content.value = await getLearningDetail(content.value.contentCode);
+    content.value = await getCourseDetail(content.value.courseCode);
   } catch {
     loadError.value = true;
   } finally {
@@ -101,8 +101,8 @@ function formatDate(dt?: string): string {
 onLoad((options) => {
   const code = options?.code;
   if (!code) return;
-  // 先占位 contentCode 供 loadDetail 使用，成功后整对象替换
-  content.value = { id: '', contentCode: code, title: '', category: 0 };
+  // 先占位 courseCode 供 loadDetail 使用，成功后整对象替换
+  content.value = { courseCode: code, courseName: '' };
   loadDetail();
 });
 </script>

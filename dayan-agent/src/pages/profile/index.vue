@@ -92,7 +92,7 @@ import { getProfile } from '@/api/agent';
 import { logoutApi } from '@/api/auth';
 import { getLeads } from '@/api/lead';
 import { getEquityStats } from '@/api/equity';
-import { getLearningContents } from '@/api/learning';
+import { getCourses } from '@/api/course';
 import type { AgentProfile } from '@/types';
 import { AGENT_LEVEL_MAP } from '@/types';
 import { formatFileUrl } from '@/utils/file';
@@ -221,7 +221,7 @@ async function loadStats() {
     equityStock.value = 0;
   }
   try {
-    const c = await getLearningContents();
+    const c = await getCourses();
     courseCount.value = (c && c.length) || 0;
   } catch {
     courseCount.value = 0;

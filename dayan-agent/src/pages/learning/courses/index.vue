@@ -105,17 +105,17 @@ import { computed, ref } from 'vue';
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import { getCourses } from '@/api/course';
 import { formatFileUrl } from '@/utils/file';
-import { COURSE_TYPE_LABELS, type Course } from '@/types';
+import { COURSE_TYPE_LABELS, CourseSource, type Course } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
 /**
- * 大雁课程列表页（course_info 平台自研课程）。
+ * 大雁课程列表页（course_source=1 平台自研课程）。
  *
  * - 布局仿公众号历史消息：首门课程为头条大卡（封面 + 标题叠加 + 白底
  *   类型/讲师/价格行），其余条目左文右图；
  * - 封面缺省时用品牌渐变 + 课程名首字占位；
- * - 仅上架课程（后端过滤 courseStatus=2）。
+ * - 仅上架课程（后端过滤 courseStatus=2）且固定板块 course_source=1。
  */
 
 const courses = ref<Course[]>([]);
@@ -147,7 +147,7 @@ async function loadList() {
   loading.value = true;
   loadError.value = false;
   try {
-    courses.value = await getCourses();
+    courses.value = await getCourses(undefined, CourseSource.SELF);
   } catch (e) {
     loadError.value = true;
   } finally {

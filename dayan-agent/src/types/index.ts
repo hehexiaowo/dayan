@@ -206,32 +206,12 @@ export interface LeadPoolItem {
 
 // ===== 学习中心 =====
 
-/** 学习内容板块分类：1=渠道课程 2=外部课程 3=雁鸣中国（大雁课程=course_info，走 /courses） */
-export enum LearningCategory {
-  CHANNEL = 1,
-  EXTERNAL = 2,
-  YANMING = 3,
-}
-
-/** 学习内容（GET /agent-api/learning/contents） */
-export interface LearningContent {
-  id: string;
-  contentCode: string;
-  title: string;
-  summary?: string;
-  /** 板块分类（1=渠道课程 2=外部课程 3=雁鸣中国） */
-  category: LearningCategory | number;
-  author?: string;
-  /** 时长（如 28:30 / 约15分钟） */
-  duration?: string;
-  /** 正文（仅详情接口返回） */
-  body?: string;
-  viewCount?: number;
-  /** 角标（热/新/要闻/人物/动态/洞察） */
-  badge?: string;
-  publishTime?: string;
-  sortOrder?: number;
-  createdAt?: string;
+/** 板块来源：1=平台自研大雁 2=渠道课程 3=外部课程 4=雁鸣中国（学习中心四板块统一 course_info） */
+export enum CourseSource {
+  SELF = 1,
+  CHANNEL = 2,
+  EXTERNAL = 3,
+  YANMING = 4,
 }
 
 /** 课程大纲章节（courseInfo.courseOutline JSON 解析结果） */
@@ -250,19 +230,27 @@ export interface CourseLecturerBrief {
   introduction?: string;
 }
 
-/** 大雁课程（后端 CourseAgentVO，course_info 平台自研课程） */
+/** 课程（后端 CourseAgentVO，学习中心四板块统一 course_info） */
 export interface Course {
   id?: string;
   courseCode: string;
   courseName: string;
-  /** 1=线上录播 2=线上直播 3=线下课程 4=混合课程 */
-  courseType: number;
+  /** 1=线上录播 2=线上直播 3=线下课程 4=混合课程（非平台自研板块为 null） */
+  courseType?: number;
+  /** 板块来源：1=平台自研大雁 2=渠道课程 3=外部课程 4=雁鸣中国资讯 */
+  courseSource?: CourseSource | number;
   categoryCode?: string;
   coverImage?: string;
   courseDescription?: string;
+  /** 正文（详情页长文，纯文本） */
+  courseBody?: string;
   courseOutline?: string;
   targetAudience?: string;
   learningObjectives?: string;
+  /** 作者/来源（渠道/外部/资讯用，平台课程走讲师） */
+  author?: string;
+  /** 时长展示文本（如 28:30 / 约 15 分钟） */
+  durationText?: string;
   lecturerCode?: string;
   lecturerName?: string;
   lecturer?: CourseLecturerBrief;
@@ -281,6 +269,10 @@ export interface Course {
   isRecommend?: number;
   courseStartDate?: string;
   courseEndDate?: string;
+  /** 角标（热/新/要闻/人物/动态/洞察） */
+  badge?: string;
+  /** 发布时间（资讯/内容用，课程走开课日期） */
+  publishTime?: string;
   sortOrder?: number;
 }
 

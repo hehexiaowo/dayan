@@ -35,8 +35,8 @@ public interface CourseInfoService {
     /** 下架（courseStatus: 2→3 已下架；仅上架课程可下架） */
     void offline(String courseCode);
 
-    /** Agent 端：上架课程列表（courseType 可空），按 sort_order DESC → created_at DESC */
-    List<CourseAgentVO> listPublished(Integer courseType);
+    /** Agent 端：上架课程列表（courseType/courseSource 可空），按 sort_order DESC → created_at DESC */
+    List<CourseAgentVO> listPublished(Integer courseType, Integer courseSource);
 
     /** Agent 端：上架课程详情（仅上架可访问；view_count +1；聚合讲师简要信息） */
     CourseAgentVO getPublishedDetail(String courseCode);

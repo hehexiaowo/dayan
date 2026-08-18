@@ -33,8 +33,10 @@ public class CourseInfoAgentController {
     @GetMapping
     public R<List<CourseAgentVO>> list(
             @Parameter(description = "课程类型 1=线上录播 2=线上直播 3=线下课程 4=混合课程")
-            @RequestParam(required = false) Integer courseType) {
-        return R.ok(courseInfoService.listPublished(courseType));
+            @RequestParam(required = false) Integer courseType,
+            @Parameter(description = "板块来源 1=平台自研大雁 2=渠道课程 3=外部课程 4=雁鸣中国资讯")
+            @RequestParam(required = false) Integer courseSource) {
+        return R.ok(courseInfoService.listPublished(courseType, courseSource));
     }
 
     @Operation(summary = "课程详情（仅上架；累加浏览量）")

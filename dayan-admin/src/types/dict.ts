@@ -62,7 +62,6 @@ export const DICT_TYPE_OPTIONS = [
   { label: '养老网络类型', value: 'network_type' },
   { label: '内容分类', value: 'content_category' },
   { label: '课程分类', value: 'course_category' },
-  { label: '学习内容分类', value: 'learning_category' },
   { label: '素材一级分类', value: 'asset_ref_type1' },
   { label: '素材二级分类', value: 'asset_ref_type2' },
   { label: '与权益人关系', value: 'relation_with_holder' },

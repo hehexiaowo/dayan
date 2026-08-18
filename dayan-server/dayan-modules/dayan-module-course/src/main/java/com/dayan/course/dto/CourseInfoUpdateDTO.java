@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 课程信息修改入参（按 courseCode 定位，非空字段才更新）。
@@ -15,13 +16,17 @@ public class CourseInfoUpdateDTO {
 
     private String courseName;
     private Integer courseType;
+    private Integer courseSource;
     private String categoryCode;
     private String coverImage;
     private String videoUrl;
     private String courseDescription;
+    private String courseBody;
     private String courseOutline;
     private String targetAudience;
     private String learningObjectives;
+    private String author;
+    private String durationText;
     private String lecturerCode;
     private Integer totalClass;
     private Integer totalDuration;
@@ -36,6 +41,8 @@ public class CourseInfoUpdateDTO {
     private Integer isRecommend;
     private LocalDate courseStartDate;
     private LocalDate courseEndDate;
+    private String badge;
+    private LocalDateTime publishTime;
     private Integer sortOrder;
 
     /** 状态（0=草稿, 1=待上架, 2=已上架, 3=已下架, 4=已结课） */

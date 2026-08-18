@@ -7,7 +7,7 @@ import type { SystemDict } from '@/types/dict'
  *
  * 用于"分类即字典"场景的分类选择器：
  * - content_category（内容分类）/ course_category（课程分类）
- * - goods_category（商品分类）/ learning_category（学习中心分类）
+ * - goods_category（商品分类）
  * - vr_provider（VR 提供商）/ asset_ref_type2（素材二级分类）等
  *
  * 返回的 options 元素即字典项，展示用 dictName、绑值用 dictCode；

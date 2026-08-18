@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,6 +50,8 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     private static final int STATUS_ONLINE = 2;
     private static final int STATUS_OFFLINE = 3;
     private static final int STATUS_FINISHED = 4;
+    /** 板块来源：1=平台自研大雁 2=渠道课程 3=外部课程 4=雁鸣中国资讯 */
+    private static final int COURSE_SOURCE_SELF = 1;
 
     private final CourseInfoMapper courseInfoMapper;
     private final CourseLecturerMapper courseLecturerMapper;
@@ -83,19 +86,23 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         entity.setCourseCode(courseCode);
         entity.setCourseName(dto.getCourseName());
         entity.setCourseType(dto.getCourseType());
+        entity.setCourseSource(dto.getCourseSource() == null ? COURSE_SOURCE_SELF : dto.getCourseSource());
         entity.setCategoryCode(dto.getCategoryCode());
         entity.setCoverImage(dto.getCoverImage());
         entity.setVideoUrl(dto.getVideoUrl());
         entity.setCourseDescription(dto.getCourseDescription());
+        entity.setCourseBody(dto.getCourseBody());
         entity.setCourseOutline(dto.getCourseOutline());
         entity.setTargetAudience(dto.getTargetAudience());
         entity.setLearningObjectives(dto.getLearningObjectives());
+        entity.setAuthor(dto.getAuthor());
+        entity.setDurationText(dto.getDurationText());
         entity.setLecturerCode(dto.getLecturerCode());
-        entity.setTotalClass(dto.getTotalClass());
+        entity.setTotalClass(dto.getTotalClass() == null ? 0 : dto.getTotalClass());
         entity.setTotalDuration(dto.getTotalDuration());
         entity.setValidDays(dto.getValidDays());
-        entity.setOriginalPrice(dto.getOriginalPrice());
-        entity.setSalePrice(dto.getSalePrice());
+        entity.setOriginalPrice(dto.getOriginalPrice() == null ? BigDecimal.ZERO : dto.getOriginalPrice());
+        entity.setSalePrice(dto.getSalePrice() == null ? BigDecimal.ZERO : dto.getSalePrice());
         entity.setMaxStudents(dto.getMaxStudents());
         // 新建课程，当前学员数从 0 开始；满足 current ≤ max
         entity.setCurrentStudents(0);
@@ -105,6 +112,8 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         entity.setIsRecommend(dto.getIsRecommend() == null ? 0 : dto.getIsRecommend());
         entity.setCourseStartDate(dto.getCourseStartDate());
         entity.setCourseEndDate(dto.getCourseEndDate());
+        entity.setBadge(dto.getBadge());
+        entity.setPublishTime(dto.getPublishTime());
         entity.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
         entity.setCourseStatus(dto.getCourseStatus() == null ? STATUS_DRAFT : dto.getCourseStatus());
         entity.setRemark(dto.getRemark());
@@ -123,13 +132,17 @@ public class CourseInfoServiceImpl implements CourseInfoService {
 
         if (dto.getCourseName() != null) update.setCourseName(dto.getCourseName());
         if (dto.getCourseType() != null) update.setCourseType(dto.getCourseType());
+        if (dto.getCourseSource() != null) update.setCourseSource(dto.getCourseSource());
         if (dto.getCategoryCode() != null) update.setCategoryCode(dto.getCategoryCode());
         if (dto.getCoverImage() != null) update.setCoverImage(dto.getCoverImage());
         if (dto.getVideoUrl() != null) update.setVideoUrl(dto.getVideoUrl());
         if (dto.getCourseDescription() != null) update.setCourseDescription(dto.getCourseDescription());
+        if (dto.getCourseBody() != null) update.setCourseBody(dto.getCourseBody());
         if (dto.getCourseOutline() != null) update.setCourseOutline(dto.getCourseOutline());
         if (dto.getTargetAudience() != null) update.setTargetAudience(dto.getTargetAudience());
         if (dto.getLearningObjectives() != null) update.setLearningObjectives(dto.getLearningObjectives());
+        if (dto.getAuthor() != null) update.setAuthor(dto.getAuthor());
+        if (dto.getDurationText() != null) update.setDurationText(dto.getDurationText());
         if (dto.getLecturerCode() != null) update.setLecturerCode(dto.getLecturerCode());
         if (dto.getTotalClass() != null) update.setTotalClass(dto.getTotalClass());
         if (dto.getTotalDuration() != null) update.setTotalDuration(dto.getTotalDuration());
@@ -145,6 +158,8 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         if (dto.getIsRecommend() != null) update.setIsRecommend(dto.getIsRecommend());
         if (dto.getCourseStartDate() != null) update.setCourseStartDate(dto.getCourseStartDate());
         if (dto.getCourseEndDate() != null) update.setCourseEndDate(dto.getCourseEndDate());
+        if (dto.getBadge() != null) update.setBadge(dto.getBadge());
+        if (dto.getPublishTime() != null) update.setPublishTime(dto.getPublishTime());
         if (dto.getSortOrder() != null) update.setSortOrder(dto.getSortOrder());
         if (dto.getCourseStatus() != null) update.setCourseStatus(dto.getCourseStatus());
         if (dto.getRemark() != null) update.setRemark(dto.getRemark());
@@ -206,6 +221,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
                 .like(query.getCourseName() != null && !query.getCourseName().isEmpty(),
                         CourseInfo::getCourseName, query.getCourseName())
                 .eq(query.getCourseType() != null, CourseInfo::getCourseType, query.getCourseType())
+                .eq(query.getCourseSource() != null, CourseInfo::getCourseSource, query.getCourseSource())
                 .eq(query.getCategoryCode() != null && !query.getCategoryCode().isEmpty(),
                         CourseInfo::getCategoryCode, query.getCategoryCode())
                 .eq(query.getLecturerCode() != null && !query.getLecturerCode().isEmpty(),
@@ -252,13 +268,17 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         vo.setCourseCode(entity.getCourseCode());
         vo.setCourseName(entity.getCourseName());
         vo.setCourseType(entity.getCourseType());
+        vo.setCourseSource(entity.getCourseSource());
         vo.setCategoryCode(entity.getCategoryCode());
         vo.setCoverImage(entity.getCoverImage());
         vo.setVideoUrl(entity.getVideoUrl());
         vo.setCourseDescription(entity.getCourseDescription());
+        vo.setCourseBody(entity.getCourseBody());
         vo.setCourseOutline(entity.getCourseOutline());
         vo.setTargetAudience(entity.getTargetAudience());
         vo.setLearningObjectives(entity.getLearningObjectives());
+        vo.setAuthor(entity.getAuthor());
+        vo.setDurationText(entity.getDurationText());
         vo.setLecturerCode(entity.getLecturerCode());
         vo.setTotalClass(entity.getTotalClass());
         vo.setTotalDuration(entity.getTotalDuration());
@@ -274,6 +294,8 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         vo.setIsRecommend(entity.getIsRecommend());
         vo.setCourseStartDate(entity.getCourseStartDate());
         vo.setCourseEndDate(entity.getCourseEndDate());
+        vo.setBadge(entity.getBadge());
+        vo.setPublishTime(entity.getPublishTime());
         vo.setSortOrder(entity.getSortOrder());
         vo.setCourseStatus(entity.getCourseStatus());
         vo.setRemark(entity.getRemark());
@@ -285,10 +307,11 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     // ====== Agent 端只读 ======
 
     @Override
-    public List<CourseAgentVO> listPublished(Integer courseType) {
+    public List<CourseAgentVO> listPublished(Integer courseType, Integer courseSource) {
         LambdaQueryWrapper<CourseInfo> wrapper = new LambdaQueryWrapper<CourseInfo>()
                 .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
                 .eq(courseType != null, CourseInfo::getCourseType, courseType)
+                .eq(courseSource != null, CourseInfo::getCourseSource, courseSource)
                 .orderByDesc(CourseInfo::getSortOrder)
                 .orderByDesc(CourseInfo::getCreatedAt);
         List<CourseInfo> courses = courseInfoMapper.selectList(wrapper);
@@ -346,12 +369,16 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         vo.setCourseCode(e.getCourseCode());
         vo.setCourseName(e.getCourseName());
         vo.setCourseType(e.getCourseType());
+        vo.setCourseSource(e.getCourseSource());
         vo.setCategoryCode(e.getCategoryCode());
         vo.setCoverImage(e.getCoverImage());
         vo.setCourseDescription(e.getCourseDescription());
+        vo.setCourseBody(e.getCourseBody());
         vo.setCourseOutline(e.getCourseOutline());
         vo.setTargetAudience(e.getTargetAudience());
         vo.setLearningObjectives(e.getLearningObjectives());
+        vo.setAuthor(e.getAuthor());
+        vo.setDurationText(e.getDurationText());
         vo.setLecturerCode(e.getLecturerCode());
         vo.setTotalClass(e.getTotalClass());
         vo.setTotalDuration(e.getTotalDuration());
@@ -367,6 +394,8 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         vo.setIsRecommend(e.getIsRecommend());
         vo.setCourseStartDate(e.getCourseStartDate());
         vo.setCourseEndDate(e.getCourseEndDate());
+        vo.setBadge(e.getBadge());
+        vo.setPublishTime(e.getPublishTime());
         vo.setSortOrder(e.getSortOrder());
         vo.setCourseStatus(e.getCourseStatus());
         return vo;
