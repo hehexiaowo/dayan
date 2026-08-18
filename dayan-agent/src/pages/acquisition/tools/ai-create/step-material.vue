@@ -11,7 +11,7 @@
     </view>
 
     <!-- 素材（product 必选，其余目的可选精准勾选） -->
-    <block>
+    <view>
       <view class="dy-section-title">{{ purpose === 'product' ? '保险产品/政策资料（必选）' : '知识库文档（可选，精准取材）' }}<text v-if="purpose === 'product'" class="req">*</text></view>
       <view class="search-row"><input class="dy-search" v-model="kbKeyword" placeholder="搜索知识库文档" confirm-type="search" @confirm="loadKbDocs" /></view>
       <view class="pick-list dy-card">
@@ -38,9 +38,9 @@
           <view class="check-round" :class="{ on: goodsCodes.includes(g.goodsCode) }"><text class="check-mark">✓</text></view>
         </view>
       </view>
-    </block>
+    </view>
 
-    <block v-if="purpose === 'park'">
+    <template v-if="purpose === 'park'">
       <view class="dy-section-title">养老机构（必选）<text class="req">*</text></view>
       <view class="cat-row">
         <text v-for="c in PARK_CATS" :key="c.value" class="cat-tag dy-clickable"
@@ -57,7 +57,7 @@
           <view class="check-round" :class="{ on: parkCodes.includes(p.parkCode) }"><text class="check-mark">✓</text></view>
         </view>
       </view>
-    </block>
+    </template>
 
     <!-- 可选素材 -->
     <view class="dy-section-title">主题 / 切入话题<text v-if="purpose === 'science'" class="req">*</text></view>
