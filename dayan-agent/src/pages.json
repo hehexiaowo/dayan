@@ -22,6 +22,7 @@
     { "path": "pages/acquisition/tools/ai-create/step-body", "style": { "navigationBarTitleText": "AI 创作 · 正文" } },
     { "path": "pages/acquisition/tools/ai-create/step-preview", "style": { "navigationBarTitleText": "AI 创作 · 配图与预览" } },
 { "path": "pages/acquisition/qa/index", "style": { "navigationBarTitleText": "你问我答" } },
+    { "path": "pages/acquisition/qa/chat", "style": { "navigationBarTitleText": "AI 问答" } },
     { "path": "pages/acquisition/content/mine", "style": { "navigationBarTitleText": "我的内容", "enablePullDownRefresh": true } },
     { "path": "pages/acquisition/content/mine-detail", "style": { "navigationBarTitleText": "内容详情" } },
     { "path": "pages/share/content", "style": { "navigationBarTitleText": "文章分享" } },

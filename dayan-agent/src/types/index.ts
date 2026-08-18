@@ -770,3 +770,57 @@ export interface SceneScheduleItem {
   remark?: string;
   status?: number;
 }
+
+// ===== AI 问答 =====
+
+/** 引用出处（对齐后端 QaCitation） */
+export interface QaCitation {
+  text: string;
+  score?: number;
+  repoId?: number;
+  repoName?: string;
+  docId?: string;
+  docName?: string;
+}
+
+/** 会话消息（对齐后端 QaMessage） */
+export interface QaMessage {
+  id: number;
+  sessionCode: string;
+  role: 'user' | 'assistant';
+  content: string;
+  citations?: QaCitation[];
+}
+
+/** AI 问答会话（对齐后端 QaSession） */
+export interface QaSession {
+  id: number;
+  sessionCode: string;
+  configId: number;
+  configCode: string;
+  personaName: string;
+  title?: string;
+  messageCount: number;
+  lastMessageAt?: string;
+  createdAt?: string;
+}
+
+/** AI 问答助手人物（对齐后端 QaConfig） */
+export interface QaConfig {
+  id: number;
+  configCode: string;
+  personaName: string;
+  icon?: string;
+  iconColor?: string;
+  systemPrompt: string;
+  welcomeMsg?: string;
+  recommendQuestions?: string[];
+  repoIds?: number[];
+}
+
+/** AI 问答单轮结果（POST /agent-api/tools/qa/chat） */
+export interface QaChatResult {
+  answer: string;
+  citations?: QaCitation[];
+  sessionCode: string;
+}
