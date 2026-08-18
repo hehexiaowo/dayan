@@ -93,11 +93,10 @@ const question = ref('');
 const scrollInto = ref('');
 const openCite = ref(-1);
 const showSessions = ref(false);
-const loading = ref(false);
 const sending = ref(false);
 
 // 用于消息 id（新增临时消息无后端 id 时）
-let tmpId = -1;
+let tmpId = 1;
 
 onLoad(async (opts) => {
   configId.value = Number(opts?.configId || 0);
@@ -148,11 +147,18 @@ function openSessions() {
 }
 
 /** 新建会话：仅创建本地空会话（首次发言时才真正建后端会话） */
-async function newSession() {
-  sessionCode.value = '';
-  messages.value = [];
-  openCite.value = -1;
-  showSessions.value = false;
+function newSession() {
+  uni.showModal({
+    title: '新建会话',
+    content: '清空当前对话并开始新会话？',
+    success: (res) => {
+      if (!res.confirm) return;
+      sessionCode.value = '';
+      messages.value = [];
+      openCite.value = -1;
+      showSessions.value = false;
+    }
+  });
 }
 
 /** 切换到指定会话，拉取其历史消息 */

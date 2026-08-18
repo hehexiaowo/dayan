@@ -53,6 +53,8 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
     private static final double GENERATE_TEMPERATURE = 0.3;
 
     private static final String NO_HIT_ANSWER = "知识库中未检索到相关内容，请补充资料后重试或换一种问法。";
+    private static final int HISTORY_LIMIT = 12;
+    private static final int HISTORY_CONTENT_LIMIT = 4000;
 
     private final ToolAiQaConfigMapper configMapper;
     private final ToolAiQaSessionMapper sessionMapper;
@@ -87,7 +89,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         String answer = bailianChatClient.chat(
                 getConfig("llm.api-key"), getConfig("llm.api-host"),
                 StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
-                systemPrompt, dto.getQuestion());
+                buildConversationMessages(sessionCode, dto.getQuestion(), systemPrompt), GENERATE_TEMPERATURE);
 
         // 4. 落库 + 更新 session
         saveUserMessage(sessionCode, dto.getQuestion());
@@ -129,7 +131,7 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
         String answer = bailianChatClient.chatStream(
                 getConfig("llm.api-key"), getConfig("llm.api-host"),
                 StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
-                systemPrompt, dto.getQuestion(), GENERATE_TEMPERATURE,
+                systemPrompt, buildConversationPrompt(sessionCode, dto.getQuestion()), GENERATE_TEMPERATURE,
                 listener == null ? null : text -> listener.onDelta(text));
 
         // 4. 落库 + 更新 session
@@ -238,6 +240,41 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
                 + String.join("\n", texts);
     }
 
+    private List<BailianChatClient.Message> buildConversationMessages(String sessionCode, String question,
+                                                                        String systemPrompt) {
+        List<BailianChatClient.Message> messages = new ArrayList<>();
+        messages.add(new BailianChatClient.Message("system", systemPrompt));
+        for (ToolAiQaMessage message : loadHistory(sessionCode, question)) {
+            messages.add(new BailianChatClient.Message(message.getRole(), limitContent(message.getContent())));
+        }
+        messages.add(new BailianChatClient.Message("user", question));
+        return messages;
+    }
+
+    private String buildConversationPrompt(String sessionCode, String question) {
+        StringBuilder prompt = new StringBuilder();
+        for (ToolAiQaMessage message : loadHistory(sessionCode, question)) {
+            prompt.append("user".equals(message.getRole()) ? "用户" : "助手")
+                    .append("：").append(limitContent(message.getContent())).append("\n");
+        }
+        prompt.append("用户：").append(question);
+        return prompt.toString();
+    }
+
+    private List<ToolAiQaMessage> loadHistory(String sessionCode, String question) {
+        List<ToolAiQaMessage> history = messageMapper.selectList(new LambdaQueryWrapper<ToolAiQaMessage>()
+                .eq(ToolAiQaMessage::getSessionCode, sessionCode)
+                .in(ToolAiQaMessage::getRole, List.of("user", "assistant"))
+                .orderByDesc(ToolAiQaMessage::getId)
+                .last("LIMIT " + HISTORY_LIMIT));
+        java.util.Collections.reverse(history);
+        return history;
+    }
+
+    private String limitContent(String content) {
+        return content == null ? "" : StrUtil.maxLength(content, HISTORY_CONTENT_LIMIT);
+    }
+
     private void saveUserMessage(String sessionCode, String content) {
         ToolAiQaMessage msg = new ToolAiQaMessage();
         msg.setSessionCode(sessionCode);
@@ -257,10 +294,29 @@ public class ToolAiQaChatServiceImpl implements ToolAiQaChatService {
 
     /** 更新会话：lastMessageAt=now，messageCount 原子增量 delta（每次问答 +2，无命中历史兼容 +1） */
     private void touchSession(String sessionCode, int delta) {
+        ToolAiQaSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAiQaSession>()
+                .eq(ToolAiQaSession::getSessionCode, sessionCode).last("LIMIT 1"));
+        if (session != null && (session.getMessageCount() == null || session.getMessageCount() == 0)) {
+            ToolAiQaMessage firstQuestion = messageMapper.selectOne(new LambdaQueryWrapper<ToolAiQaMessage>()
+                    .eq(ToolAiQaMessage::getSessionCode, sessionCode)
+                    .eq(ToolAiQaMessage::getRole, "user")
+                    .orderByAsc(ToolAiQaMessage::getId).last("LIMIT 1"));
+            if (firstQuestion != null && StrUtil.isNotBlank(firstQuestion.getContent())) {
+                sessionMapper.update(null, new LambdaUpdateWrapper<ToolAiQaSession>()
+                        .eq(ToolAiQaSession::getSessionCode, sessionCode)
+                        .eq(ToolAiQaSession::getMessageCount, 0)
+                        .set(ToolAiQaSession::getTitle, limitTitle(firstQuestion.getContent())));
+            }
+        }
         sessionMapper.update(null, new LambdaUpdateWrapper<ToolAiQaSession>()
                 .eq(ToolAiQaSession::getSessionCode, sessionCode)
                 .setSql("message_count = IFNULL(message_count, 0) + " + delta)
                 .set(ToolAiQaSession::getLastMessageAt, LocalDateTime.now()));
+    }
+
+    private String limitTitle(String title) {
+        int count = title.codePointCount(0, title.length());
+        return count <= 30 ? title : title.substring(0, title.offsetByCodePoints(0, 30));
     }
 
     private ToolAiQaChatResultVO result(String answer, List<ToolAiQaChatResultVO.Citation> citations, String sessionCode) {

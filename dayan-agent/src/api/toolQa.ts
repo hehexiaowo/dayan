@@ -13,6 +13,7 @@ export function getQaConfigs(): Promise<QaConfig[]> {
 
 /** 会话列表 */
 export function getQaSessions(configId: number): Promise<QaSession[]> {
+  if (!Number.isFinite(configId) || configId <= 0) return Promise.resolve([]);
   return request<QaSession[]>({ url: '/tools/qa/sessions', method: 'GET', data: { configId } });
 }
 

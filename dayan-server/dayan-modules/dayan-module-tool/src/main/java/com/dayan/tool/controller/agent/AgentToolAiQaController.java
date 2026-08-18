@@ -1,6 +1,8 @@
 package com.dayan.tool.controller.agent;
 
 import com.dayan.common.core.resp.R;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.log.operation.OperationLog;
 import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.tool.dto.ToolAiQaChatDTO;
@@ -45,6 +47,9 @@ public class AgentToolAiQaController {
     @Operation(summary = "某人物下我的会话列表")
     @GetMapping("/sessions")
     public R<List<ToolAiQaSessionVO>> sessions(@RequestParam Long configId) {
+        if (configId == null || configId <= 0) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "人物配置 ID 必须大于 0");
+        }
         String agentCode = ContextHolder.getAccountCode();
         return R.ok(sessionService.listByPersona(agentCode, configId));
     }

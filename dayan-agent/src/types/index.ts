@@ -799,7 +799,7 @@ export interface QaSession {
   configId: number;
   configCode: string;
   personaName: string;
-  title?: string;
+  title: string;
   messageCount: number;
   lastMessageAt?: string;
   createdAt?: string;
