@@ -56,7 +56,7 @@ dayan:
     # agent_favorite 无 channel_code 列（按 agent_code 隔离），须跳过租户拦截器
     # poster_template / learning_content / tool_info 是全局表（后台统一定义），无 channel_code 列
     # knowledge_repo 含 channel_code 但平台库行为 NULL，agent 端靠 listForAgent 显式渠道过滤，须跳过租户拦截器
-    ignore-tables: agent_favorite,poster_template,learning_content,tool_info,knowledge_repo
+    ignore-tables: agent_favorite,poster_template,learning_content,tool_info,knowledge_repo,tool_ai_qa_config,tool_ai_qa_session,tool_ai_qa_message
 
 springdoc:
   swagger-ui:
