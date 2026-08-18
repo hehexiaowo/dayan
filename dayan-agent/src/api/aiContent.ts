@@ -1,22 +1,6 @@
 import request from '@/utils/request'
 import type { PageQuery, PageResult } from '@/types'
-import type { AiContent, AiGenerateResult, AiRefTemplateOption } from '@/types/aiContent'
-
-/** 选题灵感（POST /agent-api/ai/topics，基于勾选素材 + 时节出 5 个方向） */
-export function suggestAiTopics(payload: { kbFileIds?: string[]; goodsCodes?: string[] }): Promise<string[]> {
-  return request<string[]>({ url: '/ai/topics', method: 'POST', data: payload })
-}
-
-/** 形态转换（POST /agent-api/ai/convert，已生成内容改写为其他形态） */
-export function convertAiContent(payload: {
-  title: string
-  summary?: string
-  contentBody: string
-  targetContentType: number
-  styleCode?: string
-}): Promise<AiGenerateResult> {
-  return request<AiGenerateResult>({ url: '/ai/convert', method: 'POST', data: payload })
-}
+import type { AiContent } from '@/types/aiContent'
 
 /** 保存生成内容（POST /agent-api/ai/contents） */
 export function saveAiContent(data: Partial<AiContent>): Promise<number> {
@@ -45,9 +29,4 @@ export function updateAiContent(id: number, data: Partial<AiContent>): Promise<v
 /** 删除我的内容 */
 export function deleteAiContent(id: number): Promise<void> {
   return request<void>({ url: `/ai/contents/${id}`, method: 'DELETE' })
-}
-
-/** 内置范文模板（GET /agent-api/ai/templates） */
-export function getAiTemplates(): Promise<AiRefTemplateOption[]> {
-  return request<AiRefTemplateOption[]>({ url: '/ai/templates', method: 'GET' })
 }

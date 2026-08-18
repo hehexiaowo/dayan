@@ -112,19 +112,21 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { createAiProject } from '@/api/aiCreation'
-import { getAiTemplates } from '@/api/aiContent'
+import { createAiProject, getAiTemplates } from '@/api/toolAiCreator'
 import { getKnowledgeDocs } from '@/api/knowledge'
 import { getGoodsList } from '@/api/goods'
 import { getRegions } from '@/api/park'
+import { assembleMaterials } from '@/utils/aiMaterial'
 import type { AiRefTemplateOption, KnowledgeDocOption } from '@/types/aiContent'
 import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS, AI_AUDIENCE_OPTIONS } from '@/types/aiContent'
 import type { ParkCard } from '@/types/park'
 import type { GoodsProduct } from '@/types'
-import { AI_PURPOSE_OPTIONS } from '@/types/aiCreation'
+import { AI_PURPOSE_OPTIONS } from '@/types/toolAiCreator'
 
 /**
- * 第 1 步：选目的 → 动态必选素材 → 形态/风格/读者 → 创建项目。
+ * 第 1 步：选目的 → 动态必选素材 → 形态/风格/读者 → 前端聚合素材 → 创建项目。
+ * 素材由本页聚合（范文正文/知识检索召回/商品详情/机构摘要）随创建提交，
+ * 后端存快照供 digest 阶段一次性消费（tool 域不做业务库依赖）。
  */
 const PARK_CATS = [
   { value: 'vital', label: '活力长居' },
@@ -186,6 +188,14 @@ function pickRef(code: string) {
   refContentCode.value = refContentCode.value === code ? '' : code
 }
 
+/** 勾选状态 → 选中对象集（素材聚合与引用命名用） */
+function selectedKbDocs() {
+  return kbDocs.value.filter((d) => kbFileIds.value.includes(d.fileId))
+}
+function selectedGoods() {
+  return goodsList.value.filter((g) => goodsCodes.value.includes(g.goodsCode))
+}
+
 async function submit() {
   if (creating.value) return
   if (purpose.value === 'science' && !topic.value.trim()) {
@@ -198,20 +208,33 @@ async function submit() {
     uni.showToast({ title: '请选择养老机构', icon: 'none' }); return
   }
   creating.value = true
+  uni.showLoading({ title: '聚合素材中…', mask: true })
   try {
+    const { materials, materialRefs, warnings } = await assembleMaterials({
+      purpose: purpose.value,
+      topic: topic.value.trim(),
+      kbDocs: selectedKbDocs(),
+      goods: selectedGoods(),
+      parkCodes: parkCodes.value,
+      refContentCode: refContentCode.value,
+    })
+    if (warnings.length) {
+      uni.showToast({ title: `部分素材加载失败：${warnings[0]}`, icon: 'none', duration: 2000 })
+    }
     const id = await createAiProject({
       purpose: purpose.value,
       contentType: contentType.value,
       styleCode: styleCode.value,
       audience: audience.value,
       topic: topic.value || undefined,
-      refContentCode: refContentCode.value || undefined,
-      kbFileIds: kbFileIds.value.length ? kbFileIds.value : undefined,
-      goodsCodes: goodsCodes.value.length ? goodsCodes.value : undefined,
-      parkCodes: parkCodes.value.length ? parkCodes.value : undefined
+      materialRefs,
+      materials,
     })
-    uni.navigateTo({ url: `/pages/acquisition/ai-create/step-strategy?id=${id}` })
-  } catch { /* 全局拦截器已提示 */ } finally { creating.value = false }
+    uni.navigateTo({ url: `/pages/acquisition/tools/ai-create/step-strategy?id=${id}` })
+  } catch { /* 全局拦截器已提示 */ } finally {
+    uni.hideLoading()
+    creating.value = false
+  }
 }
 </script>
 

@@ -77,9 +77,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getAiProject, reviseAiBody, saveAiProject, genAiBody } from '@/api/aiCreation'
+import { getAiProject, reviseAiBody, saveAiProject, genAiBody } from '@/api/toolAiCreator'
 import { postSseStream } from '@/utils/sse'
-import type { AiProject } from '@/types/aiCreation'
+import type { AiProject } from '@/types/toolAiCreator'
 
 /**
  * 第 4 步：正文生成（H5 SSE 流式打字机 + 阶段条）→ 审计/打分 → 段落勘误。
@@ -120,7 +120,7 @@ async function generate() {
   stageText.value = '正在准备素材…'
   // #ifdef H5
   try {
-    await postSseStream(`/agent-api/ai/projects/${projectId.value}/body/stream`, {}, {
+    await postSseStream(`/agent-api/tools/ai-creator/${projectId.value}/body/stream`, {}, {
       onEvent: (name, data) => {
         let parsed: any
         try { parsed = JSON.parse(data) } catch { return }
@@ -173,7 +173,7 @@ async function doRevise() {
 }
 
 function goPreview() {
-  uni.redirectTo({ url: `/pages/acquisition/ai-create/step-preview?id=${projectId.value}` })
+  uni.redirectTo({ url: `/pages/acquisition/tools/ai-create/step-preview?id=${projectId.value}` })
 }
 
 async function save() {

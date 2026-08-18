@@ -73,9 +73,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getAiProject, genAiStrategy, regenAiTitles, confirmAiStrategy } from '@/api/aiCreation'
-import type { AiProject } from '@/types/aiCreation'
-import { AI_TITLE_TAG_LABELS } from '@/types/aiCreation'
+import { getAiProject, genAiStrategy, regenAiTitles, confirmAiStrategy } from '@/api/toolAiCreator'
+import type { AiProject } from '@/types/toolAiCreator'
+import { AI_TITLE_TAG_LABELS } from '@/types/toolAiCreator'
 
 /**
  * 第 2 步：素材消化 + 策略确认 + 五标题选择。
@@ -158,8 +158,8 @@ async function confirm() {
   try {
     await confirmAiStrategy(projectId.value, { selectedTitle: pickedTitle.value, ...form.value })
     const next = contentType.value === 2
-      ? '/pages/acquisition/ai-create/step-body'
-      : '/pages/acquisition/ai-create/step-outline'
+      ? '/pages/acquisition/tools/ai-create/step-body'
+      : '/pages/acquisition/tools/ai-create/step-outline'
     uni.redirectTo({ url: `${next}?id=${projectId.value}` })
   } catch { /* 已提示 */ } finally { confirming.value = false }
 }

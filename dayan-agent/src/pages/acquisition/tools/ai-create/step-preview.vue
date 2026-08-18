@@ -50,10 +50,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getAiProject, getAiPreview, saveAiProject } from '@/api/aiCreation'
+import { getAiProject, getAiPreview, saveAiProject } from '@/api/toolAiCreator'
 import { postSseStream } from '@/utils/sse'
 import { copyText } from '@/utils/clipboard'
-import type { AiProject, AiProjectImage } from '@/types/aiCreation'
+import type { AiProject, AiProjectImage } from '@/types/toolAiCreator'
 
 /**
  * 第 5-6 步：配图生成（SSE 逐张进度）+ 图文成品预览 + 保存内容中心。
@@ -84,7 +84,7 @@ async function start() {
   generating.value = true
   stageText.value = '提交配图任务…'
   try {
-    await postSseStream(`/agent-api/ai/projects/${projectId.value}/images/stream`, {}, {
+    await postSseStream(`/agent-api/tools/ai-creator/${projectId.value}/images/stream`, {}, {
       onEvent: (name, data) => {
         let parsed: any
         try { parsed = JSON.parse(data) } catch { return }

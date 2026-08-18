@@ -60,9 +60,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getAiProject, genAiOutline, regenAiOutline, confirmAiOutline } from '@/api/aiCreation'
-import type { AiProject, AiOutline } from '@/types/aiCreation'
-import { purposeLabel } from '@/types/aiCreation'
+import { getAiProject, genAiOutline, regenAiOutline, confirmAiOutline } from '@/api/toolAiCreator'
+import type { AiProject, AiOutline } from '@/types/toolAiCreator'
+import { purposeLabel } from '@/types/toolAiCreator'
 
 /**
  * 第 3 步：大纲确认。节点卡展示论据溯源，可逐节点编辑、反馈重生成。
@@ -147,7 +147,7 @@ async function confirm() {
   confirming.value = true
   try {
     await confirmAiOutline(projectId.value, JSON.stringify(buildOutline()))
-    uni.redirectTo({ url: `/pages/acquisition/ai-create/step-body?id=${projectId.value}` })
+    uni.redirectTo({ url: `/pages/acquisition/tools/ai-create/step-body?id=${projectId.value}` })
   } catch { /* 已提示 */ } finally { confirming.value = false }
 }
 

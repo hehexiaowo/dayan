@@ -66,6 +66,14 @@ const FALLBACK_TOOLS: ToolItem[] = [
     color: 'red',
     path: '/pages/acquisition/tools/gap-calculator',
   },
+  {
+    id: 'TL00003',
+    name: 'AI 创作',
+    desc: '六阶段 AI 图文创作：素材→策略→大纲→正文→配图→成品',
+    icon: 'AI',
+    color: 'red',
+    path: '/pages/acquisition/tools/ai-create/index',
+  },
 ];
 
 const tools = ref<ToolItem[]>(FALLBACK_TOOLS);

@@ -92,7 +92,7 @@ function goDetail(id: number) {
 }
 
 function goCreate() {
-  uni.navigateTo({ url: '/pages/acquisition/ai-create/index' })
+  uni.navigateTo({ url: '/pages/acquisition/tools/ai-create/index' })
 }
 
 function onDelete(item: AiContent) {

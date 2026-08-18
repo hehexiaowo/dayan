@@ -1,8 +1,6 @@
 /**
- * AI 创作六阶段流水线（agent 端）类型定义。
+ * AI 创作六阶段流水线（agent 端，tool 域）类型定义。
  */
-import type { AiMaterialSource } from './aiContent'
-
 export type AiPurpose = 'product' | 'park' | 'science'
 
 export const AI_PURPOSE_OPTIONS = [
@@ -11,11 +9,26 @@ export const AI_PURPOSE_OPTIONS = [
   { value: 'science', label: '科普获客', desc: '热点/趋势切入建立专业人设，不推销具体产品' }
 ] as const
 
+/** 素材块（前端供材的最小单元） */
+export interface AiMaterialBlock {
+  /** ref=范文/kb=知识库/goods=商品/park=机构 */
+  type: 'ref' | 'kb' | 'goods' | 'park'
+  title: string
+  text: string
+}
+
+/** 知识库文件引用（含文件名） */
+export interface AiKbFileRef { fileId: string; fileName: string }
+
+/** 商品/机构引用（编码+展示名） */
+export interface AiCodeNameRef { code: string; name: string }
+
+/** 素材引用（创建时随提交，含展示名；保存成品与回显用） */
 export interface AiMaterialRefs {
   refContentCode?: string
-  kbFileIds?: string[]
-  goodsCodes?: string[]
-  parkCodes?: string[]
+  kbFiles?: AiKbFileRef[]
+  goods?: AiCodeNameRef[]
+  parks?: AiCodeNameRef[]
 }
 
 export interface AiHardFact { fact: string; source: string }
@@ -120,7 +133,7 @@ export const AI_PHASE_LABELS: Record<string, string> = {
 
 /** 按状态路由到对应步骤页 */
 export function phaseStep(status?: string, contentType?: number): string {
-  const base = '/pages/acquisition/ai-create/'
+  const base = '/pages/acquisition/tools/ai-create/'
   switch (status) {
     case 'CREATED':
     case 'DIGESTED':

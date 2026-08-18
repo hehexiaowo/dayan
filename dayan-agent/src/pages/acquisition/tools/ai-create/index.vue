@@ -27,9 +27,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getAiProjects, deleteAiProject } from '@/api/aiCreation'
-import type { AiProjectListItem } from '@/types/aiCreation'
-import { AI_PHASE_LABELS, phaseStep, purposeLabel } from '@/types/aiCreation'
+import { getAiProjects, deleteAiProject } from '@/api/toolAiCreator'
+import type { AiProjectListItem } from '@/types/toolAiCreator'
+import { AI_PHASE_LABELS, phaseStep, purposeLabel } from '@/types/toolAiCreator'
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue'
 
 /**
@@ -49,7 +49,7 @@ onShow(async () => {
 })
 
 function goNew() {
-  uni.navigateTo({ url: '/pages/acquisition/ai-create/step-material' })
+  uni.navigateTo({ url: '/pages/acquisition/tools/ai-create/step-material' })
 }
 
 function goDraft(d: AiProjectListItem) {
