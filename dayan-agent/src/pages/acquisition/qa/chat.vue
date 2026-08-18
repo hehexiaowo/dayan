@@ -95,8 +95,10 @@ const openCite = ref(-1);
 const showSessions = ref(false);
 const sending = ref(false);
 
-// 用于消息 id（新增临时消息无后端 id 时）
-let tmpId = 1;
+// 用于消息 id（新增临时消息无后端 id 时）。
+// 负数递减：后端消息 id 为自增正数，临时 id 取负数可避免与已加载历史消息 id 冲突
+// （冲突会导致 Vue :key 重复、scroll-into-view 锚点错乱）。
+let tmpId = -1;
 
 onLoad(async (opts) => {
   configId.value = Number(opts?.configId || 0);
