@@ -43,6 +43,6 @@ public class AiClientHolder {
     }
 
     public String chatModel() {
-        return StrUtil.blankToDefault(getConfig("chat-model"), "qwen-plus");
+        return StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus");
     }
 }

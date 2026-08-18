@@ -251,8 +251,8 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         String body = listener == null
                 ? chat(bodyPrompt, BODY_TEMPERATURE)
                 : aiClientHolder.chatClient().chatStream(
-                        aiClientHolder.requireConfig("api-key", "AI 凭据未配置，请联系管理员"),
-                        aiClientHolder.requireConfig("api-host", "AI 网关未配置，请联系管理员"),
+                        aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
+                        aiClientHolder.requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
                         aiClientHolder.chatModel(), AiPrompts.load("system"), bodyPrompt, BODY_TEMPERATURE, listener::onDelta);
         body = cleanBody(body);
         warnings.addAll(ruleCheck(body, p));
@@ -363,9 +363,9 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
         if (placeholders.isEmpty()) {
             throw new BusinessException(ErrorCode.BUSINESS, "正文没有配图位，无需生成配图");
         }
-        String apiKey = aiClientHolder.requireConfig("api-key", "AI 凭据未配置，请联系管理员");
-        String imageModel = StrUtil.blankToDefault(aiClientHolder.getConfig("image-model"), "qwen-image-plus");
-        String apiBase = StrUtil.blankToDefault(aiClientHolder.getConfig("image-api-base"), "https://dashscope.aliyuncs.com");
+        String apiKey = aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员");
+        String imageModel = StrUtil.blankToDefault(aiClientHolder.getConfig("llm.image-model"), "qwen-image-plus");
+        String apiBase = StrUtil.blankToDefault(aiClientHolder.getConfig("llm.image-api-base"), "https://dashscope.aliyuncs.com");
         List<String> warnings = new ArrayList<>();
         if (StrUtil.isNotBlank(p.getWarnings())) {
             try {
@@ -855,8 +855,8 @@ public class ToolAiCreatorPipelineServiceImpl implements ToolAiCreatorPipelineSe
     /** 非流式 chat（system.md 为系统提示） */
     String chat(String prompt, double temperature) {
         return aiClientHolder.chatClient().chat(
-                aiClientHolder.requireConfig("api-key", "AI 凭据未配置，请联系管理员"),
-                aiClientHolder.requireConfig("api-host", "AI 网关未配置，请联系管理员"),
+                aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
+                aiClientHolder.requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
                 aiClientHolder.chatModel(), AiPrompts.load("system"), prompt, temperature);
     }
 
