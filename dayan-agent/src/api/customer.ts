@@ -9,6 +9,6 @@ export function getCustomers(query?: PageQuery): Promise<PageResult<Customer>> {
   return request<PageResult<Customer>>({
     url: '/customers',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }

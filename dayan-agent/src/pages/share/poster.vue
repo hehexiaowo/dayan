@@ -69,8 +69,8 @@ import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
-const poster = ref<any>(null);
-const card = ref<any>(null);
+const poster = ref<import('@/api/share').PosterData | null>(null);
+const card = ref<import('@/api/share').ShareCard | null>(null);
 const loading = ref(true);
 
 const coverUrl = computed(() => poster.value?.coverImage ? formatFileUrl(poster.value.coverImage) : '');

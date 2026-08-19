@@ -117,7 +117,7 @@ function onDistrictClick(item: RegionItem) {
   navigateToDistrict(item.code);
 }
 
-onLoad((options: any) => {
+onLoad((options: { provinceCode?: string; cityCode?: string; cityName?: string }) => {
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
   if (options?.cityCode) cityCode.value = options.cityCode;
   if (options?.cityName) cityName.value = decodeURIComponent(options.cityName);

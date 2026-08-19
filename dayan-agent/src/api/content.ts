@@ -9,7 +9,7 @@ export function getContentList(query?: ContentQuery): Promise<PageResult<Content
   return request<PageResult<ContentArticle>>({
     url: '/contents',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }
 

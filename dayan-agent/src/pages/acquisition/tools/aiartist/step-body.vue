@@ -108,7 +108,7 @@ const scoreRows = computed(() => [
   { key: 'conversionRate', label: '行动转化', value: project.value?.scores?.conversionRate }
 ])
 
-onLoad(async (options: any) => {
+onLoad(async (options: { id?: string }) => {
   projectId.value = Number(options?.id ?? 0)
   if (!projectId.value) { uni.showToast({ title: '参数错误', icon: 'none' }); return }
   project.value = await getAiProject(projectId.value)
@@ -126,7 +126,7 @@ async function generate() {
   try {
     await postSseStream(`/agent-api/tools/ai-creator/${projectId.value}/body/stream`, {}, {
       onEvent: (name, data) => {
-        let parsed: any
+        let parsed: { message?: string; text?: string; [key: string]: unknown }
         try { parsed = JSON.parse(data) } catch { return }
         if (name === 'stage') {
           stageText.value = parsed.message

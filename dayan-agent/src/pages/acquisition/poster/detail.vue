@@ -104,7 +104,7 @@ const posterLoading = ref(false);
 
 const coverUrl = computed(() => poster.value?.coverImage ? formatFileUrl(poster.value.coverImage) : '');
 
-const agentUser = computed(() => uni.getStorageSync('agent_user') as any);
+const agentUser = computed(() => uni.getStorageSync('agent_user') as { realName?: string; phone?: string; accountCode?: string; wechat?: string; username?: string } | undefined);
 const agentName = computed(() => agentUser.value?.realName || '养老顾问');
 const agentPhone = computed(() => agentUser.value?.phone || '');
 

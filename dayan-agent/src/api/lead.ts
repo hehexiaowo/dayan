@@ -46,7 +46,7 @@ export function getLeads(query?: LeadQuery): Promise<PageResult<Lead>> {
   return request<PageResult<Lead>>({
     url: '/leads',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }
 
@@ -120,7 +120,7 @@ export function getLeadPool(query?: LeadPoolQuery): Promise<PageResult<LeadPoolI
   return request<PageResult<LeadPoolItem>>({
     url: '/leads/pool',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }
 

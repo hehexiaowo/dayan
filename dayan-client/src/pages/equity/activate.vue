@@ -48,7 +48,7 @@ const codeTail = ref(''); // DY 之后的 8 位
 const submitting = ref(false);
 
 /** 自动转大写 + 仅保留字母数字 */
-function onCodeInput(e: any) {
+function onCodeInput(e: { detail: { value: string } }) {
   const raw = (e.detail.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   codeTail.value = raw.slice(0, 8);
 }
@@ -71,7 +71,7 @@ async function handleSubmit() {
         url: `/pages/equity/use-persons/index?equityCode=${equity.equityCode}`,
       });
     }, 1000);
-  } catch (e: any) {
+  } catch {
     // request 拦截器已弹错误提示
   } finally {
     submitting.value = false;

@@ -8,7 +8,7 @@ export function getEquityCards(query?: EquityQuery): Promise<PageResult<EquityCa
   return request<PageResult<EquityCard>>({
     url: '/equities',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }
 

@@ -111,8 +111,8 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
 const loading = ref(true);
-const article = ref<any>(null);
-const card = ref<any>(null);
+const article = ref<import('@/api/share').ShareContent | null>(null);
+const card = ref<import('@/api/share').ShareCard | null>(null);
 
 const isHtmlBody = computed(() => {
   const body = article.value?.contentBody;

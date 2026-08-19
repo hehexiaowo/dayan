@@ -207,7 +207,7 @@ async function onSubmit() {
 
   // 组装提交数据
   const interestType = selectedInterests.value.length > 0 ? selectedInterests.value.join(', ') : undefined;
-  const payload: any = {
+  const payload: Record<string, unknown> = {
     name: form.value.name.trim(),
     phone: form.value.phone?.trim() || undefined,
     gender: form.value.gender,

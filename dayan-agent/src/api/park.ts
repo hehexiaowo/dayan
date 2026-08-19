@@ -20,7 +20,7 @@ export function getRegions(params: RegionQuery): Promise<RegionDrillResult> {
   return request<RegionDrillResult>({
     url: '/park/regions',
     method: 'GET',
-    data: params as Record<string, any>,
+    data: params as Record<string, unknown>,
   });
 }
 

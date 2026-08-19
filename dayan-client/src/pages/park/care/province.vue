@@ -52,10 +52,12 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getRegions } from '@/api/park';
-import type { RegionItem, DrillLevel } from '@/types/park';
+import type { RegionItem, DrillLevel, RegionQuery } from '@/types/park';
 import { MUNICIPALITIES } from '@/types/park';
 import { useRegionHeatmap } from '@/composables/useRegionHeatmap';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
+
+interface ParkProvinceRouteParams { category?: string; provinceCode?: string }
 
 const provinceCode = ref('');
 const regions = ref<RegionItem[]>([]);
@@ -81,7 +83,7 @@ async function fetchData() {
   loading.value = true;
   try {
     const level: DrillLevel = isMuni.value ? 'district' : 'city';
-    const params: any = {
+    const params: RegionQuery = {
       category: 'care',
       level,
       provinceCode: provinceCode.value,
@@ -119,7 +121,7 @@ function handleNavigate(cityOrDistrictCode: string, name?: string) {
   }
 }
 
-onLoad((options: any) => {
+onLoad((options: ParkProvinceRouteParams) => {
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
 });
 

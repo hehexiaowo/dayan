@@ -180,7 +180,7 @@ async function loadCategory() {
 async function loadTemplates() { try { templates.value = await getAiTemplates() } catch { /* 已提示 */ } }
 async function loadParks() {
   try {
-    const res = await getRegions({ category: parkCategory.value as any, level: 'park' })
+    const res = await getRegions({ category: parkCategory.value as import('@/types/park').ParkCategory, level: 'park' })
     parks.value = res.parkList ?? []
   } catch { /* 已提示 */ }
 }

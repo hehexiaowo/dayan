@@ -23,7 +23,7 @@ export function getSceneList(query?: SceneQuery): Promise<PageResult<SceneActivi
   return request<PageResult<SceneActivity>>({
     url: '/scenes',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }
 
@@ -44,6 +44,6 @@ export function getSceneSchedules(query?: ScheduleQuery): Promise<PageResult<Sce
   return request<PageResult<SceneScheduleItem>>({
     url: '/scenes/schedules',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }

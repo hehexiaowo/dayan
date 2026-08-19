@@ -327,8 +327,8 @@ async function onClaim(item: LeadPoolItem) {
     await claimLead(item.leadCode);
     uni.showToast({ title: '认领成功', icon: 'success' });
     await Promise.all([loadPool(), loadList()]);
-  } catch (e: any) {
-    uni.showToast({ title: e?.message || '认领失败，可能已被他人认领', icon: 'none' });
+  } catch (e: unknown) {
+    uni.showToast({ title: (e instanceof Error ? e.message : null) || '认领失败，可能已被他人认领', icon: 'none' });
     loadPool();
   }
 }

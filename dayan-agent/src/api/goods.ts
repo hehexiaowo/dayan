@@ -9,7 +9,7 @@ export function getGoodsList(query?: { goodsName?: string }): Promise<GoodsProdu
   return request<GoodsProduct[]>({
     url: '/goods-infos',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }
 

@@ -13,6 +13,6 @@ export function createOrderEquity(data: {
   return request<string>({
     url: '/order-equities',
     method: 'POST',
-    data: data as Record<string, any>,
+    data: data as Record<string, unknown>,
   });
 }

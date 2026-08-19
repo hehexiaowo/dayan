@@ -40,7 +40,7 @@ export function getCards(query?: CardQuery): Promise<PageResult<BusinessCard>> {
   return request<PageResult<BusinessCard>>({
     url: '/agent-cards',
     method: 'GET',
-    data: (query || {}) as Record<string, any>,
+    data: (query || {}) as Record<string, unknown>,
   });
 }
 

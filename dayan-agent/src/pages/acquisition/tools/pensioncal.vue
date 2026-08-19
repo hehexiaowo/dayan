@@ -229,7 +229,7 @@ import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
 // ===== 分享模式 =====
 const isShareMode = ref(false);
-const agentCard = ref<any>(null);
+const agentCard = ref<import('@/api/share').ShareCard | null>(null);
 
 // ===== 常量 =====
 /** 社会平均工资（全国近似值） */
@@ -251,7 +251,7 @@ const form = reactive({
   index: 1.0,
 });
 
-function onIndexChange(e: any) {
+function onIndexChange(e: { detail: { value: number } }) {
   form.index = e.detail.value;
 }
 
@@ -320,7 +320,8 @@ function formatNum(n: number): string {
 // ===== 分享相关 =====
 function onShareTool() {
   // #ifdef H5
-  const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
+  const agentUser = uni.getStorageSync('agent_user') as { accountCode?: string } | undefined;
+  const agentCode = agentUser?.accountCode || '';
   const url = `${window.location.origin}/#/pages/acquisition/tools/pensioncal?agent=${agentCode}`;
   uni.setClipboardData({
     data: url,

@@ -154,7 +154,7 @@ function formatAddress(park: ParkCard): string {
   return [park.province, park.city, park.district, park.address].filter(Boolean).join(' ');
 }
 
-onLoad((options: any) => {
+onLoad((options: { provinceCode?: string; cityCode?: string; districtCode?: string }) => {
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
   if (options?.cityCode) cityCode.value = options.cityCode;
   if (options?.districtCode) districtCode.value = options.districtCode;

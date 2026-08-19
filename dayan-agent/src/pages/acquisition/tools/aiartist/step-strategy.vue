@@ -99,7 +99,7 @@ const confirming = ref(false)
 const contentType = computed(() => project.value?.contentType ?? 1)
 const digestCount = computed(() => project.value?.factDigest?.hardFacts?.length ?? 0)
 
-onLoad(async (options: any) => {
+onLoad(async (options: { id?: string }) => {
   projectId.value = Number(options?.id ?? 0)
   if (!projectId.value) { uni.showToast({ title: '参数错误', icon: 'none' }); return }
   await load(true)

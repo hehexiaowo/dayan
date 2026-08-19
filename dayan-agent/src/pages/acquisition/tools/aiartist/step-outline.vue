@@ -91,7 +91,7 @@ const loading = ref(false)
 const regenerating = ref(false)
 const confirming = ref(false)
 
-onLoad(async (options: any) => {
+onLoad(async (options: { id?: string }) => {
   projectId.value = Number(options?.id ?? 0)
   if (!projectId.value) { uni.showToast({ title: '参数错误', icon: 'none' }); return }
   loading.value = true

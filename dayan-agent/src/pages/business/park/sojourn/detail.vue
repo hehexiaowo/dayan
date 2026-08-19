@@ -346,7 +346,7 @@ const tabsSticky = ref(false);
 let parkCode = '';
 
 // #ifdef H5
-let detailMap: any = null;
+let detailMap: import('leaflet').Map | null = null;
 // #endif
 
 const park = computed<ParkDetail>(() => detail.value?.parkInfo || ({} as ParkDetail));
@@ -497,7 +497,7 @@ function hasAnyFacility(room: ParkRoomType): boolean {
   ].some((v) => v === 1);
 }
 
-function onSwiperChange(e: any) {
+function onSwiperChange(e: { detail: { current: number } }) {
   swiperCurrent.value = e.detail.current;
 }
 
@@ -530,8 +530,8 @@ function onCall() {
   uni.makePhoneCall({ phoneNumber: park.value.serviceHotline });
 }
 
-onLoad(async (options: any) => {
-  parkCode = options?.parkCode;
+onLoad(async (options: { parkCode?: string }) => {
+  parkCode = options?.parkCode || '';
   if (!parkCode) {
     loading.value = false;
     return;

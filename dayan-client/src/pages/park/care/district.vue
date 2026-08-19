@@ -70,6 +70,8 @@ import { parseNetworkTags } from '@/types/park';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
+interface ParkDistrictRouteParams { provinceCode?: string; cityCode?: string; districtCode?: string; category?: string }
+
 const provinceCode = ref('');
 const cityCode = ref('');
 const districtCode = ref('');
@@ -151,7 +153,7 @@ function formatAddress(park: ParkCard): string {
   return [park.province, park.city, park.district, park.address].filter(Boolean).join(' ');
 }
 
-onLoad((options: any) => {
+onLoad((options: ParkDistrictRouteParams) => {
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
   if (options?.cityCode) cityCode.value = options.cityCode;
   if (options?.districtCode) districtCode.value = options.districtCode;

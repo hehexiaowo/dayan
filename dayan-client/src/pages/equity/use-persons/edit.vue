@@ -86,7 +86,7 @@ const genderIndex = ref(-1);
 const relationLabels = RELATION_OPTIONS.map((o) => o.label);
 const relationIndex = ref(-1);
 
-function onRelationChange(e: any) {
+function onRelationChange(e: { detail: { value: number } }) {
   relationIndex.value = Number(e.detail.value);
   form.relationWithHolder = RELATION_OPTIONS[relationIndex.value].value;
 }
@@ -107,11 +107,11 @@ const form = reactive({
   isDefaultHolder: 0,
 });
 
-function onGenderChange(e: any) {
+function onGenderChange(e: { detail: { value: number } }) {
   genderIndex.value = e.detail.value;
   form.usePersonGender = Number(e.detail.value) + 1; // 1=男 2=女
 }
-function onDefaultChange(e: any) {
+function onDefaultChange(e: { detail: { value: boolean } }) {
   form.isDefaultHolder = e.detail.value ? 1 : 0;
 }
 
@@ -128,7 +128,7 @@ async function loadExisting() {
       form.isDefaultHolder = p.isDefaultHolder ?? 0;
       if (p.usePersonGender) genderIndex.value = p.usePersonGender - 1;
       // 身份证在 VO 中已解密返回（getDetail 解密），列表接口可能不含；此处尝试填入
-      (form as any).usePersonIdCard = (p as any).usePersonIdCard || '';
+      form.usePersonIdCard = p.usePersonIdCard || '';
     }
   } catch (e) {
     /* 拦截器已提示 */

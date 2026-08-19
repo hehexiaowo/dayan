@@ -67,6 +67,8 @@ import { useRegionHeatmap } from '@/composables/useRegionHeatmap';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
+interface ParkCityRouteParams { provinceCode?: string; cityCode?: string; cityName?: string }
+
 const provinceCode = ref('');
 const cityCode = ref('');
 const cityName = ref('');
@@ -117,7 +119,7 @@ function onDistrictClick(item: RegionItem) {
   navigateToDistrict(item.code);
 }
 
-onLoad((options: any) => {
+onLoad((options: ParkCityRouteParams) => {
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
   if (options?.cityCode) cityCode.value = options.cityCode;
   if (options?.cityName) cityName.value = decodeURIComponent(options.cityName);

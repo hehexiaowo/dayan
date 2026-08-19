@@ -5,9 +5,41 @@
 
 const BASE_URL = '/agent-api';
 
+export interface ShareContent {
+  title?: string;
+  subtitle?: string;
+  contentBody?: string;
+  contentType?: number;
+  coverImage?: string;
+  summary?: string;
+  authorName?: string;
+  publishTime?: string;
+  viewCount?: number;
+  collectCount?: number;
+  tags?: string;
+  sourceUrl?: string;
+  sourceType?: number;
+  categoryName?: string;
+  [key: string]: unknown;
+}
+
+export interface ShareCard {
+  displayName?: string;
+  title?: string;
+  phone?: string;
+  wechat?: string;
+  email?: string;
+  company?: string;
+  avatar?: string;
+  intro?: string;
+  tags?: string;
+  accountCode?: string;
+  [key: string]: unknown;
+}
+
 export interface ShareResult {
-  content: any | null;
-  card: any | null;
+  content: ShareContent | null;
+  card: ShareCard | null;
 }
 
 /**
@@ -18,8 +50,8 @@ export function getShareContent(code: string, agent: string): Promise<ShareResul
     uni.request({
       url: BASE_URL + '/open/share/content/' + code + '?agent=' + encodeURIComponent(agent),
       method: 'GET',
-      success: (res: any) => {
-        const body = res.data;
+      success: (res: UniApp.RequestSuccessCallbackResult) => {
+        const body = res.data as { code?: number; data?: { content?: ShareContent; card?: ShareCard } };
         if (body && body.code === 0) {
           resolve({
             content: body.data?.content || null,
@@ -34,9 +66,18 @@ export function getShareContent(code: string, agent: string): Promise<ShareResul
   });
 }
 
+export interface PosterData {
+  title?: string;
+  subtitle?: string;
+  bodyText?: string;
+  coverImage?: string;
+  categoryName?: string;
+  [key: string]: unknown;
+}
+
 export interface PosterShareResult {
-  poster: any | null;
-  card: any | null;
+  poster: PosterData | null;
+  card: ShareCard | null;
 }
 
 /** 获取分享海报 + 分享人名片（公开接口，无需登录）。 */
@@ -45,8 +86,8 @@ export function getSharePoster(code: string, agent: string): Promise<PosterShare
     uni.request({
       url: BASE_URL + '/open/share/poster/' + code + '?agent=' + encodeURIComponent(agent),
       method: 'GET',
-      success: (res: any) => {
-        const body = res.data;
+      success: (res: UniApp.RequestSuccessCallbackResult) => {
+        const body = res.data as { code?: number; data?: { poster?: PosterData; card?: ShareCard } };
         if (body && body.code === 0) {
           resolve({
             poster: body.data?.poster || null,
@@ -62,13 +103,13 @@ export function getSharePoster(code: string, agent: string): Promise<PosterShare
 }
 
 /** 获取代理人名片（公开接口，工具分享用）。 */
-export function getShareAgentCard(agent: string): Promise<any> {
+export function getShareAgentCard(agent: string): Promise<ShareCard | null> {
   return new Promise((resolve) => {
     uni.request({
       url: BASE_URL + '/open/share/agent-card?agent=' + encodeURIComponent(agent),
       method: 'GET',
-      success: (res: any) => {
-        const body = res.data;
+      success: (res: UniApp.RequestSuccessCallbackResult) => {
+        const body = res.data as { code?: number; data?: ShareCard };
         if (body && body.code === 0) {
           resolve(body.data || null);
         } else {
@@ -129,8 +170,8 @@ export function trackShare(data: {
         visitorToken: data.visitorToken || getVisitorToken(),
         visitorSource: data.visitorSource || (isWechatBrowser() ? 'wechat' : 'browser'),
       },
-      success: (res: any) => {
-        const body = res.data;
+      success: (res: UniApp.RequestSuccessCallbackResult) => {
+        const body = res.data as { code?: number; data?: { visitorToken?: string } };
         if (body && body.code === 0 && body.data?.visitorToken) {
           saveVisitorToken(body.data.visitorToken);
           resolve(body.data.visitorToken);
@@ -161,8 +202,8 @@ export function leaveContact(data: {
         phone: data.phone,
         name: data.name,
       },
-      success: (res: any) => {
-        const body = res.data;
+      success: (res: UniApp.RequestSuccessCallbackResult) => {
+        const body = res.data as { code?: number };
         resolve(body && body.code === 0);
       },
       fail: () => resolve(false),

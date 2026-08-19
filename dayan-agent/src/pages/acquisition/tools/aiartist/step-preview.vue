@@ -75,7 +75,7 @@ const hasImages = computed(() => {
   return /\[AI_IMAGE_/.test(project.value.body) || project.value.contentType === 3
 })
 
-onLoad(async (options: any) => {
+onLoad(async (options: { id?: string }) => {
   projectId.value = Number(options?.id ?? 0)
   if (!projectId.value) { uni.showToast({ title: '参数错误', icon: 'none' }); return }
   project.value = await getAiProject(projectId.value)
@@ -89,7 +89,7 @@ async function start() {
   try {
     await postSseStream(`/agent-api/tools/ai-creator/${projectId.value}/images/stream`, {}, {
       onEvent: (name, data) => {
-        let parsed: any
+        let parsed: { message?: string; placeholder?: string; state?: string; url?: string; error?: string; images?: AiProjectImage[]; [key: string]: unknown }
         try { parsed = JSON.parse(data) } catch { return }
         if (name === 'stage') {
           stageText.value = parsed.message

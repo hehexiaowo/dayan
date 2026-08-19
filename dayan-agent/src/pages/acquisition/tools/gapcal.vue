@@ -220,7 +220,7 @@ import DyContactForm from '@/components/DyContactForm/DyContactForm.vue';
 
 // ===== 分享模式 =====
 const isShareMode = ref(false);
-const agentCard = ref<any>(null);
+const agentCard = ref<import('@/api/share').ShareCard | null>(null);
 
 // ===== 表单 =====
 const form = reactive({
@@ -234,7 +234,7 @@ const form = reactive({
   returnRate: 4.0,
 });
 
-function onRateChange(e: any) {
+function onRateChange(e: { detail: { value: number } }) {
   form.returnRate = e.detail.value;
 }
 
@@ -350,7 +350,8 @@ function formatNum(n: number): string {
 // ===== 分享相关 =====
 function onShareTool() {
   // #ifdef H5
-  const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
+  const agentUser = uni.getStorageSync('agent_user') as { accountCode?: string } | undefined;
+  const agentCode = agentUser?.accountCode || '';
   const url = `${window.location.origin}/#/pages/acquisition/tools/gapcal?agent=${agentCode}`;
   uni.setClipboardData({
     data: url,

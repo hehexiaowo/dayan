@@ -304,7 +304,8 @@ function onShare() {
 /** 转发：复制分享链接 */
 function copyShareLink() {
   // #ifdef H5
-  const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
+  const agentUser = uni.getStorageSync('agent_user') as { accountCode?: string } | undefined;
+  const agentCode = agentUser?.accountCode || '';
   const url = `${window.location.origin}/#/pages/share/content?code=${contentCode.value}&agent=${agentCode}`;
   uni.setClipboardData({
     data: url,
@@ -316,7 +317,8 @@ function copyShareLink() {
 /** 获取分享链接 */
 function getShareUrl(): string {
   // #ifdef H5
-  const agentCode = (uni.getStorageSync('agent_user') as any)?.accountCode || '';
+  const agentUser = uni.getStorageSync('agent_user') as { accountCode?: string } | undefined;
+  const agentCode = agentUser?.accountCode || '';
   return `${window.location.origin}/#/pages/share/content?code=${contentCode.value}&agent=${agentCode}`;
   // #endif
   // #ifndef H5
@@ -438,7 +440,7 @@ async function drawPoster(): Promise<string> {
   ctx.fill();
 
   // ===== 6. 代理人卡片 =====
-  const agentUser = uni.getStorageSync('agent_user') as any;
+  const agentUser = uni.getStorageSync('agent_user') as { realName?: string; phone?: string; avatar?: string } | undefined;
   const agentName = agentUser?.realName || a.authorName || '养老顾问';
   const agentPhone = agentUser?.phone || '';
 

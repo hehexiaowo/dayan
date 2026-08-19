@@ -164,7 +164,7 @@ async function initRegion() {
   }
 }
 
-async function onRegionColumnChange(e: any) {
+async function onRegionColumnChange(e: { detail: { column: number; value: number } }) {
   const { column, value } = e.detail;
   regionIndex.value[column] = value;
   if (column === 0) {
@@ -185,7 +185,7 @@ function onRegionChange() {
   form.districtCode = districts.value[regionIndex.value[2]]?.regionCode || '';
 }
 
-function onBirthdayChange(e: any) {
+function onBirthdayChange(e: { detail: { value: string } }) {
   form.birthday = e.detail.value;
 }
 

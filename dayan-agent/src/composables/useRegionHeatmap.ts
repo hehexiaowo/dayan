@@ -57,7 +57,7 @@ export function useRegionHeatmap(cfg: HeatmapConfig) {
 
     const echarts = await import('echarts');
 
-    let geo: any;
+    let geo: GeoJSON.FeatureCollection;
     try {
       geo = await getRegionGeoJSON(cfg.geoCode);
     } catch (e) {
@@ -67,7 +67,7 @@ export function useRegionHeatmap(cfg: HeatmapConfig) {
 
     // adcode → GeoJSON 权威名称（解决「北京 vs 北京市」名称不一致）
     const adcodeToName: Record<string, string> = {};
-    geo.features.forEach((f: any) => {
+    geo.features.forEach((f: GeoJSON.Feature) => {
       adcodeToName[String(f.properties?.adcode)] = f.properties?.name;
     });
 
@@ -115,7 +115,7 @@ export function useRegionHeatmap(cfg: HeatmapConfig) {
       },
       tooltip: {
         trigger: 'item',
-        formatter: (p: any) =>
+        formatter: (p: { data?: { name: string; value: number }; name?: string }) =>
           p.data ? `${p.data.name}：${p.data.value} 家机构` : p.name,
       },
       series: [
@@ -131,7 +131,7 @@ export function useRegionHeatmap(cfg: HeatmapConfig) {
       ],
     });
 
-    chart.on('click', (params: any) => {
+    chart.on('click', (params: { data?: { code: string; name: string } }) => {
       if (params.data?.code) {
         cfg.onRegionClick?.({ code: params.data.code, name: params.data.name });
       }

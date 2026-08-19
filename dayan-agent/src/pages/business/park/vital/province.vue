@@ -81,7 +81,7 @@ async function fetchData() {
   loading.value = true;
   try {
     const level: DrillLevel = isMuni.value ? 'district' : 'city';
-    const params: any = {
+    const params: import('@/types/park').RegionQuery = {
       category: 'vital',
       level,
       provinceCode: provinceCode.value,
@@ -119,7 +119,7 @@ function handleNavigate(cityOrDistrictCode: string, name?: string) {
   }
 }
 
-onLoad((options: any) => {
+onLoad((options: { provinceCode?: string }) => {
   if (options?.provinceCode) provinceCode.value = options.provinceCode;
 });
 

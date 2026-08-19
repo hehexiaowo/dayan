@@ -328,6 +328,8 @@ import { sanitizeHtml } from '@/utils/sanitize';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
+interface ParkDetailRouteParams { parkCode?: string }
+
 const detail = ref<ParkFullDetail | null>(null);
 const loading = ref(true);
 const loadError = ref(false);
@@ -487,7 +489,7 @@ function hasAnyFacility(room: ParkRoomType): boolean {
   ].some((v) => v === 1);
 }
 
-function onSwiperChange(e: any) {
+function onSwiperChange(e: { detail: { current: number } }) {
   swiperCurrent.value = e.detail.current;
 }
 
@@ -520,7 +522,7 @@ function onCall() {
   uni.makePhoneCall({ phoneNumber: park.value.serviceHotline });
 }
 
-onLoad(async (options: any) => {
+onLoad(async (options: ParkDetailRouteParams) => {
   parkCode = options?.parkCode;
   if (!parkCode) {
     loading.value = false;

@@ -14,7 +14,7 @@
 const GEO_BASE = 'https://geo.datav.aliyun.com/areas_v3/bound/';
 
 /** 内存缓存（同会话内、跨页面共享） */
-const memCache = new Map<string, any>();
+const memCache = new Map<string, GeoJSON.FeatureCollection>();
 
 /** sessionStorage key 前缀 */
 const SS_PREFIX = 'dayan-geo-';
@@ -25,7 +25,7 @@ const SS_PREFIX = 'dayan-geo-';
  * @param code 行政区划码：'100000'(全国→省) | 省码(→市) | 市码(→区县)
  * @returns GeoJSON FeatureCollection（features 为下一级子区域）
  */
-export async function getRegionGeoJSON(code: string): Promise<any> {
+export async function getRegionGeoJSON(code: string): Promise<GeoJSON.FeatureCollection> {
   if (memCache.has(code)) return memCache.get(code);
 
   // sessionStorage 持久缓存（刷新页面后仍命中）

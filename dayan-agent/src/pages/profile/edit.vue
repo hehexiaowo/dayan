@@ -213,7 +213,7 @@ async function initRegion() {
   }
 }
 
-async function onRegionColumnChange(e: any) {
+async function onRegionColumnChange(e: { detail: { column: number; value: number } }) {
   const { column, value } = e.detail;
   regionIndex.value[column] = value;
   if (column === 0) {
