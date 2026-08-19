@@ -1,5 +1,8 @@
 <template>
   <view class="page">
+    <!-- 步骤条 -->
+    <StepProgress :current="2" />
+
     <!-- 生成中 -->
     <view v-if="loading" class="state-box">
       <view class="dot-loading"><view class="dot" /><view class="dot" /><view class="dot" /></view>
@@ -76,6 +79,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { getAiProject, genAiStrategy, regenAiTitles, confirmAiStrategy } from '@/api/toolAiartist'
 import type { AiProject } from '@/types/toolAiartist'
 import { AI_TITLE_TAG_LABELS } from '@/types/toolAiartist'
+import StepProgress from '@/components/StepProgress/StepProgress.vue'
 
 /**
  * 第 2 步：素材消化 + 策略确认 + 五标题选择。

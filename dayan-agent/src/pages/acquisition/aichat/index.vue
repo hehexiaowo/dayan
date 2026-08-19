@@ -1,14 +1,19 @@
 <template>
   <view class="page">
     <!-- 头部 -->
-    <view class="header">
-      <text class="header-title">你问我答</text>
-      <text class="header-subtitle">AI 智能问答 · 展业答疑助手</text>
+    <view class="hero">
+      <text class="hero-title">你问我答</text>
+      <text class="hero-sub">AI 智能问答 · 展业答疑助手</text>
     </view>
 
     <!-- 加载中 -->
-    <view v-if="loading" class="empty">
-      <text class="empty-text">加载中…</text>
+    <DySkeletonList v-if="loading" :rows="4" show-avatar />
+
+    <!-- 加载失败 -->
+    <view v-else-if="loadError" class="empty">
+      <text class="empty-title">加载失败</text>
+      <text class="empty-desc">网络异常，请稍后重试</text>
+      <view class="retry-btn dy-clickable" @click="loadConfigs"><text class="retry-btn-text">重新加载</text></view>
     </view>
 
     <!-- 空态 -->
@@ -51,22 +56,28 @@
 import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
+import DySkeletonList from '@/components/DySkeletonList/DySkeletonList.vue';
 import { getAichatPersonas } from '@/api/toolChat';
 import type { AichatPersona } from '@/types';
 
 const configs = ref<AichatPersona[]>([]);
 const loading = ref(false);
+const loadError = ref(false);
 
-onShow(async () => {
+onShow(loadConfigs);
+
+async function loadConfigs() {
   loading.value = true;
+  loadError.value = false;
   try {
     configs.value = await getAichatPersonas();
   } catch {
     configs.value = [];
+    loadError.value = true;
   } finally {
     loading.value = false;
   }
-});
+}
 
 function openChat(c: AichatPersona) {
   uni.navigateTo({ url: `/pages/acquisition/aichat/chat?toolCode=${c.toolCode}` });
@@ -94,24 +105,26 @@ function iconColor(c: AichatPersona) {
 }
 
 /* 头部 */
-.header {
+.hero {
   background: $gradient-blue;
+  border-radius: $radius-lg;
   padding: $spacing-xl $spacing-lg;
-  display: flex;
-  flex-direction: column;
+  margin: $spacing-md;
 }
-.header-title {
+.hero-title {
+  display: block;
   font-size: 40rpx;
   font-weight: bold;
   color: #fff;
 }
-.header-subtitle {
+.hero-sub {
+  display: block;
   margin-top: $spacing-xs;
   font-size: 26rpx;
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* 空态 / 加载 */
+/* 空态 / 错误态 */
 .empty {
   display: flex;
   flex-direction: column;
@@ -132,6 +145,21 @@ function iconColor(c: AichatPersona) {
   margin-top: $spacing-sm;
   font-size: 26rpx;
   color: $text-secondary;
+}
+.retry-btn {
+  margin-top: $spacing-lg;
+  height: $control-height-sm;
+  padding: 0 48rpx;
+  background: $gradient-blue;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.retry-btn-text {
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
 }
 
 /* 人物卡片列表 */

@@ -1,5 +1,7 @@
 <template>
   <view class="page">
+    <StepProgress :current="5" />
+
     <template v-if="project">
       <view v-if="project.warnings?.length" class="warn-box">
         <text v-for="(w, i) in project.warnings" :key="i" class="warn-text">⚠ {{ w }}</text>
@@ -54,6 +56,7 @@ import { getAiProject, getAiPreview, saveAiProject } from '@/api/toolAiartist'
 import { postSseStream } from '@/utils/sse'
 import { copyText } from '@/utils/clipboard'
 import type { AiProject, AiProjectImage } from '@/types/toolAiartist'
+import StepProgress from '@/components/StepProgress/StepProgress.vue'
 
 /**
  * 第 5-6 步：配图生成（SSE 逐张进度）+ 图文成品预览 + 保存内容中心。

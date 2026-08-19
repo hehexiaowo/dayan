@@ -1,5 +1,7 @@
 <template>
   <view class="page">
+    <StepProgress :current="3" />
+
     <view v-if="loading" class="state-box">
       <view class="dot-loading"><view class="dot" /><view class="dot" /><view class="dot" /></view>
       <text class="state-text">正在搭建大纲骨架…</text>
@@ -27,7 +29,8 @@
             <text v-for="(a, j) in splitLines(n.argumentsText)" :key="'a' + j" class="node-line arg">· {{ a }}</text>
           </view>
           <view v-if="n.imagePromptZh" class="node-img">
-            <text class="node-img-text">🖼 配图：{{ n.imagePromptZh }}（{{ n.imageSize || '1280*720' }}）</text>
+            <view class="img-flag" />
+            <text class="node-img-text">配图：{{ n.imagePromptZh }}（{{ n.imageSize || '1280*720' }}）</text>
           </view>
         </template>
         <template v-else>
@@ -63,6 +66,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { getAiProject, genAiOutline, regenAiOutline, confirmAiOutline } from '@/api/toolAiartist'
 import type { AiProject, AiOutline } from '@/types/toolAiartist'
 import { purposeLabel } from '@/types/toolAiartist'
+import StepProgress from '@/components/StepProgress/StepProgress.vue'
 
 /**
  * 第 3 步：大纲确认。节点卡展示论据溯源，可逐节点编辑、反馈重生成。
@@ -175,8 +179,9 @@ function goBack() { uni.navigateBack() }
 .node-label { display: block; font-size: 22rpx; color: $text-secondary; margin: 8rpx 0; }
 .node-line { display: block; font-size: 24rpx; color: $text-regular; line-height: 1.7; }
 .node-line.arg { color: $brand-primary-dark; }
-.node-img { background: rgba(64, 158, 255, .06); border-radius: $radius-sm; padding: 12rpx 16rpx; }
-.node-img-text { font-size: 22rpx; color: $text-secondary; }
+.node-img { display: flex; align-items: flex-start; gap: 12rpx; background: rgba(64, 158, 255, .06); border-radius: $radius-sm; padding: 12rpx 16rpx; }
+.img-flag { width: 20rpx; height: 20rpx; border-radius: 6rpx; background: $gradient-blue; margin-top: 6rpx; flex-shrink: 0; }
+.node-img-text { font-size: 22rpx; color: $text-secondary; line-height: 1.7; }
 .regen-box { padding: $spacing-md; margin-bottom: 24rpx; }
 .regen-btn { margin-top: 16rpx; height: $control-height-sm; border: 2rpx solid $brand-primary; border-radius: $radius-md; display: flex; align-items: center; justify-content: center; }
 .regen-btn.disabled { opacity: .5; }

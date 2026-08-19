@@ -1,6 +1,7 @@
 <template>
   <view class="page">
     <!-- 当前创作分类 -->
+    <StepProgress :current="1" />
     <view v-if="category" class="cat-banner">
       <DyIconBlock :text="category.icon || '创'" :color="catColor(category.iconColor)" size="md" shape="circle" />
       <view class="cat-banner-info">
@@ -11,35 +12,7 @@
 
     <!-- 素材（按分类目的条件渲染） -->
     <view>
-      <view class="dy-section-title">{{ purpose === 'product' ? '保险产品/政策资料（必选）' : '知识库文档（可选，精准取材）' }}<text v-if="purpose === 'product'" class="req">*</text></view>
-      <view class="search-row"><input class="dy-search" v-model="kbKeyword" placeholder="搜索知识库文档" confirm-type="search" @confirm="loadKbDocs" /></view>
-      <view class="pick-list dy-card">
-        <view v-for="d in kbDocs" :key="d.fileId" class="pick-item dy-clickable"
-          :class="{ picked: kbFileIds.includes(d.fileId) }" @click="toggle(kbFileIds, d.fileId)">
-          <view class="pick-main">
-            <text class="pick-title dy-ellipsis">{{ d.fileName }}</text>
-            <text class="pick-tag">{{ d.repoName }}</text>
-          </view>
-          <view class="check-round" :class="{ on: kbFileIds.includes(d.fileId) }"><text class="check-mark">✓</text></view>
-        </view>
-        <view v-if="!kbDocs.length" class="pick-empty"><text class="pick-empty-text">暂无文档（需渠道知识库建库）</text></view>
-      </view>
-
-      <view class="dy-section-title">{{ purpose === 'product' ? '权益商品（必选）' : '权益商品（可选）' }}<text v-if="purpose === 'product'" class="req">*</text></view>
-      <view class="search-row"><input class="dy-search" v-model="goodsKeyword" placeholder="搜索商品" confirm-type="search" @confirm="loadGoods" /></view>
-      <view class="pick-list dy-card">
-        <view v-for="g in goodsList" :key="g.goodsCode" class="pick-item dy-clickable"
-          :class="{ picked: goodsCodes.includes(g.goodsCode) }" @click="toggle(goodsCodes, g.goodsCode)">
-          <view class="pick-main">
-            <text class="pick-title dy-ellipsis">{{ g.goodsName }}</text>
-            <text class="pick-tag">¥{{ g.salePrice ?? '面议' }}</text>
-          </view>
-          <view class="check-round" :class="{ on: goodsCodes.includes(g.goodsCode) }"><text class="check-mark">✓</text></view>
-        </view>
-      </view>
-    </view>
-
-    <template v-if="purpose === 'park'">
+      <template v-if="purpose === 'park'">
       <view class="dy-section-title">养老机构（必选）<text class="req">*</text></view>
       <view class="cat-row">
         <text v-for="c in PARK_CATS" :key="c.value" class="cat-tag dy-clickable"
@@ -57,6 +30,7 @@
         </view>
       </view>
     </template>
+    </view>
 
     <!-- 分类专属：粘贴内容 -->
     <template v-if="purpose === 'science'">
@@ -124,21 +98,20 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { createAiProject, getAiTemplates, getAiartistConfigs } from '@/api/toolAiartist'
-import { getKnowledgeDocs } from '@/api/knowledge'
-import { getGoodsList } from '@/api/goods'
 import { getRegions } from '@/api/park'
 import { assembleMaterials } from '@/utils/aiMaterial'
-import type { AiRefTemplateOption, KnowledgeDocOption } from '@/types/aiContent'
+import type { AiRefTemplateOption } from '@/types/aiContent'
 import type { AiartistConfig } from '@/types/toolAiartist'
 import { AI_CONTENT_TYPE_OPTIONS, AI_STYLE_OPTIONS, AI_AUDIENCE_OPTIONS } from '@/types/aiContent'
 import type { ParkCard } from '@/types/park'
-import type { GoodsProduct } from '@/types'
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue'
+import StepProgress from '@/components/StepProgress/StepProgress.vue'
 
 /**
  * 第 1 步（分类化）：创作分类（tool_info 的 aiartist 实例）决定目的与素材规则。
  * 主题创作（science）→ 粘贴文章/链接；机构介绍（park）→ 选机构；
- * 保险计划（product）→ 粘贴计划书 + 知识库/商品。
+ * 保险计划（product）→ 粘贴计划书。知识库/商品不在素材阶段选择——
+ * 知识库由流水线在正文生成前自动检索补充，配图优先用素材自带图。
  * 素材由本页聚合随创建提交，后端存快照供 digest 阶段一次性消费。
  */
 const PARK_CATS = [
@@ -171,16 +144,10 @@ const audience = ref('general')
 const topic = ref('')
 const pastedText = ref('')
 const refContentCode = ref('')
-const kbFileIds = ref<string[]>([])
-const goodsCodes = ref<string[]>([])
 const parkCodes = ref<string[]>([])
 const creating = ref(false)
 
 const templates = ref<AiRefTemplateOption[]>([])
-const kbKeyword = ref('')
-const kbDocs = ref<KnowledgeDocOption[]>([])
-const goodsKeyword = ref('')
-const goodsList = ref<GoodsProduct[]>([])
 const parkCategory = ref<string>('vital')
 const parkKeyword = ref('')
 const parks = ref<ParkCard[]>([])
@@ -197,8 +164,6 @@ onLoad(async (opts) => {
   }
   await loadCategory()
   loadTemplates()
-  loadKbDocs()
-  loadGoods()
   loadParks()
 })
 
@@ -213,8 +178,6 @@ async function loadCategory() {
 }
 
 async function loadTemplates() { try { templates.value = await getAiTemplates() } catch { /* 已提示 */ } }
-async function loadKbDocs() { try { kbDocs.value = await getKnowledgeDocs(kbKeyword.value || undefined) } catch { /* 已提示 */ } }
-async function loadGoods() { try { goodsList.value = await getGoodsList({ goodsName: goodsKeyword.value || undefined }) } catch { /* 已提示 */ } }
 async function loadParks() {
   try {
     const res = await getRegions({ category: parkCategory.value as any, level: 'park' })
@@ -236,13 +199,6 @@ function pickRef(code: string) {
 }
 
 /** 勾选状态 → 选中对象集（素材聚合与引用命名用） */
-function selectedKbDocs() {
-  return kbDocs.value.filter((d) => kbFileIds.value.includes(d.fileId))
-}
-function selectedGoods() {
-  return goodsList.value.filter((g) => goodsCodes.value.includes(g.goodsCode))
-}
-
 async function submit() {
   if (creating.value) return
   if (purpose.value === 'science' && !pastedText.value.trim()) {
@@ -254,9 +210,6 @@ async function submit() {
   if (purpose.value === 'product' && !pastedText.value.trim()) {
     uni.showToast({ title: '请粘贴保险计划书文本', icon: 'none' }); return
   }
-  if (purpose.value === 'product' && (!kbFileIds.value.length || !goodsCodes.value.length)) {
-    uni.showToast({ title: '保险计划需选知识库资料与权益商品', icon: 'none' }); return
-  }
   if (purpose.value === 'park' && !parkCodes.value.length) {
     uni.showToast({ title: '请选择养老机构', icon: 'none' }); return
   }
@@ -267,8 +220,6 @@ async function submit() {
     const { materials, materialRefs, warnings } = await assembleMaterials({
       purpose: purpose.value,
       topic: topic.value.trim(),
-      kbDocs: selectedKbDocs(),
-      goods: selectedGoods(),
       parkCodes: parkCodes.value,
       refContentCode: refContentCode.value,
       pastedText: pastedText.value,
@@ -296,7 +247,7 @@ async function submit() {
 
 <style scoped lang="scss">
 .page { padding: $spacing-md $spacing-md 180rpx; background: $bg-page; min-height: 100vh; }
-.cat-banner { display: flex; align-items: center; background: $gradient-blue; border-radius: $radius-lg; padding: $spacing-md $spacing-lg; margin-bottom: $spacing-md; }
+.cat-banner { display: flex; align-items: center; background: $gradient-blue; border-radius: $radius-lg; padding: $spacing-md $spacing-lg; margin: $spacing-sm 0 $spacing-md; }
 .cat-banner-info { flex: 1; margin-left: $spacing-md; display: flex; flex-direction: column; min-width: 0; }
 .cat-banner-name { font-size: 30rpx; font-weight: 700; color: #fff; }
 .cat-banner-desc { margin-top: 6rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }

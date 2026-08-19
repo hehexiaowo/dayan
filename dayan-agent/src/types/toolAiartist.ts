@@ -4,9 +4,9 @@
 export type AiPurpose = 'product' | 'park' | 'science'
 
 export const AI_PURPOSE_OPTIONS = [
-  { value: 'product', label: '产品宣传', desc: '推荐「保险产品+养老权益」解决方案，必选知识库保险资料与权益商品' },
-  { value: 'park', label: '机构推荐', desc: '围绕养老机构写种草文，机构信息全部来自平台机构库' },
-  { value: 'science', label: '科普获客', desc: '热点/趋势切入建立专业人设，不推销具体产品' }
+  { value: 'product', label: '保险计划', desc: '上传/粘贴已有保险计划书，重新组织表达，条款数据以计划书为准' },
+  { value: 'park', label: '机构介绍', desc: '围绕养老机构写种草文，机构信息全部来自平台机构库' },
+  { value: 'science', label: '主题创作', desc: '粘贴文章进行内容转写与再创作，忠于原文事实' }
 ] as const
 
 /** 素材块（前端供材的最小单元） */
@@ -23,12 +23,20 @@ export interface AiKbFileRef { fileId: string; fileName: string }
 /** 商品/机构引用（编码+展示名） */
 export interface AiCodeNameRef { code: string; name: string }
 
+/** 素材自带图引用（配图位优先：cover=封面候选，body=正文插图候选按序） */
+export interface AiMaterialImageRef {
+  role: 'cover' | 'body'
+  name: string
+  url: string
+}
+
 /** 素材引用（创建时随提交，含展示名；保存成品与回显用） */
 export interface AiMaterialRefs {
   refContentCode?: string
   kbFiles?: AiKbFileRef[]
   goods?: AiCodeNameRef[]
   parks?: AiCodeNameRef[]
+  materialImages?: AiMaterialImageRef[]
 }
 
 export interface AiHardFact { fact: string; source: string }

@@ -7,36 +7,44 @@
 
     <!-- 创作分类选择 -->
     <view class="dy-section-title">选择创作分类</view>
-    <view
-      v-for="c in configs"
-      :key="c.toolCode"
-      class="cat-card dy-card dy-clickable"
-      @click="goCategory(c)"
-    >
-      <DyIconBlock :text="c.icon || '创'" :color="catColor(c.iconColor)" size="lg" shape="circle" />
-      <view class="cat-info">
-        <text class="cat-name">{{ c.toolName }}</text>
-        <text class="cat-desc">{{ c.toolDesc || '六阶段 AI 图文创作' }}</text>
-      </view>
-      <text class="cat-arrow">›</text>
+    <DySkeletonList v-if="configLoading" :rows="3" show-avatar />
+    <view v-else-if="loadError" class="err-box">
+      <text class="err-text">分类加载失败，请检查网络</text>
+      <view class="err-btn dy-clickable" @click="loadConfigs"><text class="err-btn-text">重新加载</text></view>
     </view>
+    <template v-else>
+      <view
+        v-for="c in configs"
+        :key="c.toolCode"
+        class="cat-card dy-card dy-clickable"
+        @click="goCategory(c)"
+      >
+        <DyIconBlock :text="c.icon || '创'" :color="catColor(c.iconColor)" size="lg" shape="circle" />
+        <view class="cat-info">
+          <text class="cat-name">{{ c.toolName }}</text>
+          <text class="cat-desc">{{ c.toolDesc || '六阶段 AI 图文创作' }}</text>
+        </view>
+        <text class="cat-arrow">›</text>
+      </view>
+      <DyEmpty v-if="!configs.length" text="暂无可用的创作分类" icon="AI" color="blue" />
+    </template>
 
     <!-- 未完成创作草稿 -->
-    <view class="dy-section-title" v-if="drafts.length">未完成创作</view>
-    <view v-for="d in drafts" :key="d.id" class="draft dy-card dy-clickable" @click="goDraft(d)">
-      <view class="draft-top">
-        <text class="dy-tag dy-tag-blue">{{ categoryName(d.toolCode) }}</text>
-        <text class="draft-phase">{{ AI_PHASE_LABELS[d.status] ?? d.status }}</text>
+    <view class="dy-section-title" v-if="drafts.length || loading">未完成创作</view>
+    <DySkeletonList v-if="loading" :rows="2" />
+    <template v-else>
+      <view v-for="d in drafts" :key="d.id" class="draft dy-card dy-clickable" @click="goDraft(d)">
+        <view class="draft-top">
+          <text class="dy-tag dy-tag-blue">{{ categoryName(d.toolCode) }}</text>
+          <text class="draft-phase">{{ AI_PHASE_LABELS[d.status] ?? d.status }}</text>
+        </view>
+        <text class="draft-title">{{ d.selectedTitle || d.topic || '（未定主题）' }}</text>
+        <view class="draft-bottom">
+          <text class="draft-time">{{ formatTime(d.updatedAt) }}</text>
+          <text class="draft-del dy-clickable" @click.stop="onDelete(d)">删除</text>
+        </view>
       </view>
-      <text class="draft-title">{{ d.selectedTitle || d.topic || '（未定主题）' }}</text>
-      <view class="draft-bottom">
-        <text class="draft-time">{{ formatTime(d.updatedAt) }}</text>
-        <text class="draft-del dy-clickable" @click.stop="onDelete(d)">删除</text>
-      </view>
-    </view>
-
-    <DyEmpty v-if="!configLoading && !configs.length" text="暂无可用的创作分类" icon="AI" color="blue" />
-    <view v-if="loading" class="loading"><text class="loading-text">加载中…</text></view>
+    </template>
   </view>
 </template>
 
@@ -48,6 +56,7 @@ import type { AiProjectListItem, AiartistConfig } from '@/types/toolAiartist'
 import { AI_PHASE_LABELS, phaseStep } from '@/types/toolAiartist'
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue'
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue'
+import DySkeletonList from '@/components/DySkeletonList/DySkeletonList.vue'
 
 /**
  * AI 创作入口页：创作分类选择（tool_info 的 aiartist 实例）+ 未完成创作草稿续写。
@@ -91,6 +100,7 @@ const FALLBACK_CONFIGS: AiartistConfig[] = [
 
 const configs = ref<AiartistConfig[]>(FALLBACK_CONFIGS)
 const configLoading = ref(false)
+const loadError = ref(false)
 const drafts = ref<AiProjectListItem[]>([])
 const loading = ref(false)
 
@@ -100,6 +110,8 @@ onShow(async () => {
   try {
     const res = await getAiProjects({ current: 1, size: 50 })
     drafts.value = res.records.filter((r) => r.status !== 'SAVED')
+  } catch {
+    // request 层已提示，草稿区静默降级为空
   } finally {
     loading.value = false
   }
@@ -107,6 +119,7 @@ onShow(async () => {
 
 async function loadConfigs() {
   configLoading.value = true
+  loadError.value = false
   try {
     const list = await getAiartistConfigs()
     // 后台已配置则以后台为准；空结果保留兜底
@@ -114,7 +127,8 @@ async function loadConfigs() {
       configs.value = list
     }
   } catch {
-    // 接口异常时保留兜底列表
+    // 接口异常：展示错误态，供用户重试
+    loadError.value = true
   } finally {
     configLoading.value = false
   }
@@ -169,6 +183,8 @@ function formatTime(dt?: string) {
 .draft-bottom { display: flex; justify-content: space-between; }
 .draft-time { font-size: 22rpx; color: $text-placeholder; }
 .draft-del { font-size: 24rpx; color: $brand-error; }
-.loading { padding: 40rpx; text-align: center; }
-.loading-text { font-size: 24rpx; color: $text-secondary; }
+.err-box { display: flex; flex-direction: column; align-items: center; padding: 80rpx 0; gap: 24rpx; }
+.err-text { font-size: 26rpx; color: $text-secondary; }
+.err-btn { height: $control-height-sm; padding: 0 48rpx; background: $gradient-blue; border-radius: $radius-md; display: flex; align-items: center; justify-content: center; }
+.err-btn-text { color: #fff; font-size: 26rpx; font-weight: 600; }
 </style>

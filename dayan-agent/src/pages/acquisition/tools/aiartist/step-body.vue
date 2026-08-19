@@ -1,5 +1,8 @@
 <template>
   <view class="page">
+    <!-- 步骤条 -->
+    <StepProgress :current="4" />
+
     <!-- 生成中 -->
     <view v-if="generating" class="gen-box dy-card">
       <view class="dot-loading"><view class="dot" /><view class="dot" /><view class="dot" /></view>
@@ -80,6 +83,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { getAiProject, reviseAiBody, saveAiProject, genAiBody } from '@/api/toolAiartist'
 import { postSseStream } from '@/utils/sse'
 import type { AiProject } from '@/types/toolAiartist'
+import StepProgress from '@/components/StepProgress/StepProgress.vue'
 
 /**
  * 第 4 步：正文生成（H5 SSE 流式打字机 + 阶段条）→ 审计/打分 → 段落勘误。

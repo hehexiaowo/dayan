@@ -1,12 +1,10 @@
 import { getContentDetail } from '@/api/content'
-import { retrieveKnowledge, type KnowledgeCitation } from '@/api/knowledge'
 import { getParkFullDetail } from '@/api/park'
-import type { GoodsProduct } from '@/types'
+import { formatFileUrl } from '@/utils/file'
 import type { ParkFullDetail } from '@/types/park'
 import type {
-  AiCodeNameRef,
-  AiKbFileRef,
   AiMaterialBlock,
+  AiMaterialImageRef,
   AiMaterialRefs
 } from '@/types/toolAiartist'
 import { htmlToText } from '@/utils/htmlToText'
@@ -18,10 +16,6 @@ type ParkFullDetailLike = ParkFullDetail
 export interface AssembleMaterialsInput {
   purpose: string
   topic: string
-  /** 已选知识文件（含 fileId/fileName/repoId） */
-  kbDocs: { fileId: string; fileName: string; repoId?: number }[]
-  /** 已选商品（getGoodsList 行，详情已在手） */
-  goods: GoodsProduct[]
   /** 已选机构编码 */
   parkCodes: string[]
   /** 参考范文（TPL:模板码 或 内容 code；为空跳过） */
@@ -51,14 +45,17 @@ const BILLING_LABELS: Record<number, string> = { 1: '月', 2: '季', 3: '半年'
 const CHARGE_LABELS: Record<number, string> = { 1: '房间费', 2: '照护费', 3: '餐费', 4: '押金', 5: '设施费', 6: '服务费', 9: '其他' }
 
 /**
- * 并行聚合四类素材（前端供材，替代后端素材聚合器）：
- * 范文正文 + 知识库检索召回 + 商品详情（已在手）+ 机构结构化摘要。
- * 单项失败降级为 warning，不阻断创建。
+ * 并行聚合素材（前端供材，替代后端素材聚合器）：
+ * 粘贴文本 + 范文正文 + 机构结构化摘要 + 素材自带图（配图优先用）。
+ * 单项失败降级为 warning，不阻断创建。知识库不再在此选择——正文生成前由后端自动检索补充。
  */
 export async function assembleMaterials(input: AssembleMaterialsInput): Promise<AssembleMaterialsResult> {
   const blocks: AiMaterialBlock[] = []
   const warnings: string[] = []
   const refs: AiMaterialRefs = {}
+  /** 素材自带图：机构封面/图集 + 范文封面（配图位优先引用） */
+  const coverImages: AiMaterialImageRef[] = []
+  const bodyImages: AiMaterialImageRef[] = []
 
   // 0) 粘贴文本（主题转写文章 / 保险计划书等，直接成块）
   if (input.pastedText && input.pastedText.trim()) {
@@ -69,7 +66,7 @@ export async function assembleMaterials(input: AssembleMaterialsInput): Promise<
     })
   }
 
-  // 1) 范文（TPL: 模板静态文案后端持有，仅内容 code 拉正文）
+  // 1) 范文（TPL: 模板静态文案后端持有，仅内容 code 拉正文；封面图作配图封面候选）
   if (input.refContentCode) {
     refs.refContentCode = input.refContentCode
     if (!input.refContentCode.startsWith('TPL:')) {
@@ -79,58 +76,20 @@ export async function assembleMaterials(input: AssembleMaterialsInput): Promise<
         if (text) {
           blocks.push({ type: 'ref', title: `参考范文 · ${c.title || ''}`, text })
         }
+        if (c.coverImage) {
+          coverImages.push({
+            role: 'cover',
+            name: `范文封面 · ${c.title || ''}`,
+            url: formatFileUrl(c.coverImage),
+          })
+        }
       } catch {
         warnings.push('参考范文加载失败，已跳过')
       }
     }
   }
 
-  // 2) 知识库（按仓库分组检索，勾选文档精准召回）
-  if (input.kbDocs.length) {
-    refs.kbFiles = input.kbDocs.map<AiKbFileRef>((d) => ({ fileId: d.fileId, fileName: d.fileName }))
-    const byRepo = new Map<number, { fileId: string; fileName: string }[]>()
-    for (const d of input.kbDocs) {
-      if (!d.repoId) continue
-      const arr = byRepo.get(d.repoId) || []
-      arr.push({ fileId: d.fileId, fileName: d.fileName })
-      byRepo.set(d.repoId, arr)
-    }
-    for (const [repoId, docs] of byRepo) {
-      try {
-        const cites: KnowledgeCitation[] = await retrieveKnowledge({
-          repoId,
-          query: input.topic || docs.map((d) => d.fileName).join(' ') || '养老',
-          docFileIds: docs.map((d) => d.fileId),
-          topK: 8,
-        })
-        const text = cites
-          .map((c, i) => `[${i + 1}] ${(c.text || '').replace(/\s+/g, ' ').trim()}`)
-          .filter((l) => l.length > 4)
-          .join('\n')
-        if (text) {
-          blocks.push({ type: 'kb', title: `知识库资料（${docs.length} 篇勾选文档）`, text })
-        }
-      } catch {
-        warnings.push('知识库检索失败，已跳过')
-      }
-    }
-  }
-
-  // 3) 商品（详情已在手，直接成块）
-  if (input.goods.length) {
-    refs.goods = input.goods.map<AiCodeNameRef>((g) => ({ code: g.goodsCode, name: g.goodsName }))
-    for (const g of input.goods) {
-      const parts = [
-        g.goodsDescription || g.summary || '',
-        g.salePrice != null ? `售价 ${g.salePrice} 元/${g.priceUnit || '份'}` : '',
-      ].filter(Boolean)
-      if (parts.join('')) {
-        blocks.push({ type: 'goods', title: `商品 · ${g.goodsName}`, text: parts.join('\n') })
-      }
-    }
-  }
-
-  // 4) 机构（结构化摘要，防机构信息幻觉）
+  // 2) 机构（结构化摘要，防机构信息幻觉；图集作配图素材图：封面+正文插图候选）
   if (input.parkCodes.length) {
     refs.parks = []
     for (const code of input.parkCodes) {
@@ -140,10 +99,26 @@ export async function assembleMaterials(input: AssembleMaterialsInput): Promise<
         if (!p) continue
         refs.parks.push({ code, name: p.fullName || code })
         blocks.push({ type: 'park', title: `机构资料 · ${p.fullName || code}`, text: buildParkSummary(full) })
+        const imgs = (full.assets || []).filter((a) => a.assetType === 1)
+        let coverPicked = false
+        imgs.forEach((a) => {
+          const url = formatFileUrl(a.assetUrl)
+          if (!url) return
+          if (!coverPicked && (a.isCover === 1 || coverImages.length === 0)) {
+            coverImages.push({ role: 'cover', name: `${p.fullName || code} 封面`, url })
+            coverPicked = true
+          } else {
+            bodyImages.push({ role: 'body', name: `${p.fullName || code} 图`, url })
+          }
+        })
       } catch {
         warnings.push(`机构 ${code} 资料加载失败，已跳过`)
       }
     }
+  }
+
+  if (coverImages.length || bodyImages.length) {
+    refs.materialImages = [...coverImages, ...bodyImages]
   }
 
   // 总量截断
