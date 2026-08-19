@@ -67,7 +67,9 @@ class DayanTenantHandlerTest {
 
     @Test
     void ignoreTable_shouldNotIgnoreChannelScopedTables() {
-        // 含 channel_code 且需渠道级隔离的表不应被忽略
+        // 含 channel_code 且需渠道级隔离的表不应被忽略。
+        // 需显式设置渠道上下文：无 accountType 时实现按安全默认忽略全部表
+        ContextHolder.setAccountType("channel");
         assertThat(handler.ignoreTable("agent_info")).isFalse();
         assertThat(handler.ignoreTable("client_info")).isFalse();
         assertThat(handler.ignoreTable("channel_agent")).isFalse();

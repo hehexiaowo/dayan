@@ -68,6 +68,9 @@ public interface SystemKnowledgeRepoService {
     /** 更新文件标签（≤10，空=清空） */
     void updateDocTags(Long id, String fileId, SystemDocTagsDTO dto);
 
+    /** 删除数据中心文件（百炼数据管理-文件；不影响已建知识库） */
+    void deleteDataCenterFile(String fileId);
+
     /** 上传文档（可选类目/解析器/标签；categoryId 空=default，parser 空=智能解析） */
     String uploadDocument(Long id, MultipartFile file, String categoryId, String parser, List<String> tags);
 

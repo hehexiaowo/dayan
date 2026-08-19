@@ -408,6 +408,21 @@ public class BailianKnowledgeClient {
         }
     }
 
+    /** 删除数据中心文件（百炼数据管理-文件；不影响已建知识库，库内文档用 DeleteIndexDocument） */
+    public void deleteDataCenterFile(String fileId) {
+        try {
+            com.aliyun.bailian20231229.models.DeleteFileRequest req =
+                    new com.aliyun.bailian20231229.models.DeleteFileRequest();
+            com.aliyun.bailian20231229.models.DeleteFileResponse resp =
+                    sdkClient.deleteFile(fileId, workspaceId, req);
+            checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "删除文件");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw wrap(e, "删除文件");
+        }
+    }
+
     // ==================== 切片管理 ====================
 
     /**

@@ -139,18 +139,18 @@ VALUES
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
 -- ==================== 知识仓库（本渠道知识库管理，parent=channel:system）====================
--- 对应 ChannelKnowledgeController（/channel-api/knowledge/repos/*，dayan-module-knowledge）。
+-- 对应 ChannelKnowledgeController（/channel-api/system/knowledge/repos/*，dayan-module-knowledge）。
 -- 8 条接口码：查看/创建/更新/删除/同步/上传文档/删除文档/问答。
 INSERT INTO `channel_permission` (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
  `path`, `method`, `sort_order`, `status`,
  `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
 VALUES
-('channel:knowledge:view',      '知识仓库查看',   'channel:system', 3, '/channel-api/knowledge/repos/**',            'GET',    200, 1, NOW(), NOW(), 'system', 'system', 0),
-('channel:knowledge:create',    '创建知识仓库',   'channel:system', 3, '/channel-api/knowledge/repos',               'POST',   201, 1, NOW(), NOW(), 'system', 'system', 0),
-('channel:knowledge:update',    '编辑知识仓库',   'channel:system', 3, '/channel-api/knowledge/repos/*',             'PUT',    202, 1, NOW(), NOW(), 'system', 'system', 0),
-('channel:knowledge:delete',    '删除知识仓库',   'channel:system', 3, '/channel-api/knowledge/repos/*',             'DELETE', 203, 1, NOW(), NOW(), 'system', 'system', 0),
-('channel:knowledge:sync',      '同步知识仓库',   'channel:system', 3, '/channel-api/knowledge/repos/*/sync',        'POST',   204, 1, NOW(), NOW(), 'system', 'system', 0),
-('channel:knowledge:doc:upload','上传文档',       'channel:system', 3, '/channel-api/knowledge/repos/*/documents',   'POST',   205, 1, NOW(), NOW(), 'system', 'system', 0),
-('channel:knowledge:doc:delete','删除文档',       'channel:system', 3, '/channel-api/knowledge/repos/*/documents/*','DELETE', 206, 1, NOW(), NOW(), 'system', 'system', 0),
-('channel:knowledge:chat',      '知识库问答',     'channel:system', 3, '/channel-api/knowledge/repos/*/chat',        'POST',   207, 1, NOW(), NOW(), 'system', 'system', 0)
+('channel:knowledge:view',      '知识仓库查看',   'channel:system', 3, '/channel-api/system/knowledge/repos/**',            'GET',    200, 1, NOW(), NOW(), 'system', 'system', 0),
+('channel:knowledge:create',    '创建知识仓库',   'channel:system', 3, '/channel-api/system/knowledge/repos',               'POST',   201, 1, NOW(), NOW(), 'system', 'system', 0),
+('channel:knowledge:update',    '编辑知识仓库',   'channel:system', 3, '/channel-api/system/knowledge/repos/*',             'PUT',    202, 1, NOW(), NOW(), 'system', 'system', 0),
+('channel:knowledge:delete',    '删除知识仓库',   'channel:system', 3, '/channel-api/system/knowledge/repos/*',             'DELETE', 203, 1, NOW(), NOW(), 'system', 'system', 0),
+('channel:knowledge:sync',      '同步知识仓库',   'channel:system', 3, '/channel-api/system/knowledge/repos/*/sync',        'POST',   204, 1, NOW(), NOW(), 'system', 'system', 0),
+('channel:knowledge:doc:upload','上传文档',       'channel:system', 3, '/channel-api/system/knowledge/repos/*/documents',   'POST',   205, 1, NOW(), NOW(), 'system', 'system', 0),
+('channel:knowledge:doc:delete','删除文档',       'channel:system', 3, '/channel-api/system/knowledge/repos/*/documents/*','DELETE', 206, 1, NOW(), NOW(), 'system', 'system', 0),
+('channel:knowledge:chat',      '知识库问答',     'channel:system', 3, '/channel-api/system/knowledge/repos/*/chat',        'POST',   207, 1, NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;

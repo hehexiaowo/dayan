@@ -595,6 +595,14 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         requireClient().updateFileTags(fileId, dto.getTags());
     }
 
+    @Override
+    public void deleteDataCenterFile(String fileId) {
+        if (StrUtil.isBlank(fileId)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "文件 ID 不能为空");
+        }
+        requireClient().deleteDataCenterFile(fileId);
+    }
+
     // ==================== RAG 问答 / 检索 ====================
 
     @Override
