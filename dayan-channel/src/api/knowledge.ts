@@ -3,10 +3,18 @@
  *
  * 对齐后端 ChannelKnowledgeController（/channel-api/system/knowledge/repos）。
  * 本渠道由后端 ContextHolder 强制注入，前端不传 channelCode；
- * 创建接口 repoType=2 由后端固定，前端仅提交名称/描述。
+ * 创建接口 repoType=2 由后端固定，前端提交名称/描述/索引配置。
  */
 import { request } from '@/utils/request'
-import type { KnowledgeRepo, KnowledgeRepoTreeNode, KnowledgeDoc, KnowledgeChunk, KnowledgeChatResult } from '@/types/knowledge'
+import type {
+  KnowledgeRepo,
+  KnowledgeRepoTreeNode,
+  KnowledgeDoc,
+  KnowledgeChunk,
+  KnowledgeChatResult,
+  KnowledgeIndexConfig,
+  KnowledgeCategory
+} from '@/types/knowledge'
 
 /** 本渠道仓库详情（未创建返回 null） */
 export function getCurrentKnowledgeRepo(): Promise<KnowledgeRepo | null> {
@@ -19,7 +27,12 @@ export function getKnowledgeRepoTree(): Promise<KnowledgeRepoTreeNode[]> {
 }
 
 /** 创建本渠道仓库（懒建库，上传首个文档解析成功后自动在百炼建库） */
-export function createKnowledgeRepo(data: { repoName: string; description?: string }): Promise<number> {
+export function createKnowledgeRepo(data: {
+  repoName: string
+  description?: string
+  /** 索引配置（切分方式/检索参数；建库后不可修改） */
+  indexConfig?: KnowledgeIndexConfig
+}): Promise<number> {
   return request<number>({ url: '/channel-api/system/knowledge/repos', method: 'post', data })
 }
 
@@ -58,15 +71,48 @@ export function listKnowledgeDocs(
   return request<KnowledgeDoc[]>({ url: `/channel-api/system/knowledge/repos/${id}/documents`, method: 'get', params })
 }
 
-/** 上传文档（multipart，返回百炼 FileId，解析异步） */
-export function uploadKnowledgeDoc(id: number, file: File): Promise<string> {
+/** 上传文档（multipart；可指定类目/解析器/标签，返回百炼 FileId，解析异步） */
+export function uploadKnowledgeDoc(
+  id: number,
+  file: File,
+  options?: { categoryId?: string; parser?: string; tags?: string[] },
+  silent = false
+): Promise<string> {
   const form = new FormData()
   form.append('file', file)
+  if (options?.categoryId) form.append('categoryId', options.categoryId)
+  if (options?.parser) form.append('parser', options.parser)
+  options?.tags?.forEach((t) => form.append('tags', t))
   return request<string>({
     url: `/channel-api/system/knowledge/repos/${id}/documents`,
     method: 'post',
     data: form,
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    silent
+  })
+}
+
+/** 类目列表（全量平铺） */
+export function listKnowledgeCategories(): Promise<KnowledgeCategory[]> {
+  return request<KnowledgeCategory[]>({ url: '/channel-api/system/knowledge/categories', method: 'get' })
+}
+
+/** 新增类目 */
+export function addKnowledgeCategory(data: { categoryName: string; parentCategoryId?: string }): Promise<string> {
+  return request<string>({ url: '/channel-api/system/knowledge/categories', method: 'post', data })
+}
+
+/** 删除类目 */
+export function deleteKnowledgeCategory(categoryId: string): Promise<void> {
+  return request<void>({ url: `/channel-api/system/knowledge/categories/${categoryId}`, method: 'delete' })
+}
+
+/** 更新文件标签（≤10，空=清空） */
+export function updateKnowledgeDocTags(id: number, fileId: string, tags: string[]): Promise<void> {
+  return request<void>({
+    url: `/channel-api/system/knowledge/repos/${id}/documents/${fileId}/tags`,
+    method: 'put',
+    data: { tags }
   })
 }
 

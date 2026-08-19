@@ -49,9 +49,21 @@ function handleUnauthorized() {
   }
 }
 
+/**
+ * 判断本次请求是否要求静默（不弹全局错误 toast）。
+ *
+ * 调用方可在 config 上挂 silent: true，用于"接口未实现/已知降级"等场景——
+ * 此时错误仍会 reject 给业务层 catch 自行处理，但拦截器不再重复弹 toast，
+ * 避免与页面的业务提示叠加（例如上传多文件时按文件逐个提示失败原因）。
+ */
+function isSilent(config: unknown): boolean {
+  return Boolean((config as { silent?: boolean } | undefined)?.silent)
+}
+
 service.interceptors.response.use(
   (response) => {
     const res = response.data as ApiResult
+    const silent = isSilent(response.config)
 
     // 后端统一封装 R<T>：code===0 视为成功，返回 data
     if (res && typeof res.code === 'number') {
@@ -59,14 +71,16 @@ service.interceptors.response.use(
         return res.data
       }
 
-      // Token 失效：未登录 / Token 过期
+      // Token 失效：未登录 / Token 过期（静默选项不抑制登录失效跳转）
       if (res.code === CODE_UNAUTHORIZED || res.code === CODE_TOKEN_INVALID) {
         handleUnauthorized()
         return Promise.reject(new Error(res.message || '登录状态已失效'))
       }
 
-      // 其它业务错误
-      ElMessage.error(res.message || '请求失败')
+      // 其它业务错误：默认弹 toast，silent 时只 reject 不弹
+      if (!silent) {
+        ElMessage.error(res.message || '请求失败')
+      }
       return Promise.reject(new Error(res.message || 'Error'))
     }
 
@@ -78,7 +92,7 @@ service.interceptors.response.use(
     const status = error?.response?.status
     if (status === 401) {
       handleUnauthorized()
-    } else {
+    } else if (!isSilent(error?.config)) {
       const msg = error?.response?.data?.message || error.message || '网络异常，请稍后重试'
       ElMessage.error(msg)
     }
@@ -87,7 +101,7 @@ service.interceptors.response.use(
 )
 
 /** 通用请求方法，返回后端 R<T> 中的 data */
-export function request<T = unknown>(config: AxiosRequestConfig): Promise<T> {
+export function request<T = unknown>(config: AxiosRequestConfig & { silent?: boolean }): Promise<T> {
   // 响应拦截器已对 R<T> 拆包并返回 data，此处用 unknown 中转后断言为 T
   // （axios 类型按完整 response 推导，与拦截器拆包语义不一致，故需断言）
   return service.request(config) as Promise<T>

@@ -13,7 +13,7 @@
  * 管理操作仅本渠道（后端租户拦截兜底）；chat/retrieve 后端按
  * 「当前渠道 ∪ 祖先 ∪ 后代」可见性校验，继承库可问答。
  */
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import type { UploadRequestOptions } from 'element-plus'
 import {
@@ -31,18 +31,29 @@ import {
   getKnowledgeRepoBuildStatus,
   deleteKnowledgeDoc,
   chatKnowledgeRepo,
-  retrieveKnowledgeRepo
+  retrieveKnowledgeRepo,
+  listKnowledgeCategories,
+  updateKnowledgeDocTags
 } from '@/api/knowledge'
-import type { KnowledgeRepoTreeNode, KnowledgeDoc, KnowledgeChatResult } from '@/types/knowledge'
+import type {
+  KnowledgeRepoTreeNode,
+  KnowledgeDoc,
+  KnowledgeChatResult,
+  KnowledgeIndexConfig,
+  KnowledgeCategory
+} from '@/types/knowledge'
 import {
   knowledgeRepoStatusLabel,
   knowledgeRepoStatusTagType,
   indexStatusLabel,
-  indexStatusTagType
+  indexStatusTagType,
+  parseStatusLabel,
+  KNOWLEDGE_PARSER_OPTIONS
 } from '@/types/knowledge'
 import { getChannelInfoCurrent } from '@/api/channel-sub'
 import { formatDateTime } from '@/utils/format'
 import ChunkDialog from '@/components/ChunkDialog/index.vue'
+import KnowledgeCategoryDialog from '@/components/KnowledgeCategoryDialog/index.vue'
 
 // ==================== 树形加载 ====================
 const loading = ref(false)
@@ -67,7 +78,10 @@ async function loadTree() {
   }
 }
 
-onMounted(loadTree)
+onMounted(() => {
+  loadTree()
+  loadCategories()
+})
 
 /** 是否本渠道节点（仅本渠道可管理） */
 const isOwn = computed(() => !!selectedNode.value && selectedNode.value.channelCode === ownChannelCode.value)
@@ -76,18 +90,42 @@ const activeRepo = computed(() => selectedNode.value?.effectiveRepo ?? null)
 /** 选中节点独立配置的仓库 */
 const ownRepo = computed(() => selectedNode.value?.repo ?? null)
 
+// ==================== 类目管理弹窗 ====================
+const categoryDialogVisible = ref(false)
+
 // ==================== 创建仓库弹窗 ====================
 const createVisible = ref(false)
 const createLoading = ref(false)
 const createFormRef = ref<FormInstance>()
-const createForm = ref({ repoName: '', description: '' })
+const createForm = ref<{
+  repoName: string
+  description: string
+  indexConfig: KnowledgeIndexConfig
+}>({ repoName: '', description: '', indexConfig: emptyIndexConfig() })
+
+/** 索引配置默认值（懒建库模式：建库后不可修改） */
+function emptyIndexConfig(): KnowledgeIndexConfig {
+  return {
+    chunkMode: undefined,
+    separator: '',
+    chunkSize: 500,
+    overlapSize: 100,
+    embeddingModel: 'text-embedding-v3',
+    rerankModel: 'qwen3-rerank',
+    rerankMode: 'qa',
+    rerankMinScore: 0.01,
+    enableRewrite: true,
+    denseTopK: 4,
+    sparseTopK: 4
+  }
+}
 
 const createRules: FormRules = {
   repoName: [{ required: true, message: '请输入仓库名称', trigger: 'blur' }]
 }
 
 async function openCreate() {
-  createForm.value = { repoName: '', description: '' }
+  createForm.value = { repoName: '', description: '', indexConfig: emptyIndexConfig() }
   // 默认名：本渠道简称 + 知识库（取简称失败时保持空名称由用户手填）
   try {
     const current = await getChannelInfoCurrent()
@@ -109,7 +147,8 @@ async function handleCreate() {
   try {
     await createKnowledgeRepo({
       repoName: createForm.value.repoName.trim(),
-      description: createForm.value.description.trim() || undefined
+      description: createForm.value.description.trim() || undefined,
+      indexConfig: { ...createForm.value.indexConfig }
     })
     ElMessage.success('创建成功，上传首个文档后将自动在百炼建库')
     createVisible.value = false
@@ -219,14 +258,86 @@ function onSelectNode(node: KnowledgeRepoTreeNode) {
   }
 }
 
-async function handleUpload(options: UploadRequestOptions) {
-  if (!ownRepo.value?.id) return
-  const fileName = options.file.name
+// ---------- 上传设置（选文件 → 设置对话框 → 确认后逐个上传） ----------
+/** 待上传文件（设置对话框确认后逐个上传） */
+const pendingFiles = ref<File[]>([])
+const uploadDialogVisible = ref(false)
+const uploadSetting = reactive({
+  categoryId: '' as string, // 空 = 默认类目 default
+  parser: 'DASHSCOPE_DOCMIND',
+  tags: [] as string[]
+})
+const categories = ref<KnowledgeCategory[]>([])
+/** 类目名映射（展示用） */
+const categoryNameMap = ref(new Map<string, string>())
+
+interface CategoryTreeNode extends KnowledgeCategory {
+  children: CategoryTreeNode[]
+}
+
+/** 平铺 → 树（parentCategoryId 挂接；顶层含百炼 default 类目） */
+function buildCategoryTree(flat: KnowledgeCategory[]): CategoryTreeNode[] {
+  const map = new Map<string, CategoryTreeNode>()
+  flat.forEach((c) => map.set(c.categoryId, { ...c, children: [] }))
+  const roots: CategoryTreeNode[] = []
+  map.forEach((node) => {
+    if (node.parentCategoryId && map.has(node.parentCategoryId)) {
+      map.get(node.parentCategoryId)!.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+  return roots
+}
+
+async function loadCategories() {
+  try {
+    const list = await listKnowledgeCategories()
+    categories.value = list
+    categoryNameMap.value = new Map(list.map((c) => [c.categoryId, c.categoryName]))
+  } catch {
+    categories.value = []
+  }
+}
+
+/** 拖入/选择文件 → 打开上传设置 */
+function handleSelectFile(options: UploadRequestOptions) {
+  pendingFiles.value.push(options.file)
+  uploadDialogVisible.value = true
+  return Promise.resolve() // 阻止 el-upload 直接上传，由确认后统一走 handleUpload
+}
+
+/** 取消上传设置：关闭对话框并清空待传文件，避免下次打开混入旧文件 */
+function closeUploadDialog() {
+  uploadDialogVisible.value = false
+  pendingFiles.value = []
+}
+
+/** 确认上传：按设置逐个上传 */
+async function confirmUpload() {
+  const repoId = ownRepo.value?.id
+  if (!repoId) return
+  // 先快照并清空，再关闭对话框（@close 也会清空 pendingFiles，二者互不干扰）
+  const files = pendingFiles.value
+  pendingFiles.value = []
+  uploadDialogVisible.value = false
+  for (const file of files) {
+    await handleUpload(repoId, file, {
+      categoryId: uploadSetting.categoryId || undefined,
+      parser: uploadSetting.parser,
+      tags: uploadSetting.tags
+    })
+  }
+}
+
+async function handleUpload(repoId: number, file: File, opts: { categoryId?: string; parser: string; tags: string[] }) {
+  const fileName = file.name
   let fileId: string
   try {
-    fileId = await uploadKnowledgeDoc(ownRepo.value.id, options.file)
-  } catch {
-    ElMessage.error(`「${fileName}」上传失败`)
+    fileId = await uploadKnowledgeDoc(repoId, file, opts, true)
+  } catch (e) {
+    const msg = e instanceof Error && e.message ? e.message : '未知原因'
+    ElMessage.error(`「${fileName}」上传失败：${msg}`)
     return
   }
   const task: UploadTask = { fileId, fileName, status: 'parsing' }
@@ -370,6 +481,44 @@ function openChunks(row: KnowledgeDoc) {
   chunkDialogRef.value?.open(row.fileId, row.fileName)
 }
 
+// ---------- 文件详情 / 编辑标签 ----------
+const detailVisible = ref(false)
+const detailRow = ref<KnowledgeDoc | null>(null)
+const editTagsVisible = ref(false)
+const editingFile = ref<KnowledgeDoc | null>(null)
+const editTags = ref<string[]>([])
+
+function openDetail(row: KnowledgeDoc) {
+  detailRow.value = row
+  detailVisible.value = true
+}
+
+function openEditTags(row: KnowledgeDoc) {
+  editingFile.value = row
+  editTags.value = [...(row.tags || [])]
+  editTagsVisible.value = true
+}
+
+async function confirmEditTags() {
+  const repoId = ownRepo.value?.id
+  if (!editingFile.value || !repoId) return
+  const tags = editTags.value.slice(0, 10)
+  try {
+    await updateKnowledgeDocTags(repoId, editingFile.value.fileId, tags)
+    editingFile.value.tags = tags
+    editTagsVisible.value = false
+    ElMessage.success('标签已更新')
+  } catch {
+    // 失败时保持对话框打开、不回写，便于用户重试
+    ElMessage.error('标签更新失败，请重试')
+  }
+}
+
+/** 解析器选项名（unknown 原样展示） */
+function parserLabel(v?: string): string {
+  return KNOWLEDGE_PARSER_OPTIONS.find((o) => o.value === v)?.label || v || '--'
+}
+
 function formatSize(bytes?: number): string {
   if (!bytes) return '--'
   if (bytes < 1024) return `${bytes} B`
@@ -458,6 +607,16 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
       <div class="page-head">
         <span class="card-title">渠道知识库</span>
         <span class="page-tip">本渠道可管理自己的知识库；子渠道继承的知识库只可使用，不可管理</span>
+        <div class="tree-toolbar">
+          <el-button
+            size="small"
+            :icon="'FolderOpened'"
+            v-permission="'system:knowledge:repo:list'"
+            @click="categoryDialogVisible = true"
+          >
+            类目管理
+          </el-button>
+        </div>
       </div>
       <el-tree
         :data="treeData"
@@ -544,7 +703,7 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
               <div class="doc-upload">
                 <el-upload
                   :show-file-list="false"
-                  :http-request="handleUpload"
+                  :http-request="handleSelectFile"
                   :multiple="true"
                   :accept="'.pdf,.doc,.docx,.md,.txt,.xls,.xlsx,.ppt,.pptx'"
                   v-permission="'channel:knowledge:doc:upload'"
@@ -553,10 +712,59 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                   <div class="upload-inner">
                     <el-icon size="36" color="#909399"><UploadFilled /></el-icon>
                     <div class="upload-text">拖拽文件到此处，或<em>点击上传</em></div>
-                    <div class="upload-tip">支持 PDF / Word / Markdown / TXT / Excel / PPT，上传后自动解析入库</div>
+                    <div class="upload-tip">支持 PDF / Word / Markdown / TXT / Excel / PPT，单文件 ≤ 100MB；上传后自动解析并入索引</div>
                   </div>
                 </el-upload>
               </div>
+
+              <!-- 上传设置（选文件后先确认类目/解析器/标签再上传） -->
+              <el-dialog v-model="uploadDialogVisible" title="上传设置" width="480px" :close-on-click-modal="false" @close="closeUploadDialog">
+                <el-form label-width="80px">
+                  <el-form-item label="文件">
+                    <span class="upload-file-list">
+                      <el-tag v-for="(f, i) in pendingFiles" :key="i" size="small" closable @close="pendingFiles.splice(i, 1)">
+                        {{ f.name }}
+                      </el-tag>
+                    </span>
+                  </el-form-item>
+                  <el-form-item label="所属类目">
+                    <el-tree-select
+                      v-model="uploadSetting.categoryId"
+                      :data="buildCategoryTree(categories)"
+                      node-key="categoryId"
+                      :props="{ label: 'categoryName', children: 'children' }"
+                      check-strictly
+                      clearable
+                      placeholder="默认类目"
+                      style="width: 100%"
+                    />
+                  </el-form-item>
+                  <el-form-item label="解析器">
+                    <el-select v-model="uploadSetting.parser" style="width: 100%">
+                      <el-option v-for="o in KNOWLEDGE_PARSER_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item label="标签">
+                    <el-select
+                      v-model="uploadSetting.tags"
+                      multiple
+                      filterable
+                      allow-create
+                      default-first-option
+                      placeholder="输入后回车创建，最多 10 个"
+                      style="width: 100%"
+                    >
+                      <el-option v-for="t in uploadSetting.tags" :key="t" :label="t" :value="t" />
+                    </el-select>
+                  </el-form-item>
+                </el-form>
+                <template #footer>
+                  <el-button @click="closeUploadDialog">取消</el-button>
+                  <el-button type="primary" :disabled="!pendingFiles.length" @click="confirmUpload">
+                    上传 {{ pendingFiles.length ? `（${pendingFiles.length} 个文件）` : '' }}
+                  </el-button>
+                </template>
+              </el-dialog>
 
               <!-- 处理中任务 -->
               <el-card v-if="tasks.length" shadow="never" class="task-card">
@@ -581,11 +789,21 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                     </el-tag>
                   </template>
                 </el-table-column>
+                <el-table-column label="标签" min-width="140">
+                  <template #default="{ row }">
+                    <template v-if="row.tags?.length">
+                      <el-tag v-for="t in row.tags" :key="t" size="small" style="margin-right: 4px">{{ t }}</el-tag>
+                    </template>
+                    <span v-else class="no-tags">--</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="更新时间" width="170" align="center">
                   <template #default="{ row }">{{ formatTime(row.gmtModified) }}</template>
                 </el-table-column>
-                <el-table-column label="操作" width="140" fixed="right">
+                <el-table-column label="操作" width="220" fixed="right">
                   <template #default="{ row }">
+                    <el-button link type="info" size="small" @click="openDetail(row)">详情</el-button>
+                    <el-button link type="warning" size="small" @click="openEditTags(row)">标签</el-button>
                     <el-button link type="primary" size="small" @click="openChunks(row)">切片</el-button>
                     <el-button link type="danger" size="small" v-permission="'channel:knowledge:doc:delete'" @click="handleDeleteDoc(row)">
                       删除
@@ -596,6 +814,32 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                   <el-empty description="暂无文档，上传后自动解析入库" :image-size="80" />
                 </template>
               </el-table>
+
+              <!-- 文件详情 -->
+              <el-dialog v-model="detailVisible" title="文件详情" width="480px">
+                <el-descriptions v-if="detailRow" :column="1" border>
+                  <el-descriptions-item label="文件名">{{ detailRow.fileName }}</el-descriptions-item>
+                  <el-descriptions-item label="所属类目">
+                    {{ detailRow.categoryId ? categoryNameMap.get(detailRow.categoryId) || detailRow.categoryId : '默认类目' }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="解析器">{{ parserLabel(detailRow.parser) }}</el-descriptions-item>
+                  <el-descriptions-item label="解析状态">{{ parseStatusLabel(detailRow.parseStatus) }}</el-descriptions-item>
+                  <el-descriptions-item label="文件大小">{{ formatSize(detailRow.sizeInBytes) }}</el-descriptions-item>
+                  <el-descriptions-item label="文件 ID">{{ detailRow.fileId }}</el-descriptions-item>
+                </el-descriptions>
+                <template #footer><el-button @click="detailVisible = false">关闭</el-button></template>
+              </el-dialog>
+
+              <!-- 编辑标签 -->
+              <el-dialog v-model="editTagsVisible" title="编辑标签" width="440px">
+                <el-select v-model="editTags" multiple filterable allow-create default-first-option style="width: 100%" placeholder="输入后回车创建，最多 10 个">
+                  <el-option v-for="t in editTags" :key="t" :label="t" :value="t" />
+                </el-select>
+                <template #footer>
+                  <el-button @click="editTagsVisible = false">取消</el-button>
+                  <el-button type="primary" @click="confirmEditTags">保存</el-button>
+                </template>
+              </el-dialog>
             </el-tab-pane>
 
             <!-- 问答测试 -->
@@ -726,21 +970,68 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
     </el-dialog>
 
     <!-- 创建弹窗 -->
-    <el-dialog v-model="createVisible" title="创建知识仓库" width="520px" :close-on-click-modal="false">
-      <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="90px">
+    <el-dialog v-model="createVisible" title="创建知识仓库" width="680px" :close-on-click-modal="false">
+      <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="110px">
         <el-form-item label="仓库名称" prop="repoName">
           <el-input v-model="createForm.repoName" placeholder="如：本渠道知识库" maxlength="100" />
+        </el-form-item>
+        <el-form-item label="切分方式">
+          <el-radio-group v-model="createForm.indexConfig.chunkMode">
+            <el-radio :value="undefined">智能切分</el-radio>
+            <el-radio value="regex">自定义切分</el-radio>
+          </el-radio-group>
+          <div class="form-tip">智能切分按语义自动切块；自定义按分隔符 + 长度 + 重叠切块（建库后不可修改）</div>
+        </el-form-item>
+        <template v-if="createForm.indexConfig.chunkMode === 'regex'">
+          <el-form-item label="分隔符">
+            <el-input v-model="createForm.indexConfig.separator" placeholder="正则表达式，如 (?<=。)" />
+          </el-form-item>
+          <el-form-item label="切块长度">
+            <el-input-number v-model="createForm.indexConfig.chunkSize" :min="1" :max="6000" controls-position="right" />
+          </el-form-item>
+          <el-form-item label="重叠长度">
+            <el-input-number v-model="createForm.indexConfig.overlapSize" :min="0" :max="1024" controls-position="right" />
+          </el-form-item>
+        </template>
+        <el-form-item label="向量模型">
+          <el-select v-model="createForm.indexConfig.embeddingModel" style="width: 220px">
+            <el-option label="text-embedding-v3" value="text-embedding-v3" />
+            <el-option label="text-embedding-v4" value="text-embedding-v4" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="重排模型">
+          <el-select v-model="createForm.indexConfig.rerankModel" style="width: 220px">
+            <el-option label="qwen3-rerank（语义重排）" value="qwen3-rerank" />
+            <el-option label="qwen3-rerank-hybrid（语义+文本匹配）" value="qwen3-rerank-hybrid" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="重排模式">
+          <el-select v-model="createForm.indexConfig.rerankMode" style="width: 220px">
+            <el-option label="问答模式（qa）" value="qa" />
+            <el-option label="相似模式（similar）" value="similar" />
+            <el-option label="自定义（custom）" value="custom" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="相似度阈值">
+          <el-input-number v-model="createForm.indexConfig.rerankMinScore" :min="0.01" :max="1" :step="0.01" controls-position="right" />
+        </el-form-item>
+        <el-form-item label="多轮改写">
+          <el-switch v-model="createForm.indexConfig.enableRewrite" />
+          <span class="form-tip" style="margin-left: 8px">多轮对话时对问题做改写后检索</span>
         </el-form-item>
         <el-form-item label="仓库描述">
           <el-input v-model="createForm.description" type="textarea" :rows="3" maxlength="255" placeholder="选填" />
         </el-form-item>
-        <div class="form-tip">创建成功后上传首个文档，解析完成将自动在百炼云端建库。</div>
+        <div class="form-tip standalone">创建成功后上传首个文档，解析完成将自动在百炼云端建库。</div>
       </el-form>
       <template #footer>
         <el-button @click="createVisible = false">取消</el-button>
         <el-button type="primary" :loading="createLoading" @click="handleCreate">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 类目管理弹窗 -->
+    <KnowledgeCategoryDialog v-model="categoryDialogVisible" />
   </div>
 </template>
 
@@ -769,6 +1060,9 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
         font-size: 12px;
         color: #909399;
         line-height: 1.5;
+      }
+      .tree-toolbar {
+        margin-top: 8px;
       }
     }
 
@@ -882,6 +1176,17 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
       }
     }
 
+    .upload-file-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .no-tags {
+      color: #c0c4cc;
+    }
+
     .ask-row {
       display: flex;
       gap: 12px;
@@ -971,7 +1276,10 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
       font-size: 12px;
       color: #909399;
       line-height: 1.5;
-      padding-left: 90px;
+      width: 100%;
+      &.standalone {
+        padding-left: 110px;
+      }
     }
   }
 }
