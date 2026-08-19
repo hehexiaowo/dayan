@@ -196,7 +196,7 @@ async function handleSubmit() {
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
-    loadPage()
+    loadPage().catch((err) => { console.warn('[account] 加载失败:', err) })
   } finally {
     submitLoading.value = false
   }
@@ -211,7 +211,7 @@ async function handleDeleteRow(row: ChannelAccount) {
   })
   await deleteChannelAccount(row.accountCode)
   ElMessage.success('删除成功')
-  loadPage()
+  loadPage().catch((err) => { console.warn('[account] 加载失败:', err) })
 }
 
 /** 重置密码（二次确认 → 调用 resetChannelAccountPassword） */
@@ -351,7 +351,7 @@ function handleReset() {
 
 onMounted(() => {
   loadChannelOptions()
-  loadPage()
+  loadPage().catch((err) => { console.warn('[account] 加载失败:', err) })
 })
 </script>
 

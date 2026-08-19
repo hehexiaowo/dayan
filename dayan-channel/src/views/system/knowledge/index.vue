@@ -50,6 +50,7 @@ import {
   parseStatusLabel,
   KNOWLEDGE_PARSER_OPTIONS
 } from '@/types/knowledge'
+import { FolderOpened } from '@element-plus/icons-vue'
 import { getChannelInfoCurrent } from '@/api/channel-sub'
 import { formatDateTime } from '@/utils/format'
 import ChunkDialog from '@/components/ChunkDialog/index.vue'

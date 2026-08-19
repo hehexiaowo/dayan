@@ -7,7 +7,8 @@
  * 列表与详情展示一律不返回这些字段。
  */
 
-import { Gender } from '@/types/common'
+import { Gender, GENDER_OPTIONS } from './common'
+export { Gender, GENDER_OPTIONS }
 
 /** 账号状态：0=锁定 1=正常 2=禁用（对齐 DDL organ_account.account_status） */
 export enum AccountStatus {
@@ -24,13 +25,6 @@ export const ACCOUNT_STATUS_OPTIONS = [
   { label: '锁定', value: AccountStatus.LOCKED },
   { label: '正常', value: AccountStatus.NORMAL },
   { label: '禁用', value: AccountStatus.DISABLED }
-] as const
-
-/** 性别（与字典 sex 对齐）：1男 2女 0未知 */
-export const GENDER_OPTIONS = [
-  { label: '男', value: Gender.MALE },
-  { label: '女', value: Gender.FEMALE },
-  { label: '未知', value: Gender.UNKNOWN }
 ] as const
 
 /**

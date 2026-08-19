@@ -6,8 +6,8 @@
  * 对应表 system_message_template（01 迁移 3.1.8）/ system_message（3.1.16）。
  */
 
-/** 渠道类型（两表共用枚举） */
-export const CHANNEL_TYPE_OPTIONS = [
+/** 渠道类型（消息专用，区别于 channel.ts 的同名常量） */
+export const MESSAGE_CHANNEL_TYPE_OPTIONS = [
   { label: '短信', value: 1 },
   { label: '站内信', value: 2 },
   { label: 'APP推送', value: 3 },
@@ -18,7 +18,7 @@ export const CHANNEL_TYPE_OPTIONS = [
 
 /** 渠道类型标签文案 */
 export function channelTypeLabel(type?: number | null): string {
-  return CHANNEL_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? String(type ?? '')
+  return MESSAGE_CHANNEL_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? String(type ?? '')
 }
 
 /** 常见业务类型（模板/记录筛选下拉，后端为自由文本） */
@@ -48,7 +48,7 @@ export interface MessageTemplate {
   templateName?: string
   /** 业务类型（register/login/order/refund 等自由文本） */
   bizType?: string
-  /** 渠道类型，见 CHANNEL_TYPE_OPTIONS */
+  /** 渠道类型，见 MESSAGE_CHANNEL_TYPE_OPTIONS */
   channelType?: number
   /** 消息标题（站内信/推送/邮件必填） */
   title?: string | null

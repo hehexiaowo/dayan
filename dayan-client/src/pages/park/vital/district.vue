@@ -125,7 +125,7 @@ async function initMapView() {
     }));
 
   if (itemsWithCoords.length > 0) {
-    markerGroup = addIconMarkers(map, itemsWithCoords, (item) => {
+    markerGroup = await addIconMarkers(map, itemsWithCoords, (item) => {
       uni.navigateTo({
         url: `/pages/park/vital/detail?parkCode=${item.code}`,
       });

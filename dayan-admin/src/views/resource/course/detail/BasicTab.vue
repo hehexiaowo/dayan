@@ -6,6 +6,11 @@ import type { CourseInfo, CourseLecturer } from '@/types/course'
 import { COURSE_TYPE_OPTIONS } from '@/types/course'
 import FileUploader from '@/components/FileUploader/index.vue'
 import { formatFileUrl } from '@/utils/file'
+
+interface CourseChapter {
+  title: string
+  lessons?: { title: string; duration?: number }[]
+}
 import { useDictOptions } from '@/composables/useDict'
 
 /** 课程分类选项（业务字典 course_category） */
@@ -46,7 +51,7 @@ const outlineChapters = computed<OutlineChapterModel[]>(() => {
   try {
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter((ch: any) => ch && typeof ch.title === 'string' && Array.isArray(ch.lessons))
+    return parsed.filter((ch: CourseChapter) => ch && typeof ch.title === 'string' && Array.isArray(ch.lessons))
   } catch {
     return []
   }
@@ -67,12 +72,12 @@ function parseOutline(raw?: string): OutlineChapterModel[] {
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
     return parsed
-      .filter((ch: any) => ch && typeof ch.title === 'string' && Array.isArray(ch.lessons))
-      .map((ch: any) => ({
+      .filter((ch: CourseChapter) => ch && typeof ch.title === 'string' && Array.isArray(ch.lessons))
+      .map((ch: CourseChapter) => ({
         title: ch.title,
-        lessons: ch.lessons
-          .filter((ls: any) => ls && typeof ls.title === 'string')
-          .map((ls: any) => ({ title: ls.title, duration: ls.duration ?? undefined }))
+        lessons: (ch.lessons ?? [])
+          .filter((ls: { title: string; duration?: number }) => ls && typeof ls.title === 'string')
+          .map((ls: { title: string; duration?: number }) => ({ title: ls.title, duration: ls.duration ?? undefined }))
       }))
   } catch {
     return []

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { User, UserFilled, Ticket, List, Odometer } from '@element-plus/icons-vue'
 import { getDashboardStats, type DashboardStats } from '@/api/dashboard'
 
 /**

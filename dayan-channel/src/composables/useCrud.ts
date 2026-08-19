@@ -40,6 +40,10 @@ export function useCrud<T extends Record<string, unknown>, Q extends PageQuery>(
       const res = await api.page(query)
       tableData.value = res.records
       total.value = res.total
+    } catch (err) {
+      console.warn('[useCrud] 加载失败:', err)
+      tableData.value = []
+      total.value = 0
     } finally {
       loading.value = false
     }

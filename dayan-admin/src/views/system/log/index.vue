@@ -56,11 +56,10 @@ async function loadData() {
     const res = await pageSystemLogs({ ...query })
     tableData.value = res.records
     total.value = res.total
-  } catch (err) {
+  } catch {
     tableData.value = []
     total.value = 0
     ElMessage.error('加载系统日志失败')
-    void err
   } finally {
     loading.value = false
   }

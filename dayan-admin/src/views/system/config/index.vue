@@ -198,9 +198,8 @@ async function handleSubmit() {
     }
     dialogVisible.value = false
     await load()
-  } catch (err) {
+  } catch {
     // 错误消息已由响应拦截器统一提示
-    void err
   } finally {
     submitting.value = false
   }
@@ -221,8 +220,8 @@ async function onDelete(row: SystemConfig) {
     await deleteConfig(row.configKey)
     ElMessage.success('配置已删除')
     await load()
-  } catch (err) {
-    void err
+  } catch {
+    /* 拦截器已处理 */
   }
 }
 

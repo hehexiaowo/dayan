@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus'
 import { pageMessageRecords, getMessageRecordDetail } from '@/api/message'
 import {
   type MessageRecord,
-  CHANNEL_TYPE_OPTIONS,
+  MESSAGE_CHANNEL_TYPE_OPTIONS,
   BIZ_TYPE_OPTIONS,
   SEND_STATUS_OPTIONS,
   TARGET_TYPE_OPTIONS,
@@ -103,10 +103,9 @@ async function openDetail(row: MessageRecord) {
   detailLoading.value = true
   try {
     detailRow.value = await getMessageRecordDetail(row.id!)
-  } catch (err) {
+  } catch {
     detailRow.value = row
     ElMessage.error('加载记录详情失败，已展示列表数据')
-    void err
   } finally {
     detailLoading.value = false
   }
@@ -132,7 +131,7 @@ onMounted(loadData)
           <el-option v-for="o in BIZ_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
         <el-select v-model="query.channelType" placeholder="渠道" clearable style="width: 120px">
-          <el-option v-for="o in CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          <el-option v-for="o in MESSAGE_CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
         <el-select v-model="query.sendStatus" placeholder="发送状态" clearable style="width: 120px">
           <el-option v-for="o in SEND_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />

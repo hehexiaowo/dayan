@@ -51,7 +51,7 @@ const {
   }
 )
 
-loadPage()
+loadPage().catch((err) => { console.warn('[role] 加载失败:', err) })
 
 // ---------- 新增 / 编辑弹窗 ----------
 const dialogVisible = ref(false)
@@ -132,7 +132,7 @@ async function handleSubmit() {
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false
-    loadPage()
+    loadPage().catch((err) => { console.warn('[role] 加载失败:', err) })
   } finally {
     submitLoading.value = false
   }
@@ -147,7 +147,7 @@ async function handleDeleteRow(row: ChannelRole) {
   })
   await deleteChannelRole(row.roleCode)
   ElMessage.success('删除成功')
-  loadPage()
+  loadPage().catch((err) => { console.warn('[role] 加载失败:', err) })
 }
 
 function handleReset() {

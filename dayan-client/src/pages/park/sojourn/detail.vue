@@ -338,7 +338,7 @@ const tabsSticky = ref(false);
 let parkCode = '';
 
 // #ifdef H5
-let detailMap: any = null;
+let detailMap: import('leaflet').Map | null = null;
 // #endif
 
 const park = computed<ParkDetail>(() => detail.value?.parkInfo || ({} as ParkDetail));

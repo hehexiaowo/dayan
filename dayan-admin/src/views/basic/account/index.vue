@@ -209,7 +209,12 @@ async function openEdit(row: Account) {
   // 加载该机构角色选项 + 回显账号已分配角色
   await loadRoles(row.organCode)
   if (row.accountCode) {
-    form.roleCodes = await getAccountRoles(row.accountCode)
+    try {
+      form.roleCodes = await getAccountRoles(row.accountCode)
+    } catch {
+      ElMessage.error('加载账号角色失败')
+      form.roleCodes = []
+    }
   }
   suppressRoleWatch.value = false
 }
@@ -283,8 +288,12 @@ async function handleResetPassword(row: Account) {
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await resetPassword(row.accountCode)
-  ElMessage.success('密码已重置')
+  try {
+    await resetPassword(row.accountCode)
+    ElMessage.success('密码已重置')
+  } catch {
+    ElMessage.error('密码重置失败')
+  }
 }
 
 function handleReset() {

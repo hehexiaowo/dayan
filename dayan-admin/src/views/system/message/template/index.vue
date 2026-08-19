@@ -9,7 +9,7 @@ import {
 } from '@/api/message'
 import {
   type MessageTemplate,
-  CHANNEL_TYPE_OPTIONS,
+  MESSAGE_CHANNEL_TYPE_OPTIONS,
   TEMPLATE_STATUS_OPTIONS,
   BIZ_TYPE_OPTIONS,
   channelTypeLabel
@@ -204,8 +204,8 @@ async function handleSubmit() {
     }
     dialogVisible.value = false
     loadData()
-  } catch (err) {
-    void err
+  } catch {
+    /* 拦截器已处理 */
   } finally {
     submitLoading.value = false
   }
@@ -225,8 +225,8 @@ async function handleDeleteRow(row: MessageTemplate) {
     await deleteMessageTemplate(row.id!)
     ElMessage.success('删除成功')
     loadData()
-  } catch (err) {
-    void err
+  } catch {
+    /* 拦截器已处理 */
   }
 }
 
@@ -256,7 +256,7 @@ onMounted(loadData)
           <el-option v-for="o in BIZ_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
         <el-select v-model="query.channelType" placeholder="渠道" clearable style="width: 120px">
-          <el-option v-for="o in CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          <el-option v-for="o in MESSAGE_CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
         <el-select v-model="query.status" placeholder="状态" clearable style="width: 100px">
           <el-option v-for="o in TEMPLATE_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
@@ -385,7 +385,7 @@ onMounted(loadData)
           <el-col :span="12">
             <el-form-item label="渠道类型" prop="channelType">
               <el-select v-model="form.channelType" style="width: 100%">
-                <el-option v-for="o in CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+                <el-option v-for="o in MESSAGE_CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -397,7 +397,7 @@ onMounted(loadData)
           <el-col :span="12">
             <el-form-item label="降级渠道">
               <el-select v-model="form.fallbackChannelType" clearable placeholder="发送失败时备选" style="width: 100%">
-                <el-option v-for="o in CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+                <el-option v-for="o in MESSAGE_CHANNEL_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>

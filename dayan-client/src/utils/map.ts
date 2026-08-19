@@ -6,8 +6,18 @@
  *
  * 天地图 Key 运行时经 /client-api/v1/config/map-key 从后端系统配置拉取。
  */
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import type L from 'leaflet';
+
+let leafletModule: typeof L | null = null;
+
+async function getLeaflet(): Promise<typeof L> {
+  if (!leafletModule) {
+    const mod = await import('leaflet');
+    leafletModule = mod.default;
+    await import('leaflet/dist/leaflet.css');
+  }
+  return leafletModule;
+}
 
 const SUBDOMAINS = ['0', '1', '2', '3', '4', '5', '6', '7'];
 
@@ -51,6 +61,7 @@ export interface MapMarkerItem {
 
 /** 天地图矢量底图（vec_w） */
 async function createVecLayer(): Promise<L.TileLayer> {
+  const L = await getLeaflet();
   const key = await getTiandituKey();
   return L.tileLayer(
     `https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=${key}`,
@@ -60,6 +71,7 @@ async function createVecLayer(): Promise<L.TileLayer> {
 
 /** 天地图矢量标注（cva_w — 道路/地名文字叠加层） */
 async function createCvaLayer(): Promise<L.TileLayer> {
+  const L = await getLeaflet();
   const key = await getTiandituKey();
   return L.tileLayer(
     `https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=${key}`,
@@ -72,6 +84,7 @@ async function createCvaLayer(): Promise<L.TileLayer> {
  * @returns L.Map 实例，或 null（容器不存在）
  */
 export async function initMap(containerId: string): Promise<L.Map | null> {
+  const L = await getLeaflet();
   const container = document.getElementById(containerId);
   if (!container) return null;
 
@@ -94,11 +107,12 @@ export async function initMap(containerId: string): Promise<L.Map | null> {
  *
  * @returns L.LayerGroup（可用于后续清除）
  */
-export function addMarkers(
+export async function addMarkers(
   map: L.Map,
   items: MapMarkerItem[],
   onClick?: (item: MapMarkerItem) => void,
-): L.LayerGroup {
+): Promise<L.LayerGroup> {
+  const L = await getLeaflet();
   const group = L.featureGroup();
 
   items.forEach((item) => {
@@ -143,11 +157,12 @@ export function addMarkers(
  *
  * @returns L.LayerGroup（可用于后续清除）
  */
-export function addIconMarkers(
+export async function addIconMarkers(
   map: L.Map,
   items: MapMarkerItem[],
   onClick?: (item: MapMarkerItem) => void,
-): L.LayerGroup {
+): Promise<L.LayerGroup> {
+  const L = await getLeaflet();
   const group = L.featureGroup();
 
   items.forEach((item) => {
@@ -226,6 +241,7 @@ export async function initDetailMap(
   name?: string,
   color?: string,
 ): Promise<L.Map | null> {
+  const L = await getLeaflet();
   const container = document.getElementById(containerId);
   if (!container) return null;
 

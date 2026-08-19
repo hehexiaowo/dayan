@@ -157,7 +157,7 @@ async function handleMarkSuccess(row: FinancePayment) {
     )
     await markFinancePaymentSuccess(paymentCode, { tradeNo: value.trim() })
     ElMessage.success('已标记为支付成功')
-    loadPage()
+    loadPage().catch((err) => { console.warn('[cashier] 加载失败:', err) })
   } catch {
     // 用户点「取消」：静默；接口报错由拦截器统一提示
   }
