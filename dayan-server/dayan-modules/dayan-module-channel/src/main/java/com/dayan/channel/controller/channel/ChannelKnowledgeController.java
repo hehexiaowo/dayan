@@ -6,6 +6,7 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.R;
 import com.dayan.common.mybatis.context.ContextHolder;
+import com.dayan.system.dto.SystemDocTagsDTO;
 import com.dayan.system.dto.SystemKnowledgeChatDTO;
 import com.dayan.system.dto.SystemKnowledgeDocImportDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoCreateDTO;
@@ -130,12 +131,16 @@ public class ChannelKnowledgeController {
         return R.ok(knowledgeRepoService.listDocuments(id, pageNumber, pageSize, documentName, documentStatus));
     }
 
-    @Operation(summary = "上传文档（返回 FileId，解析异步进行）")
-    @SaCheckPermission("channel:system:knowledge:doc:upload")
+    @Operation(summary = "上传文档（可指定类目/解析器/标签，返回 FileId，解析异步）")
+    @SaCheckPermission("channel:knowledge:doc:upload")
     @PostMapping(value = "/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public R<String> uploadDocument(@PathVariable Long id, @RequestPart("file") MultipartFile file) {
+    public R<String> uploadDocument(@PathVariable Long id,
+                                    @RequestPart("file") MultipartFile file,
+                                    @RequestParam(required = false) String categoryId,
+                                    @RequestParam(required = false) String parser,
+                                    @RequestParam(required = false) List<String> tags) {
         requireChannelRepo(id);
-        return R.ok(knowledgeRepoService.uploadDocument(id, file, null, null, null));
+        return R.ok(knowledgeRepoService.uploadDocument(id, file, categoryId, parser, tags));
     }
 
     @Operation(summary = "文件解析状态")
@@ -147,7 +152,7 @@ public class ChannelKnowledgeController {
     }
 
     @Operation(summary = "已解析文档导入索引（返回任务 JobId）")
-    @SaCheckPermission("channel:system:knowledge:doc:upload")
+    @SaCheckPermission("channel:knowledge:doc:upload")
     @PostMapping("/{id}/documents/import")
     public R<String> importDocuments(@PathVariable Long id, @RequestBody @Valid SystemKnowledgeDocImportDTO dto) {
         requireChannelRepo(id);
@@ -163,7 +168,7 @@ public class ChannelKnowledgeController {
     }
 
     @Operation(summary = "删除索引内文档（远端永久删除）")
-    @SaCheckPermission("channel:system:knowledge:doc:delete")
+    @SaCheckPermission("channel:knowledge:doc:delete")
     @DeleteMapping("/{id}/documents/{fileId}")
     public R<Void> deleteDocument(@PathVariable Long id, @PathVariable String fileId) {
         requireChannelRepo(id);
@@ -182,10 +187,22 @@ public class ChannelKnowledgeController {
         return R.ok(knowledgeRepoService.listChunks(id, fileId, pageNum, pageSize));
     }
 
+    // ---------- 文件标签 ----------
+
+    @Operation(summary = "更新文件标签（≤10，空=清空）")
+    @SaCheckPermission("channel:knowledge:doc:upload")
+    @PutMapping("/{id}/documents/{fileId}/tags")
+    public R<Void> updateDocTags(@PathVariable Long id, @PathVariable String fileId,
+                                 @RequestBody @Valid SystemDocTagsDTO dto) {
+        requireChannelRepo(id);
+        knowledgeRepoService.updateDocTags(id, fileId, dto);
+        return R.ok();
+    }
+
     // ---------- 问答 / 检索 ----------
 
     @Operation(summary = "知识库问答（RAG）")
-    @SaCheckPermission("channel:system:knowledge:chat")
+    @SaCheckPermission("channel:knowledge:chat")
     @PostMapping("/{id}/chat")
     public R<SystemKnowledgeChatVO> chat(@PathVariable Long id, @RequestBody @Valid SystemKnowledgeChatDTO dto) {
         return R.ok(knowledgeRepoService.chat(id, dto));
