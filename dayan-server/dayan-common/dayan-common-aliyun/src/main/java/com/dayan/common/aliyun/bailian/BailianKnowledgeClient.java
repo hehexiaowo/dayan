@@ -239,13 +239,22 @@ public class BailianKnowledgeClient {
      * 返回 OSS 预签名 URL（有效期短，须尽快上传）。
      */
     public UploadLease applyUploadLease(String fileName, byte[] content) {
+        return applyUploadLease(fileName, content, null);
+    }
+
+    /**
+     * 申请上传租约（指定目标类目；租约类目必须与后续 AddFile 的 CategoryId 一致，
+     * 否则百炼返回 "Category is mismatched"）。
+     */
+    public UploadLease applyUploadLease(String fileName, byte[] content, String categoryId) {
         Map<String, String> form = new HashMap<>();
         form.put("FileName", fileName);
         form.put("SizeInBytes", String.valueOf(content.length));
         form.put("Md5", md5Hex(content));
         form.put("CategoryType", "UNSTRUCTURED");
+        String cat = categoryId == null || categoryId.isBlank() ? CATEGORY_DEFAULT : categoryId;
         String body = roaClient.postForm("ApplyFileUploadLease", API_VERSION,
-                "/" + workspaceId + "/datacenter/category/" + CATEGORY_DEFAULT, form);
+                "/" + workspaceId + "/datacenter/category/" + cat, form);
         JSONObject resp = parseResp(body, "ApplyFileUploadLease");
         JSONObject data = resp.getJSONObject("Data");
         JSONObject param = data.getJSONObject("Param");
