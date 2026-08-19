@@ -345,7 +345,7 @@ async function handleDelete(row: KnowledgeRepo) {
             <el-radio :value="undefined">智能切分</el-radio>
             <el-radio value="regex">自定义切分</el-radio>
           </el-radio-group>
-          <div class="form-tip">智能切分按语义自动切块；自定义按分隔符 + 长度 + 重叠切块（建库后不可修改）</div>
+          <div class="form-tip">智能切分按语义自动切块；自定义按分隔符 + 切块长度切块（建库后不可修改）</div>
         </el-form-item>
         <template v-if="form.mode === 'create' && form.indexConfig.chunkMode === 'regex'">
           <el-form-item label="分隔符">
@@ -353,9 +353,6 @@ async function handleDelete(row: KnowledgeRepo) {
           </el-form-item>
           <el-form-item label="切块长度">
             <el-input-number v-model="form.indexConfig.chunkSize" :min="1" :max="6000" controls-position="right" />
-          </el-form-item>
-          <el-form-item label="重叠长度">
-            <el-input-number v-model="form.indexConfig.overlapSize" :min="0" :max="1024" controls-position="right" />
           </el-form-item>
         </template>
         <el-form-item v-if="form.mode === 'create'" label="向量模型">

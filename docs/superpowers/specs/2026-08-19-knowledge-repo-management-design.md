@@ -52,7 +52,7 @@ config_json 结构（IndexConfig，Jackson 序列化，字段驼峰）：
   "chunkMode": "regex",            // null=智能切分；"regex"=自定义（分隔符切分）
   "separator": "(?<=。)",          // 正则分隔符，仅 chunkMode=regex 生效
   "chunkSize": 500,                // 1-6000，默认 500
-  "overlapSize": 100,              // 0-1024，默认 100，必须 < chunkSize
+  "overlapSize": 100,              // 0-1024，默认 100，必须 < chunkSize（百炼 API：重叠仅在 length 切分模式生效，本项目自定义切分为 regex 模式，该参数不生效，前端创建表单不展示）
   "embeddingModel": "text-embedding-v3",  // v3 / v4，空=服务端默认
   "rerankModel": "qwen3-rerank",   // qwen3-rerank / qwen3-rerank-hybrid，空=服务端默认
   "rerankMode": "qa",              // qa / similar / custom，默认 qa
@@ -122,9 +122,9 @@ bind 模式（绑定已有索引）不写 config_json。
 - 新增 `src/components/KnowledgeCategoryDialog/index.vue`（列表页使用）：
   - el-tree 展示多级类目（平铺数据组树），根节点含百炼内置 `default`（只读标记"默认"）
   - 节点操作：新增子类目（弹输入框）、删除（confirm，透传百炼错误如"类目下有文件不可删"）
-- `system/knowledge/index.vue`：工具栏加"类目管理"按钮 → 打开弹窗
+- `system/knowledge/index.vue`：工具栏加"类目管理"按钮 → 打开弹窗；创建弹窗中"自定义切分"（regex）子区仅展示分隔符/切块长度，**不展示重叠长度**（百炼 API 重叠仅在 length 切分模式生效，regex 模式无效；overlapSize 字段保留，详情页仍展示以兼容旧数据）
 - `system/knowledge/detail/index.vue` 基本信息区：
-  - 展示索引配置（切分方式/分隔符/切块长度/重叠/Embedding/重排/改写/召回参数），未配置显示"使用百炼默认"
+  - 展示索引配置（切分方式/分隔符/切块长度/重叠/Embedding/重排/改写/召回参数），未配置显示"使用百炼默认"；重叠长度仅展示不编辑（regex 模式不生效）
   - 已建库时"检索参数"（denseTopK/sparseTopK/rerankMinScore）可编辑（小表单提交）；切分等其余字段只读
 - `system/knowledge/detail/DocTab.vue`：
   - 拖入/选择文件 → 弹"上传设置"对话框：文件名列表 + 类目树选择（默认 default）+ 解析器下拉（智能/电子文档/大模型/自动）+ 标签（el-select multiple allow-create filterable，≤10）→ 确认后逐个上传
