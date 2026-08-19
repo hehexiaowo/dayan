@@ -142,13 +142,7 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
                 .collect(Collectors.toMap(ChannelInfoLight::getChannelCode, Function.identity(), (a, b) -> a));
 
         // 收集 root 及其全部后代（ancestors 链包含 root）；root 为空 = 全渠道树
-        Set<String> scope = new HashSet<>();
-        for (ChannelInfoLight c : channels) {
-            if (StrUtil.isBlank(rootChannelCode) || rootChannelCode.equals(c.getChannelCode())
-                    || (c.getAncestors() != null && c.getAncestors().contains(rootChannelCode))) {
-                scope.add(c.getChannelCode());
-            }
-        }
+        Set<String> scope = resolveChannelScope(rootChannelCode);
         // 继承解析需要祖先链上的仓库（scope 渠道的 ancestors 一并纳入查询范围）
         Set<String> queryCodes = new HashSet<>(scope);
         for (String code : scope) {
@@ -223,6 +217,22 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         return roots;
     }
 
+    /**
+     * 渠道范围：root 及其全部后代（ancestors 链包含 root 的渠道；root 为空 = 全渠道树）。
+     * getRepoTree 与 listChannelScopeRepos 共用。
+     */
+    private Set<String> resolveChannelScope(String rootChannelCode) {
+        List<ChannelInfoLight> channels = channelInfoLightMapper.selectAll();
+        Set<String> scope = new HashSet<>();
+        for (ChannelInfoLight c : channels) {
+            if (StrUtil.isBlank(rootChannelCode) || rootChannelCode.equals(c.getChannelCode())
+                    || (c.getAncestors() != null && c.getAncestors().contains(rootChannelCode))) {
+                scope.add(c.getChannelCode());
+            }
+        }
+        return scope;
+    }
+
     @Override
     public SystemKnowledgeRepo requireRepoVisible(Long id) {
         SystemKnowledgeRepo repo = knowledgeRepoMapper.selectByIdIgnoreTenant(id);
@@ -264,6 +274,41 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
             throw new BusinessException(ErrorCode.NOT_FOUND, "知识仓库不存在: " + id);
         }
         return repo;
+    }
+
+    @Override
+    public SystemKnowledgeRepo requireRepoVisibleForPersona(Long id) {
+        SystemKnowledgeRepo repo = knowledgeRepoMapper.selectByIdIgnoreTenant(id);
+        if (repo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "知识仓库不存在: " + id);
+        }
+        String currentCode = ContextHolder.getChannelCode();
+        if (StrUtil.isBlank(currentCode)) {
+            // 未绑定渠道上下文（admin 端）放行
+            return repo;
+        }
+        // 平台库（channel_code=null）对渠道端放行：admin 全局绑定的人物流量在所有渠道可用
+        if (StrUtil.isBlank(repo.getChannelCode())) {
+            return repo;
+        }
+        // 渠道库维持归属/祖先/后代校验
+        return requireRepoVisible(id);
+    }
+
+    @Override
+    public List<SystemKnowledgeRepoVO> listChannelScopeRepos(String channelCode) {
+        if (StrUtil.isBlank(channelCode)) {
+            return List.of();
+        }
+        Set<String> scope = resolveChannelScope(channelCode);
+        if (scope.isEmpty()) {
+            return List.of();
+        }
+        return knowledgeRepoMapper.selectByChannelCodes(scope).stream()
+                .filter(r -> r.getRepoType() != null && r.getRepoType() == TYPE_CHANNEL
+                        && r.getChannelCode() != null && scope.contains(r.getChannelCode()))
+                .map(this::toVO)
+                .toList();
     }
 
     @Override

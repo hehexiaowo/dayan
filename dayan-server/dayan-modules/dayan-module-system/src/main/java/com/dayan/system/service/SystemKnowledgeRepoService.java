@@ -111,6 +111,16 @@ public interface SystemKnowledgeRepoService {
      */
     SystemKnowledgeRepo requireRepoVisible(Long id);
 
+    /**
+     * 人物绑定路径的可见性校验（aichat 聊天专用）：
+     * 平台库对渠道端放行（admin 全局绑定生效），渠道库维持归属/祖先/后代校验。
+     * 无渠道上下文（admin 端）全部放行。
+     */
+    SystemKnowledgeRepo requireRepoVisibleForPersona(Long id);
+
+    /** 渠道可补充的知识库：本渠道 + 全部后代渠道名下的渠道库（不含平台库），用于渠道问答人物补充下拉与保存校验 */
+    List<SystemKnowledgeRepoVO> listChannelScopeRepos(String channelCode);
+
     /** RAG 问答（检索命中 + 大模型生成） */
     SystemKnowledgeChatVO chat(Long id, SystemKnowledgeChatDTO dto);
 
