@@ -6,7 +6,9 @@ import com.dayan.system.dto.SystemKnowledgeDocImportDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoCreateDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoQueryDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoUpdateDTO;
+import com.dayan.system.dto.SystemDocTagsDTO;
 import com.dayan.system.entity.SystemKnowledgeRepo;
+import com.dayan.system.vo.SystemCategoryVO;
 import com.dayan.system.vo.SystemKnowledgeChatVO;
 import com.dayan.system.vo.SystemKnowledgeDocVO;
 import com.dayan.system.vo.SystemKnowledgeRepoTreeNodeVO;
@@ -54,8 +56,20 @@ public interface SystemKnowledgeRepoService {
     List<SystemKnowledgeDocVO> listDocuments(Long id, int pageNumber, int pageSize,
                                        String documentName, String documentStatus);
 
-    /** 上传文档：申请租约 → 直传 OSS → 导入解析，返回 FileId（解析异步） */
-    String uploadDocument(Long id, MultipartFile file);
+    /** 类目列表（业务空间级全量平铺） */
+    List<SystemCategoryVO> listCategories();
+
+    /** 新增类目，返回 CategoryId */
+    String addCategory(String categoryName, String parentCategoryId);
+
+    /** 删除类目（类目下有文件时百炼拒绝） */
+    void deleteCategory(String categoryId);
+
+    /** 更新文件标签（≤10，空=清空） */
+    void updateDocTags(Long id, String fileId, SystemDocTagsDTO dto);
+
+    /** 上传文档（可选类目/解析器/标签；categoryId 空=default，parser 空=智能解析） */
+    String uploadDocument(Long id, MultipartFile file, String categoryId, String parser, List<String> tags);
 
     /** 查询文件解析状态（DescribeFile） */
     SystemKnowledgeDocVO getDocumentParseStatus(Long id, String fileId);

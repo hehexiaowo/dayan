@@ -135,7 +135,7 @@ public class ChannelKnowledgeController {
     @PostMapping(value = "/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public R<String> uploadDocument(@PathVariable Long id, @RequestPart("file") MultipartFile file) {
         requireChannelRepo(id);
-        return R.ok(knowledgeRepoService.uploadDocument(id, file));
+        return R.ok(knowledgeRepoService.uploadDocument(id, file, null, null, null));
     }
 
     @Operation(summary = "文件解析状态")

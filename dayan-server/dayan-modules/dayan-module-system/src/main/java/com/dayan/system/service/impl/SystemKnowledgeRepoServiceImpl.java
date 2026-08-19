@@ -1,6 +1,7 @@
 package com.dayan.system.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dayan.common.aliyun.BailianProperties;
@@ -11,8 +12,10 @@ import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.mybatis.context.ContextHolder;
+import com.dayan.system.dto.SystemDocTagsDTO;
 import com.dayan.system.dto.SystemKnowledgeChatDTO;
 import com.dayan.system.dto.SystemKnowledgeDocImportDTO;
+import com.dayan.system.dto.SystemKnowledgeIndexConfig;
 import com.dayan.system.dto.SystemKnowledgeRepoCreateDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoQueryDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoUpdateDTO;
@@ -21,6 +24,8 @@ import com.dayan.system.mapper.ChannelInfoLight;
 import com.dayan.system.mapper.ChannelInfoLightMapper;
 import com.dayan.system.mapper.SystemKnowledgeRepoMapper;
 import com.dayan.system.service.SystemKnowledgeRepoService;
+import com.dayan.system.vo.SystemCategoryAddDTO;
+import com.dayan.system.vo.SystemCategoryVO;
 import com.dayan.system.vo.SystemKnowledgeChatVO;
 import com.dayan.system.vo.SystemKnowledgeDocVO;
 import com.dayan.system.vo.SystemKnowledgeRepoTreeNodeVO;
@@ -304,6 +309,10 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         repo.setDocCount(0);
         repo.setStatus(STATUS_BUILDING);
         repo.setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
+        if (!bind && dto.getIndexConfig() != null) {
+            dto.getIndexConfig().validate();
+            repo.setConfigJson(JSONUtil.toJsonStr(dto.getIndexConfig()));
+        }
         knowledgeRepoMapper.insert(repo);
         return repo.getId();
     }
@@ -318,8 +327,10 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         if (fileIds == null || fileIds.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "初始化建库必须携带已解析的文件 ID");
         }
+        SystemKnowledgeIndexConfig config = parseConfig(repo);
         BailianKnowledgeClient.CreateIndexResult result =
-                requireClient().createIndex(repo.getRepoName(), repo.getDescription(), fileIds);
+                requireClient().createIndex(repo.getRepoName(), repo.getDescription(), fileIds,
+                        config == null ? null : config.toQueryMap());
         repo.setIndexId(result.getIndexId());
         repo.setBuildJobId(result.getJobId());
         knowledgeRepoMapper.updateById(repo);
@@ -345,6 +356,31 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         }
         if (dto.getDescription() != null) {
             repo.setDescription(dto.getDescription());
+        }
+        if (dto.getIndexConfig() != null) {
+            SystemKnowledgeIndexConfig config = dto.getIndexConfig();
+            config.validate();
+            if (StrUtil.isBlank(repo.getIndexId())) {
+                // 未建库（懒建库）：全量保存，initIndex 时应用
+                repo.setConfigJson(JSONUtil.toJsonStr(config));
+            } else {
+                // 已建库：仅检索参数可改并同步百炼
+                SystemKnowledgeIndexConfig existing = parseConfig(repo);
+                assertUpdatableConfig(existing, config);
+                boolean syncNeeded = (config.getDenseTopK() != null && !config.getDenseTopK().equals(existing == null ? null : existing.getDenseTopK()))
+                        || (config.getSparseTopK() != null && !config.getSparseTopK().equals(existing == null ? null : existing.getSparseTopK()))
+                        || (config.getRerankMinScore() != null && !config.getRerankMinScore().equals(existing == null ? null : existing.getRerankMinScore()));
+                if (syncNeeded) {
+                    requireClient().updateIndex(repo.getIndexId(), repo.getRepoName(), repo.getDescription(),
+                            config.getDenseTopK(), config.getSparseTopK(), config.getRerankMinScore());
+                }
+                // 合并：保留未提交的不可变字段，覆盖可更新字段
+                SystemKnowledgeIndexConfig merged = existing == null ? new SystemKnowledgeIndexConfig() : existing;
+                if (config.getDenseTopK() != null) merged.setDenseTopK(config.getDenseTopK());
+                if (config.getSparseTopK() != null) merged.setSparseTopK(config.getSparseTopK());
+                if (config.getRerankMinScore() != null) merged.setRerankMinScore(config.getRerankMinScore());
+                repo.setConfigJson(JSONUtil.toJsonStr(merged));
+            }
         }
         if (dto.getSortOrder() != null) {
             repo.setSortOrder(dto.getSortOrder());
@@ -432,7 +468,7 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
     }
 
     @Override
-    public String uploadDocument(Long id, MultipartFile file) {
+    public String uploadDocument(Long id, MultipartFile file, String categoryId, String parser, List<String> tags) {
         // 懒建库模式下仓库可能尚未建库（indexId 空），上传链路不依赖索引，直接放行
         requireRepo(id);
         if (file == null || file.isEmpty()) {
@@ -442,13 +478,17 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         if (fileName == null || !fileName.contains(".")) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "文件名必须带扩展名（如 .pdf/.docx/.md）");
         }
+        if (tags != null && tags.size() > 10) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "标签最多 10 个");
+        }
         try {
             BailianKnowledgeClient client = requireClient();
             byte[] content = file.getBytes();
             BailianKnowledgeClient.UploadLease lease = client.applyUploadLease(fileName, content);
             BailianKnowledgeClient.uploadBinary(lease, content);
-            String fileId = client.addFile(lease.getLeaseId(), null, null, null);
-            log.info("知识库文档上传成功 repoCode={} fileName={} fileId={}", id, fileName, fileId);
+            String fileId = client.addFile(lease.getLeaseId(), categoryId, parser, tags);
+            log.info("知识库文档上传成功 repoId={} fileName={} categoryId={} fileId={}", id, fileName,
+                    categoryId == null ? "default" : categoryId, fileId);
             return fileId;
         } catch (BusinessException e) {
             throw e;
@@ -466,6 +506,9 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         vo.setFileName(info.getFileName());
         vo.setParseStatus(info.getStatus());
         vo.setSizeInBytes(info.getSizeInBytes());
+        vo.setCategoryId(info.getCategoryId());
+        vo.setTags(info.getTags());
+        vo.setParser(info.getParser());
         return vo;
     }
 
@@ -500,6 +543,39 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
             throw new BusinessException(ErrorCode.PARAM_ERROR, "切片查询必须指定文档 ID");
         }
         return requireClient().listChunks(repo.getIndexId(), fileId, pageNum, pageSize);
+    }
+
+    // ==================== 类目与文件标签管理（实时代理百炼） ====================
+
+    @Override
+    public List<SystemCategoryVO> listCategories() {
+        return requireClient().listCategories().stream().map(c -> {
+            SystemCategoryVO vo = new SystemCategoryVO();
+            vo.setCategoryId(c.getCategoryId());
+            vo.setCategoryName(c.getCategoryName());
+            vo.setParentCategoryId(c.getParentCategoryId());
+            vo.setIsDefault(c.getIsDefault());
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public String addCategory(String categoryName, String parentCategoryId) {
+        return requireClient().addCategory(categoryName, parentCategoryId);
+    }
+
+    @Override
+    public void deleteCategory(String categoryId) {
+        requireClient().deleteCategory(categoryId);
+    }
+
+    @Override
+    public void updateDocTags(Long id, String fileId, SystemDocTagsDTO dto) {
+        requireRepo(id);
+        if (dto == null || dto.getTags() == null || dto.getTags().size() > 10) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "标签最多 10 个");
+        }
+        requireClient().updateFileTags(fileId, dto.getTags());
     }
 
     // ==================== RAG 问答 / 检索 ====================
@@ -609,6 +685,36 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         }
     }
 
+    /** 已建库配置可更新校验：仅 denseTopK/sparseTopK/rerankMinScore 可变，其余报错 */
+    static void assertUpdatableConfig(SystemKnowledgeIndexConfig existing, SystemKnowledgeIndexConfig incoming) {
+        if (existing == null || incoming == null) {
+            return;
+        }
+        if (!Objects.equals(existing.getChunkMode(), incoming.getChunkMode())
+                || !Objects.equals(existing.getSeparator(), incoming.getSeparator())
+                || !Objects.equals(existing.getChunkSize(), incoming.getChunkSize())
+                || !Objects.equals(existing.getOverlapSize(), incoming.getOverlapSize())
+                || !Objects.equals(existing.getEmbeddingModel(), incoming.getEmbeddingModel())
+                || !Objects.equals(existing.getRerankModel(), incoming.getRerankModel())
+                || !Objects.equals(existing.getRerankMode(), incoming.getRerankMode())
+                || !Objects.equals(existing.getEnableRewrite(), incoming.getEnableRewrite())) {
+            throw new BusinessException(ErrorCode.BUSINESS,
+                    "切分方式、向量模型、重排模型等配置在建库后不可修改（如需调整请删除仓库重建）");
+        }
+    }
+
+    private SystemKnowledgeIndexConfig parseConfig(SystemKnowledgeRepo repo) {
+        if (StrUtil.isBlank(repo.getConfigJson())) {
+            return null;
+        }
+        try {
+            return JSONUtil.toBean(repo.getConfigJson(), SystemKnowledgeIndexConfig.class);
+        } catch (Exception e) {
+            log.warn("索引配置 JSON 解析失败 repoId={}: {}", repo.getId(), e.getMessage());
+            return null;
+        }
+    }
+
     /** 组装知识库管理客户端（凭据来自 system_config llm 分组） */
     private BailianKnowledgeClient requireClient() {
         String ak = getConfig("llm.access-key-id");
@@ -643,6 +749,7 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         vo.setSortOrder(repo.getSortOrder());
         vo.setCreatedAt(repo.getCreatedAt());
         vo.setUpdatedAt(repo.getUpdatedAt());
+        vo.setIndexConfig(parseConfig(repo));
         return vo;
     }
 
