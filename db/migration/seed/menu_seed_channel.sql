@@ -177,3 +177,15 @@ VALUES
 ('channel_system_knowledge', '知识仓库', 'channel_system', 2, '/system/knowledge', 'system/knowledge/index', 'channel:knowledge:view',
  'Collection', 40, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+
+-- ==================== 问答人物（系统管理 → 问答人物，渠道补充知识库）====================
+-- 对应 channel 端落地页 views/tool/aichat/index.vue + ChannelToolAichatController。
+INSERT INTO system_menu
+(menu_code, menu_name, parent_code, menu_type, path, component, permission_code,
+ icon, sort_order, is_visible, is_external, is_cache, domain_type, status,
+ created_at, updated_at, creator, updater, deleted, deleted_at)
+VALUES
+('channel_system_tool_aichat', '问答人物', 'channel_system', 2, '/system/tool-aichat', 'tool/aichat/index', 'channel:tool:aichat:view',
+ 'ChatDotRound', 50, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+

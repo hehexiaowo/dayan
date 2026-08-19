@@ -154,3 +154,15 @@ VALUES
 ('channel:knowledge:doc:delete','删除文档',       'channel:system', 3, '/channel-api/system/knowledge/repos/*/documents/*','DELETE', 206, 1, NOW(), NOW(), 'system', 'system', 0),
 ('channel:knowledge:chat',      '知识库问答',     'channel:system', 3, '/channel-api/system/knowledge/repos/*/chat',        'POST',   207, 1, NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+
+-- ========== 增量：问答人物（渠道补充知识库）权限码 ==========
+-- 对应 ChannelToolAichatController（/channel-api/tools/aichat/*，dayan-module-tool）。
+INSERT INTO `channel_permission`
+  (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
+   `path`, `method`, `sort_order`, `status`,
+   `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  ('channel:tool:aichat:view',   '问答人物查看',     'channel:system', 3, '/channel-api/tools/aichat/**',                 'GET',  210, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:tool:aichat:update', '问答人物补充库',   'channel:system', 3, '/channel-api/tools/aichat/personas/*/repos',   'PUT',  211, 1, NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+
