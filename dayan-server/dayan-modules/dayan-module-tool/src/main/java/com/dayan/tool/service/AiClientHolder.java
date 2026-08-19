@@ -6,6 +6,7 @@ import com.dayan.common.aliyun.dashscope.DashScopeImageClient;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.system.service.SystemConfigService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,16 +20,10 @@ public class AiClientHolder {
 
     private final SystemConfigService systemConfigService;
 
-    private final BailianChatClient chatClient = new BailianChatClient();
-    private final DashScopeImageClient imageClient = new DashScopeImageClient();
-
-    public BailianChatClient chatClient() {
-        return chatClient;
-    }
-
-    public DashScopeImageClient imageClient() {
-        return imageClient;
-    }
+    @Getter
+    private final BailianChatClient chatClient;
+    @Getter
+    private final DashScopeImageClient imageClient;
 
     public String requireConfig(String key, String message) {
         String value = getConfig(key);

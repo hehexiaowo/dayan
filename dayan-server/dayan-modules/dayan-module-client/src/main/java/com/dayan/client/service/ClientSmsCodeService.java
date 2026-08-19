@@ -10,9 +10,6 @@ import com.dayan.client.vo.SmsSendVO;
  */
 public interface ClientSmsCodeService {
 
-    /** Redis 场景标识（client 端验证码登录，与 agent 端隔离） */
-    String SCENE = "client";
-
     /**
      * 发送验证码。
      *

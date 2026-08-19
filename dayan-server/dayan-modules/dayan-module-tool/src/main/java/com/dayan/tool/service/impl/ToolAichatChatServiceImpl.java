@@ -10,12 +10,12 @@ import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.system.service.SystemKnowledgeRepoService;
 import com.dayan.system.vo.SystemKnowledgeChatVO;
-import com.dayan.system.service.SystemConfigService;
 import com.dayan.tool.dto.ToolAichatChatDTO;
 import com.dayan.tool.entity.ToolAichatMessage;
 import com.dayan.tool.entity.ToolAichatSession;
 import com.dayan.tool.mapper.ToolAichatMessageMapper;
 import com.dayan.tool.mapper.ToolAichatSessionMapper;
+import com.dayan.tool.service.AiClientHolder;
 import com.dayan.tool.service.ToolAichatChatListener;
 import com.dayan.tool.service.ToolAichatChatService;
 import com.dayan.tool.service.ToolAichatSessionService;
@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -56,13 +57,16 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
     private static final int HISTORY_LIMIT = 12;
     private static final int HISTORY_CONTENT_LIMIT = 4000;
 
+    private static final String ROLE_USER = "user";
+    private static final String ROLE_ASSISTANT = "assistant";
+    private static final String ROLE_SYSTEM = "system";
+
     private final ToolAichatSessionMapper sessionMapper;
     private final ToolAichatMessageMapper messageMapper;
     private final ToolAichatSessionService sessionService;
     private final ToolInfoService toolInfoService;
     private final SystemKnowledgeRepoService knowledgeRepoService;
-    private final SystemConfigService systemConfigService;
-    private final BailianChatClient bailianChatClient = new BailianChatClient();
+    private final AiClientHolder aiClientHolder;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -86,9 +90,10 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
 
         // 3. 组装 prompt + 生成
         String systemPrompt = buildSystemPrompt(persona, texts);
-        String answer = bailianChatClient.chat(
-                getConfig("llm.api-key"), getConfig("llm.api-host"),
-                StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
+        String answer = aiClientHolder.chatClient().chat(
+                aiClientHolder.requireConfig("llm.api-key", "AI 问答 API-Key 未配置"),
+                aiClientHolder.requireConfig("llm.api-host", "AI 问答网关域名未配置"),
+                aiClientHolder.chatModel(),
                 buildConversationMessages(sessionCode, dto.getQuestion(), systemPrompt), GENERATE_TEMPERATURE);
 
         // 4. 落库 + 更新 session
@@ -128,9 +133,10 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
             listener.onStage("generate", "stream");
         }
         String systemPrompt = buildSystemPrompt(persona, texts);
-        String answer = bailianChatClient.chatStream(
-                getConfig("llm.api-key"), getConfig("llm.api-host"),
-                StrUtil.blankToDefault(getConfig("llm.chat-model"), "qwen-plus"),
+        String answer = aiClientHolder.chatClient().chatStream(
+                aiClientHolder.requireConfig("llm.api-key", "AI 问答 API-Key 未配置"),
+                aiClientHolder.requireConfig("llm.api-host", "AI 问答网关域名未配置"),
+                aiClientHolder.chatModel(),
                 systemPrompt, buildConversationPrompt(sessionCode, dto.getQuestion()), GENERATE_TEMPERATURE,
                 listener == null ? null : text -> listener.onDelta(text));
 
@@ -244,18 +250,18 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
     private List<BailianChatClient.Message> buildConversationMessages(String sessionCode, String question,
                                                                         String systemPrompt) {
         List<BailianChatClient.Message> messages = new ArrayList<>();
-        messages.add(new BailianChatClient.Message("system", systemPrompt));
+        messages.add(new BailianChatClient.Message(ROLE_SYSTEM, systemPrompt));
         for (ToolAichatMessage message : loadHistory(sessionCode, question)) {
             messages.add(new BailianChatClient.Message(message.getRole(), limitContent(message.getContent())));
         }
-        messages.add(new BailianChatClient.Message("user", question));
+        messages.add(new BailianChatClient.Message(ROLE_USER, question));
         return messages;
     }
 
     private String buildConversationPrompt(String sessionCode, String question) {
         StringBuilder prompt = new StringBuilder();
         for (ToolAichatMessage message : loadHistory(sessionCode, question)) {
-            prompt.append("user".equals(message.getRole()) ? "用户" : "助手")
+            prompt.append(ROLE_USER.equals(message.getRole()) ? "用户" : "助手")
                     .append("：").append(limitContent(message.getContent())).append("\n");
         }
         prompt.append("用户：").append(question);
@@ -265,10 +271,10 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
     private List<ToolAichatMessage> loadHistory(String sessionCode, String question) {
         List<ToolAichatMessage> history = messageMapper.selectList(new LambdaQueryWrapper<ToolAichatMessage>()
                 .eq(ToolAichatMessage::getSessionCode, sessionCode)
-                .in(ToolAichatMessage::getRole, List.of("user", "assistant"))
+                .in(ToolAichatMessage::getRole, List.of(ROLE_USER, ROLE_ASSISTANT))
                 .orderByDesc(ToolAichatMessage::getId)
                 .last("LIMIT " + HISTORY_LIMIT));
-        java.util.Collections.reverse(history);
+        Collections.reverse(history);
         return history;
     }
 
@@ -279,7 +285,7 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
     private void saveUserMessage(String sessionCode, String content) {
         ToolAichatMessage msg = new ToolAichatMessage();
         msg.setSessionCode(sessionCode);
-        msg.setRole("user");
+        msg.setRole(ROLE_USER);
         msg.setContent(content);
         messageMapper.insert(msg);
     }
@@ -287,32 +293,38 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
     private void saveAssistantMessage(String sessionCode, String content, List<ToolAichatChatResultVO.Citation> citations) {
         ToolAichatMessage msg = new ToolAichatMessage();
         msg.setSessionCode(sessionCode);
-        msg.setRole("assistant");
+        msg.setRole(ROLE_ASSISTANT);
         msg.setContent(content);
         msg.setCitations(JSONUtil.toJsonStr(citations));
         messageMapper.insert(msg);
     }
 
-    /** 更新会话：lastMessageAt=now，messageCount 原子增量 delta（每次问答 +2，无命中历史兼容 +1） */
+    /**
+     * 更新会话：lastMessageAt=now，messageCount 原子增量 delta（每次问答 +2）。
+     * 首次交互时用第一条用户消息作为标题（单条条件 UPDATE，无竞态）。
+     */
     private void touchSession(String sessionCode, int delta) {
-        ToolAichatSession session = sessionMapper.selectOne(new LambdaQueryWrapper<ToolAichatSession>()
-                .eq(ToolAichatSession::getSessionCode, sessionCode).last("LIMIT 1"));
-        if (session != null && (session.getMessageCount() == null || session.getMessageCount() == 0)) {
-            ToolAichatMessage firstQuestion = messageMapper.selectOne(new LambdaQueryWrapper<ToolAichatMessage>()
-                    .eq(ToolAichatMessage::getSessionCode, sessionCode)
-                    .eq(ToolAichatMessage::getRole, "user")
-                    .orderByAsc(ToolAichatMessage::getId).last("LIMIT 1"));
-            if (firstQuestion != null && StrUtil.isNotBlank(firstQuestion.getContent())) {
-                sessionMapper.update(null, new LambdaUpdateWrapper<ToolAichatSession>()
-                        .eq(ToolAichatSession::getSessionCode, sessionCode)
-                        .eq(ToolAichatSession::getMessageCount, 0)
-                        .set(ToolAichatSession::getTitle, limitTitle(firstQuestion.getContent())));
-            }
+        // 尝试获取首条用户消息作为标题（仅 message_count=0 时生效）
+        String titleCandidate = null;
+        ToolAichatMessage firstQuestion = messageMapper.selectOne(new LambdaQueryWrapper<ToolAichatMessage>()
+                .eq(ToolAichatMessage::getSessionCode, sessionCode)
+                .eq(ToolAichatMessage::getRole, ROLE_USER)
+                .orderByAsc(ToolAichatMessage::getId).last("LIMIT 1"));
+        if (firstQuestion != null && StrUtil.isNotBlank(firstQuestion.getContent())) {
+            titleCandidate = limitTitle(firstQuestion.getContent());
         }
-        sessionMapper.update(null, new LambdaUpdateWrapper<ToolAichatSession>()
+
+        // 单条原子 UPDATE：message_count 增量 + 条件设置标题 + 更新 lastMessageAt
+        LambdaUpdateWrapper<ToolAichatSession> wrapper = new LambdaUpdateWrapper<ToolAichatSession>()
                 .eq(ToolAichatSession::getSessionCode, sessionCode)
-                .setSql("message_count = IFNULL(message_count, 0) + " + delta)
-                .set(ToolAichatSession::getLastMessageAt, LocalDateTime.now()));
+                .setSql("message_count = IFNULL(message_count, 0) + {0}", delta)
+                .set(ToolAichatSession::getLastMessageAt, LocalDateTime.now());
+        if (titleCandidate != null) {
+            // 仅当 message_count 为 0（首条消息）时设置标题，后续消息不覆盖
+            wrapper.setSql("title = CASE WHEN IFNULL(message_count, 0) = 0 THEN {0} ELSE title END",
+                    titleCandidate);
+        }
+        sessionMapper.update(null, wrapper);
     }
 
     private String limitTitle(String title) {
@@ -340,8 +352,4 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
         return vo;
     }
 
-    /** 读取 llm 分组配置 */
-    private String getConfig(String configKey) {
-        return systemConfigService.getValue("llm", configKey);
-    }
 }

@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -214,7 +215,7 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         material = supplementKnowledge(p, cfg, material, strategy, warnings);
         // 1. 正文（SSE 流式）
         notifyStage(listener, "body", "正在撰写正文…");
-        Map<String, String> bodyVars = new java.util.HashMap<>();
+        Map<String, String> bodyVars = new HashMap<>();
         bodyVars.put("target_audience", StrUtil.nullToEmpty(strategy.getTargetAudience()));
         bodyVars.put("core_pain_point", StrUtil.nullToEmpty(strategy.getCorePainPoint()));
         bodyVars.put("viral_logic", StrUtil.nullToEmpty(strategy.getViralLogic()));
@@ -814,7 +815,7 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
     /** 大纲 prompt 渲染（生成/重生成共用，重生成在尾部追加反馈指令） */
     private String outlinePrompt(ToolAiartist p, AiStrategyVO strategy,
                                  String material, ToolAiartistPipelineConfig cfg) {
-        Map<String, String> vars = new java.util.HashMap<>();
+        Map<String, String> vars = new HashMap<>();
         vars.put("core_execution_prompt", StrUtil.nullToEmpty(strategy.getCoreExecutionPrompt()));
         vars.put("target_audience", StrUtil.nullToEmpty(strategy.getTargetAudience()));
         vars.put("core_pain_point", StrUtil.nullToEmpty(strategy.getCorePainPoint()));

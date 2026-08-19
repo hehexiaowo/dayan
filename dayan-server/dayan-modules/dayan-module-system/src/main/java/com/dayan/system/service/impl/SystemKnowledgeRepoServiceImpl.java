@@ -83,7 +83,7 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
     private final ChannelInfoLightMapper channelInfoLightMapper;
     private final SystemConfigService systemConfigService;
     private final CodeGenerator codeGenerator;
-    private final BailianChatClient bailianChatClient = new BailianChatClient();
+    private final BailianChatClient bailianChatClient;
 
     // ==================== 仓库 CRUD（含远端同步） ====================
 
@@ -620,7 +620,7 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         }
 
         StringBuilder context = new StringBuilder();
-        List<SystemKnowledgeChatVO.Citation> citations = new java.util.ArrayList<>();
+        List<SystemKnowledgeChatVO.Citation> citations = new ArrayList<>();
         for (int i = 0; i < nodes.size(); i++) {
             String text = StrUtil.cleanBlank(nodes.get(i).getText());
             if (StrUtil.isBlank(text)) {

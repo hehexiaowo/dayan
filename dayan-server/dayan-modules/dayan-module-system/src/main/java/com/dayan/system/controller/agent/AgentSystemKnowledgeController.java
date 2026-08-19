@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -47,7 +48,7 @@ public class AgentSystemKnowledgeController {
     @GetMapping("/docs")
     public R<List<SystemKnowledgeDocVO>> docs(@RequestParam(required = false) String keyword) {
         String channelCode = ContextHolder.getChannelCode();
-        List<SystemKnowledgeDocVO> result = new java.util.ArrayList<>();
+        List<SystemKnowledgeDocVO> result = new ArrayList<>();
         for (SystemKnowledgeRepoVO repo : knowledgeRepoService.listForAgent(channelCode)) {
             if (repo.getIndexId() == null || repo.getIndexId().isBlank()) {
                 continue; // 未建库（懒建库模式）跳过

@@ -1,5 +1,8 @@
 package com.dayan.common.core.crypto;
 
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -53,7 +56,7 @@ public final class AesGcmUtil {
 
             return Base64.getEncoder().encodeToString(combined);
         } catch (Exception e) {
-            throw new RuntimeException("AES-GCM 加密失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AES-GCM 加密失败", e);
         }
     }
 
@@ -81,7 +84,7 @@ public final class AesGcmUtil {
             byte[] plain = cipher.doFinal(cipherText);
             return new String(plain, StandardCharsets.UTF_8);
         } catch (Exception e) {
-            throw new RuntimeException("AES-GCM 解密失败（密钥错误或密文被篡改）", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AES-GCM 解密失败（密钥错误或密文被篡改）", e);
         }
     }
 
@@ -95,7 +98,7 @@ public final class AesGcmUtil {
             byte[] digest = md.digest(password.getBytes(StandardCharsets.UTF_8));
             return bytesToHex(digest);
         } catch (Exception e) {
-            throw new RuntimeException("派生密钥失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "派生密钥失败", e);
         }
     }
 

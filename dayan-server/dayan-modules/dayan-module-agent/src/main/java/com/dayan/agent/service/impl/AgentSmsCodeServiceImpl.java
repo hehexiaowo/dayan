@@ -41,7 +41,7 @@ public class AgentSmsCodeServiceImpl implements AgentSmsCodeService {
     @Override
     public SmsSendVO sendCode(String mobile, String channelCode) {
         // 1. 冷却检查
-        String cooldownKey = RedisKey.smsCooldown(SCENE, mobile);
+        String cooldownKey = RedisKey.smsCooldown(RedisKey.SCENE_AGENT, mobile);
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
             long remain = redisTemplate.getExpire(cooldownKey);
             throw new BusinessException(ErrorCode.BUSINESS,
@@ -60,7 +60,7 @@ public class AgentSmsCodeServiceImpl implements AgentSmsCodeService {
         String code = RandomUtil.randomNumbers(6);
 
         // 4. 存入 Redis
-        String codeKey = RedisKey.smsCode(SCENE, mobile);
+        String codeKey = RedisKey.smsCode(RedisKey.SCENE_AGENT, mobile);
         redisTemplate.opsForValue().set(codeKey, code, CODE_TTL);
         redisTemplate.opsForValue().set(cooldownKey, "1", COOLDOWN_TTL);
 
@@ -80,7 +80,7 @@ public class AgentSmsCodeServiceImpl implements AgentSmsCodeService {
 
     @Override
     public boolean verifyAndConsume(String mobile, String code) {
-        String codeKey = RedisKey.smsCode(SCENE, mobile);
+        String codeKey = RedisKey.smsCode(RedisKey.SCENE_AGENT, mobile);
         String stored = redisTemplate.opsForValue().get(codeKey);
         if (stored == null) {
             return false;
@@ -95,14 +95,14 @@ public class AgentSmsCodeServiceImpl implements AgentSmsCodeService {
 
     @Override
     public SmsSendVO sendPhoneChangeCode(String mobile) {
-        String cooldownKey = RedisKey.smsCooldown(SCENE_PHONE_CHANGE, mobile);
+        String cooldownKey = RedisKey.smsCooldown(RedisKey.SCENE_AGENT_PHONE_CHANGE, mobile);
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
             long remain = redisTemplate.getExpire(cooldownKey);
             throw new BusinessException(ErrorCode.BUSINESS,
                     "发送太频繁，请" + Math.max(remain, 1) + "秒后重试");
         }
         String code = RandomUtil.randomNumbers(6);
-        redisTemplate.opsForValue().set(RedisKey.smsCode(SCENE_PHONE_CHANGE, mobile), code, CODE_TTL);
+        redisTemplate.opsForValue().set(RedisKey.smsCode(RedisKey.SCENE_AGENT_PHONE_CHANGE, mobile), code, CODE_TTL);
         redisTemplate.opsForValue().set(cooldownKey, "1", COOLDOWN_TTL);
         SmsResult result = smsService.send(mobile, SMS_TEMPLATE_LOGIN, Map.of("code", code));
         if (!result.isSuccess()) {
@@ -115,7 +115,7 @@ public class AgentSmsCodeServiceImpl implements AgentSmsCodeService {
 
     @Override
     public boolean verifyAndConsumePhoneChange(String mobile, String code) {
-        String codeKey = RedisKey.smsCode(SCENE_PHONE_CHANGE, mobile);
+        String codeKey = RedisKey.smsCode(RedisKey.SCENE_AGENT_PHONE_CHANGE, mobile);
         String stored = redisTemplate.opsForValue().get(codeKey);
         if (stored == null || !stored.equals(code)) {
             return false;

@@ -37,6 +37,9 @@ public class FileChannelController {
             "video/mp4", "video/webm",
             "application/pdf");
 
+    /** 静态资源缓存时间：24 小时 */
+    private static final String CACHE_CONTROL_ONE_DAY = "max-age=86400";
+
     @Operation(summary = "预览/下载文件（代理下载）")
     @GetMapping("/preview/**")
     public void preview(HttpServletRequest request, HttpServletResponse response) {
@@ -54,7 +57,7 @@ public class FileChannelController {
             response.setHeader("Content-Disposition", "attachment; filename=\"" + key.substring(key.lastIndexOf('/') + 1) + "\"");
         }
         response.setContentType(contentType);
-        response.setHeader("Cache-Control", "max-age=86400");
+        response.setHeader("Cache-Control", CACHE_CONTROL_ONE_DAY);
         try (InputStream is = storageService.download(key);
              OutputStream os = response.getOutputStream()) {
             is.transferTo(os);

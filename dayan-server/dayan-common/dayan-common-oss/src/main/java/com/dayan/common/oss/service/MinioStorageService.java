@@ -9,6 +9,8 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.StatObjectArgs;
 import io.minio.errors.ErrorResponseException;
+import com.dayan.common.core.exception.BusinessException;
+import com.dayan.common.core.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -53,7 +55,7 @@ public class MinioStorageService implements StorageService {
             log.info("文件上传成功 key={}, size={}", key, size);
             return key;
         } catch (Exception e) {
-            throw new RuntimeException("文件上传失败: " + e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败: " + e.getMessage(), e);
         }
     }
 
@@ -66,7 +68,7 @@ public class MinioStorageService implements StorageService {
                             .object(key)
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException("文件下载失败 key=" + key + ": " + e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件下载失败 key=" + key + ": " + e.getMessage(), e);
         }
     }
 
@@ -95,7 +97,7 @@ public class MinioStorageService implements StorageService {
         } catch (ErrorResponseException e) {
             return false;
         } catch (Exception e) {
-            throw new RuntimeException("检查文件存在性失败 key=" + key + ": " + e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "检查文件存在性失败 key=" + key + ": " + e.getMessage(), e);
         }
     }
 

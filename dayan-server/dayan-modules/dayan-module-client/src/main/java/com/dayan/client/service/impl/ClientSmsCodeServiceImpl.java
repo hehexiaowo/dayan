@@ -41,7 +41,7 @@ public class ClientSmsCodeServiceImpl implements ClientSmsCodeService {
     @Override
     public SmsSendVO sendCode(String mobile, String channelCode) {
         // 1. 冷却检查
-        String cooldownKey = RedisKey.smsCooldown(SCENE, mobile);
+        String cooldownKey = RedisKey.smsCooldown(RedisKey.SCENE_CLIENT, mobile);
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
             long remain = redisTemplate.getExpire(cooldownKey);
             throw new BusinessException(ErrorCode.BUSINESS,
@@ -60,7 +60,7 @@ public class ClientSmsCodeServiceImpl implements ClientSmsCodeService {
         String code = RandomUtil.randomNumbers(6);
 
         // 4. 存入 Redis
-        String codeKey = RedisKey.smsCode(SCENE, mobile);
+        String codeKey = RedisKey.smsCode(RedisKey.SCENE_CLIENT, mobile);
         redisTemplate.opsForValue().set(codeKey, code, CODE_TTL);
         redisTemplate.opsForValue().set(cooldownKey, "1", COOLDOWN_TTL);
 
@@ -80,7 +80,7 @@ public class ClientSmsCodeServiceImpl implements ClientSmsCodeService {
 
     @Override
     public boolean verifyAndConsume(String mobile, String code) {
-        String codeKey = RedisKey.smsCode(SCENE, mobile);
+        String codeKey = RedisKey.smsCode(RedisKey.SCENE_CLIENT, mobile);
         String stored = redisTemplate.opsForValue().get(codeKey);
         if (stored == null) {
             return false;

@@ -31,6 +31,15 @@ public final class RedisKey {
     /** 短信发送冷却：dayan:sms:cooldown:{scene}:{mobile}（存在即不可重发，TTL 60s） */
     public static final String SMS_COOLDOWN = PREFIX + ":sms:cooldown";
 
+    // ==================== 短信场景标识 ====================
+
+    /** Client 端验证码登录场景 */
+    public static final String SCENE_CLIENT = "client";
+    /** Agent 端验证码登录场景 */
+    public static final String SCENE_AGENT = "agent";
+    /** Agent 端换绑手机号场景 */
+    public static final String SCENE_AGENT_PHONE_CHANGE = "agent_phone_change";
+
     public static String codeSeq(String prefix, long channelCode) {
         return CODE_SEQ + ":" + prefix + ":" + channelCode;
     }

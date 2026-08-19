@@ -16,7 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 渠道权限服务实现（P2 简化：基础 CRUD + 全量列表）。
@@ -110,11 +113,11 @@ public class ChannelPermissionServiceImpl implements ChannelPermissionService {
     @Override
     public List<ChannelPermission> tree() {
         List<ChannelPermission> all = listAll();
-        java.util.Map<String, ChannelPermission> codeMap = new java.util.LinkedHashMap<>();
+        Map<String, ChannelPermission> codeMap = new LinkedHashMap<>();
         for (ChannelPermission node : all) {
             codeMap.put(node.getPermissionCode(), node);
         }
-        List<ChannelPermission> roots = new java.util.ArrayList<>();
+        List<ChannelPermission> roots = new ArrayList<>();
         for (ChannelPermission node : all) {
             String parentCode = node.getParentCode();
             if (parentCode == null || parentCode.isEmpty() || !codeMap.containsKey(parentCode)) {
@@ -122,7 +125,7 @@ public class ChannelPermissionServiceImpl implements ChannelPermissionService {
             } else {
                 ChannelPermission parent = codeMap.get(parentCode);
                 if (parent.getChildren() == null) {
-                    parent.setChildren(new java.util.ArrayList<>());
+                    parent.setChildren(new ArrayList<>());
                 }
                 parent.getChildren().add(node);
             }

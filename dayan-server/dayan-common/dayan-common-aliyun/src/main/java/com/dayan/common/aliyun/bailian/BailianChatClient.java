@@ -7,7 +7,9 @@ import cn.hutool.json.JSONUtil;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -66,23 +68,8 @@ public class BailianChatClient {
 
     /** 多轮对话（指定采样温度），messages 由调用方组装 */
     public String chat(String apiKey, String apiHost, String model, List<Message> messages, double temperature) {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new BusinessException(ErrorCode.BUSINESS, "百炼模型 API-Key 未配置（system_config → llm 分组）");
-        }
-        if (apiHost == null || apiHost.isBlank()) {
-            throw new BusinessException(ErrorCode.BUSINESS, "百炼专属网关域名未配置（system_config → llm 分组）");
-        }
-        String baseUrl = apiHost.startsWith("http") ? apiHost : "https://" + apiHost;
-        String url = baseUrl.replaceAll("/+$", "") + "/compatible-mode/v1/chat/completions";
-
-        JSONArray msgs = new JSONArray();
-        for (Message m : messages) {
-            msgs.add(new JSONObject().set("role", m.role).set("content", m.content));
-        }
-        JSONObject body = new JSONObject()
-                .set("model", model == null || model.isBlank() ? "qwen-plus" : model)
-                .set("messages", msgs)
-                .set("temperature", temperature);
+        String url = validateAndBuildUrl(apiKey, apiHost);
+        JSONObject body = buildRequestBody(model, toJsonArray(messages), temperature, false);
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -128,23 +115,11 @@ public class BailianChatClient {
     public String chatStream(String apiKey, String apiHost, String model,
                              String systemPrompt, String userPrompt,
                              double temperature, DeltaListener onDelta) {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new BusinessException(ErrorCode.BUSINESS, "百炼模型 API-Key 未配置（system_config → llm 分组）");
-        }
-        if (apiHost == null || apiHost.isBlank()) {
-            throw new BusinessException(ErrorCode.BUSINESS, "百炼专属网关域名未配置（system_config → llm 分组）");
-        }
-        String baseUrl = apiHost.startsWith("http") ? apiHost : "https://" + apiHost;
-        String url = baseUrl.replaceAll("/+$", "") + "/compatible-mode/v1/chat/completions";
-
+        String url = validateAndBuildUrl(apiKey, apiHost);
         JSONArray msgs = new JSONArray();
         msgs.add(new JSONObject().set("role", "system").set("content", systemPrompt));
         msgs.add(new JSONObject().set("role", "user").set("content", userPrompt));
-        JSONObject body = new JSONObject()
-                .set("model", model == null || model.isBlank() ? "qwen-plus" : model)
-                .set("messages", msgs)
-                .set("temperature", temperature)
-                .set("stream", true);
+        JSONObject body = buildRequestBody(model, msgs, temperature, true);
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -167,8 +142,8 @@ public class BailianChatClient {
                         "AI 流式调用失败（HTTP " + resp.statusCode() + "）：" + StrUtil.maxLength(err, 200));
             }
             StringBuilder full = new StringBuilder();
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(resp.body(), StandardCharsets.UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(resp.body(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (!line.startsWith("data:")) {
@@ -199,5 +174,40 @@ public class BailianChatClient {
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.BUSINESS, "AI 流式调用异常: " + e.getMessage(), e);
         }
+    }
+
+    // ==================== 内部工具 ====================
+
+    /** 校验凭据并构建 completions 端点 URL */
+    private String validateAndBuildUrl(String apiKey, String apiHost) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new BusinessException(ErrorCode.BUSINESS, "百炼模型 API-Key 未配置（system_config → llm 分组）");
+        }
+        if (apiHost == null || apiHost.isBlank()) {
+            throw new BusinessException(ErrorCode.BUSINESS, "百炼专属网关域名未配置（system_config → llm 分组）");
+        }
+        String baseUrl = apiHost.startsWith("http") ? apiHost : "https://" + apiHost;
+        return baseUrl.replaceAll("/+$", "") + "/compatible-mode/v1/chat/completions";
+    }
+
+    /** 构建请求体 JSON */
+    private JSONObject buildRequestBody(String model, JSONArray messages, double temperature, boolean stream) {
+        JSONObject body = new JSONObject()
+                .set("model", model == null || model.isBlank() ? "qwen-plus" : model)
+                .set("messages", messages)
+                .set("temperature", temperature);
+        if (stream) {
+            body.set("stream", true);
+        }
+        return body;
+    }
+
+    /** 将 Message 列表转为 JSONArray */
+    private JSONArray toJsonArray(List<Message> messages) {
+        JSONArray msgs = new JSONArray();
+        for (Message m : messages) {
+            msgs.add(new JSONObject().set("role", m.role).set("content", m.content));
+        }
+        return msgs;
     }
 }

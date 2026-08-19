@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -76,7 +78,7 @@ public class DictService {
     public void cacheByType(String dictType, List<SystemDict> list) {
         String key = CACHE_PREFIX + dictType;
         try {
-            java.util.Map<String, String> hash = new java.util.HashMap<>();
+            Map<String, String> hash = new HashMap<>();
             for (SystemDict d : list) {
                 hash.put(d.getDictCode(), serialize(d));
             }

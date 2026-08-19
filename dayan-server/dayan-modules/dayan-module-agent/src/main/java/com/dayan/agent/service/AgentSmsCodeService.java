@@ -9,12 +9,6 @@ import com.dayan.agent.vo.SmsSendVO;
  */
 public interface AgentSmsCodeService {
 
-    /** Redis 场景标识（agent 端验证码登录） */
-    String SCENE = "agent";
-
-    /** Redis 场景标识（换绑手机号，与登录验证码隔离） */
-    String SCENE_PHONE_CHANGE = "agent_phone_change";
-
     /**
      * 发送验证码。
      *

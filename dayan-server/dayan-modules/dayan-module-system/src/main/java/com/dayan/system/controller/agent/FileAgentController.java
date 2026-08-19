@@ -53,6 +53,9 @@ public class FileAgentController {
             "video/mp4", "video/webm",
             "application/pdf");
 
+    /** 静态资源缓存时间：24 小时 */
+    private static final String CACHE_CONTROL_ONE_DAY = "max-age=86400";
+
     @Operation(summary = "上传文件（图片，module 默认 avatar）")
     @PostMapping("/upload")
     public R<com.dayan.common.oss.dto.FileUploadDTO> upload(
@@ -132,7 +135,7 @@ public class FileAgentController {
                     "attachment; filename=\"" + key.substring(key.lastIndexOf('/') + 1) + "\"");
         }
         response.setContentType(contentType);
-        response.setHeader("Cache-Control", "max-age=86400");
+        response.setHeader("Cache-Control", CACHE_CONTROL_ONE_DAY);
         try (InputStream is = storageService.download(key);
              OutputStream os = response.getOutputStream()) {
             is.transferTo(os);

@@ -83,8 +83,8 @@ class CodeGeneratorTest {
 
     /** 内存版 SequenceProvider，模拟 Redis INCR 的语义（线程安全 + 自增 + 按 key 隔离） */
     static class InMemorySequenceProvider implements SequenceProvider {
-        private final java.util.concurrent.ConcurrentHashMap<String, AtomicLong> counter =
-                new java.util.concurrent.ConcurrentHashMap<>();
+        private final ConcurrentHashMap<String, AtomicLong> counter =
+                new ConcurrentHashMap<>();
 
         @Override
         public long next(String key) {
