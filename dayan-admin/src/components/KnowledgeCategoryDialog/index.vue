@@ -50,11 +50,18 @@ onMounted(load)
 
 /** 新增子类目 */
 async function handleAdd(parent?: TreeNode) {
-  const { value } = await ElMessageBox.prompt(
-    parent ? `在「${parent.categoryName}」下新增子类目名称：` : '新增顶级类目名称：',
-    '新增类目',
-    { confirmButtonText: '确定', cancelButtonText: '取消', inputPattern: /\S+/, inputErrorMessage: '类目名称不能为空' }
-  )
+  let value: string | undefined
+  try {
+    value = (
+      await ElMessageBox.prompt(
+        parent ? `在「${parent.categoryName}」下新增子类目名称：` : '新增顶级类目名称：',
+        '新增类目',
+        { confirmButtonText: '确定', cancelButtonText: '取消', inputPattern: /\S+/, inputErrorMessage: '类目名称不能为空' }
+      )
+    ).value
+  } catch {
+    return // 用户取消，吞掉拒绝
+  }
   if (!value) return
   await addKnowledgeCategory({ categoryName: value.trim(), parentCategoryId: parent?.categoryId })
   ElMessage.success('类目创建成功')
@@ -63,11 +70,15 @@ async function handleAdd(parent?: TreeNode) {
 
 async function handleDelete(node: TreeNode) {
   if (node.isDefault) return
-  await ElMessageBox.confirm(
-    `确定删除类目「${node.categoryName}」？若类目下有文件，百炼将拒绝删除。`,
-    '删除类目',
-    { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' }
-  )
+  try {
+    await ElMessageBox.confirm(
+      `确定删除类目「${node.categoryName}」？若类目下有文件，百炼将拒绝删除。`,
+      '删除类目',
+      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return // 用户取消，吞掉拒绝
+  }
   await deleteKnowledgeCategory(node.categoryId)
   ElMessage.success('删除成功')
   load()

@@ -283,6 +283,7 @@ public class BailianKnowledgeClient {
     public FileStatusInfo describeFile(String fileId) {
         try {
             com.aliyun.bailian20231229.models.DescribeFileResponse resp = sdkClient.describeFile(workspaceId, fileId,
+                    // 空请求体：DescribeFile 仅按 FileId 查询，无其他参数
                     new com.aliyun.bailian20231229.models.DescribeFileRequest());
             checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "查询文件状态");
             com.aliyun.bailian20231229.models.DescribeFileResponseBody.DescribeFileResponseBodyData data =
@@ -313,7 +314,8 @@ public class BailianKnowledgeClient {
         List<CategoryItem> all = new ArrayList<>();
         String nextToken = null;
         try {
-            while (true) {
+            // 翻页迭代上限 100 轮（每轮 100 条 ≈ 10000 条上限），防服务端 nextToken 异常导致死循环
+            for (int round = 0; round < 100; round++) {
                 com.aliyun.bailian20231229.models.ListCategoryRequest req =
                         new com.aliyun.bailian20231229.models.ListCategoryRequest()
                                 .setCategoryType("UNSTRUCTURED")
@@ -331,11 +333,12 @@ public class BailianKnowledgeClient {
                 }
                 if (data == null || !Boolean.TRUE.equals(data.getHasNext())
                         || data.getNextToken() == null || data.getNextToken().isBlank()) {
-                    break;
+                    return all;
                 }
                 nextToken = data.getNextToken();
             }
-            return all;
+            throw new BusinessException(ErrorCode.BUSINESS,
+                    "查询类目失败：翻页超过 100 轮上限（疑似服务端 nextToken 异常）");
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -367,6 +370,9 @@ public class BailianKnowledgeClient {
         try {
             com.aliyun.bailian20231229.models.DeleteCategoryRequest req =
                     new com.aliyun.bailian20231229.models.DeleteCategoryRequest();
+            // 注意：SDK 方法签名为 deleteCategory(CategoryId, WorkspaceId)，但路径模板为
+            // /{workspaceId}/datacenter/category/{categoryId}/——传参 (categoryId, workspaceId) 顺序正确，
+            // 不能按直觉传 (workspaceId, categoryId)（实测反向传参 404）。
             com.aliyun.bailian20231229.models.DeleteCategoryResponse resp =
                     sdkClient.deleteCategory(categoryId, workspaceId, req);
             checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "删除类目");
