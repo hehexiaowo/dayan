@@ -16,7 +16,7 @@ import {
   deleteKnowledgeRepo,
   syncKnowledgeRepo
 } from '@/api/knowledge'
-import type { KnowledgeRepo, KnowledgeRepoQuery } from '@/types/knowledge'
+import type { KnowledgeRepo, KnowledgeRepoQuery, KnowledgeIndexConfig } from '@/types/knowledge'
 import {
   KNOWLEDGE_REPO_TYPE_OPTIONS,
   KNOWLEDGE_REPO_STATUS_OPTIONS,
@@ -72,6 +72,21 @@ const dialogVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
+/** 索引配置默认值（懒建库模式：建库后不可修改） */
+const emptyIndexConfig = (): KnowledgeIndexConfig => ({
+  chunkMode: undefined,
+  separator: '',
+  chunkSize: 500,
+  overlapSize: 100,
+  embeddingModel: 'text-embedding-v3',
+  rerankModel: 'qwen3-rerank',
+  rerankMode: 'qa',
+  rerankMinScore: 0.01,
+  enableRewrite: true,
+  denseTopK: 4,
+  sparseTopK: 4
+})
+
 const form = reactive({
   repoName: '',
   repoType: 1,
@@ -79,7 +94,8 @@ const form = reactive({
   mode: 'create' as 'create' | 'bind',
   indexId: '',
   description: '',
-  sortOrder: 0
+  sortOrder: 0,
+  indexConfig: emptyIndexConfig()
 })
 
 const rules: FormRules = {
@@ -112,7 +128,8 @@ function resetForm() {
     mode: 'create',
     indexId: '',
     description: '',
-    sortOrder: 0
+    sortOrder: 0,
+    indexConfig: emptyIndexConfig()
   })
 }
 
@@ -151,6 +168,7 @@ async function handleSubmit() {
       channelCode: form.repoType === 2 ? form.channelCode : undefined,
       mode: form.mode,
       indexId: form.mode === 'bind' ? form.indexId.trim() : undefined,
+      indexConfig: form.mode === 'create' ? { ...form.indexConfig } : undefined,
       description: form.description,
       sortOrder: form.sortOrder
     })
@@ -297,7 +315,7 @@ async function handleDelete(row: KnowledgeRepo) {
     <KnowledgeCategoryDialog v-model="categoryDialogVisible" />
 
     <!-- 新建仓库弹窗 -->
-    <el-dialog v-model="dialogVisible" title="新建知识仓库" width="620px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" title="新建知识仓库" width="720px" :close-on-click-modal="false">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="仓库名称" prop="repoName">
           <el-input v-model="form.repoName" placeholder="如：大雁养老平台知识库 / xx渠道知识库" maxlength="100" />
@@ -321,6 +339,50 @@ async function handleDelete(row: KnowledgeRepo) {
           <div class="form-tip">
             新建 = 先创建本地仓库，上传首个文档解析成功后自动在百炼建库；绑定 = 关联百炼控制台已创建的索引（填下方索引 ID）。
           </div>
+        </el-form-item>
+        <el-form-item v-if="form.mode === 'create'" label="切分方式">
+          <el-radio-group v-model="form.indexConfig.chunkMode">
+            <el-radio :value="undefined">智能切分</el-radio>
+            <el-radio value="regex">自定义切分</el-radio>
+          </el-radio-group>
+          <div class="form-tip">智能切分按语义自动切块；自定义按分隔符 + 长度 + 重叠切块（建库后不可修改）</div>
+        </el-form-item>
+        <template v-if="form.mode === 'create' && form.indexConfig.chunkMode === 'regex'">
+          <el-form-item label="分隔符">
+            <el-input v-model="form.indexConfig.separator" placeholder="正则表达式，如 (?<=。)" />
+          </el-form-item>
+          <el-form-item label="切块长度">
+            <el-input-number v-model="form.indexConfig.chunkSize" :min="1" :max="6000" controls-position="right" />
+          </el-form-item>
+          <el-form-item label="重叠长度">
+            <el-input-number v-model="form.indexConfig.overlapSize" :min="0" :max="1024" controls-position="right" />
+          </el-form-item>
+        </template>
+        <el-form-item v-if="form.mode === 'create'" label="向量模型">
+          <el-select v-model="form.indexConfig.embeddingModel" style="width: 220px">
+            <el-option label="text-embedding-v3" value="text-embedding-v3" />
+            <el-option label="text-embedding-v4" value="text-embedding-v4" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="form.mode === 'create'" label="重排模型">
+          <el-select v-model="form.indexConfig.rerankModel" style="width: 220px">
+            <el-option label="qwen3-rerank（语义重排）" value="qwen3-rerank" />
+            <el-option label="qwen3-rerank-hybrid（语义+文本匹配）" value="qwen3-rerank-hybrid" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="form.mode === 'create'" label="重排模式">
+          <el-select v-model="form.indexConfig.rerankMode" style="width: 220px">
+            <el-option label="问答模式（qa）" value="qa" />
+            <el-option label="相似模式（similar）" value="similar" />
+            <el-option label="自定义（custom）" value="custom" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="form.mode === 'create'" label="相似度阈值">
+          <el-input-number v-model="form.indexConfig.rerankMinScore" :min="0.01" :max="1" :step="0.01" controls-position="right" />
+        </el-form-item>
+        <el-form-item v-if="form.mode === 'create'" label="多轮改写">
+          <el-switch v-model="form.indexConfig.enableRewrite" />
+          <span class="form-tip" style="margin-left: 8px">多轮对话时对问题做改写后检索</span>
         </el-form-item>
         <el-form-item v-if="form.mode === 'bind'" label="百炼索引 ID" prop="indexId">
           <el-input v-model="form.indexId" placeholder="百炼控制台-知识库详情中的索引 ID" />
