@@ -122,11 +122,18 @@ function handleSelectFile(options: UploadRequestOptions) {
   return Promise.resolve() // 阻止 el-upload 直接上传，由确认后统一走 handleUpload
 }
 
+/** 取消上传设置：关闭对话框并清空待传文件，避免下次打开混入旧文件 */
+function closeUploadDialog() {
+  uploadDialogVisible.value = false
+  pendingFiles.value = []
+}
+
 /** 确认上传：按设置逐个上传 */
 async function confirmUpload() {
-  uploadDialogVisible.value = false
+  // 先快照并清空，再关闭对话框（@close 也会清空 pendingFiles，二者互不干扰）
   const files = pendingFiles.value
   pendingFiles.value = []
+  uploadDialogVisible.value = false
   for (const file of files) {
     await handleUpload(file, {
       categoryId: uploadSetting.categoryId || undefined,
@@ -298,10 +305,15 @@ async function openEditTags(row: KnowledgeDoc) {
 async function confirmEditTags() {
   if (!editingFile.value) return
   const tags = editTags.value.slice(0, 10)
-  await updateKnowledgeDocTags(props.repoId, editingFile.value.fileId, tags)
-  editingFile.value.tags = tags
-  editTagsVisible.value = false
-  ElMessage.success('标签已更新')
+  try {
+    await updateKnowledgeDocTags(props.repoId, editingFile.value.fileId, tags)
+    editingFile.value.tags = tags
+    editTagsVisible.value = false
+    ElMessage.success('标签已更新')
+  } catch {
+    // 失败时保持对话框打开、不回写，便于用户重试
+    ElMessage.error('标签更新失败，请重试')
+  }
 }
 
 /** 解析器选项名（unknown 原样展示） */
@@ -351,7 +363,7 @@ function taskStatusText(t: UploadTask): string {
     </div>
 
     <!-- 上传设置 -->
-    <el-dialog v-model="uploadDialogVisible" title="上传设置" width="480px" :close-on-click-modal="false">
+    <el-dialog v-model="uploadDialogVisible" title="上传设置" width="480px" :close-on-click-modal="false" @close="closeUploadDialog">
       <el-form label-width="80px">
         <el-form-item label="文件">
           <span class="upload-file-list">
@@ -392,7 +404,7 @@ function taskStatusText(t: UploadTask): string {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="uploadDialogVisible = false">取消</el-button>
+        <el-button @click="closeUploadDialog">取消</el-button>
         <el-button type="primary" :disabled="!pendingFiles.length" @click="confirmUpload">
           上传 {{ pendingFiles.length ? `（${pendingFiles.length} 个文件）` : '' }}
         </el-button>
