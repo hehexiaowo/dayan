@@ -9,7 +9,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getKnowledgeRepo, updateKnowledgeRepo, syncKnowledgeRepo, getKnowledgeRepoBuildStatus } from '@/api/knowledge'
-import type { KnowledgeRepo } from '@/types/knowledge'
+import type { KnowledgeRepo, KnowledgeIndexConfig } from '@/types/knowledge'
 import { knowledgeRepoTypeLabel, knowledgeRepoStatusLabel, knowledgeRepoStatusTagType } from '@/types/knowledge'
 import { formatDateTime } from '@/utils/format'
 import DocTab from './DocTab.vue'
@@ -30,6 +30,34 @@ const basicForm = ref({
 })
 const saving = ref(false)
 
+/** 检索参数行内编辑表单（已建库可改，默认与新建弹窗一致） */
+const retrieverForm = ref<KnowledgeIndexConfig>({
+  denseTopK: 4,
+  sparseTopK: 4,
+  rerankMinScore: 0.01
+})
+const retrieverSaving = ref(false)
+
+/** 是否已在百炼建库（有远端索引 ID） */
+const isIndexed = computed(() => Boolean(repo.value?.indexId))
+
+/** 索引配置（可能为空 = 未配置，使用百炼默认） */
+const cfg = computed(() => repo.value?.indexConfig)
+
+/** 重排模式标签 */
+function rerankModeLabel(v?: string): string {
+  switch (v) {
+    case 'qa':
+      return '问答模式（qa）'
+    case 'similar':
+      return '相似模式（similar）'
+    case 'custom':
+      return '自定义（custom）'
+    default:
+      return '--'
+  }
+}
+
 async function loadDetail() {
   detailLoading.value = true
   try {
@@ -38,6 +66,11 @@ async function loadDetail() {
       repoName: repo.value.repoName ?? '',
       description: repo.value.description ?? '',
       sortOrder: repo.value.sortOrder ?? 0
+    }
+    retrieverForm.value = {
+      denseTopK: repo.value.indexConfig?.denseTopK ?? 4,
+      sparseTopK: repo.value.indexConfig?.sparseTopK ?? 4,
+      rerankMinScore: repo.value.indexConfig?.rerankMinScore ?? 0.01
     }
   } catch {
     repo.value = null
@@ -57,6 +90,26 @@ async function handleSaveBasic() {
     loadDetail()
   } finally {
     saving.value = false
+  }
+}
+
+/** 保存检索参数：提交完整 indexConfig（原值 + 修改的三个字段），已建库后端仅允许这三项变更 */
+async function handleSaveRetriever() {
+  if (!repo.value?.id) return
+  retrieverSaving.value = true
+  try {
+    await updateKnowledgeRepo(repo.value.id, {
+      indexConfig: {
+        ...(repo.value.indexConfig ?? {}),
+        denseTopK: retrieverForm.value.denseTopK,
+        sparseTopK: retrieverForm.value.sparseTopK,
+        rerankMinScore: retrieverForm.value.rerankMinScore
+      }
+    })
+    ElMessage.success('检索参数已保存')
+    loadDetail()
+  } finally {
+    retrieverSaving.value = false
   }
 }
 
@@ -145,6 +198,72 @@ function goBack() {
               <el-button type="primary" :loading="saving" @click="handleSaveBasic">保存</el-button>
             </el-form-item>
           </el-form>
+
+          <!-- 索引配置：只读展示；已建库时检索参数可编辑 -->
+          <div class="index-config-card">
+            <div class="card-header">
+              <span class="card-title">索引配置</span>
+              <el-tag size="small" :type="isIndexed ? 'success' : 'warning'">
+                {{ isIndexed ? '已建库' : '未建库' }}
+              </el-tag>
+            </div>
+
+            <el-descriptions v-if="cfg" :column="2" border>
+              <el-descriptions-item label="切分方式">
+                {{ cfg.chunkMode === 'regex' ? '自定义切分' : '智能切分' }}
+              </el-descriptions-item>
+              <template v-if="cfg.chunkMode === 'regex'">
+                <el-descriptions-item label="分隔符">{{ cfg.separator || '--' }}</el-descriptions-item>
+                <el-descriptions-item label="切块长度">{{ cfg.chunkSize ?? '--' }}</el-descriptions-item>
+                <el-descriptions-item label="重叠长度">{{ cfg.overlapSize ?? '--' }}</el-descriptions-item>
+              </template>
+              <el-descriptions-item label="向量模型">{{ cfg.embeddingModel || '--' }}</el-descriptions-item>
+              <el-descriptions-item label="重排模型">{{ cfg.rerankModel || '--' }}</el-descriptions-item>
+              <el-descriptions-item label="重排模式">{{ rerankModeLabel(cfg.rerankMode) }}</el-descriptions-item>
+              <el-descriptions-item label="相似度阈值">{{ cfg.rerankMinScore ?? '--' }}</el-descriptions-item>
+              <el-descriptions-item label="多轮改写">{{ cfg.enableRewrite === false ? '关闭' : '开启' }}</el-descriptions-item>
+              <el-descriptions-item label="召回 TopK">
+                dense {{ cfg.denseTopK ?? '--' }} / sparse {{ cfg.sparseTopK ?? '--' }}
+              </el-descriptions-item>
+            </el-descriptions>
+            <div v-else class="default-tip">使用百炼默认（智能切分）</div>
+
+            <template v-if="isIndexed">
+              <div class="retriever-block">
+                <div class="retriever-title">检索参数（保存后同步百炼）</div>
+                <el-form inline label-width="150px">
+                  <el-form-item label="稠密召回 TopK（dense）">
+                    <el-input-number v-model="retrieverForm.denseTopK" :min="1" :max="100" controls-position="right" />
+                  </el-form-item>
+                  <el-form-item label="稀疏召回 TopK（sparse）">
+                    <el-input-number v-model="retrieverForm.sparseTopK" :min="1" :max="100" controls-position="right" />
+                  </el-form-item>
+                  <el-form-item label="相似度阈值">
+                    <el-input-number
+                      v-model="retrieverForm.rerankMinScore"
+                      :min="0.01"
+                      :max="1"
+                      :step="0.01"
+                      controls-position="right"
+                    />
+                  </el-form-item>
+                  <el-form-item>
+                    <el-button type="primary" :loading="retrieverSaving" @click="handleSaveRetriever">
+                      保存检索参数
+                    </el-button>
+                  </el-form-item>
+                </el-form>
+              </div>
+            </template>
+            <el-alert
+              v-else
+              class="unbound-tip"
+              type="info"
+              :closable="false"
+              show-icon
+              title="上传首个文档并建库后，此处仅检索参数可编辑"
+            />
+          </div>
         </el-tab-pane>
 
         <el-tab-pane label="文档管理" name="docs">
@@ -182,6 +301,48 @@ function goBack() {
   }
   .detail-card {
     margin-top: 16px;
+  }
+  .index-config-card {
+    max-width: 860px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #ebeef5;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+
+      .card-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1f2329;
+      }
+    }
+
+    .default-tip {
+      padding: 8px 0;
+      font-size: 13px;
+      color: #606266;
+    }
+
+    .retriever-block {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #ebeef5;
+
+      .retriever-title {
+        margin-bottom: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+
+    .unbound-tip {
+      margin-top: 16px;
+    }
   }
 }
 </style>
