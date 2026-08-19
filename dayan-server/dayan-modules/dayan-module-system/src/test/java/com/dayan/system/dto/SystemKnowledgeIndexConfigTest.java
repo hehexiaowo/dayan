@@ -39,16 +39,23 @@ class SystemKnowledgeIndexConfigTest {
     void validateRejectsInvalidRanges() {
         SystemKnowledgeIndexConfig cfg = new SystemKnowledgeIndexConfig();
         cfg.setChunkSize(6001);
-        assertThrows(IllegalArgumentException.class, cfg::validate);
+        assertThrows(IllegalArgumentException.class, cfg::validate, "chunkSize > 6000 应报错");
+        cfg.setChunkSize(0);
+        assertThrows(IllegalArgumentException.class, cfg::validate, "chunkSize < 1 应报错");
         cfg.setChunkSize(200);
         cfg.setOverlapSize(200);
         assertThrows(IllegalArgumentException.class, cfg::validate, "overlap >= chunk 应报错");
+        cfg.setOverlapSize(100);
+        cfg.setOverlapSize(1025);
+        assertThrows(IllegalArgumentException.class, cfg::validate, "overlapSize > 1024 应报错");
         cfg.setOverlapSize(100);
         cfg.setRerankMinScore(2.0);
         assertThrows(IllegalArgumentException.class, cfg::validate, "rerankMinScore 超界应报错");
         cfg.setRerankMinScore(0.5);
         cfg.setChunkMode("unknown");
         assertThrows(IllegalArgumentException.class, cfg::validate, "chunkMode 非法值应报错");
+        cfg.setChunkMode("regex");
+        assertThrows(IllegalArgumentException.class, cfg::validate, "chunkMode=regex 未填分隔符应报错");
     }
 
     @Test
@@ -60,12 +67,15 @@ class SystemKnowledgeIndexConfigTest {
     @Test
     void toQueryMapContainsOnlySetFields() {
         SystemKnowledgeIndexConfig cfg = new SystemKnowledgeIndexConfig();
+        cfg.setDenseTopK(8);
+        cfg.setSparseTopK(8);
         cfg.setChunkMode("regex");
         cfg.setChunkSize(300);
         var map = cfg.toQueryMap();
         assertEquals("regex", map.get("chunkMode"));
         assertEquals("300", map.get("ChunkSize"));
         assertFalse(map.containsKey("Separator"), "未设置字段不应进 map");
-        assertFalse(map.containsKey("denseTopK"), "TopK 不进 CreateIndex 参数");
+        assertFalse(map.containsKey("denseTopK"), "已设 denseTopK 也不进 CreateIndex 参数");
+        assertFalse(map.containsKey("sparseTopK"), "已设 sparseTopK 也不进 CreateIndex 参数");
     }
 }
