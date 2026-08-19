@@ -15,6 +15,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.stream.Collectors;
@@ -100,6 +102,25 @@ public class GlobalExceptionHandler {
     public R<Void> handleParam(ParamException e) {
         log.warn("参数异常: {}", e.getMessage());
         return R.fail(e.getCode(), e.getMessage());
+    }
+
+    /**
+     * 上传文件超过大小限制。
+     *
+     * <p>multipart 在 controller 方法进入前解析，超限异常（如 max-file-size）
+     * 若不做专门处理会落入下方兜底返回"系统内部异常"，误导排查。
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public R<Void> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+        log.warn("上传文件超过大小限制: {}", e.getMessage());
+        return R.fail(ErrorCode.PARAM_ERROR.getCode(), "上传文件大小超过限制，请压缩后重试");
+    }
+
+    /** multipart 解析失败（请求体损坏、参数缺失等） */
+    @ExceptionHandler(MultipartException.class)
+    public R<Void> handleMultipart(MultipartException e) {
+        log.warn("上传请求解析失败: {}", e.getMessage());
+        return R.fail(ErrorCode.PARAM_ERROR.getCode(), "上传文件解析失败，请检查文件后重试");
     }
 
     /** 兜底系统异常 */

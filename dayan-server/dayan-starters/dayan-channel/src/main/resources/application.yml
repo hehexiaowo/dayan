@@ -8,8 +8,9 @@ spring:
     name: dayan-channel
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 20MB
+      # 与前端上传提示（100MB）及百炼 DocMind 单文件上限对齐
+      max-file-size: 100MB
+      max-request-size: 110MB
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/dayan?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true

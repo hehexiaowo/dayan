@@ -74,14 +74,15 @@ export function listKnowledgeDocs(
 }
 
 /** 上传文档（multipart，返回百炼 FileId，解析异步） */
-export function uploadKnowledgeDoc(id: number, file: File): Promise<string> {
+export function uploadKnowledgeDoc(id: number, file: File, silent = false): Promise<string> {
   const form = new FormData()
   form.append('file', file)
   return request<string>({
     url: `/admin-api/system/knowledge/repos/${id}/documents`,
     method: 'post',
     data: form,
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    silent
   })
 }
 

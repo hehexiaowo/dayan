@@ -73,9 +73,10 @@ async function handleUpload(options: UploadRequestOptions) {
   const fileName = options.file.name
   let fileId: string
   try {
-    fileId = await uploadKnowledgeDoc(props.repoId, options.file)
-  } catch {
-    ElMessage.error(`「${fileName}」上传失败`)
+    fileId = await uploadKnowledgeDoc(props.repoId, options.file, true)
+  } catch (e) {
+    const msg = e instanceof Error && e.message ? e.message : '未知原因'
+    ElMessage.error(`「${fileName}」上传失败：${msg}`)
     return
   }
   const task: UploadTask = { fileId, fileName, status: 'parsing' }
