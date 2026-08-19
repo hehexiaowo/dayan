@@ -70,6 +70,7 @@ async function loadTree() {
     ownChannelCode.value = tree?.[0]?.channelCode ?? ''
     // 默认选中本渠道节点
     selectedNode.value = tree?.[0] ?? null
+    syncRetrieverForm()
   } catch {
     treeData.value = []
     selectedNode.value = null
@@ -215,6 +216,46 @@ async function handleDelete() {
   loadTree()
 }
 
+// ==================== 检索参数（已建库可编辑，对齐 admin 详情页）====================
+/** 检索参数行内编辑表单（已建库可改，默认与新建弹窗一致） */
+const retrieverForm = ref<KnowledgeIndexConfig>({
+  denseTopK: 4,
+  sparseTopK: 4,
+  rerankMinScore: 0.01
+})
+const retrieverSaving = ref(false)
+
+/** 检索参数表单同步：本渠道独立库已建库时从 indexConfig 预填（默认与新建弹窗一致） */
+function syncRetrieverForm() {
+  const cfg = ownRepo.value?.indexConfig
+  retrieverForm.value = {
+    denseTopK: cfg?.denseTopK ?? 4,
+    sparseTopK: cfg?.sparseTopK ?? 4,
+    rerankMinScore: cfg?.rerankMinScore ?? 0.01
+  }
+}
+
+/** 保存检索参数：提交完整 indexConfig（原值 + 修改的三个字段），已建库后端仅允许这三项变更 */
+async function handleSaveRetriever() {
+  const repoId = ownRepo.value?.id
+  if (!repoId) return
+  retrieverSaving.value = true
+  try {
+    await updateKnowledgeRepo(repoId, {
+      indexConfig: {
+        ...(ownRepo.value?.indexConfig ?? {}),
+        denseTopK: retrieverForm.value.denseTopK,
+        sparseTopK: retrieverForm.value.sparseTopK,
+        rerankMinScore: retrieverForm.value.rerankMinScore
+      }
+    })
+    ElMessage.success('检索参数已保存')
+    loadTree()
+  } finally {
+    retrieverSaving.value = false
+  }
+}
+
 // ==================== 文档管理（仅本渠道独立库）====================
 const docs = ref<KnowledgeDoc[]>([])
 const docsLoading = ref(false)
@@ -250,6 +291,7 @@ async function loadDocs() {
 function onSelectNode(node: KnowledgeRepoTreeNode) {
   selectedNode.value = node
   resetChat()
+  syncRetrieverForm()
   if (isOwn.value && ownRepo.value?.id) {
     loadDocs()
   } else {
@@ -693,6 +735,33 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
             <span>最近同步：{{ activeRepo.lastSyncAt ? formatDateTime(activeRepo.lastSyncAt) : '--' }}</span>
             <span>创建时间：{{ activeRepo.createdAt ? formatDateTime(activeRepo.createdAt) : '--' }}</span>
           </div>
+
+          <!-- 检索参数（已建库可编辑，对齐 admin 详情页；保存提交完整 indexConfig） -->
+          <div v-if="isOwn && ownRepo?.indexId" class="retriever-block">
+            <div class="retriever-title">检索参数（保存后同步百炼）</div>
+            <el-form inline label-width="150px">
+              <el-form-item label="稠密召回 TopK（dense）">
+                <el-input-number v-model="retrieverForm.denseTopK" :min="1" :max="100" controls-position="right" />
+              </el-form-item>
+              <el-form-item label="稀疏召回 TopK（sparse）">
+                <el-input-number v-model="retrieverForm.sparseTopK" :min="1" :max="100" controls-position="right" />
+              </el-form-item>
+              <el-form-item label="相似度阈值">
+                <el-input-number
+                  v-model="retrieverForm.rerankMinScore"
+                  :min="0.01"
+                  :max="1"
+                  :step="0.01"
+                  controls-position="right"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" :loading="retrieverSaving" @click="handleSaveRetriever">
+                  保存检索参数
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </div>
         </el-card>
 
         <!-- tabs：本渠道且独立库 → 文档管理 + 问答；否则仅问答（只读使用） -->
@@ -1127,6 +1196,19 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
         margin-top: 12px;
         color: #606266;
         font-size: 13px;
+      }
+
+      .retriever-block {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px dashed #e4e7ed;
+
+        .retriever-title {
+          margin-bottom: 12px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #303133;
+        }
       }
     }
 
