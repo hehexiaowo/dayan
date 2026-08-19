@@ -34,8 +34,14 @@ public class BailianKnowledgeClient {
 
     /** 默认类目（百炼控制台「default」类目） */
     public static final String CATEGORY_DEFAULT = "default";
-    /** 文件解析器：阿里云智能文档解析 */
+    /** 文件解析器：阿里云智能文档解析（默认，已验证兼容） */
     public static final String PARSER_DOCMIND = "DASHSCOPE_DOCMIND";
+    /** 文件解析器：电子文档解析 */
+    public static final String PARSER_DOCMIND_DIGITAL = "DOCMIND_DIGITAL";
+    /** 文件解析器：大模型文档解析 */
+    public static final String PARSER_DOCMIND_LLM_VERSION = "DOCMIND_LLM_VERSION";
+    /** 文件解析器：自动选择 */
+    public static final String PARSER_AUTO_SELECT = "AUTO_SELECT";
     /** 知识库数据源：数据中心-文件 */
     public static final String SOURCE_TYPE_DATA_CENTER_FILE = "DATA_CENTER_FILE";
     /** 非结构化文档知识库 */
@@ -74,6 +80,12 @@ public class BailianKnowledgeClient {
      * @return indexId（CreateIndex 返回 Data.Id）与 jobId（SubmitIndexJob 返回 Data.Id）
      */
     public CreateIndexResult createIndex(String name, String description, List<String> fileIds) {
+        return createIndex(name, description, fileIds, null);
+    }
+
+    /** 创建文档知识库（可带切分/检索配置；config 为 null 时用百炼默认） */
+    public CreateIndexResult createIndex(String name, String description, List<String> fileIds,
+                                         Map<String, String> indexConfig) {
         if (fileIds == null || fileIds.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "创建百炼知识库必须携带至少一个已解析文件（file_ids）");
         }
@@ -86,6 +98,9 @@ public class BailianKnowledgeClient {
         query.put("StructureType", STRUCTURE_TYPE_UNSTRUCTURED);
         query.put("SinkType", SINK_TYPE_DEFAULT);
         query.put("DocumentIds", JSONUtil.toJsonStr(fileIds));
+        if (indexConfig != null) {
+            query.putAll(indexConfig);
+        }
         JSONObject resp = callIndex("CreateIndex", "/index/create", query);
         String indexId = resp.getJSONObject("Data").getStr("Id");
         String jobId = submitIndexJob(indexId);
@@ -239,13 +254,16 @@ public class BailianKnowledgeClient {
     }
 
     /** 将文档导入应用数据并触发解析（解析完成前不可建库/导入索引），返回 FileId */
-    public String addFile(String leaseId, String categoryId, String parser) {
+    public String addFile(String leaseId, String categoryId, String parser, List<String> tags) {
         try {
             com.aliyun.bailian20231229.models.AddFileRequest req =
                     new com.aliyun.bailian20231229.models.AddFileRequest()
                             .setLeaseId(leaseId)
                             .setCategoryId(categoryId == null || categoryId.isBlank() ? CATEGORY_DEFAULT : categoryId)
                             .setParser(parser == null || parser.isBlank() ? PARSER_DOCMIND : parser);
+            if (tags != null && !tags.isEmpty()) {
+                req.setTags(tags);
+            }
             com.aliyun.bailian20231229.models.AddFileResponse resp = sdkClient.addFile(workspaceId, req);
             // 注意：AddFile 的 success 字段类型为 String（"true"/"false"），与其他接口的 Boolean 不同
             if (!"true".equalsIgnoreCase(resp.getBody().getSuccess())) {
@@ -270,11 +288,108 @@ public class BailianKnowledgeClient {
             com.aliyun.bailian20231229.models.DescribeFileResponseBody.DescribeFileResponseBodyData data =
                     resp.getBody().getData();
             return new FileStatusInfo(data.getFileId(), data.getFileName(), data.getStatus(),
-                    data.getSizeInBytes(), data.getParser());
+                    data.getSizeInBytes(), data.getParser(), data.getCategoryId(),
+                    data.getFileType(), data.getCreateTime(), data.getTags());
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             throw wrap(e, "查询文件状态");
+        }
+    }
+
+    // ==================== 类目管理（业务空间级，多级树） ====================
+
+    @Data
+    @AllArgsConstructor
+    public static class CategoryItem {
+        private String categoryId;
+        private String categoryName;
+        private String parentCategoryId;
+        private Boolean isDefault;
+    }
+
+    /** 全量类目列表（ListCategory 循环翻页聚合；类目量级小，一次拉全） */
+    public List<CategoryItem> listCategories() {
+        List<CategoryItem> all = new ArrayList<>();
+        String nextToken = null;
+        try {
+            while (true) {
+                com.aliyun.bailian20231229.models.ListCategoryRequest req =
+                        new com.aliyun.bailian20231229.models.ListCategoryRequest()
+                                .setCategoryType("UNSTRUCTURED")
+                                .setMaxResults(100)
+                                .setNextToken(nextToken);
+                com.aliyun.bailian20231229.models.ListCategoryResponse resp =
+                        sdkClient.listCategory(workspaceId, req);
+                checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "查询类目");
+                var data = resp.getBody().getData();
+                if (data != null && data.getCategoryList() != null) {
+                    for (var c : data.getCategoryList()) {
+                        all.add(new CategoryItem(c.getCategoryId(), c.getCategoryName(),
+                                c.getParentCategoryId(), c.getIsDefault()));
+                    }
+                }
+                if (data == null || !Boolean.TRUE.equals(data.getHasNext())
+                        || data.getNextToken() == null || data.getNextToken().isBlank()) {
+                    break;
+                }
+                nextToken = data.getNextToken();
+            }
+            return all;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw wrap(e, "查询类目");
+        }
+    }
+
+    /** 新增类目（多级：parentCategoryId 为空 = 顶级类目） */
+    public String addCategory(String categoryName, String parentCategoryId) {
+        try {
+            com.aliyun.bailian20231229.models.AddCategoryRequest req =
+                    new com.aliyun.bailian20231229.models.AddCategoryRequest()
+                            .setCategoryName(categoryName)
+                            .setCategoryType("UNSTRUCTURED")
+                            .setParentCategoryId(parentCategoryId);
+            com.aliyun.bailian20231229.models.AddCategoryResponse resp =
+                    sdkClient.addCategory(workspaceId, req);
+            checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "新增类目");
+            return resp.getBody().getData().getCategoryId();
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw wrap(e, "新增类目");
+        }
+    }
+
+    /** 删除类目（类目下有文件时百炼返回错误，透传） */
+    public void deleteCategory(String categoryId) {
+        try {
+            com.aliyun.bailian20231229.models.DeleteCategoryRequest req =
+                    new com.aliyun.bailian20231229.models.DeleteCategoryRequest();
+            com.aliyun.bailian20231229.models.DeleteCategoryResponse resp =
+                    sdkClient.deleteCategory(categoryId, workspaceId, req);
+            checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "删除类目");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw wrap(e, "删除类目");
+        }
+    }
+
+    /** 更新文件标签（tags ≤ 10，空列表 = 清空标签） */
+    public void updateFileTags(String fileId, List<String> tags) {
+        try {
+            com.aliyun.bailian20231229.models.UpdateFileTagRequest req =
+                    new com.aliyun.bailian20231229.models.UpdateFileTagRequest()
+                            .setTags(tags == null ? List.of() : tags);
+            com.aliyun.bailian20231229.models.UpdateFileTagResponse resp =
+                    sdkClient.updateFileTag(workspaceId, fileId, req);
+            checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "更新文件标签");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw wrap(e, "更新文件标签");
         }
     }
 
@@ -320,6 +435,12 @@ public class BailianKnowledgeClient {
      * 用于本地知识仓库改名时与百炼远端索引保持同步。
      */
     public void updateIndex(String indexId, String name, String description) {
+        updateIndex(indexId, name, description, null, null, null);
+    }
+
+    /** 更新知识库（检索参数；denseTopK/sparseTopK/rerankMinScore 为 null 时不更新） */
+    public void updateIndex(String indexId, String name, String description,
+                            Integer denseTopK, Integer sparseTopK, Double rerankMinScore) {
         Map<String, String> query = new HashMap<>();
         query.put("Id", indexId);
         if (name != null && !name.isBlank()) {
@@ -327,6 +448,15 @@ public class BailianKnowledgeClient {
         }
         if (description != null && !description.isBlank()) {
             query.put("Description", description);
+        }
+        if (denseTopK != null) {
+            query.put("DenseSimilarityTopK", String.valueOf(denseTopK));
+        }
+        if (sparseTopK != null) {
+            query.put("SparseSimilarityTopK", String.valueOf(sparseTopK));
+        }
+        if (rerankMinScore != null) {
+            query.put("RerankMinScore", String.valueOf(rerankMinScore));
         }
         callIndex("UpdateIndex", "/index/update", query);
     }
@@ -515,6 +645,10 @@ public class BailianKnowledgeClient {
         private String status;
         private Long sizeInBytes;
         private String parser;
+        private String categoryId;
+        private String fileType;
+        private String createTime;
+        private List<String> tags;
     }
 
     @Data

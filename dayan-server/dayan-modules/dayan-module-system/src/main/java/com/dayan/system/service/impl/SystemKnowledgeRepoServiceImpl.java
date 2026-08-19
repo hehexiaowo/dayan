@@ -447,7 +447,7 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
             byte[] content = file.getBytes();
             BailianKnowledgeClient.UploadLease lease = client.applyUploadLease(fileName, content);
             BailianKnowledgeClient.uploadBinary(lease, content);
-            String fileId = client.addFile(lease.getLeaseId(), null, null);
+            String fileId = client.addFile(lease.getLeaseId(), null, null, null);
             log.info("知识库文档上传成功 repoCode={} fileName={} fileId={}", id, fileName, fileId);
             return fileId;
         } catch (BusinessException e) {
