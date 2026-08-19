@@ -14,7 +14,7 @@ import type { PageQuery, PageResult } from '@/types/common'
  * @param api 业务 API 对象
  * @param options initialQuery 初始查询条件（含 current/size）
  */
-export function useCrud<T, Q extends PageQuery>(
+export function useCrud<T extends Record<string, unknown>, Q extends PageQuery>(
   api: {
     page: (query: Q) => Promise<PageResult<T>>
     create?: (data: Partial<T>) => Promise<unknown>

@@ -8,6 +8,7 @@
  * 直接返回，或由 buildChannelTree 基于平铺列表组树。
  */
 import type { PageQuery } from '@/types/common'
+import { AccountStatus } from '@/types/account'
 
 /** 渠道类型（企业类型）：1=保险公司 2=银行机构 3=保险中介 4=其他企业 */
 export enum ChannelType {
@@ -214,9 +215,9 @@ export function buildChannelTree(list: ChannelInfo[]): ChannelInfo[] {
 
 /** 账号状态：0锁定/1正常/2禁用（DDL 权威） */
 export const CHANNEL_ACCOUNT_STATUS_OPTIONS = [
-  { label: '锁定', value: 0 },
-  { label: '正常', value: 1 },
-  { label: '禁用', value: 2 }
+  { label: '锁定', value: AccountStatus.LOCKED },
+  { label: '正常', value: AccountStatus.NORMAL },
+  { label: '禁用', value: AccountStatus.DISABLED }
 ] as const
 
 /** 是否管理员：0否/1是 */

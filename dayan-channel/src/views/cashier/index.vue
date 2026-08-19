@@ -158,9 +158,8 @@ async function handleMarkSuccess(row: FinancePayment) {
     await markFinancePaymentSuccess(paymentCode, { tradeNo: value.trim() })
     ElMessage.success('已标记为支付成功')
     loadPage()
-  } catch (err) {
+  } catch {
     // 用户点「取消」：静默；接口报错由拦截器统一提示
-    void err
   }
 }
 
@@ -268,8 +267,8 @@ async function handleSubmitCreate() {
     closeCreateDialog()
     // 跳转来源（订单管理「去支付」）后，通常需要看到刚创建的支付单 → 刷新列表
     handleSearch()
-  } catch (err) {
-    void err
+  } catch {
+    /* 拦截器已处理 */
   } finally {
     submitting.value = false
   }

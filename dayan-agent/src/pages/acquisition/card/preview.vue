@@ -146,7 +146,11 @@ function onDelete() {
   });
 }
 
-onLoad((options: any) => {
+interface CardPreviewRouteParams {
+  id?: string;
+}
+
+onLoad((options: CardPreviewRouteParams) => {
   if (options?.id) {
     loadDetail(String(options.id));
   }

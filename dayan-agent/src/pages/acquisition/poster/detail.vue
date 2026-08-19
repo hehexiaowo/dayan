@@ -89,7 +89,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import QRCode from 'qrcode';
 import { getPosterDetail } from '@/api/poster';
 import type { PosterTemplate } from '@/api/poster';
 import { formatFileUrl } from '@/utils/file';
@@ -166,6 +165,7 @@ async function generatePoster() {
 }
 
 async function drawPoster(): Promise<string> {
+  const QRCode = await import('qrcode').then(m => m.default);
   const W = 600, H = 960;
   const PAD = 40;
   const BRAND = '#337ecc';

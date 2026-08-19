@@ -16,7 +16,6 @@
  *   onMounted(async () => { await fetchData(); await nextTick(); heatmap.init(); });
  *   onUnmounted(() => heatmap.dispose());
  */
-import * as echarts from 'echarts';
 import { getRegionGeoJSON } from '@/utils/geo';
 import type { RegionItem } from '@/types/park';
 
@@ -48,7 +47,7 @@ export interface HeatmapConfig {
 }
 
 export function useRegionHeatmap(cfg: HeatmapConfig) {
-  let chart: echarts.ECharts | null = null;
+  let chart: import('echarts').ECharts | null = null;
   const resize = () => chart?.resize();
 
   async function init() {
@@ -62,6 +61,8 @@ export function useRegionHeatmap(cfg: HeatmapConfig) {
       console.warn(`[useRegionHeatmap] GeoJSON 加载失败: ${cfg.geoCode}`, e);
       return;
     }
+
+    const echarts = await import('echarts');
 
     // adcode → GeoJSON 权威名称（解决「北京 vs 北京市」名称不一致）
     const adcodeToName: Record<string, string> = {};

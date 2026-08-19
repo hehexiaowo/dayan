@@ -2,13 +2,19 @@
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app';
 
 onLaunch(() => {
-  console.log('Agent App Launch');
+  if (import.meta.env.DEV) {
+    console.log('Agent App Launch');
+  }
 });
 onShow(() => {
-  console.log('Agent App Show');
+  if (import.meta.env.DEV) {
+    console.log('Agent App Show');
+  }
 });
 onHide(() => {
-  console.log('Agent App Hide');
+  if (import.meta.env.DEV) {
+    console.log('Agent App Hide');
+  }
 });
 </script>
 

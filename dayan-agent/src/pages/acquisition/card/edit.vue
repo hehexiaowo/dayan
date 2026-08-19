@@ -229,7 +229,11 @@ async function onSubmit() {
   }
 }
 
-onLoad(async (options: any) => {
+interface CardEditRouteParams {
+  id?: string;
+}
+
+onLoad(async (options: CardEditRouteParams) => {
   if (options?.id) {
     cardId.value = String(options.id);
     isEdit.value = true;

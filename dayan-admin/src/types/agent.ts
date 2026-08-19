@@ -17,19 +17,8 @@
 
 import type { PageQuery } from '@/types/common'
 
-/** 性别：0未知 1男 2女 */
-export enum Gender {
-  UNKNOWN = 0,
-  MALE = 1,
-  FEMALE = 2
-}
-
-/** 性别选项 */
-export const GENDER_OPTIONS = [
-  { label: '未知', value: Gender.UNKNOWN },
-  { label: '男', value: Gender.MALE },
-  { label: '女', value: Gender.FEMALE }
-] as const
+/** 性别（从 common 复用） */
+export { Gender, GENDER_OPTIONS } from '@/types/common'
 
 /**
  * 代理人等级：1普通 2银牌 3金牌 4钻石（对齐 DDL agent_info.agent_level）。

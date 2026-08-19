@@ -1,4 +1,5 @@
 import type { PageQuery } from './common'
+import { labelOf } from './common'
 
 // ============================================================================
 // 系统素材仓库（SystemAsset，system_asset）—— 全系统文件/外链资源登记中心
@@ -90,13 +91,6 @@ export const REF_TYPE1_OPTIONS = [
 ] as const
 
 // ---- label 映射函数（列表渲染用，找不到回退原始值或 '--'）----
-
-/** 通用：按 OPTIONS 数组查 label */
-function labelOf(options: ReadonlyArray<{ label: string; value: number }>, v?: number): string {
-  if (v == null) return '--'
-  const found = options.find((o) => o.value === v)
-  return found ? found.label : String(v)
-}
 
 export const assetTypeLabel = (v?: number) => labelOf(ASSET_TYPE_OPTIONS, v)
 export const storageTypeLabel = (v?: number) => labelOf(STORAGE_TYPE_OPTIONS, v)

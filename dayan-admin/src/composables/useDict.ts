@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { listDictByType } from '@/api/dict'
 import type { SystemDict } from '@/types/dict'
 
@@ -23,6 +24,7 @@ export function useDictOptions(dictType: string) {
       options.value = await listDictByType(dictType)
     } catch {
       options.value = []
+      ElMessage.error('字典加载失败')
     } finally {
       loading.value = false
     }

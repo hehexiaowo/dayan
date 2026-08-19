@@ -107,8 +107,8 @@ async function fetchData() {
 }
 
 // #ifdef H5
-function initMapView() {
-  map = initMap('vital-district-map');
+async function initMapView() {
+  map = await initMap('vital-district-map');
   if (!map) return;
 
   const fallback = PROVINCE_CENTERS[provinceCode.value] || { lng: 116.4, lat: 39.9 };

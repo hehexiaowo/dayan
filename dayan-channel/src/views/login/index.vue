@@ -75,8 +75,8 @@ async function handleLogin() {
     ElMessage.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'
     router.replace(redirect)
-  } catch (err) {
-    void err
+  } catch {
+    /* 拦截器已处理 */
   } finally {
     loading.value = false
   }

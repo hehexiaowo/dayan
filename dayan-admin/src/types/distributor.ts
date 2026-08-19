@@ -22,21 +22,8 @@ export const SUBJECT_TYPE_OPTIONS = [
   { label: '个人', value: SubjectType.PERSONAL }
 ] as const
 
-/**
- * 性别：0=未知 / 1=男 / 2=女。
- */
-export enum Gender {
-  UNKNOWN = 0,
-  MALE = 1,
-  FEMALE = 2
-}
-
-/** 性别选项 */
-export const GENDER_OPTIONS = [
-  { label: '未知', value: Gender.UNKNOWN },
-  { label: '男', value: Gender.MALE },
-  { label: '女', value: Gender.FEMALE }
-] as const
+/** 性别（从 common 复用） */
+export { Gender, GENDER_OPTIONS } from '@/types/common'
 
 /**
  * 分销商状态：0=待审核 / 1=已合作 / 2=已暂停 / 3=已终止。

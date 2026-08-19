@@ -236,7 +236,11 @@ async function onSubmit() {
   }
 }
 
-onLoad(async (options: any) => {
+interface LeadFormRouteParams {
+  id?: string;
+}
+
+onLoad(async (options: LeadFormRouteParams) => {
   if (options?.id) {
     leadId.value = String(options.id);
     isEdit.value = true;

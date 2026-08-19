@@ -16,14 +16,21 @@ export const DEPARTMENT_STATUS_OPTIONS = [
   { label: '禁用', value: DepartmentStatus.DISABLED }
 ] as const
 
-/** 部门类型：1公司 2部门 3小组（对齐后端 dept_type TINYINT） */
-export type DeptType = number
+/** 部门类型 */
+export enum DeptType {
+  /** 公司 */
+  COMPANY = 1,
+  /** 部门 */
+  DEPARTMENT = 2,
+  /** 小组 */
+  GROUP = 3,
+}
 
 /** 部门类型选项（对齐后端 dept_type 取值：1=公司, 2=部门, 3=小组） */
 export const DEPT_TYPE_OPTIONS = [
-  { label: '公司', value: 1 },
-  { label: '部门', value: 2 },
-  { label: '小组', value: 3 }
+  { label: '公司', value: DeptType.COMPANY },
+  { label: '部门', value: DeptType.DEPARTMENT },
+  { label: '小组', value: DeptType.GROUP }
 ] as const
 
 /**

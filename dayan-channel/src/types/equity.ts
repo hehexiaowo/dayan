@@ -147,7 +147,7 @@ export interface Equity {
 }
 
 /** 权益分页查询参数 */
-export interface EquityQuery {
+export interface EquityQuery extends PageQuery {
   /** 权益编码（模糊匹配，可选） */
   equityCode?: string
   /** 权益状态（可选） */
@@ -156,10 +156,6 @@ export interface EquityQuery {
   carrierType?: number
   /** 关联客户编码（模糊匹配，可选） */
   clientCode?: string
-  /** 当前页码 */
-  current: number
-  /** 每页条数 */
-  size: number
 }
 
 // ==================== 权益激活记录 ====================

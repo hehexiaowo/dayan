@@ -16,24 +16,38 @@ export const ROLE_STATUS_OPTIONS = [
   { label: '禁用', value: RoleStatus.DISABLED }
 ] as const
 
-/** 角色类型：1系统预置 2自定义（对齐后端 role_type TINYINT） */
-export type RoleType = number
+/** 角色类型 */
+export enum RoleType {
+  /** 功能角色 */
+  FUNCTION = 1,
+  /** 数据角色 */
+  DATA = 2,
+}
 
 /** 角色类型选项（对齐后端 role_type 取值：1=系统预置, 2=自定义） */
 export const ROLE_TYPE_OPTIONS = [
-  { label: '系统预置', value: 1 },
-  { label: '自定义', value: 2 }
+  { label: '系统预置', value: RoleType.FUNCTION },
+  { label: '自定义', value: RoleType.DATA }
 ] as const
 
-/** 数据权限范围：1全部 2本部门及下级 3本部门 4仅本人（对齐后端 data_scope TINYINT） */
-export type DataScope = number
+/** 数据范围 */
+export enum DataScope {
+  /** 全部 */
+  ALL = 1,
+  /** 本部门及子部门 */
+  DEPT_AND_CHILDREN = 2,
+  /** 本部门 */
+  DEPT = 3,
+  /** 本人 */
+  SELF = 4,
+}
 
 /** 数据权限范围选项（对齐后端 data_scope 取值：1=全部, 2=本部门及下级, 3=本部门, 4=仅本人） */
 export const DATA_SCOPE_OPTIONS = [
-  { label: '全部数据', value: 1 },
-  { label: '本部门及下级', value: 2 },
-  { label: '本部门数据', value: 3 },
-  { label: '仅本人数据', value: 4 }
+  { label: '全部数据', value: DataScope.ALL },
+  { label: '本部门及下级', value: DataScope.DEPT_AND_CHILDREN },
+  { label: '本部门数据', value: DataScope.DEPT },
+  { label: '仅本人数据', value: DataScope.SELF }
 ] as const
 
 /**

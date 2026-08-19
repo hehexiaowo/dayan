@@ -218,9 +218,8 @@ async function openDetail(row: { orderCode?: string }, kind: TabKey) {
   try {
     const vo = await detailGetter[kind](code)
     detailData.value = vo as Order | OrderScene | OrderCourse | OrderSojourn
-  } catch (err) {
+  } catch {
     // 接口报错已由拦截器统一提示；关闭抽屉
-    void err
     detailVisible.value = false
   } finally {
     detailLoading.value = false
@@ -246,9 +245,8 @@ function makeCancelHandler(
       await cancel(orderCode, { cancelReason: value.trim() })
       ElMessage.success('订单已取消')
       refresh()
-    } catch (err) {
+    } catch {
       // 用户点「返回」放弃取消：静默；接口报错已由拦截器统一提示
-      void err
     }
   }
 }
@@ -332,9 +330,8 @@ async function handleSubmitPay() {
     payDialog.visible = false
     // 刷新当前激活 tab
     await loadTab(activeTab.value)
-  } catch (err) {
+  } catch {
     // 接口报错已由响应拦截器统一提示；此处静默
-    void err
   } finally {
     payDialog.submitting = false
   }

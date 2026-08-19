@@ -291,7 +291,11 @@ function onDelete() {
   });
 }
 
-onLoad((options: any) => {
+interface LeadDetailRouteParams {
+  id?: string;
+}
+
+onLoad((options: LeadDetailRouteParams) => {
   leadId = options?.id ? String(options.id) : null;
   loadDetail();
 });

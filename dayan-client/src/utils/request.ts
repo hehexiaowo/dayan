@@ -27,14 +27,14 @@ export function clearToken(): void {
   uni.removeStorageSync('client_channel_code');
 }
 
-export function request<T = any>(options: UniApp.RequestOptions): Promise<T> {
+export function request<T = unknown>(options: UniApp.RequestOptions): Promise<T> {
   return new Promise((resolve, reject) => {
     const header = { ...(options.header || {}), 'Client-Token': getToken() };
     uni.request({
       ...options,
       url: BASE_URL + options.url,
       header,
-      success: (res: any) => {
+      success: (res: UniApp.RequestSuccessCallbackResult) => {
         const body: R<T> = res.data;
         if (body.code === 0) {
           resolve(body.data);

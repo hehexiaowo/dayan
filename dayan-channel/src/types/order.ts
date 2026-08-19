@@ -151,15 +151,11 @@ export const ORDER_SOURCE_OPTIONS = [
 ] as const
 
 /** 订单分页查询参数（对齐 OrderEquityQueryDTO） */
-export interface OrderQuery {
+export interface OrderQuery extends PageQuery {
   /** 订单编码（模糊匹配，可选） */
   orderCode?: string
   /** 订单状态（可选） */
   orderStatus?: OrderStatus
-  /** 当前页码 */
-  current: number
-  /** 每页条数 */
-  size: number
 }
 
 // ==================== 场景订单（OrderScene，对齐 OrderSceneVO） ====================

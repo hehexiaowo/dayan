@@ -1,15 +1,33 @@
 /**
- * Leaflet + 天地图瓦片地图工具（参照参考项目 utils/map.js 的 TS 版）。
+ * Leaflet + 天地图瓦片地图工具。
  *
  * 用 Leaflet 替代天地图原生 JS API（window.T）。
  * 天地图仅作为瓦片图层来源（vec 底图 + cva 标注），无需引入天地图 JS SDK。
+ *
+ * 天地图 Key 运行时经 /client-api/v1/config/map-key 从后端系统配置拉取。
  */
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-/** 天地图 API Key */
-const TIANDITU_KEY = '1ea38bada071978da6b6cfd68c464450';
 const SUBDOMAINS = ['0', '1', '2', '3', '4', '5', '6', '7'];
+
+/** 天地图 Key 单例 Promise（同页多次建图只请求一次） */
+let tiandituKeyPromise: Promise<string> | null = null;
+
+/** 运行时获取天地图 Key（后端系统配置下发，失败抛出异常） */
+export function getTiandituKey(): Promise<string> {
+  if (!tiandituKeyPromise) {
+    tiandituKeyPromise = fetch('/client-api/v1/config/map-key')
+      .then((r) => r.json())
+      .then((body) => {
+        if (!body?.data?.tiandituKey) {
+          throw new Error('天地图 Key 未配置，请在系统配置中设置 map.tianditu-key');
+        }
+        return body.data.tiandituKey as string;
+      });
+  }
+  return tiandituKeyPromise;
+}
 
 /** 网络类型（用于地图标记图标区分） */
 export type NetworkType = 'vital' | 'care' | 'sojourn';
@@ -32,26 +50,28 @@ export interface MapMarkerItem {
 }
 
 /** 天地图矢量底图（vec_w） */
-function createVecLayer(): L.TileLayer {
+async function createVecLayer(): Promise<L.TileLayer> {
+  const key = await getTiandituKey();
   return L.tileLayer(
-    `https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=${TIANDITU_KEY}`,
+    `https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=${key}`,
     { subdomains: SUBDOMAINS },
   );
 }
 
 /** 天地图矢量标注（cva_w — 道路/地名文字叠加层） */
-function createCvaLayer(): L.TileLayer {
+async function createCvaLayer(): Promise<L.TileLayer> {
+  const key = await getTiandituKey();
   return L.tileLayer(
-    `https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=${TIANDITU_KEY}`,
+    `https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=${key}`,
     { subdomains: SUBDOMAINS },
   );
 }
 
 /**
- * 初始化列表页地图（中心北京，zoom=5）。
+ * 初始化列表页地图（中心北京，zoom=5）。异步：先取天地图 Key 再建图层。
  * @returns L.Map 实例，或 null（容器不存在）
  */
-export function initMap(containerId: string): L.Map | null {
+export async function initMap(containerId: string): Promise<L.Map | null> {
   const container = document.getElementById(containerId);
   if (!container) return null;
 
@@ -62,8 +82,9 @@ export function initMap(containerId: string): L.Map | null {
     zoomControl: true,
     attributionControl: false,
   });
-  createVecLayer().addTo(map);
-  createCvaLayer().addTo(map);
+  const [vec, cva] = await Promise.all([createVecLayer(), createCvaLayer()]);
+  vec.addTo(map);
+  cva.addTo(map);
   return map;
 }
 
@@ -180,8 +201,9 @@ export function addIconMarkers(
 export async function searchByName(map: L.Map, name: string): Promise<void> {
   if (!name) return;
   try {
+    const key = await getTiandituKey();
     const resp = await fetch(
-      `https://api.tianditu.gov.cn/geocoder?ds=${encodeURIComponent(JSON.stringify({ keyWord: name }))}&tk=${TIANDITU_KEY}`,
+      `https://api.tianditu.gov.cn/geocoder?ds=${encodeURIComponent(JSON.stringify({ keyWord: name }))}&tk=${key}`,
     );
     const data = await resp.json();
     if (data.status === '0' && data.result?.location) {
@@ -194,16 +216,16 @@ export async function searchByName(map: L.Map, name: string): Promise<void> {
 }
 
 /**
- * 初始化详情页地图（单 marker + popup，zoom=15）。
- * @param color marker 填充色（各网络主题色：vital=#409eff / care=#ff9900 / sojourn=#19be6b）
+ * 初始化详情页地图（单 marker + popup，zoom=15）。异步：先取天地图 Key 再建图层。
+ * @param color marker 填充色（各网络主题色：vital=#409eff / care=#ff9900 / sojourn=#19be3b）
  */
-export function initDetailMap(
+export async function initDetailMap(
   containerId: string,
   latitude: number,
   longitude: number,
   name?: string,
   color?: string,
-): L.Map | null {
+): Promise<L.Map | null> {
   const container = document.getElementById(containerId);
   if (!container) return null;
 
@@ -216,8 +238,9 @@ export function initDetailMap(
     zoomControl: true,
     attributionControl: false,
   });
-  createVecLayer().addTo(map);
-  createCvaLayer().addTo(map);
+  const [vec, cva] = await Promise.all([createVecLayer(), createCvaLayer()]);
+  vec.addTo(map);
+  cva.addTo(map);
 
   const marker = L.circleMarker([latitude, longitude], {
     radius: 10,

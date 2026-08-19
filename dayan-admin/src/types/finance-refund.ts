@@ -8,26 +8,8 @@
  */
 import type { PageQuery } from '@/types/common'
 
-// ==================== 订单类型（退款/支付共用语义） ====================
-
-/** 订单类型：1=权益 / 2=场景 / 3=课程 / 4=旅游短居 */
-export enum OrderType {
-  /** 权益 */
-  EQUITY = 1,
-  /** 场景 */
-  SCENE = 2,
-  /** 课程 */
-  COURSE = 3,
-  /** 旅游短居 */
-  TRAVEL = 4
-}
-
-export const ORDER_TYPE_OPTIONS = [
-  { label: '权益', value: OrderType.EQUITY },
-  { label: '场景', value: OrderType.SCENE },
-  { label: '课程', value: OrderType.COURSE },
-  { label: '旅游短居', value: OrderType.TRAVEL }
-] as const
+// ==================== 订单类型（从 finance-payment 复用） ====================
+export { OrderType, ORDER_TYPE_OPTIONS } from '@/types/finance-payment'
 
 // ==================== 退款类型 ====================
 

@@ -42,17 +42,13 @@ export interface Client {
 }
 
 /** 客户分页查询参数 */
-export interface ClientQuery {
+export interface ClientQuery extends PageQuery {
   /** 客户编码（模糊匹配，可选） */
   clientCode?: string
   /** 客户全名（模糊匹配，可选，对齐后端 fullName） */
   fullName?: string
   /** 手机号（模糊匹配，可选） */
   phone?: string
-  /** 当前页码 */
-  current: number
-  /** 每页条数 */
-  size: number
 }
 
 // ==================== 客户账号 ====================

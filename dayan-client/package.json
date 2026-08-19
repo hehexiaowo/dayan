@@ -15,12 +15,12 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5020320260803001",
     "echarts": "^6.1.0",
     "leaflet": "1.9",
+    "dompurify": "^3.2.6",
     "pinia": "^2.1.7",
-    "uview-ui": "^2.0.38",
-    "vue": "^3.4.0",
-    "vue-i18n": "^9.1.9"
+    "vue": "^3.4.0"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.2.0",
     "@dcloudio/types": "^3.4.8",
     "@dcloudio/uni-automator": "3.0.0-alpha-5020320260803001",
     "@dcloudio/uni-cli-shared": "3.0.0-alpha-5020320260803001",

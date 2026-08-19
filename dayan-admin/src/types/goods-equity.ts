@@ -11,7 +11,7 @@ export enum ValidityType {
 export const VALIDITY_TYPE_OPTIONS = [
   { label: '固定天数', value: ValidityType.FIXED },
   { label: '终身', value: ValidityType.LIFETIME },
-]
+] as const
 
 /** 配额归属 */
 export enum ShareMode {
@@ -22,7 +22,7 @@ export enum ShareMode {
 export const SHARE_MODE_OPTIONS = [
   { label: '权益人共享池', value: ShareMode.SHARED },
   { label: '按人独立配额', value: ShareMode.PER_PERSON },
-]
+] as const
 
 /** 权益人构成规则（holder_rule JSON 结构化） */
 export interface HolderRule {

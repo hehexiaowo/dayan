@@ -6,6 +6,7 @@
  * 不允许在 create/update 时直接指定。
  */
 import type { PageQuery } from '@/types/common'
+import { labelOf } from '@/types/common'
 
 /**
  * 机构运营状态（operateStatus，PARK_SM 驱动）。
@@ -819,13 +820,6 @@ export const SUB_TABLE_STATUS_OPTIONS = [
 ] as const
 
 // ---- label 映射函数（列表渲染用，找不到回退原始值或 '--'）----
-
-/** 通用：按 OPTIONS 数组查 label */
-function labelOf(options: ReadonlyArray<{ label: string; value: number }>, v?: number): string {
-  if (v == null) return '--'
-  const found = options.find((o) => o.value === v)
-  return found ? found.label : String(v)
-}
 
 export const roomCategoryLabel = (v?: number) => labelOf(ROOM_CATEGORY_OPTIONS, v)
 export const stayTypeLabel = (v?: number) => labelOf(STAY_TYPE_OPTIONS, v)

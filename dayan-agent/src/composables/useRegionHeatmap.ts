@@ -16,7 +16,7 @@
  *   onMounted(async () => { await fetchData(); await nextTick(); heatmap.init(); });
  *   onUnmounted(() => heatmap.dispose());
  */
-import * as echarts from 'echarts';
+import type * as ECharts from 'echarts';
 import { getRegionGeoJSON } from '@/utils/geo';
 import type { RegionItem } from '@/types/park';
 
@@ -48,12 +48,14 @@ export interface HeatmapConfig {
 }
 
 export function useRegionHeatmap(cfg: HeatmapConfig) {
-  let chart: echarts.ECharts | null = null;
+  let chart: ECharts.ECharts | null = null;
   const resize = () => chart?.resize();
 
   async function init() {
     const container = document.getElementById(cfg.containerId);
     if (!container) return; // 非 H5（无 DOM）自动跳过
+
+    const echarts = await import('echarts');
 
     let geo: any;
     try {

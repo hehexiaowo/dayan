@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 /**
  * Markdown 文档渲染通用组件。
@@ -8,7 +9,7 @@ import { marked } from 'marked'
  */
 const props = defineProps<{ src: string }>()
 
-const html = computed(() => marked.parse(props.src, { async: false }) as string)
+const html = computed(() => DOMPurify.sanitize(marked.parse(props.src, { async: false }) as string))
 </script>
 
 <template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { listProvinces, listRegionChildren, type Region } from '@/api/region'
 
 /**
@@ -33,7 +34,11 @@ const districtList = ref<Region[]>([])
 /** 拉省级（只拉一次） */
 async function loadProvinces() {
   if (provinceList.value.length) return
-  provinceList.value = await listProvinces()
+  try {
+    provinceList.value = await listProvinces()
+  } catch {
+    ElMessage.error('省份列表加载失败')
+  }
 }
 
 /** 拉市级（按省码） */
@@ -42,7 +47,11 @@ async function loadCities(parentCode: string) {
     cityList.value = []
     return
   }
-  cityList.value = await listRegionChildren(parentCode)
+  try {
+    cityList.value = await listRegionChildren(parentCode)
+  } catch {
+    ElMessage.error('城市列表加载失败')
+  }
 }
 
 /** 拉区级（按市码） */
@@ -51,7 +60,11 @@ async function loadDistricts(parentCode: string) {
     districtList.value = []
     return
   }
-  districtList.value = await listRegionChildren(parentCode)
+  try {
+    districtList.value = await listRegionChildren(parentCode)
+  } catch {
+    ElMessage.error('区县列表加载失败')
+  }
 }
 
 /** 选省：更新省码，清空市/区，拉市级 */

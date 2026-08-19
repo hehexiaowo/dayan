@@ -105,13 +105,11 @@ export interface SceneSchedule {
 }
 
 /** 场景日程查询参数 */
-export interface SceneScheduleQuery {
+export interface SceneScheduleQuery extends PageQuery {
   sceneCode?: string
   status?: SceneScheduleStatus
   scheduleDateStart?: string
   scheduleDateEnd?: string
-  current: number
-  size: number
 }
 
 /**

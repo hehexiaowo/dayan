@@ -18,19 +18,8 @@
 
 import type { PageQuery } from '@/types/common'
 
-/** 性别：0未知 1男 2女 */
-export enum Gender {
-  UNKNOWN = 0,
-  MALE = 1,
-  FEMALE = 2
-}
-
-/** 性别选项 */
-export const GENDER_OPTIONS = [
-  { label: '未知', value: Gender.UNKNOWN },
-  { label: '男', value: Gender.MALE },
-  { label: '女', value: Gender.FEMALE }
-] as const
+/** 性别（从 common 复用） */
+export { Gender, GENDER_OPTIONS } from '@/types/common'
 
 /** 客户等级：1普通 2VIP 3SVIP */
 export enum ClientLevel {

@@ -120,11 +120,11 @@
           </view>
           <view v-if="park.baseDescription" class="desc-block">
             <text class="desc-title">机构简介</text>
-            <rich-text :nodes="park.baseDescription" class="desc-text" />
+            <rich-text :nodes="sanitizeHtml(park.baseDescription)" class="desc-text" />
           </view>
           <view v-if="park.specialtyDescription" class="desc-block">
             <text class="desc-title">机构特色</text>
-            <rich-text :nodes="park.specialtyDescription" class="desc-text" />
+            <rich-text :nodes="sanitizeHtml(park.specialtyDescription)" class="desc-text" />
           </view>
         </view>
 
@@ -292,7 +292,7 @@
       <view v-if="detail.displayBlocks?.length" class="display-section">
         <view v-for="block in detail.displayBlocks" :key="block.id" class="display-block">
           <text v-if="block.blockTitle" class="block-title">{{ block.blockTitle }}</text>
-          <rich-text v-if="block.content" :nodes="block.content" class="block-content" />
+          <rich-text v-if="block.content" :nodes="sanitizeHtml(block.content)" class="block-content" />
           <view v-if="parseImageList(block.images).length" class="block-images">
             <image
               v-for="(img, i) in parseImageList(block.images)"
@@ -324,6 +324,7 @@ import { getParkFullDetail } from '@/api/park';
 import type { ParkFullDetail, ParkDetail, ParkRoomType, ParkPeriphery } from '@/types/park';
 import { NETWORK_TAG_LABELS } from '@/types/park';
 import { formatFileUrl, parseImageList } from '@/utils/file';
+import { sanitizeHtml } from '@/utils/sanitize';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
@@ -429,8 +430,8 @@ watch(activeTab, async (idx) => {
   await nextTick();
   setTimeout(() => {
     if (!detailMap) {
-      import('@/utils/map').then(({ initDetailMap }) => {
-        detailMap = initDetailMap(
+      import('@/utils/map').then(async ({ initDetailMap }) => {
+        detailMap = await initDetailMap(
           'detail-map',
           Number(p.latitude),
           Number(p.longitude),

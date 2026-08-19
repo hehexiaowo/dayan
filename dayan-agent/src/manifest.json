@@ -17,7 +17,7 @@
   },
   "quickapp": {},
   "mp-weixin": {
-    "appid": "",
+    "appid": "__DAYAN_AGENT_MP_APPID__",
     "setting": { "urlCheck": false, "es6": true, "postcss": true, "minified": true },
     "usingComponents": true
   },

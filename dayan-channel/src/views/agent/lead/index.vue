@@ -31,7 +31,9 @@ const { loading, tableData, total, query, loadPage, handleSearch, handlePageChan
     }
   )
 
-loadPage()
+loadPage().catch((err) => {
+  console.warn('[agent-lead] 加载失败:', err)
+})
 
 /** 重置筛选并重新查询 */
 function handleReset() {

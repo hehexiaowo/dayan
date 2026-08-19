@@ -123,9 +123,8 @@ async function viewDetail(invoiceCode?: string) {
   currentDetail.value = null
   try {
     currentDetail.value = await getFinanceInvoice(invoiceCode)
-  } catch (err) {
+  } catch {
     // 接口报错由响应拦截器统一提示；关闭弹窗
-    void err
     detailVisible.value = false
   } finally {
     detailLoading.value = false
@@ -293,8 +292,8 @@ async function handleSubmitApply() {
     closeApplyDialog()
     // 刷新列表以反映新增记录（默认按创建时间倒序，新发票应在首行）
     handleSearch()
-  } catch (err) {
-    void err
+  } catch {
+    /* 拦截器已处理 */
   } finally {
     submitting.value = false
   }

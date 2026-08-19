@@ -107,8 +107,8 @@ async function fetchData() {
 }
 
 // #ifdef H5
-function initMapView() {
-  map = initMap('care-district-map');
+async function initMapView() {
+  map = await initMap('care-district-map');
   if (!map) return;
 
   // 先设一个初始中心点（省中心或北京）

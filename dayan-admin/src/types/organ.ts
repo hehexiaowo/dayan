@@ -16,14 +16,21 @@ export const ORGAN_STATUS_OPTIONS = [
   { label: '禁用', value: OrganStatus.DISABLED }
 ] as const
 
-/** 机构类型：1运营方 2子公司 3分公司（对齐后端 organ_type TINYINT） */
-export type OrganType = number
+/** 机构类型 */
+export enum OrganType {
+  /** 养老院 */
+  NURSING_HOME = 1,
+  /** 社区中心 */
+  COMMUNITY_CENTER = 2,
+  /** 分公司 */
+  BRANCH = 3,
+}
 
 /** 机构类型选项 */
 export const ORGAN_TYPE_OPTIONS = [
-  { label: '运营方', value: 1 },
-  { label: '子公司', value: 2 },
-  { label: '分公司', value: 3 }
+  { label: '运营方', value: OrganType.NURSING_HOME },
+  { label: '子公司', value: OrganType.COMMUNITY_CENTER },
+  { label: '分公司', value: OrganType.BRANCH }
 ] as const
 
 /**
@@ -72,7 +79,7 @@ export interface Organ {
   /** 机构简介 */
   description?: string
   /** 状态：1启用 0禁用 */
-  status: number
+  status: OrganStatus
   /** 排序号 */
   sortOrder?: number
   /** 备注 */
@@ -88,7 +95,7 @@ export interface OrganQuery {
   /** 机构类型（可选） */
   organType?: OrganType
   /** 状态（可选） */
-  status?: number
+  status?: OrganStatus
   /** 当前页码 */
   current: number
   /** 每页条数 */

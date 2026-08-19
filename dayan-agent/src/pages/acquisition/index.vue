@@ -173,10 +173,6 @@ function goPoster(templateCode: string) {
   uni.navigateTo({ url: `/pages/acquisition/poster/detail?code=${templateCode}` });
 }
 
-function onShareCode() {
-  uni.showToast({ title: '分享获客码功能开发中', icon: 'none' });
-}
-
 function onTool(type: string) {
   if (type === 'lead') {
     uni.navigateTo({ url: '/pages/acquisition/lead/index' });

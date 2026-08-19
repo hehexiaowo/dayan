@@ -2,6 +2,35 @@
  * 后端通用类型（com.dayan.common.core.resp.PageResult 等）的前端映射。
  */
 
+/** 性别 */
+export enum Gender {
+  UNKNOWN = 0,
+  MALE = 1,
+  FEMALE = 2,
+}
+
+/** 性别选项 */
+export const GENDER_OPTIONS = [
+  { label: '男', value: Gender.MALE },
+  { label: '女', value: Gender.FEMALE },
+  { label: '未知', value: Gender.UNKNOWN },
+] as const
+
+/**
+ * 从常量数组中按 value 取 label（找不到时回退 defaultValue）。
+ * @param options 选项数组
+ * @param value   当前值
+ * @param defaultValue 未匹配时的默认文本（默认 `'-'`）
+ */
+export function labelOf<T extends { label: string; value: string | number }>(
+  options: readonly T[],
+  value: T['value'] | undefined | null,
+  defaultValue = '-',
+): string {
+  if (value === undefined || value === null) return defaultValue
+  return options.find((o) => o.value === value)?.label ?? defaultValue
+}
+
 /**
  * 分页查询基础参数。
  */

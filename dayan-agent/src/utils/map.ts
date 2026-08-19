@@ -1,30 +1,42 @@
 /**
- * Leaflet + 天地图瓦片地图工具（参照参考项目 utils/map.js 的 TS 版）。
+ * Leaflet + 天地图瓦片地图工具。
  *
  * 用 Leaflet 替代天地图原生 JS API（window.T）。
  * 天地图仅作为瓦片图层来源（vec 底图 + cva 标注），无需引入天地图 JS SDK。
  *
- * 天地图 Key 不再硬编码：运行时经 /agent-api/v1/config/map-key 从系统配置
- * （system_config map 组 map.tianditu-key）拉取，管理员改配置即全端生效；
- * 后端不可达时回退内置兜底 Key，保证离线开发不断图。
+ * 天地图 Key 运行时经 /agent-api/v1/config/map-key 从后端系统配置
+ * （system_config map 组 map.tianditu-key）拉取，管理员改配置即全端生效。
  */
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import type L from 'leaflet';
 
-/** 离线兜底 Key（仅后端不可达时使用，正式取值以系统配置为准） */
-const FALLBACK_TIANDITU_KEY = '1ea38bada071978da6b6cfd68c464450';
+/** 延迟加载 Leaflet 单例（首次使用时动态 import，避免首屏加载 ~140KB 未使用代码） */
+let _L: typeof import('leaflet')['default'] | null = null;
+
+async function getLeaflet(): Promise<typeof import('leaflet')['default']> {
+  if (!_L) {
+    const leaflet = await import('leaflet');
+    _L = leaflet.default;
+    await import('leaflet/dist/leaflet.css');
+  }
+  return _L;
+}
+
 const SUBDOMAINS = ['0', '1', '2', '3', '4', '5', '6', '7'];
 
 /** 天地图 Key 单例 Promise（同页多次建图只请求一次） */
 let tiandituKeyPromise: Promise<string> | null = null;
 
-/** 运行时获取天地图 Key（后端系统配置下发，失败静默回退兜底值） */
+/** 运行时获取天地图 Key（后端系统配置下发，失败抛出异常） */
 export function getTiandituKey(): Promise<string> {
   if (!tiandituKeyPromise) {
     tiandituKeyPromise = fetch('/agent-api/v1/config/map-key')
       .then((r) => r.json())
-      .then((body) => body?.data?.tiandituKey || FALLBACK_TIANDITU_KEY)
-      .catch(() => FALLBACK_TIANDITU_KEY);
+      .then((body) => {
+        if (!body?.data?.tiandituKey) {
+          throw new Error('天地图 Key 未配置，请在系统配置中设置 map.tianditu-key');
+        }
+        return body.data.tiandituKey as string;
+      });
   }
   return tiandituKeyPromise;
 }
@@ -51,6 +63,7 @@ export interface MapMarkerItem {
 
 /** 天地图矢量底图（vec_w） */
 async function createVecLayer(): Promise<L.TileLayer> {
+  const L = await getLeaflet();
   const key = await getTiandituKey();
   return L.tileLayer(
     `https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=${key}`,
@@ -60,6 +73,7 @@ async function createVecLayer(): Promise<L.TileLayer> {
 
 /** 天地图矢量标注（cva_w — 道路/地名文字叠加层） */
 async function createCvaLayer(): Promise<L.TileLayer> {
+  const L = await getLeaflet();
   const key = await getTiandituKey();
   return L.tileLayer(
     `https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=${key}`,
@@ -72,6 +86,7 @@ async function createCvaLayer(): Promise<L.TileLayer> {
  * @returns L.Map 实例，或 null（容器不存在）
  */
 export async function initMap(containerId: string): Promise<L.Map | null> {
+  const L = await getLeaflet();
   const container = document.getElementById(containerId);
   if (!container) return null;
 
@@ -94,11 +109,12 @@ export async function initMap(containerId: string): Promise<L.Map | null> {
  *
  * @returns L.LayerGroup（可用于后续清除）
  */
-export function addMarkers(
+export async function addMarkers(
   map: L.Map,
   items: MapMarkerItem[],
   onClick?: (item: MapMarkerItem) => void,
-): L.LayerGroup {
+): Promise<L.LayerGroup> {
+  const L = await getLeaflet();
   const group = L.featureGroup();
 
   items.forEach((item) => {
@@ -143,11 +159,12 @@ export function addMarkers(
  *
  * @returns L.LayerGroup（可用于后续清除）
  */
-export function addIconMarkers(
+export async function addIconMarkers(
   map: L.Map,
   items: MapMarkerItem[],
   onClick?: (item: MapMarkerItem) => void,
-): L.LayerGroup {
+): Promise<L.LayerGroup> {
+  const L = await getLeaflet();
   const group = L.featureGroup();
 
   items.forEach((item) => {
@@ -226,6 +243,7 @@ export async function initDetailMap(
   name?: string,
   color?: string,
 ): Promise<L.Map | null> {
+  const L = await getLeaflet();
   const container = document.getElementById(containerId);
   if (!container) return null;
 

@@ -59,7 +59,7 @@ export interface Agent {
 }
 
 /** 代理人分页查询参数 */
-export interface AgentQuery {
+export interface AgentQuery extends PageQuery {
   /** 代理人编码（模糊匹配，可选） */
   agentCode?: string
   /** 代理人全名（模糊匹配，可选，对齐后端 fullName） */
@@ -70,10 +70,6 @@ export interface AgentQuery {
   agentLevel?: AgentLevel
   /** 代理人状态（可选，对齐后端 status） */
   status?: AgentStatus
-  /** 当前页码 */
-  current: number
-  /** 每页条数 */
-  size: number
 }
 
 // ==================== 代理人账号 ====================
