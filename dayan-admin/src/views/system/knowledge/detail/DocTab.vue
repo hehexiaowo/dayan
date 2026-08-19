@@ -3,10 +3,11 @@
  * 知识仓库详情 - 文档管理 Tab。
  *
  * 文档全链路（全部实时代理百炼云端）：
- * 上传 → 解析（DescribeFile 轮询）→ 导入索引（SubmitIndexAddDocumentsJob）→
- * 入库轮询（GetIndexJobStatus）→ 刷新列表。任一环节失败展示原因。
+ * 选文件 → 上传设置（类目/解析器/标签）→ 上传 → 解析（DescribeFile 轮询）→
+ * 导入索引（SubmitIndexAddDocumentsJob）→ 入库轮询（GetIndexJobStatus）→ 刷新列表。
+ * 任一环节失败展示原因。
  */
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { UploadRequestOptions } from 'element-plus'
 import {
@@ -18,10 +19,12 @@ import {
   getKnowledgeImportStatus,
   initKnowledgeRepo,
   getKnowledgeRepoBuildStatus,
-  deleteKnowledgeDoc
+  deleteKnowledgeDoc,
+  listKnowledgeCategories,
+  updateKnowledgeDocTags
 } from '@/api/knowledge'
-import type { KnowledgeDoc } from '@/types/knowledge'
-import { indexStatusLabel, indexStatusTagType } from '@/types/knowledge'
+import type { KnowledgeDoc, KnowledgeCategory } from '@/types/knowledge'
+import { indexStatusLabel, indexStatusTagType, KNOWLEDGE_PARSER_OPTIONS, parseStatusLabel } from '@/types/knowledge'
 import ChunkDialog from '@/components/ChunkDialog/index.vue'
 
 const props = defineProps<{ repoId: number }>()
@@ -45,6 +48,7 @@ const timers: ReturnType<typeof setTimeout>[] = []
 onMounted(async () => {
   await loadRepoInfo()
   loadDocs()
+  loadCategories()
 })
 onBeforeUnmount(() => timers.forEach(clearTimeout))
 
@@ -68,12 +72,75 @@ async function loadDocs() {
   }
 }
 
-// ---------- 上传与轮询 ----------
-async function handleUpload(options: UploadRequestOptions) {
-  const fileName = options.file.name
+// ---------- 上传设置（选文件 → 设置对话框 → 确认后逐个上传） ----------
+/** 待上传文件（设置对话框确认后逐个上传） */
+const pendingFiles = ref<File[]>([])
+const uploadDialogVisible = ref(false)
+const uploadSetting = reactive({
+  categoryId: '' as string, // 空 = 默认类目 default
+  parser: 'DASHSCOPE_DOCMIND',
+  tags: [] as string[]
+})
+const categories = ref<KnowledgeCategory[]>([])
+
+/** 类目名映射（展示用） */
+const categoryNameMap = ref(new Map<string, string>())
+
+interface CategoryTreeNode extends KnowledgeCategory {
+  children: CategoryTreeNode[]
+}
+
+/** 平铺 → 树（parentCategoryId 挂接；顶层含百炼 default 类目） */
+function buildCategoryTree(flat: KnowledgeCategory[]): CategoryTreeNode[] {
+  const map = new Map<string, CategoryTreeNode>()
+  flat.forEach((c) => map.set(c.categoryId, { ...c, children: [] }))
+  const roots: CategoryTreeNode[] = []
+  map.forEach((node) => {
+    if (node.parentCategoryId && map.has(node.parentCategoryId)) {
+      map.get(node.parentCategoryId)!.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+  return roots
+}
+
+async function loadCategories() {
+  try {
+    const list = await listKnowledgeCategories()
+    categories.value = list
+    categoryNameMap.value = new Map(list.map((c) => [c.categoryId, c.categoryName]))
+  } catch {
+    categories.value = []
+  }
+}
+
+/** 拖入/选择文件 → 打开上传设置 */
+function handleSelectFile(options: UploadRequestOptions) {
+  pendingFiles.value.push(options.file)
+  uploadDialogVisible.value = true
+  return Promise.resolve() // 阻止 el-upload 直接上传，由确认后统一走 handleUpload
+}
+
+/** 确认上传：按设置逐个上传 */
+async function confirmUpload() {
+  uploadDialogVisible.value = false
+  const files = pendingFiles.value
+  pendingFiles.value = []
+  for (const file of files) {
+    await handleUpload(file, {
+      categoryId: uploadSetting.categoryId || undefined,
+      parser: uploadSetting.parser,
+      tags: uploadSetting.tags
+    })
+  }
+}
+
+async function handleUpload(file: File, opts: { categoryId?: string; parser: string; tags: string[] }) {
+  const fileName = file.name
   let fileId: string
   try {
-    fileId = await uploadKnowledgeDoc(props.repoId, options.file, true)
+    fileId = await uploadKnowledgeDoc(props.repoId, file, opts, true)
   } catch (e) {
     const msg = e instanceof Error && e.message ? e.message : '未知原因'
     ElMessage.error(`「${fileName}」上传失败：${msg}`)
@@ -210,6 +277,38 @@ function openChunks(row: KnowledgeDoc) {
   chunkDialogRef.value?.open(row.fileId, row.fileName)
 }
 
+// ---------- 文件详情 / 编辑标签 ----------
+const detailVisible = ref(false)
+const detailRow = ref<KnowledgeDoc | null>(null)
+const editTagsVisible = ref(false)
+const editingFile = ref<KnowledgeDoc | null>(null)
+const editTags = ref<string[]>([])
+
+function openDetail(row: KnowledgeDoc) {
+  detailRow.value = row
+  detailVisible.value = true
+}
+
+async function openEditTags(row: KnowledgeDoc) {
+  editingFile.value = row
+  editTags.value = [...(row.tags || [])]
+  editTagsVisible.value = true
+}
+
+async function confirmEditTags() {
+  if (!editingFile.value) return
+  const tags = editTags.value.slice(0, 10)
+  await updateKnowledgeDocTags(props.repoId, editingFile.value.fileId, tags)
+  editingFile.value.tags = tags
+  editTagsVisible.value = false
+  ElMessage.success('标签已更新')
+}
+
+/** 解析器选项名（unknown 原样展示） */
+function parserLabel(v?: string): string {
+  return KNOWLEDGE_PARSER_OPTIONS.find((o) => o.value === v)?.label || v || '--'
+}
+
 function formatSize(bytes?: number): string {
   if (!bytes) return '--'
   if (bytes < 1024) return `${bytes} B`
@@ -238,7 +337,7 @@ function taskStatusText(t: UploadTask): string {
     <div class="doc-upload">
       <el-upload
         :show-file-list="false"
-        :http-request="handleUpload"
+        :http-request="handleSelectFile"
         :multiple="true"
         :accept="'.pdf,.doc,.docx,.md,.txt,.xls,.xlsx,.ppt,.pptx'"
         drag
@@ -250,6 +349,55 @@ function taskStatusText(t: UploadTask): string {
         </div>
       </el-upload>
     </div>
+
+    <!-- 上传设置 -->
+    <el-dialog v-model="uploadDialogVisible" title="上传设置" width="480px" :close-on-click-modal="false">
+      <el-form label-width="80px">
+        <el-form-item label="文件">
+          <span class="upload-file-list">
+            <el-tag v-for="(f, i) in pendingFiles" :key="i" size="small" closable @close="pendingFiles.splice(i, 1)">
+              {{ f.name }}
+            </el-tag>
+          </span>
+        </el-form-item>
+        <el-form-item label="所属类目">
+          <el-tree-select
+            v-model="uploadSetting.categoryId"
+            :data="buildCategoryTree(categories)"
+            node-key="categoryId"
+            :props="{ label: 'categoryName', children: 'children' }"
+            check-strictly
+            clearable
+            placeholder="默认类目"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="解析器">
+          <el-select v-model="uploadSetting.parser" style="width: 100%">
+            <el-option v-for="o in KNOWLEDGE_PARSER_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-select
+            v-model="uploadSetting.tags"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            placeholder="输入后回车创建，最多 10 个"
+            style="width: 100%"
+          >
+            <el-option v-for="t in uploadSetting.tags" :key="t" :label="t" :value="t" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="uploadDialogVisible = false">取消</el-button>
+        <el-button type="primary" :disabled="!pendingFiles.length" @click="confirmUpload">
+          上传 {{ pendingFiles.length ? `（${pendingFiles.length} 个文件）` : '' }}
+        </el-button>
+      </template>
+    </el-dialog>
 
     <!-- 处理中任务 -->
     <el-card v-if="tasks.length" shadow="never" class="task-card">
@@ -274,11 +422,21 @@ function taskStatusText(t: UploadTask): string {
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="标签" min-width="140">
+        <template #default="{ row }">
+          <template v-if="row.tags?.length">
+            <el-tag v-for="t in row.tags" :key="t" size="small" style="margin-right: 4px">{{ t }}</el-tag>
+          </template>
+          <span v-else class="no-tags">--</span>
+        </template>
+      </el-table-column>
       <el-table-column label="更新时间" width="170" align="center">
         <template #default="{ row }">{{ formatTime(row.gmtModified) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="140" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
+          <el-button link type="info" size="small" @click="openDetail(row)">详情</el-button>
+          <el-button link type="warning" size="small" @click="openEditTags(row)">标签</el-button>
           <el-button link type="primary" size="small" @click="openChunks(row)">切片</el-button>
           <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
         </template>
@@ -287,6 +445,32 @@ function taskStatusText(t: UploadTask): string {
         <el-empty description="暂无文档，上传后自动解析入库" :image-size="80" />
       </template>
     </el-table>
+
+    <!-- 文件详情 -->
+    <el-dialog v-model="detailVisible" title="文件详情" width="480px">
+      <el-descriptions v-if="detailRow" :column="1" border>
+        <el-descriptions-item label="文件名">{{ detailRow.fileName }}</el-descriptions-item>
+        <el-descriptions-item label="所属类目">
+          {{ detailRow.categoryId ? categoryNameMap.get(detailRow.categoryId) || detailRow.categoryId : '默认类目' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="解析器">{{ parserLabel(detailRow.parser) }}</el-descriptions-item>
+        <el-descriptions-item label="解析状态">{{ parseStatusLabel(detailRow.parseStatus) }}</el-descriptions-item>
+        <el-descriptions-item label="文件大小">{{ formatSize(detailRow.sizeInBytes) }}</el-descriptions-item>
+        <el-descriptions-item label="文件 ID">{{ detailRow.fileId }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer><el-button @click="detailVisible = false">关闭</el-button></template>
+    </el-dialog>
+
+    <!-- 编辑标签 -->
+    <el-dialog v-model="editTagsVisible" title="编辑标签" width="440px">
+      <el-select v-model="editTags" multiple filterable allow-create default-first-option style="width: 100%" placeholder="输入后回车创建，最多 10 个">
+        <el-option v-for="t in editTags" :key="t" :label="t" :value="t" />
+      </el-select>
+      <template #footer>
+        <el-button @click="editTagsVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmEditTags">保存</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 切片管理弹窗 -->
     <ChunkDialog ref="chunkDialogRef" :repo-id="props.repoId" />
@@ -318,6 +502,16 @@ function taskStatusText(t: UploadTask): string {
       color: #909399;
       font-size: 12px;
     }
+  }
+  .upload-file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  .no-tags {
+    color: #c0c4cc;
   }
   .task-card {
     margin-bottom: 16px;
