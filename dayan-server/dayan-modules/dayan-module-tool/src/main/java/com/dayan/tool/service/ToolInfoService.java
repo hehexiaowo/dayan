@@ -4,6 +4,7 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.tool.dto.ToolInfoCreateDTO;
 import com.dayan.tool.dto.ToolInfoQueryDTO;
 import com.dayan.tool.dto.ToolInfoUpdateDTO;
+import com.dayan.tool.model.ToolAiartistPipelineConfig;
 import com.dayan.tool.vo.ToolAichatPersonaVO;
 import com.dayan.tool.vo.ToolAiartistConfigVO;
 import com.dayan.tool.vo.ToolInfoVO;
@@ -41,6 +42,9 @@ public interface ToolInfoService {
 
     /** AI 创作分类详情（tool_code 对应的 aiartist 实例，不存在抛 NOT_FOUND） */
     ToolAiartistConfigVO getAiartistConfig(String toolCode);
+
+    /** AI 创作分类流水线配置（config_json.pipeline 全量解析，缺失回落内置默认值） */
+    ToolAiartistPipelineConfig getAiartistPipelineConfig(String toolCode);
 
     String create(ToolInfoCreateDTO dto);
 

@@ -15,6 +15,8 @@ public class ToolAiartistRefsVO {
     private List<CodeNameRef> goods;
     /** 机构（含名称） */
     private List<CodeNameRef> parks;
+    /** 素材自带图片（配图位优先引用：cover=封面候选，body=正文插图候选按序） */
+    private List<MaterialImageRef> materialImages;
 
     /** 知识库文件引用 */
     @Data
@@ -28,5 +30,16 @@ public class ToolAiartistRefsVO {
     public static class CodeNameRef {
         private String code;
         private String name;
+    }
+
+    /** 素材图引用（来源：机构图集 / 参考范文封面） */
+    @Data
+    public static class MaterialImageRef {
+        /** 配图位角色：cover=封面位候选 / body=正文插图位候选 */
+        private String role;
+        /** 图片名称（兜底 prompt 用） */
+        private String name;
+        /** 可直接访问的图片 URL */
+        private String url;
     }
 }

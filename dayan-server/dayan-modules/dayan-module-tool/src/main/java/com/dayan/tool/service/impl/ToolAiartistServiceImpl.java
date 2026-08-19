@@ -56,11 +56,8 @@ public class ToolAiartistServiceImpl implements ToolAiartistService {
         ToolAiartistRefsVO refs = dto.getMaterialRefs() == null ? new ToolAiartistRefsVO() : dto.getMaterialRefs();
         switch (purpose) {
             case AiPurpose.PRODUCT -> {
-                if (refs.getKbFiles() == null || refs.getKbFiles().isEmpty()) {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR, "产品宣传需在渠道知识库勾选保险产品/政策资料");
-                }
-                if (refs.getGoods() == null || refs.getGoods().isEmpty()) {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR, "产品宣传需选择要推荐的权益商品");
+                if (dto.getMaterials() == null || dto.getMaterials().isEmpty()) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "保险计划需先粘贴计划书内容");
                 }
             }
             case AiPurpose.PARK -> {

@@ -12,6 +12,7 @@ import com.dayan.tool.dto.ToolAiartistContentCmd;
 import com.dayan.tool.entity.ToolAiartist;
 import com.dayan.tool.model.ToolAiartistPhase;
 import com.dayan.tool.model.AiPurpose;
+import com.dayan.tool.model.ToolAiartistPipelineConfig;
 import com.dayan.tool.service.AiClientHolder;
 import com.dayan.tool.service.ToolAiartistContentSaver;
 import com.dayan.tool.service.ToolAiartistService;
@@ -22,6 +23,8 @@ import com.dayan.tool.service.AiImageProgressListener;
 import com.dayan.tool.util.AiPrompts;
 import com.dayan.tool.util.LlmJson;
 import com.dayan.tool.vo.*;
+import com.dayan.system.service.SystemKnowledgeRepoService;
+import com.dayan.system.vo.SystemKnowledgeChatVO;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import com.dayan.common.oss.service.StorageService;
@@ -38,8 +41,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 六阶段流水线编排。阶段温度：digest 0.2 / strategy 0.7 / titles 0.7 / outline 0.5 /
- * body 0.6 / audit 0.2 / polish 0.5 / revise 0.3。
+ * 六阶段流水线编排。阶段温度、合规禁语、素材上限、篇幅窗口、配图规格等
+ * 全部来自所属创作分类的 tool_info.config_json.pipeline（缺失回落内置默认值）。
  *
  * <p>状态机：CREATED→DIGESTED→STRATEGY_CONFIRMED→OUTLINE_CONFIRMED→BODY_DONE→IMAGES_DONE→SAVED；
  * strategy/titles 重入会清空下游产物（改策略=全文重做）。全部更新单行 updateById，无长事务。
@@ -49,56 +52,25 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineService {
 
-    private static final double DIGEST_TEMPERATURE = 0.2;
-    private static final double STRATEGY_TEMPERATURE = 0.7;
-    private static final double OUTLINE_TEMPERATURE = 0.5;
-    private static final double BODY_TEMPERATURE = 0.6;
-    private static final double AUDIT_TEMPERATURE = 0.2;
-    private static final double POLISH_TEMPERATURE = 0.5;
-    private static final double REVISE_TEMPERATURE = 0.3;
-
-    /** 前端供材快照渲染总量上限（超出截断并记 warning） */
-    private static final int MATERIAL_TOTAL_MAX = 8000;
-    /** 单张配图轮询上限 */
-    private static final long IMAGE_POLL_TIMEOUT_MS = 90_000L;
     /** 正文配图占位符：[AI_IMAGE_COVER] / [AI_IMAGE_1..N] */
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[AI_IMAGE_[A-Z0-9_]+]");
-
-    /** 生成后自检禁语清单（与 system.md 合规红线一致） */
-    private static final List<String> BANNED_PHRASES = List.of(
-            "保证收益", "稳赚", "包赚", "最高级", "国家级", "顶级", "100%", "百分百", "绝对", "秒杀", "史上");
-
-    private static final Map<Integer, String> FORM_INSTRUCTIONS = Map.of(
-            1, "微信公众号精品图文（1200-1500 字，HTML 片段 <h2>/<p>，标题 ≤30 字）",
-            2, "朋友圈文案（≤200 字纯文本 + 1-2 emoji + 1 个 #话题标签，标题=首句钩子 ≤20 字）",
-            3, "短视频口播脚本（60-90 秒，【画面】【口播】【字幕】分镜，标题 ≤15 字）",
-            4, "小红书笔记（600-800 字，Emoji 列表 + #标签段，标题 ≤20 字）");
-    private static final Map<String, String> STYLE_INSTRUCTIONS = Map.of(
-            "professional", "专业科普风格：用词严谨、逻辑清晰、多用数据与术语，面向对养老品质有要求的家庭决策者",
-            "warm", "温情软文风格：以长辈/家庭的真实生活场景切入，情感细腻、语气温暖，引发共鸣",
-            "authoritative", "权威报告风格：结论先行、分点论述、数据化表达，塑造平台专业可信形象",
-            "colloquial", "口语化风格：短句、亲切、像朋友聊天");
-    private static final Map<String, String> AUDIENCE_INSTRUCTIONS = Map.of(
-            "children", "为父母养老做决策的子女（30-50 岁）：理性、数据与家庭责任视角，专业可信赖",
-            "elder", "老人本人（55-75 岁）：直白温暖、短句、从老人自身利益出发，避免术语",
-            "general", "40-70 岁客户及其子女：通俗易懂");
-    /** 标题字数上限（titles-regen 用） */
-    private static final Map<Integer, Integer> TITLE_LIMITS = Map.of(1, 30, 2, 20, 3, 15, 4, 20);
 
     private final ToolAiartistService projectService;
     private final StorageService storageService;
     private final AiClientHolder aiClientHolder;
     private final ToolAiartistContentSaver contentSaver;
     private final ToolInfoService toolInfoService;
+    private final SystemKnowledgeRepoService knowledgeRepoService;
 
     @Override
     public ToolAiartistVO digest(Long id) {
         ToolAiartist p = projectService.requireOwned(id);
         List<String> warnings = new ArrayList<>();
+        ToolAiartistPipelineConfig cfg = pipelineConfig(p);
         String material = materialsText(p, warnings);
-        AiFactDigestVO digest = LlmJson.parse(chat(p, render("digest", Map.of(
-                "purpose_rule", purposeRule(p.getPurpose()),
-                "material", material)), DIGEST_TEMPERATURE),
+        AiFactDigestVO digest = LlmJson.parse(chat(p, render(stagePrompt("digest", cfg), Map.of(
+                "purpose_rule", purposeRule(p.getPurpose(), cfg),
+                "material", material)), cfg.getDigestTemp()),
                 AiFactDigestVO.class);
         p.setFactDigest(JSONUtil.toJsonStr(digest));
         p.setWarnings(JSONUtil.toJsonStr(warnings));
@@ -115,20 +87,21 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         resetDownstreamIfNeeded(p);
         ensureDigest(p);
         List<String> warnings = new ArrayList<>();
+        ToolAiartistPipelineConfig cfg = pipelineConfig(p);
         String material = materialsText(p, warnings);
-        AiStrategyBundleVO out = LlmJson.parse(chat(p, render("strategy", Map.of(
-                "purpose_rule", purposeRule(p.getPurpose()),
-                "form", formInstruction(p.getContentType()),
-                "style", styleInstruction(p.getStyleCode()),
-                "audience", audienceInstruction(p.getAudience()),
+        AiStrategyBundleVO out = LlmJson.parse(chat(p, render(stagePrompt("strategy", cfg), Map.of(
+                "purpose_rule", purposeRule(p.getPurpose(), cfg),
+                "form", formInstruction(p.getContentType(), cfg),
+                "style", styleInstruction(p.getStyleCode(), cfg),
+                "audience", audienceInstruction(p.getAudience(), cfg),
                 "topic", StrUtil.blankToDefault(p.getTopic(), "（从素材归纳）"),
                 "fact_digest", digestText(p),
-                "material", material)), STRATEGY_TEMPERATURE),
+                "material", material)), cfg.getStrategyTemp()),
                 AiStrategyBundleVO.class);
         AiStrategyVO strategy = out.getStrategyPanel() == null ? new AiStrategyVO() : out.getStrategyPanel();
         strategy.setCoreExecutionPrompt(out.getCoreExecutionPrompt());
         p.setStrategy(JSONUtil.toJsonStr(strategy));
-        p.setTitles(JSONUtil.toJsonStr(sanitizeTitles(out.getGeneratedTitles())));
+        p.setTitles(JSONUtil.toJsonStr(sanitizeTitles(out.getGeneratedTitles(), cfg)));
         p.setWarnings(JSONUtil.toJsonStr(warnings));
         p.setStatus(ToolAiartistPhase.DIGESTED);
         projectService.updateById(p);
@@ -139,14 +112,15 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
     public ToolAiartistVO regenerateTitles(Long id, AiTitleRegenDTO dto) {
         ToolAiartist p = requirePhase(id, ToolAiartistPhase.DIGESTED, ToolAiartistPhase.STRATEGY_CONFIRMED);
         resetDownstreamIfNeeded(p);
+        ToolAiartistPipelineConfig cfg = pipelineConfig(p);
         AiStrategyVO strategy = parseStrategy(p);
-        String prompt = render("titles-regen", Map.of(
+        String prompt = render(stagePrompt("titles-regen", cfg), Map.of(
                 "strategy_panel", strategyText(strategy),
                 "previous_titles", StrUtil.blankToDefault(p.getTitles(), "（无）"),
                 "feedback", StrUtil.blankToDefault(dto == null ? null : dto.getFeedback(), "换一批差异化角度"),
-                "title_limit", String.valueOf(TITLE_LIMITS.getOrDefault(p.getContentType(), 30))));
-        AiStrategyBundleVO out = LlmJson.parse(chat(p, prompt, STRATEGY_TEMPERATURE), AiStrategyBundleVO.class);
-        p.setTitles(JSONUtil.toJsonStr(sanitizeTitles(out.getGeneratedTitles())));
+                "title_limit", String.valueOf(cfg.titleLimitOf(p.getContentType()))));
+        AiStrategyBundleVO out = LlmJson.parse(chat(p, prompt, cfg.getTitlesTemp()), AiStrategyBundleVO.class);
+        p.setTitles(JSONUtil.toJsonStr(sanitizeTitles(out.getGeneratedTitles(), cfg)));
         p.setStatus(ToolAiartistPhase.DIGESTED);
         projectService.updateById(p);
         return projectService.toVO(p);
@@ -232,9 +206,12 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
             p.setImages(null); // 重生成正文使旧配图失效
         }
         AiStrategyVO strategy = parseStrategy(p);
+        ToolAiartistPipelineConfig cfg = pipelineConfig(p);
         List<String> warnings = new ArrayList<>();
         notifyStage(listener, "material", "素材就绪…");
         String material = materialsText(p, warnings);
+        // 正文前知识库自动检索补充（校验+补充定位；失败/无命中降级不阻断）
+        material = supplementKnowledge(p, cfg, material, strategy, warnings);
         // 1. 正文（SSE 流式）
         notifyStage(listener, "body", "正在撰写正文…");
         Map<String, String> bodyVars = new java.util.HashMap<>();
@@ -243,27 +220,27 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         bodyVars.put("viral_logic", StrUtil.nullToEmpty(strategy.getViralLogic()));
         bodyVars.put("advantage_hook", StrUtil.nullToEmpty(strategy.getAdvantageHook()));
         bodyVars.put("core_execution_prompt", StrUtil.nullToEmpty(strategy.getCoreExecutionPrompt()));
-        bodyVars.put("purpose_rule", purposeRule(p.getPurpose()));
-        bodyVars.put("platform_rules", platformRules(p.getContentType()));
+        bodyVars.put("purpose_rule", purposeRule(p.getPurpose(), cfg));
+        bodyVars.put("platform_rules", platformRules(p.getContentType(), cfg));
         bodyVars.put("selected_title", StrUtil.nullToEmpty(p.getSelectedTitle()));
         bodyVars.put("outline_json", outlineText(p));
         bodyVars.put("fact_digest", digestText(p));
         bodyVars.put("material", material);
-        String bodyPrompt = render("body", bodyVars);
+        String bodyPrompt = render(stagePrompt("body", cfg), bodyVars);
         String body = listener == null
-                ? chat(p, bodyPrompt, BODY_TEMPERATURE)
+                ? chat(p, bodyPrompt, cfg.getBodyTemp())
                 : aiClientHolder.chatClient().chatStream(
                         aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
                         aiClientHolder.requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
-                        aiClientHolder.chatModel(), categoryPrefix(p) + AiPrompts.load("system"), bodyPrompt, BODY_TEMPERATURE, listener::onDelta);
+                        aiClientHolder.chatModel(), categoryPrefix(cfg) + systemPromptText(cfg), bodyPrompt, cfg.getBodyTemp(), listener::onDelta);
         body = cleanBody(body);
-        warnings.addAll(ruleCheck(body, p));
+        warnings.addAll(ruleCheck(body, p, cfg));
         // 2. 审计（独立 LLM 关卡）
         notifyStage(listener, "audit", "事实核查与合规审计…");
-        String auditOut = chat(p, render("audit", Map.of(
+        String auditOut = chat(p, render(stagePrompt("audit", cfg), Map.of(
                 "fact_digest", digestText(p),
                 "material", material,
-                "body", body)), AUDIT_TEMPERATURE);
+                "body", body)), cfg.getAuditTemp());
         String auditedBody = extractTag(auditOut, "revised_article");
         List<AiAuditItemVO> auditLog;
         if (StrUtil.isBlank(auditedBody)) {
@@ -286,16 +263,16 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         }
         // 3. 润色 + 打分（防删减：字数 < 95% 丢弃润色版）
         notifyStage(listener, "polish", "润色去 AI 味 + 五维打分…");
-        String polishOut = chat(p, render("polish", Map.of(
+        String polishOut = chat(p, render(stagePrompt("polish", cfg), Map.of(
                 "core_pain_point", StrUtil.nullToEmpty(strategy.getCorePainPoint()),
                 "advantage_hook", StrUtil.nullToEmpty(strategy.getAdvantageHook()),
-                "platform_rules", platformRules(p.getContentType()),
-                "body", auditedBody)), POLISH_TEMPERATURE);
+                "platform_rules", platformRules(p.getContentType(), cfg),
+                "body", auditedBody)), cfg.getPolishTemp());
         String polished = extractTag(polishOut, "revised_article");
         String finalBody = auditedBody;
         if (StrUtil.isNotBlank(polished)) {
             polished = cleanBody(polished);
-            if (plainLength(polished) >= plainLength(auditedBody) * 0.95) {
+            if (plainLength(polished) >= plainLength(auditedBody) * cfg.getPolishKeepRatio()) {
                 finalBody = polished;
             } else {
                 warnings.add("润色版篇幅不足原文 95%，已保留审计版正文");
@@ -333,15 +310,16 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
     @Override
     public ToolAiartistVO revise(Long id, AiReviseDTO dto) {
         ToolAiartist p = requirePhase(id, ToolAiartistPhase.BODY_DONE, ToolAiartistPhase.IMAGES_DONE);
+        ToolAiartistPipelineConfig cfg = pipelineConfig(p);
         AiStrategyVO strategy = parseStrategy(p);
-        StringBuilder prompt = new StringBuilder(render("revise", Map.of(
+        StringBuilder prompt = new StringBuilder(render(stagePrompt("revise", cfg), Map.of(
                 "core_pain_point", StrUtil.nullToEmpty(strategy.getCorePainPoint()),
                 "body", StrUtil.nullToEmpty(p.getBody()),
                 "feedback", dto.getFeedback().trim())));
         if (StrUtil.isNotBlank(dto.getAnchor())) {
             prompt.append("\n【定位】重点修正包含「").append(dto.getAnchor().trim()).append("」的段落。");
         }
-        String revised = cleanBody(chat(p, prompt.toString(), REVISE_TEMPERATURE));
+        String revised = cleanBody(chat(p, prompt.toString(), cfg.getReviseTemp()));
         if (StrUtil.isBlank(revised)) {
             throw new BusinessException(ErrorCode.BUSINESS, "修订失败，请重试");
         }
@@ -361,6 +339,7 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
     @Override
     public ToolAiartistVO imagesStream(Long id, AiImageProgressListener listener) {
         ToolAiartist p = requirePhase(id, ToolAiartistPhase.BODY_DONE, ToolAiartistPhase.IMAGES_DONE);
+        ToolAiartistPipelineConfig cfg = pipelineConfig(p);
         List<String> placeholders = extractPlaceholders(p);
         if (placeholders.isEmpty()) {
             throw new BusinessException(ErrorCode.BUSINESS, "正文没有配图位，无需生成配图");
@@ -376,39 +355,56 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
                 // 旧 warnings 格式异常时丢弃，避免阻塞配图
             }
         }
-        // 初始化配图结果（保留 prompt 供降级清单）
+        // 初始化配图结果：素材自带图（机构图集/范文封面）直接引用为 done，其余位保留 prompt 待 AI 生成
         List<AiImageVO> images = new ArrayList<>();
+        List<ToolAiartistRefsVO.MaterialImageRef> materialImages = refs(p).getMaterialImages();
+        int materialUsed = 0;
         for (String ph : placeholders) {
             AiImageVO img = new AiImageVO();
             img.setPlaceholder(ph);
             AiOutlineVO.AiImageSpec spec = specOf(p, ph);
-            img.setSize(spec == null ? defaultSize(p.getContentType(), ph)
-                    : StrUtil.blankToDefault(spec.getSize(), defaultSize(p.getContentType(), ph)));
+            img.setSize(spec == null ? defaultSize(cfg, p.getContentType(), ph)
+                    : StrUtil.blankToDefault(spec.getSize(), defaultSize(cfg, p.getContentType(), ph)));
             if (spec != null) {
                 img.setPrompt(spec.getPrompt());
                 img.setPromptZh(spec.getImagePromptZh());
             }
-            img.setStatus("pending");
+            ToolAiartistRefsVO.MaterialImageRef src = materialImageFor(ph, materialImages);
+            if (src != null) {
+                img.setUrl(src.getUrl());
+                img.setPrompt(StrUtil.blankToDefault(img.getPrompt(), src.getName()));
+                img.setPromptZh(StrUtil.blankToDefault(img.getPromptZh(), src.getName()));
+                img.setStatus("done");
+                materialUsed++;
+            } else {
+                img.setStatus("pending");
+            }
             images.add(img);
         }
         p.setImages(JSONUtil.toJsonStr(images));
         projectService.updateById(p);
-        notifyImageStage(listener, "images", "开始生成 " + placeholders.size() + " 张配图…");
+        notifyImageStage(listener, "images",
+                materialUsed > 0
+                        ? "已引用 " + materialUsed + " 张素材图，其余 " + (placeholders.size() - materialUsed) + " 张由 AI 生成…"
+                        : "开始生成 " + placeholders.size() + " 张配图…");
         int consecutiveFailures = 0;
         int success = 0;
         for (AiImageVO img : images) {
-            if (consecutiveFailures >= 2) {
+            if ("done".equals(img.getStatus())) {
+                success++; // 素材图直用，跳过 AI 生成
+                continue;
+            }
+            if (consecutiveFailures >= cfg.getImageRetryAfterFailures()) {
                 img.setStatus("skipped");
                 continue;
             }
             String prompt = StrUtil.blankToDefault(img.getPrompt(),
-                    "Warm lifestyle photograph, elderly care concept related to: " + safeAscii(img.getPromptZh())
-                            + ", single subject, shallow depth of field");
+                    cfg.getImageFallbackPrompt().replace("{promptZh}", safeAscii(img.getPromptZh())));
             img.setStatus("generating");
             fireImage(listener, img.getPlaceholder(), "generating", null, null);
             try {
                 String taskId = aiClientHolder.imageClient().submit(apiKey, apiBase, imageModel, prompt, img.getSize());
-                String url = aiClientHolder.imageClient().pollImageUrl(apiKey, apiBase, taskId, IMAGE_POLL_TIMEOUT_MS);
+                String url = aiClientHolder.imageClient().pollImageUrl(apiKey, apiBase, taskId, cfg.getImagePollTimeoutMs());
                 byte[] bytes = aiClientHolder.imageClient().download(url);
                 String fileKey = storageService.upload("ai-creation", p.getChannelCode(),
                         new ByteArrayInputStream(bytes), bytes.length, "image/png",
@@ -425,7 +421,7 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
                 img.setError(e.getMessage());
                 fireImage(listener, img.getPlaceholder(), "failed", null, e.getMessage());
                 log.warn("AI 配图单张失败 projectId={} placeholder={}: {}", id, img.getPlaceholder(), e.getMessage());
-                if (consecutiveFailures >= 2) {
+                if (consecutiveFailures >= cfg.getImageRetryAfterFailures()) {
                     warnings.add("配图连续失败，已降级为 prompt 清单（见配图卡片的中文描述），请自行出图");
                 }
             }
@@ -579,11 +575,39 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         return null;
     }
 
-    String defaultSize(Integer contentType, String placeholder) {
-        if ("[AI_IMAGE_COVER]".equals(placeholder)) {
-            return Integer.valueOf(4).equals(contentType) ? "1080*1440" : "1024*1024";
+    /** 占位符 → 素材自带图：封面位取 cover 候选，正文插图位按序取 body 候选（不足时回退 cover 图），无则 null（走 AI 生成） */
+    ToolAiartistRefsVO.MaterialImageRef materialImageFor(String placeholder,
+                                                         List<ToolAiartistRefsVO.MaterialImageRef> materialImages) {
+        if (materialImages == null || materialImages.isEmpty()) {
+            return null;
         }
-        return "1280*720";
+        if ("[AI_IMAGE_COVER]".equals(placeholder)) {
+            return materialImages.stream()
+                    .filter(i -> "cover".equals(i.getRole()) && StrUtil.isNotBlank(i.getUrl()))
+                    .findFirst().orElse(null);
+        }
+        Matcher m = Pattern.compile("\\[AI_IMAGE_(\\d+)]").matcher(placeholder);
+        if (m.matches()) {
+            int n = Integer.parseInt(m.group(1));
+            List<ToolAiartistRefsVO.MaterialImageRef> body = materialImages.stream()
+                    .filter(i -> "body".equals(i.getRole()) && StrUtil.isNotBlank(i.getUrl())).toList();
+            if (n >= 1 && n <= body.size()) {
+                return body.get(n - 1);
+            }
+            // body 素材图不足时回退 cover 图（有素材图优先于 AI 生成）
+            List<ToolAiartistRefsVO.MaterialImageRef> cover = materialImages.stream()
+                    .filter(i -> "cover".equals(i.getRole()) && StrUtil.isNotBlank(i.getUrl())).toList();
+            int k = n - body.size();
+            return k >= 1 && k <= cover.size() ? cover.get(k - 1) : null;
+        }
+        return null;
+    }
+
+    String defaultSize(ToolAiartistPipelineConfig cfg, Integer contentType, String placeholder) {
+        if ("[AI_IMAGE_COVER]".equals(placeholder)) {
+            return Integer.valueOf(4).equals(contentType) ? cfg.getCoverSizeXhs() : cfg.getCoverSizeDefault();
+        }
+        return cfg.getNodeSize();
     }
 
     /** 正文占位符 → <img>（done 的图）/ 剔除（失败/未生成）；朋友圈等无图形态原样返回 */
@@ -689,16 +713,17 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
     }
 
     /** 规则自检（不重写，产出 warnings）：篇幅窗口/禁语/商品融入 */
-    List<String> ruleCheck(String body, ToolAiartist p) {
+    List<String> ruleCheck(String body, ToolAiartist p, ToolAiartistPipelineConfig cfg) {
         List<String> warnings = new ArrayList<>();
         int len = plainLength(body);
         int type = p.getContentType() == null ? 1 : p.getContentType();
-        int min = switch (type) { case 2 -> 30; case 4 -> 350; case 3 -> 400; default -> 800; };
-        int max = switch (type) { case 2 -> 400; case 4 -> 1500; case 3 -> 2500; default -> 2500; };
+        int[] win = cfg.lengthWindowOf(type);
+        int min = win[0];
+        int max = win[1];
         if (len < min) warnings.add("正文偏短（约 " + len + " 字），建议重新生成");
         if (len > max) warnings.add("正文超长（约 " + len + " 字），建议重新生成或手动精简");
         String plain = body.replaceAll("<[^>]+>", "");
-        for (String banned : BANNED_PHRASES) {
+        for (String banned : cfg.getBannedPhrases()) {
             if (plain.contains(banned)) {
                 warnings.add("正文疑似含不合规用语「" + banned + "」，请人工复核");
                 break;
@@ -760,16 +785,17 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
     /** 大纲 LLM 调用（生成/重生成共用；图文/小红书若未规划任何节点配图位，带强调指令重试一次） */
     private AiOutlineVO callOutline(ToolAiartist p, AiStrategyVO strategy,
                                     String material, String extraDirective) {
-        String prompt = outlinePrompt(p, strategy, material);
+        ToolAiartistPipelineConfig cfg = pipelineConfig(p);
+        String prompt = outlinePrompt(p, strategy, material, cfg);
         if (StrUtil.isNotBlank(extraDirective)) {
             prompt = prompt + "\n\n【重生成要求（最高优先级）】" + extraDirective.trim();
         }
-        AiOutlineVO outline = LlmJson.parse(chat(p, prompt, OUTLINE_TEMPERATURE), AiOutlineVO.class);
+        AiOutlineVO outline = LlmJson.parse(chat(p, prompt, cfg.getOutlineTemp()), AiOutlineVO.class);
         sanitizeOutline(outline);
         if (StrUtil.isBlank(extraDirective) && needsImageRetry(p, outline)) {
             AiOutlineVO retry = LlmJson.parse(chat(p, prompt + "\n\n【重生成要求（最高优先级）】"
                     + "按配图位规划为 3-4 个主体节点补充 imageInsertion：英文 prompt 以 Warm/Bright/Muted lifestyle photograph "
-                    + "开头、≤60 词、单一场景并含摄影术语；size 用 1280*720；无需配图的节点保持 null。", OUTLINE_TEMPERATURE),
+                    + "开头、≤60 词、单一场景并含摄影术语；size 用 1280*720；无需配图的节点保持 null。", cfg.getOutlineTemp()),
                     AiOutlineVO.class);
             sanitizeOutline(retry);
             return retry;
@@ -787,21 +813,21 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
 
     /** 大纲 prompt 渲染（生成/重生成共用，重生成在尾部追加反馈指令） */
     private String outlinePrompt(ToolAiartist p, AiStrategyVO strategy,
-                                 String material) {
+                                 String material, ToolAiartistPipelineConfig cfg) {
         Map<String, String> vars = new java.util.HashMap<>();
         vars.put("core_execution_prompt", StrUtil.nullToEmpty(strategy.getCoreExecutionPrompt()));
         vars.put("target_audience", StrUtil.nullToEmpty(strategy.getTargetAudience()));
         vars.put("core_pain_point", StrUtil.nullToEmpty(strategy.getCorePainPoint()));
         vars.put("viral_logic", StrUtil.nullToEmpty(strategy.getViralLogic()));
         vars.put("advantage_hook", StrUtil.nullToEmpty(strategy.getAdvantageHook()));
-        vars.put("purpose_rule", purposeRule(p.getPurpose()));
-        vars.put("platform_rules", platformRules(p.getContentType()));
+        vars.put("purpose_rule", purposeRule(p.getPurpose(), cfg));
+        vars.put("platform_rules", platformRules(p.getContentType(), cfg));
         vars.put("selected_title", StrUtil.nullToEmpty(p.getSelectedTitle()));
         vars.put("topic", StrUtil.blankToDefault(p.getTopic(), "（从素材归纳）"));
         vars.put("fact_digest", digestText(p));
         vars.put("material", material);
-        vars.put("image_count_hint", imageCountHint(p.getContentType()));
-        return render("outline", vars);
+        vars.put("image_count_hint", cfg.imageCountHintOf(p.getContentType()));
+        return render(stagePrompt("outline", cfg), vars);
     }
 
     /** 大纲清洗：节点非空、补 id、配图规格兜底 */
@@ -839,78 +865,85 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         }
     }
 
-    String imageCountHint(Integer contentType) {
-        return switch (contentType) {
-            case 3 -> "仅规划 coverImage 1 张（1024*1024），所有 nodes 的 imageInsertion 必须为 null";
-            case 4 -> "coverImage 1 张（1080*1440）+ 节点配位合计 2-4 张（1280*720）";
-            default -> "coverImage 1 张（1024*1024）+ 正文节点配图 3-4 张（1280*720）";
-        };
-    }
-
     // ---------- 公共设施（后续任务复用） ----------
 
-    /** 渲染 ai-prompts/{name}.md */
-    String render(String name, Map<String, String> vars) {
-        return AiPrompts.render(AiPrompts.load(name), vars);
+    /** 渲染提示词模板（{{var}} 替换；模板由 stagePrompt 提供，来自资源或分类覆盖配置） */
+    String render(String template, Map<String, String> vars) {
+        return AiPrompts.render(template, vars);
     }
 
-    /** 非流式 chat（system.md 为系统提示） */
-    String chat(String prompt, double temperature) {
+    /** 阶段提示词：分类覆盖配置（config_json.pipeline.prompts）优先，缺失回落 ai-prompts 资源 */
+    String stagePrompt(String name, ToolAiartistPipelineConfig cfg) {
+        String override = cfg.getPrompts().get(name);
+        return StrUtil.isNotBlank(override) ? override : AiPrompts.load(name);
+    }
+
+    /** 分类流水线配置（config_json.pipeline 全量，缺失/异常回落内置默认值） */
+    ToolAiartistPipelineConfig pipelineConfig(ToolAiartist p) {
+        if (p == null || StrUtil.isBlank(p.getToolCode())) {
+            return new ToolAiartistPipelineConfig();
+        }
+        try {
+            return toolInfoService.getAiartistPipelineConfig(p.getToolCode());
+        } catch (Exception e) {
+            log.warn("读取创作分类流水线配置失败 toolCode={}: {}", p.getToolCode(), e.getMessage());
+            return new ToolAiartistPipelineConfig();
+        }
+    }
+
+    /** 非流式 chat（全局系统提示词 + 分类人设，均配置优先、资源兜底） */
+    String chat(ToolAiartist p, String prompt, double temperature) {
+        ToolAiartistPipelineConfig cfg = pipelineConfig(p);
         return aiClientHolder.chatClient().chat(
                 aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
                 aiClientHolder.requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
-                aiClientHolder.chatModel(), AiPrompts.load("system"), prompt, temperature);
+                aiClientHolder.chatModel(), categoryPrefix(cfg) + systemPromptText(cfg), prompt, temperature);
     }
 
-    /** 非流式 chat（带创作分类人设：分类设定拼入用户 prompt 开头，语义等价系统人设） */
-    String chat(ToolAiartist p, String prompt, double temperature) {
-        return chat(categoryPrefix(p) + prompt, temperature);
+    /** 创作分类人设前缀（config_json.systemPrompt），配置缺失时返回空串 */
+    String categoryPrefix(ToolAiartistPipelineConfig cfg) {
+        String sp = cfg.getSystemPrompt();
+        return StrUtil.isBlank(sp) ? "" : "【创作分类设定】" + sp + "\n\n";
     }
 
-    /** 创作分类人设前缀（tool_info.config_json.systemPrompt），配置缺失时返回空串 */
-    String categoryPrefix(ToolAiartist p) {
-        if (p == null || StrUtil.isBlank(p.getToolCode())) {
-            return "";
-        }
-        try {
-            ToolAiartistConfigVO config = toolInfoService.getAiartistConfig(p.getToolCode());
-            if (StrUtil.isNotBlank(config.getSystemPrompt())) {
-                return "【创作分类设定】" + config.getSystemPrompt() + "\n\n";
-            }
-        } catch (Exception e) {
-            log.warn("读取创作分类配置失败 toolCode={}: {}", p.getToolCode(), e.getMessage());
-        }
-        return "";
+    /** 全局系统提示词：pipeline.system 优先，回落 ai-prompts/system.md */
+    String systemPromptText(ToolAiartistPipelineConfig cfg) {
+        return StrUtil.isNotBlank(cfg.getSystem()) ? cfg.getSystem() : AiPrompts.load("system");
     }
 
-    String purposeRule(String purpose) {
+    /** 目的规则：pipeline.purposeRules 优先，回落 ai-prompts/purpose/*.md */
+    String purposeRule(String purpose, ToolAiartistPipelineConfig cfg) {
         String p = AiPurpose.PRODUCT.equals(purpose) || AiPurpose.PARK.equals(purpose)
                 || AiPurpose.SCIENCE.equals(purpose) ? purpose : AiPurpose.SCIENCE;
-        return AiPrompts.load("purpose/" + p);
+        String override = cfg.getPurposeRules().get(p);
+        return StrUtil.isNotBlank(override) ? override : AiPrompts.load("purpose/" + p);
     }
 
-    String formInstruction(Integer contentType) {
-        String s = FORM_INSTRUCTIONS.get(contentType);
+    String formInstruction(Integer contentType, ToolAiartistPipelineConfig cfg) {
+        String s = cfg.getFormInstructions().get(contentType);
         if (s == null) throw new BusinessException(ErrorCode.PARAM_ERROR, "内容形态取值 1-4");
         return s;
     }
 
-    String styleInstruction(String styleCode) {
-        return StrUtil.blankToDefault(STYLE_INSTRUCTIONS.get(styleCode), "自然流畅的行业写作风格");
+    String styleInstruction(String styleCode, ToolAiartistPipelineConfig cfg) {
+        return StrUtil.blankToDefault(cfg.getStyleInstructions().get(styleCode), "自然流畅的行业写作风格");
     }
 
-    String audienceInstruction(String audience) {
-        return StrUtil.blankToDefault(AUDIENCE_INSTRUCTIONS.get(audience), AUDIENCE_INSTRUCTIONS.get("general"));
+    String audienceInstruction(String audience, ToolAiartistPipelineConfig cfg) {
+        return StrUtil.blankToDefault(cfg.getAudienceInstructions().get(audience),
+                cfg.getAudienceInstructions().getOrDefault("general", "40-70 岁客户及其子女：通俗易懂"));
     }
 
-    /** platform/{mp|xhs|moment|script}.md */
-    String platformRules(Integer contentType) {
-        return switch (contentType) {
-            case 2 -> AiPrompts.load("platform/moment");
-            case 3 -> AiPrompts.load("platform/script");
-            case 4 -> AiPrompts.load("platform/xhs");
-            default -> AiPrompts.load("platform/mp");
+    /** 平台规则：pipeline.platformRules 优先，回落 ai-prompts/platform/*.md */
+    String platformRules(Integer contentType, ToolAiartistPipelineConfig cfg) {
+        String key = switch (contentType) {
+            case 2 -> "moment";
+            case 3 -> "script";
+            case 4 -> "xhs";
+            default -> "mp";
         };
+        String override = cfg.getPlatformRules().get(key);
+        return StrUtil.isNotBlank(override) ? override : AiPrompts.load("platform/" + key);
     }
 
     ToolAiartistRefsVO refs(ToolAiartist p) {
@@ -954,9 +987,10 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
     void ensureDigest(ToolAiartist p) {
         if (StrUtil.isBlank(p.getFactDigest())) {
             List<String> warnings = new ArrayList<>();
-            AiFactDigestVO digest = LlmJson.parse(chat(p, render("digest", Map.of(
-                    "purpose_rule", purposeRule(p.getPurpose()),
-                    "material", materialsText(p, warnings))), DIGEST_TEMPERATURE),
+            ToolAiartistPipelineConfig cfg = pipelineConfig(p);
+            AiFactDigestVO digest = LlmJson.parse(chat(p, render(stagePrompt("digest", cfg), Map.of(
+                    "purpose_rule", purposeRule(p.getPurpose(), cfg),
+                    "material", materialsText(p, warnings))), cfg.getDigestTemp()),
                     AiFactDigestVO.class);
             p.setFactDigest(JSONUtil.toJsonStr(digest));
             p.setWarnings(JSONUtil.toJsonStr(warnings));
@@ -980,19 +1014,19 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         throw new BusinessException(ErrorCode.PARAM_ERROR, "当前阶段不允许该操作（status=" + p.getStatus() + "）");
     }
 
-    /** 标题清洗：去空、限 5 条、分数夹取、tag 规范化 */
-    List<AiTitleVO> sanitizeTitles(List<AiTitleVO> titles) {
+    /** 标题清洗：去空、限条数、分数夹取、tag 规范化 */
+    List<AiTitleVO> sanitizeTitles(List<AiTitleVO> titles, ToolAiartistPipelineConfig cfg) {
         if (titles == null || titles.isEmpty()) {
             throw new BusinessException(ErrorCode.BUSINESS, "模型未返回标题，请重试");
         }
         return titles.stream()
                 .filter(t -> t != null && StrUtil.isNotBlank(t.getTitle()))
                 .peek(t -> {
-                    if (t.getViralScore() == null) t.setViralScore(80);
-                    t.setViralScore(Math.max(70, Math.min(99, t.getViralScore())));
+                    if (t.getViralScore() == null) t.setViralScore(cfg.getScoreMin());
+                    t.setViralScore(Math.max(cfg.getScoreMin(), Math.min(cfg.getScoreMax(), t.getViralScore())));
                     t.setTag(normalizeTag(t.getTag()));
                 })
-                .limit(5)
+                .limit(cfg.getTitleCountLimit())
                 .toList();
     }
 
@@ -1010,19 +1044,82 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         return "doc_logic";
     }
 
-    /** 前端供材快照渲染为素材文本（8000 字上限，超限截断+warning） */
+    /** 前端供材快照渲染为素材文本（超上限截断+warning） */
     String materialsText(ToolAiartist p, List<String> warnings) {
+        int materialMax = pipelineConfig(p).getMaterialMax();
         if (StrUtil.isBlank(p.getMaterials())) {
             return "（无素材）";
         }
         StringBuilder sb = new StringBuilder();
         for (AiMaterialBlockDTO b : JSONUtil.toList(p.getMaterials(), AiMaterialBlockDTO.class)) {
             sb.append("【").append(b.getTitle()).append("】\n").append(b.getText()).append("\n\n");
-            if (sb.length() >= MATERIAL_TOTAL_MAX) {
+            if (sb.length() >= materialMax) {
                 warnings.add("素材总量超限，已截断");
                 break;
             }
         }
-        return sb.length() > MATERIAL_TOTAL_MAX ? sb.substring(0, MATERIAL_TOTAL_MAX) : sb.toString().trim();
+        return sb.length() > materialMax ? sb.substring(0, materialMax) : sb.toString().trim();
+    }
+
+    /**
+     * 正文前知识库自动检索补充：以主题+策略为 query 检索分类绑定的知识库（config_json.repoIds），
+     * 结果作为「知识补充」段追加到素材文本。正文/审计/润色共用同一份 material，
+     * 检索结果同时成为事实供给与审计比对基准。检索失败或未命中降级为 warning，不阻断。
+     */
+    String supplementKnowledge(ToolAiartist p, ToolAiartistPipelineConfig cfg, String material,
+                               AiStrategyVO strategy, List<String> warnings) {
+        if (cfg.getRepoIds() == null || cfg.getRepoIds().isEmpty()) {
+            return material;
+        }
+        String query = buildKnowledgeQuery(p, strategy);
+        if (StrUtil.isBlank(query)) {
+            return material;
+        }
+        int materialMax = cfg.getMaterialMax();
+        List<String> parts = new ArrayList<>();
+        for (Long repoId : cfg.getRepoIds()) {
+            try {
+                List<SystemKnowledgeChatVO.Citation> cites = knowledgeRepoService.retrieve(repoId, query, 5);
+                if (cites != null) {
+                    for (SystemKnowledgeChatVO.Citation c : cites) {
+                        String text = c.getText();
+                        if (StrUtil.isNotBlank(text)) {
+                            parts.add("[" + (parts.size() + 1) + "] " + text.replaceAll("\\s+", " ").trim());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("正文前知识检索失败 repoId={}: {}", repoId, e.getMessage());
+            }
+        }
+        if (parts.isEmpty()) {
+            warnings.add("知识库检索未命中，正文将基于素材快照生成");
+            return material;
+        }
+        StringBuilder sb = new StringBuilder(material);
+        sb.append("\n\n【知识补充（正文前自动检索）】\n");
+        for (String part : parts) {
+            if (sb.length() >= materialMax) {
+                warnings.add("知识补充超限，已截断");
+                break;
+            }
+            sb.append(part).append('\n');
+        }
+        return sb.toString();
+    }
+
+    /** 知识检索 query：主题 + 策略面板（受众/痛点/爆款逻辑），截断防超长 */
+    String buildKnowledgeQuery(ToolAiartist p, AiStrategyVO strategy) {
+        StringBuilder q = new StringBuilder();
+        if (StrUtil.isNotBlank(p.getTopic())) {
+            q.append(p.getTopic()).append(' ');
+        }
+        if (strategy != null) {
+            if (StrUtil.isNotBlank(strategy.getTargetAudience())) q.append(strategy.getTargetAudience()).append(' ');
+            if (StrUtil.isNotBlank(strategy.getCorePainPoint())) q.append(strategy.getCorePainPoint()).append(' ');
+            if (StrUtil.isNotBlank(strategy.getViralLogic())) q.append(strategy.getViralLogic()).append(' ');
+        }
+        String s = q.toString().trim();
+        return s.length() > 500 ? s.substring(0, 500) : s;
     }
 }
