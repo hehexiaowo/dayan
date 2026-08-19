@@ -16,6 +16,7 @@ import com.dayan.tool.entity.ToolInfo;
 import com.dayan.tool.mapper.ToolInfoMapper;
 import com.dayan.tool.model.ToolAiartistPipelineConfig;
 import com.dayan.tool.model.ToolType;
+import com.dayan.tool.service.ToolChannelRepoBindService;
 import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.ToolAichatPersonaVO;
 import com.dayan.tool.vo.ToolAiartistConfigVO;
@@ -47,6 +48,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
 
     private final ToolInfoMapper toolInfoMapper;
     private final SequenceProvider sequenceProvider;
+    private final ToolChannelRepoBindService bindService;
 
     @Override
     public PageResult<ToolInfoVO> page(ToolInfoQueryDTO query) {
@@ -81,7 +83,12 @@ public class ToolInfoServiceImpl implements ToolInfoService {
                         .eq(ToolInfo::getToolType, ToolType.AI_QA)
                         .eq(ToolInfo::getStatus, 1)
                         .orderByAsc(ToolInfo::getId))
-                .stream().map(this::toPersona).toList();
+                .stream().map(this::toPersona)
+                .map(p -> {
+                    p.setRepoIds(bindService.mergeRepoIds(p.getToolCode(), p.getRepoIds()));
+                    return p;
+                })
+                .toList();
     }
 
     @Override
@@ -262,11 +269,20 @@ public class ToolInfoServiceImpl implements ToolInfoService {
             if (cfg.getJSONArray("recommendQuestions") != null) {
                 vo.setRecommendQuestions(cfg.getJSONArray("recommendQuestions").toList(String.class));
             }
-            if (cfg.getJSONArray("repoIds") != null) {
-                vo.setRepoIds(cfg.getJSONArray("repoIds").toList(Long.class));
-            }
+            vo.setRepoIds(parseRepoIds(tool));
         }
         return vo;
+    }
+
+    /** 从 config_json 解析全局绑定的知识库 ID（缺失/非法按空处理） */
+    private List<Long> parseRepoIds(ToolInfo tool) {
+        if (StrUtil.isNotBlank(tool.getConfigJson())) {
+            JSONObject cfg = JSONUtil.parseObj(tool.getConfigJson());
+            if (cfg.getJSONArray("repoIds") != null) {
+                return cfg.getJSONArray("repoIds").toList(Long.class);
+            }
+        }
+        return List.of();
     }
 
     /** 组装 AI 创作分类：名称取 toolName，purpose/图标/人设来自 config_json */

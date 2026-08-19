@@ -19,6 +19,7 @@ import com.dayan.tool.service.AiClientHolder;
 import com.dayan.tool.service.ToolAichatChatListener;
 import com.dayan.tool.service.ToolAichatChatService;
 import com.dayan.tool.service.ToolAichatSessionService;
+import com.dayan.tool.service.ToolChannelRepoBindService;
 import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.ToolAichatChatResultVO;
 import com.dayan.tool.vo.ToolAichatMessageVO;
@@ -67,6 +68,7 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
     private final ToolInfoService toolInfoService;
     private final SystemKnowledgeRepoService knowledgeRepoService;
     private final AiClientHolder aiClientHolder;
+    private final ToolChannelRepoBindService bindService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -201,10 +203,10 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
                                                                    List<String> texts) {
         List<ToolAichatChatResultVO.Citation> citations = new ArrayList<>();
         Set<String> seen = new HashSet<>();
-        List<Long> repoIds = persona.getRepoIds() == null ? List.of() : persona.getRepoIds();
+        List<Long> repoIds = bindService.mergeRepoIds(persona.getToolCode(), persona.getRepoIds());
         for (Long repoId : repoIds) {
             try {
-                knowledgeRepoService.requireRepoVisible(repoId);  // 显式渠道可见性校验
+                knowledgeRepoService.requireRepoVisibleForPersona(repoId);  // 人物绑定路径：平台库放行 + 渠道库归属校验
                 List<SystemKnowledgeChatVO.Citation> cites =
                         knowledgeRepoService.retrieve(repoId, dto.getQuestion(), TOP_K_PER_REPO);
                 for (SystemKnowledgeChatVO.Citation c : cites) {
