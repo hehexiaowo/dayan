@@ -1,5 +1,6 @@
 package com.dayan.system.vo;
 
+import com.dayan.system.dto.SystemKnowledgeIndexConfig;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -38,6 +39,9 @@ public class SystemKnowledgeRepoVO {
 
     /** 仓库描述 */
     private String description;
+
+    /** 索引配置（configJson 解析；未配置为 null） */
+    private SystemKnowledgeIndexConfig indexConfig;
 
     /** 文档数（以百炼远端为准） */
     private Integer docCount;

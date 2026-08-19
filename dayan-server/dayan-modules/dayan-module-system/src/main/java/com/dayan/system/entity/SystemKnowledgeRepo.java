@@ -44,6 +44,9 @@ public class SystemKnowledgeRepo extends BaseEntity {
     /** 仓库描述 */
     private String description;
 
+    /** 索引配置 JSON（切分/向量/重排/改写/召回参数；空=百炼默认） */
+    private String configJson;
+
     /** 文档数（以百炼远端为准，sync 时刷新） */
     private Integer docCount;
 

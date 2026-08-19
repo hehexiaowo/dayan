@@ -2,6 +2,8 @@ package com.dayan.system.vo;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 知识库文档 VO（实时代理百炼：ListIndexDocuments / DescribeFile）。
  */
@@ -28,6 +30,15 @@ public class SystemKnowledgeDocVO {
 
     /** 文档类型 */
     private String documentType;
+
+    /** 所属类目 ID（DescribeFile 返回） */
+    private String categoryId;
+
+    /** 文件标签（DescribeFile 返回，≤10） */
+    private List<String> tags;
+
+    /** 解析器（DASHSCOPE_DOCMIND/DOCMIND_DIGITAL/DOCMIND_LLM_VERSION/AUTO_SELECT） */
+    private String parser;
 
     /** 来源仓库 ID（agent 端合并列表时填充；admin 单库列表为空） */
     private Long repoId;

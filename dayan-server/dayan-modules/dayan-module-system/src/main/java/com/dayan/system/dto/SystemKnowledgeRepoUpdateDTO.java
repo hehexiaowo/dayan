@@ -15,5 +15,8 @@ public class SystemKnowledgeRepoUpdateDTO {
     @Size(max = 255, message = "描述最长 255 字")
     private String description;
 
+    /** 索引配置（整体替换；已建库仅检索参数可改，切分等不可变字段变更会被拒绝） */
+    private SystemKnowledgeIndexConfig indexConfig;
+
     private Integer sortOrder;
 }

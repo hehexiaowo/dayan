@@ -36,6 +36,9 @@ public class SystemKnowledgeRepoCreateDTO {
     @Size(max = 255, message = "描述最长 255 字")
     private String description;
 
+    /** 索引配置（切分方式/检索参数；mode=bind 时忽略） */
+    private SystemKnowledgeIndexConfig indexConfig;
+
     /** 排序号 */
     private Integer sortOrder;
 }
