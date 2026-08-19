@@ -259,6 +259,10 @@ async function handleSaveRetriever() {
 // ==================== 文档管理（仅本渠道独立库）====================
 const docs = ref<KnowledgeDoc[]>([])
 const docsLoading = ref(false)
+/** 文档列表分页（每行含 DescribeFile 富化，控制页大小避免 N+1 放大） */
+const docPageNumber = ref(1)
+const docPageSize = 20
+const docHasMore = ref(true)
 /** 仓库是否已在百炼建库（懒建库模式下首个文档解析后自动建库） */
 const indexed = computed(() => !!ownRepo.value?.indexId)
 
@@ -279,12 +283,29 @@ async function loadDocs() {
   if (!ownRepo.value?.id) return
   docsLoading.value = true
   try {
-    docs.value = await listKnowledgeDocs(ownRepo.value.id, { pageNumber: 1, pageSize: 100 })
+    const list = await listKnowledgeDocs(ownRepo.value.id, {
+      pageNumber: docPageNumber.value,
+      pageSize: docPageSize
+    })
+    docs.value = docPageNumber.value === 1 ? list : [...docs.value, ...list]
+    docHasMore.value = list.length >= docPageSize
   } catch {
-    docs.value = []
+    if (docPageNumber.value === 1) docs.value = []
   } finally {
     docsLoading.value = false
   }
+}
+
+/** 加载更多下一页（追加模式） */
+function loadMoreDocs() {
+  docPageNumber.value += 1
+  loadDocs()
+}
+
+/** 重置到第一页并刷新（任务完成/删除后调用） */
+function resetDocList() {
+  docPageNumber.value = 1
+  loadDocs()
 }
 
 /** 切换选中节点后：本渠道且建库则加载文档列表 */
@@ -293,6 +314,7 @@ function onSelectNode(node: KnowledgeRepoTreeNode) {
   resetChat()
   syncRetrieverForm()
   if (isOwn.value && ownRepo.value?.id) {
+    docPageNumber.value = 1
     loadDocs()
   } else {
     docs.value = []
@@ -355,7 +377,7 @@ function closeUploadDialog() {
   pendingFiles.value = []
 }
 
-/** 确认上传：按设置逐个上传 */
+/** 确认上传：按设置逐个上传，完成后重置设置 */
 async function confirmUpload() {
   const repoId = ownRepo.value?.id
   if (!repoId) return
@@ -370,6 +392,10 @@ async function confirmUpload() {
       tags: uploadSetting.tags
     })
   }
+  // 上传设置恢复默认（避免下次误传错类目/沿用旧标签）
+  uploadSetting.categoryId = ''
+  uploadSetting.parser = 'DASHSCOPE_DOCMIND'
+  uploadSetting.tags = []
 }
 
 async function handleUpload(repoId: number, file: File, opts: { categoryId?: string; parser: string; tags: string[] }) {
@@ -447,7 +473,7 @@ function pollBuildJob(task: UploadTask, jobId: string) {
           task.status = 'done'
           ElMessage.success(`「${task.fileName}」已入库，知识库创建完成`)
           loadTree()
-          loadDocs()
+          resetDocList()
         } else if (status === 'FAILED') {
           task.status = 'failed'
           task.message = '索引构建失败（可在百炼控制台查看原因）'
@@ -489,7 +515,7 @@ function pollImportJob(task: UploadTask, jobId: string) {
         if (status === 'FINISH' || status === 'COMPLETED') {
           task.status = 'done'
           ElMessage.success(`「${task.fileName}」已入库`)
-          loadDocs()
+          resetDocList()
         } else if (status === 'FAILED') {
           task.status = 'failed'
           task.message = '入库失败（可在百炼控制台查看原因）'
@@ -506,14 +532,22 @@ function pollImportJob(task: UploadTask, jobId: string) {
 
 async function handleDeleteDoc(row: KnowledgeDoc) {
   if (!ownRepo.value?.id) return
-  await ElMessageBox.confirm(`确定从知识库永久删除「${row.fileName}」？删除后不可恢复。`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-  await deleteKnowledgeDoc(ownRepo.value.id, row.fileId)
-  ElMessage.success('删除成功')
-  loadDocs()
+  try {
+    await ElMessageBox.confirm(`确定从知识库永久删除「${row.fileName}」？删除后不可恢复。`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  } catch {
+    return // 用户取消
+  }
+  try {
+    await deleteKnowledgeDoc(ownRepo.value.id, row.fileId)
+    ElMessage.success('删除成功')
+    resetDocList()
+  } catch {
+    ElMessage.error('删除失败，请重试')
+  }
 }
 
 // ---------- 切片管理 ----------
@@ -583,6 +617,9 @@ function taskStatusText(t: UploadTask): string {
   return t.message || '失败'
 }
 
+/** 进行中任务数（含解析/建库/入库轮询） */
+const activeTaskCount = computed(() => tasks.value.filter((t) => !['done', 'failed'].includes(t.status)).length)
+
 // ==================== 问答 / 检索（本渠道 + 继承 + 后代可见库）====================
 const question = ref('')
 const asking = ref(false)
@@ -621,6 +658,17 @@ async function handleRetrieve() {
     hits.value = []
   } finally {
     retrieving.value = false
+  }
+}
+
+/** 复制回答到剪贴板 */
+async function copyAnswer() {
+  if (!chatResult.value?.answer) return
+  try {
+    await navigator.clipboard.writeText(chatResult.value.answer)
+    ElMessage.success('已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败，请手动选择复制')
   }
 }
 
@@ -779,9 +827,9 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                   drag
                 >
                   <div class="upload-inner">
-                    <el-icon size="36" color="#909399"><UploadFilled /></el-icon>
+                    <el-icon size="36" color="#606266"><UploadFilled /></el-icon>
                     <div class="upload-text">拖拽文件到此处，或<em>点击上传</em></div>
-                    <div class="upload-tip">支持 PDF / Word / Markdown / TXT / Excel / PPT，单文件 ≤ 100MB；上传后自动解析并入索引</div>
+                    <div class="upload-tip">支持 PDF / Word / Markdown / TXT / Excel / PPT，单文件 ≤ 100MB；选择文件后设置类目、解析器与标签，确认后自动解析入库</div>
                   </div>
                 </el-upload>
               </div>
@@ -791,7 +839,13 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                 <el-form label-width="80px">
                   <el-form-item label="文件">
                     <span class="upload-file-list">
-                      <el-tag v-for="(f, i) in pendingFiles" :key="i" size="small" closable @close="pendingFiles.splice(i, 1)">
+                      <el-tag
+                        v-for="(f, i) in pendingFiles"
+                        :key="`${f.name}-${f.size}-${f.lastModified}`"
+                        size="small"
+                        closable
+                        @close="pendingFiles.splice(i, 1)"
+                      >
                         {{ f.name }}
                       </el-tag>
                     </span>
@@ -837,7 +891,14 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
 
               <!-- 处理中任务 -->
               <el-card v-if="tasks.length" shadow="never" class="task-card">
-                <template #header>处理中</template>
+                <template #header>
+                  <div class="task-header">
+                    处理中
+                    <el-tag size="small" :type="activeTaskCount ? 'warning' : 'success'">
+                      {{ activeTaskCount ? `进行中 ${activeTaskCount}` : '全部完成' }}
+                    </el-tag>
+                  </div>
+                </template>
                 <div v-for="t in tasks" :key="t.fileId" class="task-item">
                   <span class="task-name">{{ t.fileName }}</span>
                   <el-tag size="small" :type="t.status === 'failed' ? 'danger' : t.status === 'done' ? 'success' : 'warning'">
@@ -884,6 +945,10 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                 </template>
               </el-table>
 
+              <div v-if="docHasMore && docs.length" class="load-more">
+                <el-button :loading="docsLoading" @click="loadMoreDocs">加载更多</el-button>
+              </div>
+
               <!-- 文件详情 -->
               <el-dialog v-model="detailVisible" title="文件详情" width="480px">
                 <el-descriptions v-if="detailRow" :column="1" border>
@@ -927,6 +992,13 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                   </el-button>
                 </div>
                 <div v-if="chatResult" class="answer-box">
+                  <div class="answer-head">
+                    <span class="answer-label">回答</span>
+                    <el-tag v-if="chatResult.citations.length" size="small" type="info">
+                      {{ chatResult.citations.length }} 条引用
+                    </el-tag>
+                    <el-button link type="primary" size="small" class="copy-btn" @click="copyAnswer">复制</el-button>
+                  </div>
                   <div class="answer-text">{{ chatResult.answer }}</div>
                   <el-collapse v-if="chatResult.citations.length" class="cite-collapse">
                     <el-collapse-item :title="`引用片段（${chatResult.citations.length} 条）`" name="cites">
@@ -940,6 +1012,7 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                     </el-collapse-item>
                   </el-collapse>
                 </div>
+                <el-empty v-else-if="!asking" description="输入问题开始测试知识库问答效果" :image-size="72" />
               </el-card>
 
               <el-card shadow="never" style="margin-top: 16px">
@@ -957,6 +1030,7 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
                     <div class="hit-text">{{ h.text }}</div>
                   </div>
                 </div>
+                <el-empty v-else-if="!retrieving" description="输入检索词查看召回片段" :image-size="72" />
               </el-card>
             </el-tab-pane>
           </el-tabs>
@@ -1224,7 +1298,7 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
         gap: 6px;
       }
       .upload-text {
-        color: #606266;
+        color: #303133;
         font-size: 14px;
         em {
           color: #409eff;
@@ -1232,13 +1306,22 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
         }
       }
       .upload-tip {
-        color: #909399;
+        color: #606266;
         font-size: 12px;
+        line-height: 1.6;
       }
     }
 
     .task-card {
       margin-bottom: 16px;
+      .task-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #303133;
+      }
       .task-item {
         display: flex;
         align-items: center;
@@ -1255,6 +1338,12 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
       }
     }
 
+    .load-more {
+      display: flex;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
     .upload-file-list {
       display: flex;
       flex-wrap: wrap;
@@ -1263,7 +1352,7 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
       overflow-y: auto;
     }
     .no-tags {
-      color: #c0c4cc;
+      color: #909399;
     }
 
     .ask-row {
@@ -1275,6 +1364,20 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
       padding: 16px;
       background: #f5f7fa;
       border-radius: 6px;
+      .answer-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        .answer-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #303133;
+        }
+        .copy-btn {
+          margin-left: auto;
+        }
+      }
       .answer-text {
         font-size: 14px;
         line-height: 1.8;

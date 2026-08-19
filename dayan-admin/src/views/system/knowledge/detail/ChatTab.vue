@@ -44,6 +44,17 @@ async function handleRetrieve() {
     retrieving.value = false
   }
 }
+
+/** 复制回答到剪贴板 */
+async function copyAnswer() {
+  if (!chatResult.value?.answer) return
+  try {
+    await navigator.clipboard.writeText(chatResult.value.answer)
+    ElMessage.success('已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败，请手动选择复制')
+  }
+}
 </script>
 
 <template>
@@ -60,6 +71,13 @@ async function handleRetrieve() {
         <el-button type="primary" :loading="asking" @click="handleAsk">提问</el-button>
       </div>
       <div v-if="chatResult" class="answer-box">
+        <div class="answer-head">
+          <span class="answer-label">回答</span>
+          <el-tag v-if="chatResult.citations.length" size="small" type="info">
+            {{ chatResult.citations.length }} 条引用
+          </el-tag>
+          <el-button link type="primary" size="small" class="copy-btn" @click="copyAnswer">复制</el-button>
+        </div>
         <div class="answer-text">{{ chatResult.answer }}</div>
         <el-collapse v-if="chatResult.citations.length" class="cite-collapse">
           <el-collapse-item :title="`引用片段（${chatResult.citations.length} 条）`" name="cites">
@@ -73,6 +91,7 @@ async function handleRetrieve() {
           </el-collapse-item>
         </el-collapse>
       </div>
+      <el-empty v-else-if="!asking" description="输入问题开始测试知识库问答效果" :image-size="72" />
     </el-card>
 
     <el-card shadow="never" style="margin-top: 16px">
@@ -90,6 +109,7 @@ async function handleRetrieve() {
           <div class="hit-text">{{ h.text }}</div>
         </div>
       </div>
+      <el-empty v-else-if="!retrieving" description="输入检索词查看召回片段" :image-size="72" />
     </el-card>
   </div>
 </template>
@@ -105,6 +125,20 @@ async function handleRetrieve() {
     padding: 16px;
     background: #f5f7fa;
     border-radius: 6px;
+    .answer-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      .answer-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #303133;
+      }
+      .copy-btn {
+        margin-left: auto;
+      }
+    }
     .answer-text {
       font-size: 14px;
       line-height: 1.8;

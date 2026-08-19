@@ -141,8 +141,11 @@ function goBack() {
 </script>
 
 <template>
-  <div class="knowledge-detail" v-loading="detailLoading">
-    <el-page-header @back="goBack">
+  <div class="knowledge-detail">
+    <el-skeleton v-if="detailLoading && !repo" animated :rows="6" style="margin-top: 16px" />
+
+    <template v-else>
+      <el-page-header v-if="repo" @back="goBack">
       <template #content>
         <div v-if="repo" class="header-info">
           <span class="repo-name">{{ repo.repoName }}</span>
@@ -275,6 +278,7 @@ function goBack() {
         </el-tab-pane>
       </el-tabs>
     </el-card>
+    </template>
   </div>
 </template>
 

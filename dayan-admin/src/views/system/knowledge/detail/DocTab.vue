@@ -7,7 +7,7 @@
  * 导入索引（SubmitIndexAddDocumentsJob）→ 入库轮询（GetIndexJobStatus）→ 刷新列表。
  * 任一环节失败展示原因。
  */
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { UploadRequestOptions } from 'element-plus'
 import {
@@ -31,6 +31,10 @@ const props = defineProps<{ repoId: number }>()
 
 const docs = ref<KnowledgeDoc[]>([])
 const loading = ref(false)
+/** 文档列表分页（每行含 DescribeFile 富化，控制页大小避免 N+1 放大） */
+const pageNumber = ref(1)
+const pageSize = 20
+const hasMore = ref(true)
 /** 仓库是否已在百炼建库（懒建库模式下首个文档解析后自动建库） */
 const indexed = ref(false)
 
@@ -61,15 +65,39 @@ async function loadRepoInfo() {
   }
 }
 
+/** 加载首页/追加下一页（"加载更多"模式：返回不足一页即到底） */
 async function loadDocs() {
   loading.value = true
   try {
-    docs.value = await listKnowledgeDocs(props.repoId, { pageNumber: 1, pageSize: 100 })
+    const list = await listKnowledgeDocs(props.repoId, {
+      pageNumber: pageNumber.value,
+      pageSize
+    })
+    docs.value = pageNumber.value === 1 ? list : [...docs.value, ...list]
+    hasMore.value = list.length >= pageSize
   } catch {
-    docs.value = []
+    if (pageNumber.value === 1) docs.value = []
   } finally {
     loading.value = false
   }
+}
+
+function loadMore() {
+  pageNumber.value += 1
+  loadDocs()
+}
+
+/** 重置到第一页并刷新（任务完成/删除后调用，避免追加模式列表错位） */
+function resetList() {
+  pageNumber.value = 1
+  loadDocs()
+}
+
+/** 上传设置恢复默认（避免下次误传错类目/沿用旧标签） */
+function resetUploadSetting() {
+  uploadSetting.categoryId = ''
+  uploadSetting.parser = 'DASHSCOPE_DOCMIND'
+  uploadSetting.tags = []
 }
 
 // ---------- 上传设置（选文件 → 设置对话框 → 确认后逐个上传） ----------
@@ -128,7 +156,7 @@ function closeUploadDialog() {
   pendingFiles.value = []
 }
 
-/** 确认上传：按设置逐个上传 */
+/** 确认上传：按设置逐个上传，完成后重置设置 */
 async function confirmUpload() {
   // 先快照并清空，再关闭对话框（@close 也会清空 pendingFiles，二者互不干扰）
   const files = pendingFiles.value
@@ -141,6 +169,7 @@ async function confirmUpload() {
       tags: uploadSetting.tags
     })
   }
+  resetUploadSetting()
 }
 
 async function handleUpload(file: File, opts: { categoryId?: string; parser: string; tags: string[] }) {
@@ -212,7 +241,7 @@ function pollBuildJob(task: UploadTask, jobId: string) {
           task.status = 'done'
           indexed.value = true
           ElMessage.success(`「${task.fileName}」已入库，知识库创建完成`)
-          loadDocs()
+          resetList()
         } else if (status === 'FAILED') {
           task.status = 'failed'
           task.message = '索引构建失败（可在百炼控制台查看原因）'
@@ -250,7 +279,7 @@ function pollImportJob(task: UploadTask, jobId: string) {
         if (status === 'FINISH' || status === 'COMPLETED') {
           task.status = 'done'
           ElMessage.success(`「${task.fileName}」已入库`)
-          loadDocs()
+          resetList()
         } else if (status === 'FAILED') {
           task.status = 'failed'
           task.message = '入库失败（可在百炼控制台查看原因）'
@@ -267,14 +296,22 @@ function pollImportJob(task: UploadTask, jobId: string) {
 
 // ---------- 删除 ----------
 async function handleDelete(row: KnowledgeDoc) {
-  await ElMessageBox.confirm(`确定从知识库永久删除「${row.fileName}」？删除后不可恢复。`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-  await deleteKnowledgeDoc(props.repoId, row.fileId)
-  ElMessage.success('删除成功')
-  loadDocs()
+  try {
+    await ElMessageBox.confirm(`确定从知识库永久删除「${row.fileName}」？删除后不可恢复。`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  } catch {
+    return // 用户取消
+  }
+  try {
+    await deleteKnowledgeDoc(props.repoId, row.fileId)
+    ElMessage.success('删除成功')
+    resetList()
+  } catch {
+    ElMessage.error('删除失败，请重试')
+  }
 }
 
 // ---------- 切片管理 ----------
@@ -342,6 +379,9 @@ function taskStatusText(t: UploadTask): string {
   if (t.status === 'done') return '已完成'
   return t.message || '失败'
 }
+
+/** 进行中任务数（含解析/建库/入库轮询） */
+const activeTaskCount = computed(() => tasks.value.filter((t) => !['done', 'failed'].includes(t.status)).length)
 </script>
 
 <template>
@@ -355,9 +395,9 @@ function taskStatusText(t: UploadTask): string {
         drag
       >
         <div class="upload-inner">
-          <el-icon size="36" color="#909399"><UploadFilled /></el-icon>
+          <el-icon size="36" color="#606266"><UploadFilled /></el-icon>
           <div class="upload-text">拖拽文件到此处，或<em>点击上传</em></div>
-          <div class="upload-tip">支持 PDF / Word / Markdown / TXT / Excel / PPT，单文件 ≤ 100MB；上传后自动解析并入索引</div>
+          <div class="upload-tip">支持 PDF / Word / Markdown / TXT / Excel / PPT，单文件 ≤ 100MB；选择文件后设置类目、解析器与标签，确认后自动解析入库</div>
         </div>
       </el-upload>
     </div>
@@ -367,7 +407,13 @@ function taskStatusText(t: UploadTask): string {
       <el-form label-width="80px">
         <el-form-item label="文件">
           <span class="upload-file-list">
-            <el-tag v-for="(f, i) in pendingFiles" :key="i" size="small" closable @close="pendingFiles.splice(i, 1)">
+            <el-tag
+              v-for="(f, i) in pendingFiles"
+              :key="`${f.name}-${f.size}-${f.lastModified}`"
+              size="small"
+              closable
+              @close="pendingFiles.splice(i, 1)"
+            >
               {{ f.name }}
             </el-tag>
           </span>
@@ -413,7 +459,14 @@ function taskStatusText(t: UploadTask): string {
 
     <!-- 处理中任务 -->
     <el-card v-if="tasks.length" shadow="never" class="task-card">
-      <template #header>处理中</template>
+      <template #header>
+        <div class="task-header">
+          处理中
+          <el-tag size="small" :type="activeTaskCount ? 'warning' : 'success'">
+            {{ activeTaskCount ? `进行中 ${activeTaskCount}` : '全部完成' }}
+          </el-tag>
+        </div>
+      </template>
       <div v-for="t in tasks" :key="t.fileId" class="task-item">
         <span class="task-name">{{ t.fileName }}</span>
         <el-tag size="small" :type="t.status === 'failed' ? 'danger' : t.status === 'done' ? 'success' : 'warning'">
@@ -457,6 +510,10 @@ function taskStatusText(t: UploadTask): string {
         <el-empty description="暂无文档，上传后自动解析入库" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="hasMore && docs.length" class="load-more">
+      <el-button :loading="loading" @click="loadMore">加载更多</el-button>
+    </div>
 
     <!-- 文件详情 -->
     <el-dialog v-model="detailVisible" title="文件详情" width="480px">
@@ -503,7 +560,7 @@ function taskStatusText(t: UploadTask): string {
       gap: 6px;
     }
     .upload-text {
-      color: #606266;
+      color: #303133;
       font-size: 14px;
       em {
         color: #409eff;
@@ -511,8 +568,9 @@ function taskStatusText(t: UploadTask): string {
       }
     }
     .upload-tip {
-      color: #909399;
+      color: #606266;
       font-size: 12px;
+      line-height: 1.6;
     }
   }
   .upload-file-list {
@@ -523,10 +581,23 @@ function taskStatusText(t: UploadTask): string {
     overflow-y: auto;
   }
   .no-tags {
-    color: #c0c4cc;
+    color: #909399;
+  }
+  .load-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
   }
   .task-card {
     margin-bottom: 16px;
+    .task-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #303133;
+    }
     .task-item {
       display: flex;
       align-items: center;
