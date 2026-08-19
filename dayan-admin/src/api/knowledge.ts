@@ -11,7 +11,8 @@ import type {
   KnowledgeRepoCreatePayload,
   KnowledgeDoc,
   KnowledgeChunk,
-  KnowledgeChatResult
+  KnowledgeChatResult,
+  KnowledgeCategory
 } from '@/types/knowledge'
 
 /** 仓库分页列表 */
@@ -73,16 +74,48 @@ export function listKnowledgeDocs(
   return request<KnowledgeDoc[]>({ url: `/admin-api/system/knowledge/repos/${id}/documents`, method: 'get', params })
 }
 
-/** 上传文档（multipart，返回百炼 FileId，解析异步） */
-export function uploadKnowledgeDoc(id: number, file: File, silent = false): Promise<string> {
+/** 上传文档（multipart；可指定类目/解析器/标签，返回百炼 FileId） */
+export function uploadKnowledgeDoc(
+  id: number,
+  file: File,
+  options?: { categoryId?: string; parser?: string; tags?: string[] },
+  silent = false
+): Promise<string> {
   const form = new FormData()
   form.append('file', file)
+  if (options?.categoryId) form.append('categoryId', options.categoryId)
+  if (options?.parser) form.append('parser', options.parser)
+  options?.tags?.forEach((t) => form.append('tags', t))
   return request<string>({
     url: `/admin-api/system/knowledge/repos/${id}/documents`,
     method: 'post',
     data: form,
     headers: { 'Content-Type': 'multipart/form-data' },
     silent
+  })
+}
+
+/** 类目列表（全量平铺） */
+export function listKnowledgeCategories(): Promise<KnowledgeCategory[]> {
+  return request<KnowledgeCategory[]>({ url: '/admin-api/system/knowledge/categories', method: 'get' })
+}
+
+/** 新增类目 */
+export function addKnowledgeCategory(data: { categoryName: string; parentCategoryId?: string }): Promise<string> {
+  return request<string>({ url: '/admin-api/system/knowledge/categories', method: 'post', data })
+}
+
+/** 删除类目 */
+export function deleteKnowledgeCategory(categoryId: string): Promise<void> {
+  return request<void>({ url: `/admin-api/system/knowledge/categories/${categoryId}`, method: 'delete' })
+}
+
+/** 更新文件标签（≤10，空=清空） */
+export function updateKnowledgeDocTags(id: number, fileId: string, tags: string[]): Promise<void> {
+  return request<void>({
+    url: `/admin-api/system/knowledge/repos/${id}/documents/${fileId}/tags`,
+    method: 'put',
+    data: { tags }
   })
 }
 

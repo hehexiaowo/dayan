@@ -96,7 +96,47 @@ export interface KnowledgeRepo {
   sortOrder?: number
   createdAt?: string
   updatedAt?: string
+  /** 索引配置（对齐 SystemKnowledgeIndexConfig） */
+  indexConfig?: KnowledgeIndexConfig
 }
+
+/** 索引配置（对齐 SystemKnowledgeIndexConfig） */
+export interface KnowledgeIndexConfig {
+  /** null=智能切分；"regex"=自定义（分隔符切分） */
+  chunkMode?: string
+  separator?: string
+  /** 切块长度 1-6000 */
+  chunkSize?: number
+  /** 重叠 0-1024（< chunkSize） */
+  overlapSize?: number
+  /** text-embedding-v3 / text-embedding-v4 */
+  embeddingModel?: string
+  /** qwen3-rerank / qwen3-rerank-hybrid */
+  rerankModel?: string
+  /** qa / similar / custom */
+  rerankMode?: string
+  /** 0.01-1.00 */
+  rerankMinScore?: number
+  enableRewrite?: boolean
+  denseTopK?: number
+  sparseTopK?: number
+}
+
+/** 百炼类目（业务空间级，多级树） */
+export interface KnowledgeCategory {
+  categoryId: string
+  categoryName: string
+  parentCategoryId?: string
+  isDefault?: boolean
+}
+
+/** 解析器选项 */
+export const KNOWLEDGE_PARSER_OPTIONS = [
+  { value: 'DASHSCOPE_DOCMIND', label: '智能文档解析' },
+  { value: 'DOCMIND_DIGITAL', label: '电子文档解析' },
+  { value: 'DOCMIND_LLM_VERSION', label: '大模型文档解析' },
+  { value: 'AUTO_SELECT', label: '自动选择' }
+] as const
 
 /** 知识仓库树节点（渠道树 + 每节点知识库归属；对齐 KnowledgeRepoTreeNodeVO） */
 export interface KnowledgeRepoTreeNode {
@@ -135,6 +175,8 @@ export interface KnowledgeRepoCreatePayload {
   indexId?: string
   description?: string
   sortOrder?: number
+  /** 索引配置（对齐 SystemKnowledgeIndexConfig） */
+  indexConfig?: KnowledgeIndexConfig
 }
 
 /** 知识库文档（远端代理） */
@@ -148,6 +190,9 @@ export interface KnowledgeDoc {
   sizeInBytes?: number
   gmtModified?: number
   documentType?: string
+  categoryId?: string
+  tags?: string[]
+  parser?: string
 }
 
 /** RAG 问答结果 */
