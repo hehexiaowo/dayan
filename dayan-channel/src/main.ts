@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import { Search, Plus, Edit, Delete, Refresh, ArrowDown, Close, View, Hide } from '@element-plus/icons-vue'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
@@ -13,9 +13,8 @@ import '@/styles/index.scss'
 
 const app = createApp(App)
 
-// 仅注册常用图标（按需引入，减少打包体积）
-const icons = { Search, Plus, Edit, Delete, Refresh, ArrowDown, Close, View, Hide }
-for (const [key, component] of Object.entries(icons)) {
+// 全量注册 Element Plus 图标（菜单 icon 字段为图标组件名字符串，需全局可用）
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 

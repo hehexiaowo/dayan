@@ -90,7 +90,7 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
 
         // 3. 组装 prompt + 生成
         String systemPrompt = buildSystemPrompt(persona, texts);
-        String answer = aiClientHolder.chatClient().chat(
+        String answer = aiClientHolder.getChatClient().chat(
                 aiClientHolder.requireConfig("llm.api-key", "AI 问答 API-Key 未配置"),
                 aiClientHolder.requireConfig("llm.api-host", "AI 问答网关域名未配置"),
                 aiClientHolder.chatModel(),
@@ -133,7 +133,7 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
             listener.onStage("generate", "stream");
         }
         String systemPrompt = buildSystemPrompt(persona, texts);
-        String answer = aiClientHolder.chatClient().chatStream(
+        String answer = aiClientHolder.getChatClient().chatStream(
                 aiClientHolder.requireConfig("llm.api-key", "AI 问答 API-Key 未配置"),
                 aiClientHolder.requireConfig("llm.api-host", "AI 问答网关域名未配置"),
                 aiClientHolder.chatModel(),

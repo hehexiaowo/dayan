@@ -245,7 +245,7 @@ loadPage()
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span class="card-title">养老权益订单列表</span>
+          <span class="card-title">养老权益列表</span>
         </div>
       </template>
 
@@ -313,7 +313,7 @@ loadPage()
     </el-card>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="养老权益订单详情" width="780px" :close-on-click-modal="false">
+    <el-dialog v-model="detailVisible" title="养老权益详情" width="780px" :close-on-click-modal="false">
       <el-descriptions :column="2" border>
         <el-descriptions-item label="订单编号">{{ detail.orderCode }}</el-descriptions-item>
         <el-descriptions-item label="采购来源">{{ orderSourceLabel(detail.orderSource) }}</el-descriptions-item>

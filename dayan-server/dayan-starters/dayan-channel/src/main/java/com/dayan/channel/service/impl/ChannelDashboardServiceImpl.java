@@ -20,6 +20,9 @@ import org.springframework.stereotype.Service;
  *
  * <p>用各域 Mapper 的 selectCount + channelCode 条件直接 count，不引入新的 Service 方法（YAGNI）。
  * 各域 Mapper 由启动类 @MapperScan("com.dayan.**.mapper") 扫描注册。
+ *
+ * <p>实现类放在 starter 而非 domain module，因为 agent/client/equity/order
+ * 均已依赖 dayan-module-channel，放在 domain module 会形成循环依赖。
  */
 @Service
 @RequiredArgsConstructor

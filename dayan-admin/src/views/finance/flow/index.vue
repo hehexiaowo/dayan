@@ -30,10 +30,10 @@ import { formatDateTime, formatMoney } from '@/utils/format'
 
 // ---------------- 业务类型 / 账号类型 常用选项（供 el-select 选择或手动输入） ----------------
 const BIZ_TYPE_OPTIONS = [
-  { label: '养老权益订单 equity_order', value: 'equity_order' },
-  { label: '场景营销订单 scene_order', value: 'scene_order' },
-  { label: '培训课程订单 course_order', value: 'course_order' },
-  { label: '旅游短居订单 travel_order', value: 'travel_order' },
+  { label: '养老权益 equity_order', value: 'equity_order' },
+  { label: '场景营销 scene_order', value: 'scene_order' },
+  { label: '培训课程 course_order', value: 'course_order' },
+  { label: '旅游短居 travel_order', value: 'travel_order' },
   { label: '结算 settlement', value: 'settlement' }
 ] as const
 

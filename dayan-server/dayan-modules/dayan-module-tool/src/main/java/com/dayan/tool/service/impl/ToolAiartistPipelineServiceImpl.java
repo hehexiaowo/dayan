@@ -230,7 +230,7 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
         String bodyPrompt = render(stagePrompt("body", cfg), bodyVars);
         String body = listener == null
                 ? chat(p, bodyPrompt, cfg.getBodyTemp())
-                : aiClientHolder.chatClient().chatStream(
+                : aiClientHolder.getChatClient().chatStream(
                         aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
                         aiClientHolder.requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
                         aiClientHolder.chatModel(), categoryPrefix(cfg) + systemPromptText(cfg), bodyPrompt, cfg.getBodyTemp(), listener::onDelta);
@@ -404,9 +404,9 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
             img.setStatus("generating");
             fireImage(listener, img.getPlaceholder(), "generating", null, null);
             try {
-                String taskId = aiClientHolder.imageClient().submit(apiKey, apiBase, imageModel, prompt, img.getSize());
-                String url = aiClientHolder.imageClient().pollImageUrl(apiKey, apiBase, taskId, cfg.getImagePollTimeoutMs());
-                byte[] bytes = aiClientHolder.imageClient().download(url);
+                String taskId = aiClientHolder.getImageClient().submit(apiKey, apiBase, imageModel, prompt, img.getSize());
+                String url = aiClientHolder.getImageClient().pollImageUrl(apiKey, apiBase, taskId, cfg.getImagePollTimeoutMs());
+                byte[] bytes = aiClientHolder.getImageClient().download(url);
                 String fileKey = storageService.upload("ai-creation", p.getChannelCode(),
                         new ByteArrayInputStream(bytes), bytes.length, "image/png",
                         img.getPlaceholder().replaceAll("[^A-Za-z0-9_]", "").toLowerCase() + ".png");
@@ -895,7 +895,7 @@ public class ToolAiartistPipelineServiceImpl implements ToolAiartistPipelineServ
     /** 非流式 chat（全局系统提示词 + 分类人设，均配置优先、资源兜底） */
     String chat(ToolAiartist p, String prompt, double temperature) {
         ToolAiartistPipelineConfig cfg = pipelineConfig(p);
-        return aiClientHolder.chatClient().chat(
+        return aiClientHolder.getChatClient().chat(
                 aiClientHolder.requireConfig("llm.api-key", "AI 凭据未配置，请联系管理员"),
                 aiClientHolder.requireConfig("llm.api-host", "AI 网关未配置，请联系管理员"),
                 aiClientHolder.chatModel(), categoryPrefix(cfg) + systemPromptText(cfg), prompt, temperature);

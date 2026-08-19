@@ -69,10 +69,10 @@ VALUES
   ('admin_goods_service-item', '服务项目', 'admin_goods', 2, '/goods/service-item', 'goods/service-item/index', 'goods:service-item:list', 'Tickets', 2, 1, 'admin', 1, '服务项目管理（安排权益/费用权益的原子服务能力）', NOW(), NOW(), 'system', 'system', 0),
 
   -- ========== 订单管理子菜单 ==========
-  ('admin_order_equity', '养老权益订单', 'admin_order', 2, '/order/equity', 'order/equity/index', 'order:equity:list', 'Document', 1, 1, 'admin', 1, '养老权益订单', NOW(), NOW(), 'system', 'system', 0),
-  ('admin_order_scene', '场景营销订单', 'admin_order', 2, '/order/scene', 'order/scene/index', 'order:scene:list', 'Document', 2, 1, 'admin', 1, '场景营销订单', NOW(), NOW(), 'system', 'system', 0),
-  ('admin_order_course', '培训课程订单', 'admin_order', 2, '/order/course', 'order/course/index', 'order:course:list', 'Document', 3, 1, 'admin', 1, '培训课程订单', NOW(), NOW(), 'system', 'system', 0),
-  ('admin_order_sojourn', '旅游短居订单', 'admin_order', 2, '/order/sojourn', 'order/sojourn/index', 'order:sojourn:list', 'Document', 4, 1, 'admin', 1, '旅游短居订单', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_order_equity', '养老权益', 'admin_order', 2, '/order/equity', 'order/equity/index', 'order:equity:list', 'Document', 1, 1, 'admin', 1, '养老权益', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_order_scene', '场景营销', 'admin_order', 2, '/order/scene', 'order/scene/index', 'order:scene:list', 'Document', 2, 1, 'admin', 1, '场景营销', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_order_course', '培训课程', 'admin_order', 2, '/order/course', 'order/course/index', 'order:course:list', 'Document', 3, 1, 'admin', 1, '培训课程', NOW(), NOW(), 'system', 'system', 0),
+  ('admin_order_sojourn', '旅游短居', 'admin_order', 2, '/order/sojourn', 'order/sojourn/index', 'order:sojourn:list', 'Document', 4, 1, 'admin', 1, '旅游短居', NOW(), NOW(), 'system', 'system', 0),
 
   -- ========== 财务结算子菜单 ==========
   ('admin_finance_flow', '财务流水', 'admin_finance', 2, '/finance/flow', 'finance/flow/index', 'finance:flow:list', 'Money', 1, 1, 'admin', 1, '财务流水', NOW(), NOW(), 'system', 'system', 0),
