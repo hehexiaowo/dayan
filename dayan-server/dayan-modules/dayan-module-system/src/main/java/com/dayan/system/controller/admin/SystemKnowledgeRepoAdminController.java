@@ -11,8 +11,6 @@ import com.dayan.system.dto.SystemKnowledgeRepoCreateDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoQueryDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoUpdateDTO;
 import com.dayan.system.service.SystemKnowledgeRepoService;
-import com.dayan.system.vo.SystemCategoryAddDTO;
-import com.dayan.system.vo.SystemCategoryVO;
 import com.dayan.system.vo.SystemKnowledgeChatVO;
 import com.dayan.system.vo.SystemKnowledgeDocVO;
 import com.dayan.system.vo.SystemKnowledgeRepoTreeNodeVO;
@@ -167,30 +165,6 @@ public class SystemKnowledgeRepoAdminController {
                                                           @RequestParam(defaultValue = "1") int pageNum,
                                                           @RequestParam(defaultValue = "20") int pageSize) {
         return R.ok(knowledgeRepoService.listChunks(id, fileId, pageNum, pageSize));
-    }
-
-    // ---------- 类目管理（业务空间级，多级树） ----------
-
-    @Operation(summary = "类目列表（全量平铺，前端组树）")
-    @SaCheckPermission("system:knowledge:repo:list")
-    @GetMapping("/categories")
-    public R<List<SystemCategoryVO>> listCategories() {
-        return R.ok(knowledgeRepoService.listCategories());
-    }
-
-    @Operation(summary = "新增类目（parentCategoryId 空=顶级）")
-    @SaCheckPermission("system:knowledge:repo:create")
-    @PostMapping("/categories")
-    public R<String> addCategory(@RequestBody @Valid SystemCategoryAddDTO dto) {
-        return R.ok(knowledgeRepoService.addCategory(dto.getCategoryName(), dto.getParentCategoryId()));
-    }
-
-    @Operation(summary = "删除类目（类目下有文件时百炼拒绝）")
-    @SaCheckPermission("system:knowledge:repo:delete")
-    @DeleteMapping("/categories/{categoryId}")
-    public R<Void> deleteCategory(@PathVariable String categoryId) {
-        knowledgeRepoService.deleteCategory(categoryId);
-        return R.ok();
     }
 
     // ---------- 文件标签 ----------
