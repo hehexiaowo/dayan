@@ -685,19 +685,24 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
         }
     }
 
-    /** 已建库配置可更新校验：仅 denseTopK/sparseTopK/rerankMinScore 可变，其余报错 */
+    /**
+     * 已建库配置可更新校验：仅 denseTopK/sparseTopK/rerankMinScore 可变。
+     *
+     * <p>只比较 incoming 非 null 的不可变字段——前端部分提交（如仅改检索参数）时
+     * 未提交的字段为 null，视为"未修改"不参与比较，避免误拒。
+     */
     static void assertUpdatableConfig(SystemKnowledgeIndexConfig existing, SystemKnowledgeIndexConfig incoming) {
         if (existing == null || incoming == null) {
             return;
         }
-        if (!Objects.equals(existing.getChunkMode(), incoming.getChunkMode())
-                || !Objects.equals(existing.getSeparator(), incoming.getSeparator())
-                || !Objects.equals(existing.getChunkSize(), incoming.getChunkSize())
-                || !Objects.equals(existing.getOverlapSize(), incoming.getOverlapSize())
-                || !Objects.equals(existing.getEmbeddingModel(), incoming.getEmbeddingModel())
-                || !Objects.equals(existing.getRerankModel(), incoming.getRerankModel())
-                || !Objects.equals(existing.getRerankMode(), incoming.getRerankMode())
-                || !Objects.equals(existing.getEnableRewrite(), incoming.getEnableRewrite())) {
+        if (incoming.getChunkMode() != null && !Objects.equals(existing.getChunkMode(), incoming.getChunkMode())
+                || incoming.getSeparator() != null && !Objects.equals(existing.getSeparator(), incoming.getSeparator())
+                || incoming.getChunkSize() != null && !Objects.equals(existing.getChunkSize(), incoming.getChunkSize())
+                || incoming.getOverlapSize() != null && !Objects.equals(existing.getOverlapSize(), incoming.getOverlapSize())
+                || incoming.getEmbeddingModel() != null && !Objects.equals(existing.getEmbeddingModel(), incoming.getEmbeddingModel())
+                || incoming.getRerankModel() != null && !Objects.equals(existing.getRerankModel(), incoming.getRerankModel())
+                || incoming.getRerankMode() != null && !Objects.equals(existing.getRerankMode(), incoming.getRerankMode())
+                || incoming.getEnableRewrite() != null && !Objects.equals(existing.getEnableRewrite(), incoming.getEnableRewrite())) {
             throw new BusinessException(ErrorCode.BUSINESS,
                     "切分方式、向量模型、重排模型等配置在建库后不可修改（如需调整请删除仓库重建）");
         }

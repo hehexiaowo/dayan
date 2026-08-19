@@ -51,4 +51,11 @@ class SystemKnowledgeRepoServiceImplTest {
         assertDoesNotThrow(() -> SystemKnowledgeRepoServiceImpl.assertUpdatableConfig(base(), null));
         assertDoesNotThrow(() -> SystemKnowledgeRepoServiceImpl.assertUpdatableConfig(null, base()));
     }
+
+    @Test
+    void partialSubmitWithNullImmutableFieldsPasses() {
+        SystemKnowledgeIndexConfig incoming = new SystemKnowledgeIndexConfig();
+        incoming.setDenseTopK(8); // 只改检索参数，不可变字段全为 null（未提交）
+        assertDoesNotThrow(() -> SystemKnowledgeRepoServiceImpl.assertUpdatableConfig(base(), incoming));
+    }
 }

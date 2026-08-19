@@ -104,6 +104,13 @@ public class GlobalExceptionHandler {
         return R.fail(e.getCode(), e.getMessage());
     }
 
+    /** 非法参数（如配置校验 IllegalArgumentException），返回参数错误而非兜底系统异常 */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public R<Void> handleIllegalArgument(IllegalArgumentException e) {
+        log.warn("参数非法: {}", e.getMessage());
+        return R.fail(ErrorCode.PARAM_ERROR.getCode(), e.getMessage());
+    }
+
     /**
      * 上传文件超过大小限制。
      *

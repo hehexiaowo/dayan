@@ -29,4 +29,11 @@ class GlobalExceptionHandlerTest {
         assertEquals(ErrorCode.PARAM_ERROR.getCode(), resp.getCode());
         assertEquals("上传文件解析失败，请检查文件后重试", resp.getMessage());
     }
+
+    @Test
+    void illegalArgumentReturnsParamError() {
+        R<Void> resp = handler.handleIllegalArgument(new IllegalArgumentException("切块长度需在 1-6000 之间"));
+        assertEquals(ErrorCode.PARAM_ERROR.getCode(), resp.getCode());
+        assertEquals("切块长度需在 1-6000 之间", resp.getMessage());
+    }
 }
