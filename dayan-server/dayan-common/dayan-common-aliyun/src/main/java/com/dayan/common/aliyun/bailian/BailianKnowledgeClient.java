@@ -264,7 +264,8 @@ public class BailianKnowledgeClient {
     /** 查询文件解析状态（INIT/PARSING/PARSE_SUCCESS/PARSE_FAILED） */
     public FileStatusInfo describeFile(String fileId) {
         try {
-            com.aliyun.bailian20231229.models.DescribeFileResponse resp = sdkClient.describeFile(workspaceId, fileId);
+            com.aliyun.bailian20231229.models.DescribeFileResponse resp = sdkClient.describeFile(workspaceId, fileId,
+                    new com.aliyun.bailian20231229.models.DescribeFileRequest());
             checkSdk(resp.getBody().getSuccess(), resp.getBody().getMessage(), "查询文件状态");
             com.aliyun.bailian20231229.models.DescribeFileResponseBody.DescribeFileResponseBodyData data =
                     resp.getBody().getData();

@@ -46,7 +46,7 @@
         <redisson.version>3.34.1</redisson.version>
         <minio.version>8.5.12</minio.version>
         <!-- 阿里云百炼（知识库管理 OpenAPI + 模型推理） -->
-        <bailian.version>2.0.8</bailian.version>
+        <bailian.version>2.14.3</bailian.version>
         <tea-openapi.version>0.3.8</tea-openapi.version>
 
         <!-- 插件 -->
