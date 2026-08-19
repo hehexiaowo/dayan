@@ -4,12 +4,15 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.dayan.common.aliyun.bailian.BailianKnowledgeClient;
 import com.dayan.common.core.resp.PageResult;
 import com.dayan.common.core.resp.R;
+import com.dayan.system.dto.SystemDocTagsDTO;
 import com.dayan.system.dto.SystemKnowledgeChatDTO;
 import com.dayan.system.dto.SystemKnowledgeDocImportDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoCreateDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoQueryDTO;
 import com.dayan.system.dto.SystemKnowledgeRepoUpdateDTO;
 import com.dayan.system.service.SystemKnowledgeRepoService;
+import com.dayan.system.vo.SystemCategoryAddDTO;
+import com.dayan.system.vo.SystemCategoryVO;
 import com.dayan.system.vo.SystemKnowledgeChatVO;
 import com.dayan.system.vo.SystemKnowledgeDocVO;
 import com.dayan.system.vo.SystemKnowledgeRepoTreeNodeVO;
@@ -116,11 +119,15 @@ public class SystemKnowledgeRepoAdminController {
         return R.ok(knowledgeRepoService.listDocuments(id, pageNumber, pageSize, documentName, documentStatus));
     }
 
-    @Operation(summary = "上传文档（返回 FileId，解析异步进行）")
+    @Operation(summary = "上传文档（可指定类目/解析器/标签，返回 FileId，解析异步）")
     @SaCheckPermission("system:knowledge:doc:upload")
     @PostMapping(value = "/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public R<String> uploadDocument(@PathVariable Long id, @RequestPart("file") MultipartFile file) {
-        return R.ok(knowledgeRepoService.uploadDocument(id, file, null, null, null));
+    public R<String> uploadDocument(@PathVariable Long id,
+                                    @RequestPart("file") MultipartFile file,
+                                    @RequestParam(required = false) String categoryId,
+                                    @RequestParam(required = false) String parser,
+                                    @RequestParam(required = false) List<String> tags) {
+        return R.ok(knowledgeRepoService.uploadDocument(id, file, categoryId, parser, tags));
     }
 
     @Operation(summary = "文件解析状态")
@@ -160,6 +167,41 @@ public class SystemKnowledgeRepoAdminController {
                                                           @RequestParam(defaultValue = "1") int pageNum,
                                                           @RequestParam(defaultValue = "20") int pageSize) {
         return R.ok(knowledgeRepoService.listChunks(id, fileId, pageNum, pageSize));
+    }
+
+    // ---------- 类目管理（业务空间级，多级树） ----------
+
+    @Operation(summary = "类目列表（全量平铺，前端组树）")
+    @SaCheckPermission("system:knowledge:repo:list")
+    @GetMapping("/categories")
+    public R<List<SystemCategoryVO>> listCategories() {
+        return R.ok(knowledgeRepoService.listCategories());
+    }
+
+    @Operation(summary = "新增类目（parentCategoryId 空=顶级）")
+    @SaCheckPermission("system:knowledge:repo:create")
+    @PostMapping("/categories")
+    public R<String> addCategory(@RequestBody @Valid SystemCategoryAddDTO dto) {
+        return R.ok(knowledgeRepoService.addCategory(dto.getCategoryName(), dto.getParentCategoryId()));
+    }
+
+    @Operation(summary = "删除类目（类目下有文件时百炼拒绝）")
+    @SaCheckPermission("system:knowledge:repo:delete")
+    @DeleteMapping("/categories/{categoryId}")
+    public R<Void> deleteCategory(@PathVariable String categoryId) {
+        knowledgeRepoService.deleteCategory(categoryId);
+        return R.ok();
+    }
+
+    // ---------- 文件标签 ----------
+
+    @Operation(summary = "更新文件标签（≤10，空=清空）")
+    @SaCheckPermission("system:knowledge:doc:upload")
+    @PutMapping("/{id}/documents/{fileId}/tags")
+    public R<Void> updateDocTags(@PathVariable Long id, @PathVariable String fileId,
+                                 @RequestBody @Valid SystemDocTagsDTO dto) {
+        knowledgeRepoService.updateDocTags(id, fileId, dto);
+        return R.ok();
     }
 
     // ---------- 问答 / 检索 ----------
