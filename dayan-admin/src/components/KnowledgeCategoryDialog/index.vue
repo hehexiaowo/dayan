@@ -75,7 +75,7 @@ async function handleDelete(node: TreeNode) {
 </script>
 
 <template>
-  <el-dialog v-model="visible" title="类目管理" width="560px">
+  <el-dialog v-model="visible" title="类目管理" width="560px" @open="load">
     <div class="category-toolbar">
       <el-button type="primary" size="small" @click="handleAdd()">新增顶级类目</el-button>
       <span class="tip">类目为业务空间级（所有知识库共享），用于上传文件时归类</span>
