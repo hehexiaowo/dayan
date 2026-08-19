@@ -27,6 +27,7 @@ import {
 import { listChannels } from '@/api/channel'
 import type { ChannelInfo } from '@/types/channel'
 import { formatDateTime } from '@/utils/format'
+import KnowledgeCategoryDialog from '@/components/KnowledgeCategoryDialog/index.vue'
 
 const router = useRouter()
 
@@ -62,6 +63,9 @@ onMounted(async () => {
     channels.value = []
   }
 })
+
+// ---------- 类目管理弹窗 ----------
+const categoryDialogVisible = ref(false)
 
 // ---------- 新建仓库弹窗 ----------
 const dialogVisible = ref(false)
@@ -218,6 +222,9 @@ async function handleDelete(row: KnowledgeRepo) {
       <template #header>
         <div class="card-header">
           <span class="card-title">知识仓库列表</span>
+          <el-button :icon="'FolderOpened'" v-permission="'system:knowledge:repo:list'" @click="categoryDialogVisible = true">
+            类目管理
+          </el-button>
           <el-button type="primary" :icon="'Plus'" v-permission="'system:knowledge:repo:create'" @click="openCreate">
             新建知识仓库
           </el-button>
@@ -285,6 +292,9 @@ async function handleDelete(row: KnowledgeRepo) {
         />
       </div>
     </el-card>
+
+    <!-- 类目管理弹窗 -->
+    <KnowledgeCategoryDialog v-model="categoryDialogVisible" />
 
     <!-- 新建仓库弹窗 -->
     <el-dialog v-model="dialogVisible" title="新建知识仓库" width="620px" :close-on-click-modal="false">
