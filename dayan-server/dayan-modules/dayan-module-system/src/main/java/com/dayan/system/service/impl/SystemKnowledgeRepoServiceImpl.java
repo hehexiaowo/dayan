@@ -463,8 +463,25 @@ public class SystemKnowledgeRepoServiceImpl implements SystemKnowledgeRepoServic
             vo.setSizeInBytes(d.getSize() == null ? null : d.getSize().longValue());
             vo.setGmtModified(d.getGmtModified());
             vo.setDocumentType(d.getDocumentType());
+            // ListIndexDocuments 不返回类目/标签/解析器，逐行 DescribeFile 补全（失败容错保持 null）
+            enrichFileMeta(vo);
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    /** 文件级元数据富化（类目/标签/解析器来自 DescribeFile；失败容错为空） */
+    private void enrichFileMeta(SystemKnowledgeDocVO vo) {
+        try {
+            BailianKnowledgeClient.FileStatusInfo info = requireClient().describeFile(vo.getFileId());
+            vo.setCategoryId(info.getCategoryId());
+            vo.setTags(info.getTags());
+            vo.setParser(info.getParser());
+            if (vo.getParseStatus() == null) {
+                vo.setParseStatus(info.getStatus());
+            }
+        } catch (Exception e) {
+            log.warn("文档元数据富化失败 fileId={}: {}", vo.getFileId(), e.getMessage());
+        }
     }
 
     @Override
