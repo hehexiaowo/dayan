@@ -611,7 +611,7 @@ function nodeLabel(node: KnowledgeRepoTreeNode): string {
           <el-button
             size="small"
             :icon="'FolderOpened'"
-            v-permission="'system:knowledge:repo:list'"
+            v-permission="'channel:knowledge:view'"
             @click="categoryDialogVisible = true"
           >
             类目管理
