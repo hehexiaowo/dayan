@@ -387,32 +387,19 @@ public class CourseInfoServiceImpl implements CourseInfoService {
 
     @Override
     public List<CourseAgentVO> listForAgent(String channelCode, Integer courseType, Integer courseSource) {
-        // 平台课程（channel_code IS NULL）+ 本渠道课程（channel_code = channelCode）
-        List<CourseAgentVO> courses = courseInfoMapper.selectList(new LambdaQueryWrapper<CourseInfo>()
+        // 渠道配置的课程
+        List<String> configuredCodes = channelConfigCourseBridge.listConfiguredCourseCodes(channelCode);
+        if (configuredCodes.isEmpty()) {
+            return List.of();
+        }
+        // 返回渠道配置的课程
+        return courseInfoMapper.selectList(new LambdaQueryWrapper<CourseInfo>()
+                        .in(CourseInfo::getCourseCode, configuredCodes)
                         .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
                         .eq(courseType != null, CourseInfo::getCourseType, courseType)
                         .eq(courseSource != null, CourseInfo::getCourseSource, courseSource)
-                        .and(w -> w.isNull(CourseInfo::getChannelCode)
-                                .or().eq(CourseInfo::getChannelCode, channelCode))
                         .orderByAsc(CourseInfo::getSortOrder))
                 .stream().map(this::toAgentVO).toList();
-
-        // 渠道配置的课程（可能包含外部课程，需要补充）
-        List<String> configuredCodes = channelConfigCourseBridge.listConfiguredCourseCodes(channelCode);
-        if (configuredCodes.isEmpty()) {
-            return courses;
-        }
-        // 补充配置课程（去重）
-        Set<String> existingCodes = courses.stream().map(CourseAgentVO::getCourseCode).collect(Collectors.toSet());
-        List<String> newCodes = configuredCodes.stream().filter(c -> !existingCodes.contains(c)).toList();
-        if (!newCodes.isEmpty()) {
-            List<CourseAgentVO> configuredCourses = courseInfoMapper.selectList(new LambdaQueryWrapper<CourseInfo>()
-                            .in(CourseInfo::getCourseCode, newCodes)
-                            .eq(CourseInfo::getCourseStatus, STATUS_ONLINE))
-                    .stream().map(this::toAgentVO).toList();
-            courses.addAll(configuredCourses);
-        }
-        return courses;
     }
 
     @Override
