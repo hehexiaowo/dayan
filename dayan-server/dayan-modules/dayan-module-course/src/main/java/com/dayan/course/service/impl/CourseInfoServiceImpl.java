@@ -329,6 +329,74 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     }
 
     @Override
+    public PageResult<CourseAgentVO> pagePublished(Integer courseType, Integer courseSource,
+                                                   String keyword, String categoryCode,
+                                                   int current, int size) {
+        LambdaQueryWrapper<CourseInfo> wrapper = new LambdaQueryWrapper<CourseInfo>()
+                .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
+                .eq(courseType != null, CourseInfo::getCourseType, courseType)
+                .eq(courseSource != null, CourseInfo::getCourseSource, courseSource)
+                .eq(categoryCode != null && !categoryCode.isEmpty(), CourseInfo::getCategoryCode, categoryCode)
+                .and(keyword != null && !keyword.isEmpty(), w -> w
+                        .like(CourseInfo::getCourseName, keyword)
+                        .or()
+                        .like(CourseInfo::getCourseDescription, keyword))
+                .orderByDesc(CourseInfo::getIsRecommend)
+                .orderByAsc(CourseInfo::getSortOrder)
+                .orderByDesc(CourseInfo::getCreatedAt);
+
+        Page<CourseInfo> page = courseInfoMapper.selectPage(new Page<>(current, size), wrapper);
+        if (page.getRecords().isEmpty()) {
+            return new PageResult<>(current, size, page.getTotal(), List.of());
+        }
+        Map<String, String> nameMap = lecturerNameMap(page.getRecords().stream()
+                .map(CourseInfo::getLecturerCode).filter(Objects::nonNull).toList());
+        List<CourseAgentVO> voList = page.getRecords().stream().map(c -> {
+            CourseAgentVO vo = toAgentVO(c);
+            vo.setLecturerName(c.getLecturerCode() == null ? null : nameMap.get(c.getLecturerCode()));
+            return vo;
+        }).toList();
+        return new PageResult<>(current, size, page.getTotal(), voList);
+    }
+
+    @Override
+    public Map<Integer, Long> countPublishedBySource() {
+        // 按 courseSource 分组计数，仅上架课程
+        List<CourseInfo> courses = courseInfoMapper.selectList(
+                new LambdaQueryWrapper<CourseInfo>()
+                        .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
+                        .select(CourseInfo::getCourseSource));
+        return courses.stream()
+                .collect(Collectors.groupingBy(
+                        c -> c.getCourseSource() == null ? COURSE_SOURCE_SELF : c.getCourseSource(),
+                        Collectors.counting()));
+    }
+
+    @Override
+    public List<CourseAgentVO> listAvailableForChannel(String channelCode) {
+        // 平台课程（channel_code IS NULL）+ 本渠道课程（channel_code = channelCode）
+        return courseInfoMapper.selectList(new LambdaQueryWrapper<CourseInfo>()
+                        .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
+                        .and(w -> w.isNull(CourseInfo::getChannelCode)
+                                .or().eq(CourseInfo::getChannelCode, channelCode))
+                        .orderByAsc(CourseInfo::getSortOrder))
+                .stream().map(this::toAgentVO).toList();
+    }
+
+    @Override
+    public List<CourseAgentVO> listForAgent(String channelCode, Integer courseType, Integer courseSource) {
+        // 平台课程（channel_code IS NULL）+ 本渠道课程（channel_code = channelCode）
+        return courseInfoMapper.selectList(new LambdaQueryWrapper<CourseInfo>()
+                        .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
+                        .eq(courseType != null, CourseInfo::getCourseType, courseType)
+                        .eq(courseSource != null, CourseInfo::getCourseSource, courseSource)
+                        .and(w -> w.isNull(CourseInfo::getChannelCode)
+                                .or().eq(CourseInfo::getChannelCode, channelCode))
+                        .orderByAsc(CourseInfo::getSortOrder))
+                .stream().map(this::toAgentVO).toList();
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public CourseAgentVO getPublishedDetail(String courseCode) {
         CourseInfo course = requireCourse(courseCode);
@@ -372,6 +440,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
         vo.setCourseSource(e.getCourseSource());
         vo.setCategoryCode(e.getCategoryCode());
         vo.setCoverImage(e.getCoverImage());
+        vo.setVideoUrl(e.getVideoUrl());
         vo.setCourseDescription(e.getCourseDescription());
         vo.setCourseBody(e.getCourseBody());
         vo.setCourseOutline(e.getCourseOutline());

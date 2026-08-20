@@ -38,6 +38,9 @@ public class CourseInfo extends BaseEntity {
     /** 板块来源（1=平台自研大雁 2=渠道课程 3=外部课程 4=雁鸣中国资讯） */
     private Integer courseSource;
 
+    /** 渠道编码（平台课程为 NULL；渠道课程填对应渠道编码） */
+    private String channelCode;
+
     /** 分类编码 */
     private String categoryCode;
 
