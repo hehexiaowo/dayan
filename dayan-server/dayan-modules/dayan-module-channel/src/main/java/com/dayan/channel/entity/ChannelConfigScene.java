@@ -47,4 +47,10 @@ public class ChannelConfigScene extends BaseEntity {
 
     /** 状态 */
     private Integer status;
+
+    /** 配置类型（0=基础可见性，预留扩展） */
+    private Integer configType;
+
+    /** 配置内容 JSON（格式随 config_type 不同） */
+    private String configJson;
 }
