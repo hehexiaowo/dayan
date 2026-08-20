@@ -80,28 +80,17 @@ public class ToolInfoServiceImpl implements ToolInfoService {
 
     @Override
     public List<ToolInfoVO> listForAgent(String channelCode) {
-        // 全部启用工具
-        List<ToolInfoVO> allTools = toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
+        // 渠道配置的工具（config_type=0，status=1）
+        List<String> configuredCodes = channelConfigToolBridge.listConfiguredToolCodes(channelCode);
+        if (configuredCodes.isEmpty()) {
+            return List.of();
+        }
+        // 返回渠道配置的工具
+        return toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
+                        .in(ToolInfo::getToolCode, configuredCodes)
                         .eq(ToolInfo::getStatus, 1)
                         .orderByAsc(ToolInfo::getId))
                 .stream().map(this::toVO).toList();
-
-        // 渠道配置的工具（可能包含额外工具，需要补充）
-        List<String> configuredCodes = channelConfigToolBridge.listConfiguredToolCodes(channelCode);
-        if (configuredCodes.isEmpty()) {
-            return allTools;
-        }
-        // 补充配置工具（去重）
-        Set<String> existingCodes = allTools.stream().map(ToolInfoVO::getToolCode).collect(Collectors.toSet());
-        List<String> newCodes = configuredCodes.stream().filter(c -> !existingCodes.contains(c)).toList();
-        if (!newCodes.isEmpty()) {
-            List<ToolInfoVO> configuredTools = toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
-                            .in(ToolInfo::getToolCode, newCodes)
-                            .eq(ToolInfo::getStatus, 1))
-                    .stream().map(this::toVO).toList();
-            allTools.addAll(configuredTools);
-        }
-        return allTools;
     }
 
     @Override
