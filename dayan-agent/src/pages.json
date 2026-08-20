@@ -36,6 +36,7 @@
     { "path": "pages/course/external/detail", "style": { "navigationBarTitleText": "内容详情" } },
     { "path": "pages/course/yanming/index", "style": { "navigationBarTitleText": "雁鸣中国", "enablePullDownRefresh": true } },
     { "path": "pages/course/yanming/detail", "style": { "navigationBarTitleText": "内容详情" } },
+    { "path": "pages/course/my-learning/index", "style": { "navigationBarTitleText": "我的学习", "enablePullDownRefresh": true } },
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务中心", "enablePullDownRefresh": true } },
     { "path": "pages/service/detail", "style": { "navigationBarTitleText": "权益详情" } },
     { "path": "pages/profile/index", "style": { "navigationBarTitleText": "个人中心" } },

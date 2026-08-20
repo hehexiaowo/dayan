@@ -22,6 +22,7 @@ public class CourseAgentVO {
     private Integer courseSource;
     private String categoryCode;
     private String coverImage;
+    private String videoUrl;
     private String courseDescription;
     /** 正文（详情页长文，纯文本） */
     private String courseBody;

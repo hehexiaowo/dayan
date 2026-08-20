@@ -1,5 +1,35 @@
 <template>
   <view class="page dy-safe-bottom">
+    <!-- ===== 搜索栏 ===== -->
+    <view class="search-bar">
+      <view class="search-input-wrap">
+        <text class="search-icon">🔍</text>
+        <input
+          v-model="keyword"
+          class="search-input"
+          placeholder="搜索课程"
+          confirm-type="search"
+          @confirm="onSearch"
+        />
+        <text v-if="keyword" class="search-clear" @click="clearSearch">✕</text>
+      </view>
+    </view>
+
+    <!-- ===== 分类标签 ===== -->
+    <scroll-view scroll-x class="category-scroll">
+      <view class="category-tags">
+        <view
+          v-for="cat in categoryOptions"
+          :key="cat.value"
+          class="category-tag dy-clickable"
+          :class="{ 'tag-active': selectedCategory === cat.value }"
+          @click="selectCategory(cat.value)"
+        >
+          <text class="tag-text">{{ cat.label }}</text>
+        </view>
+      </view>
+    </scroll-view>
+
     <!-- ===== 课程列表（头条大卡 + 左文右图条目，公众号样式） ===== -->
     <view class="list">
       <template v-if="loading && !courses.length">
@@ -96,14 +126,22 @@
         </view>
       </view>
       </template>
+
+      <!-- 加载更多 / 到底提示 -->
+      <view v-if="loading && courses.length" class="list-loading">
+        <DySkeleton :rows="1" avatar card />
+      </view>
+      <view v-else-if="noMore && courses.length" class="list-end">
+        <text class="list-end-text">已加载全部课程</text>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
-import { getCourses } from '@/api/course';
+import { onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
+import { pageCourses } from '@/api/course';
 import { formatFileUrl } from '@/utils/file';
 import { COURSE_TYPE_LABELS, CourseSource, type Course } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
@@ -115,12 +153,31 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
  * - 布局仿公众号历史消息：首门课程为头条大卡（封面 + 标题叠加 + 白底
  *   类型/讲师/价格行），其余条目左文右图；
  * - 封面缺省时用品牌渐变 + 课程名首字占位；
- * - 仅上架课程（后端过滤 courseStatus=2）且固定板块 course_source=1。
+ * - 仅上架课程（后端过滤 courseStatus=2）且固定板块 course_source=1；
+ * - 分页加载，触底自动加载更多。
  */
+
+const PAGE_SIZE = 20;
 
 const courses = ref<Course[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
+const currentPage = ref(1);
+const total = ref(0);
+const noMore = computed(() => courses.value.length >= total.value && total.value > 0);
+
+// 搜索与筛选
+const keyword = ref('');
+const selectedCategory = ref('');
+
+/** 分类选项（对齐后端 course_category 字典） */
+const categoryOptions = [
+  { label: '全部', value: '' },
+  { label: '养老规划', value: 'COU001' },
+  { label: '销售技能', value: 'COU002' },
+  { label: '产品解析', value: 'COU003' },
+  { label: '机构运营', value: 'COU004' },
+];
 
 /** 头条课程（列表第一条，后端按推荐/排序返回） */
 const hero = computed<Course>(() => courses.value[0]);
@@ -143,12 +200,44 @@ function formatPrice(price?: number): string {
   return Number(price).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-async function loadList() {
+function onSearch() {
+  loadList(true);
+}
+
+function clearSearch() {
+  keyword.value = '';
+  loadList(true);
+}
+
+function selectCategory(value: string) {
+  selectedCategory.value = value;
+  loadList(true);
+}
+
+async function loadList(reset = false) {
+  if (loading.value) return;
+  if (reset) {
+    currentPage.value = 1;
+    courses.value = [];
+  }
   loading.value = true;
   loadError.value = false;
   try {
-    courses.value = await getCourses(undefined, CourseSource.SELF);
-  } catch (e) {
+    const result = await pageCourses({
+      courseSource: CourseSource.SELF,
+      keyword: keyword.value || undefined,
+      categoryCode: selectedCategory.value || undefined,
+      current: currentPage.value,
+      size: PAGE_SIZE,
+    });
+    if (reset) {
+      courses.value = result.records;
+    } else {
+      courses.value.push(...result.records);
+    }
+    total.value = result.total;
+    currentPage.value++;
+  } catch {
     loadError.value = true;
   } finally {
     loading.value = false;
@@ -160,14 +249,20 @@ function goDetail(courseCode: string) {
 }
 
 onShow(() => {
-  loadList();
+  loadList(true);
 });
 
 onPullDownRefresh(async () => {
   try {
-    await loadList();
+    await loadList(true);
   } finally {
     uni.stopPullDownRefresh();
+  }
+});
+
+onReachBottom(() => {
+  if (!noMore.value && !loading.value) {
+    loadList(false);
   }
 });
 </script>
@@ -177,6 +272,71 @@ onPullDownRefresh(async () => {
   padding: $spacing-md $spacing-md 60rpx;
   min-height: 100vh;
   background: $bg-page;
+}
+
+/* ===== 搜索栏 ===== */
+.search-bar {
+  margin-bottom: $spacing-sm;
+}
+
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  background: $bg-card;
+  border-radius: 999rpx;
+  padding: $spacing-sm $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.search-icon {
+  font-size: 28rpx;
+  margin-right: $spacing-sm;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: $text-primary;
+}
+
+.search-clear {
+  font-size: 28rpx;
+  color: $text-placeholder;
+  padding: 0 $spacing-xs;
+}
+
+/* ===== 分类标签 ===== */
+.category-scroll {
+  margin-bottom: $spacing-md;
+  white-space: nowrap;
+}
+
+.category-tags {
+  display: inline-flex;
+  gap: $spacing-sm;
+}
+
+.category-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 10rpx 24rpx;
+  background: $bg-card;
+  border-radius: 999rpx;
+  box-shadow: $shadow-card;
+}
+
+.tag-active {
+  background: $brand-primary;
+}
+
+.tag-text {
+  font-size: 24rpx;
+  color: $text-secondary;
+  white-space: nowrap;
+}
+
+.tag-active .tag-text {
+  color: #fff;
 }
 
 /* ===== 头条大卡 ===== */
@@ -408,6 +568,20 @@ onPullDownRefresh(async () => {
 }
 .sales {
   font-size: 22rpx;
+  color: $text-placeholder;
+}
+
+/* 加载更多 / 到底提示 */
+.list-loading {
+  padding: $spacing-md 0;
+}
+.list-end {
+  display: flex;
+  justify-content: center;
+  padding: $spacing-lg 0;
+}
+.list-end-text {
+  font-size: 24rpx;
   color: $text-placeholder;
 }
 </style>

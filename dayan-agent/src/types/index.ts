@@ -241,6 +241,8 @@ export interface Course {
   courseSource?: CourseSource | number;
   categoryCode?: string;
   coverImage?: string;
+  /** 宣传视频 URL（OSS key 或完整地址） */
+  videoUrl?: string;
   courseDescription?: string;
   /** 正文（详情页长文，纯文本） */
   courseBody?: string;
@@ -275,6 +277,44 @@ export interface Course {
   publishTime?: string;
   sortOrder?: number;
 }
+
+/** 学习记录（后端 CourseRecordLearnVO，Agent 端进度上报与查询） */
+export interface CourseRecordLearn {
+  id?: string;
+  courseCode: string;
+  agentCode?: string;
+  learnerName?: string;
+  currentLesson?: number;
+  totalLesson?: number;
+  /** 学习进度（%） */
+  learnProgress?: number;
+  /** 累计学习时长（分钟） */
+  totalLearnTime?: number;
+  lastLearnTime?: string;
+  /** 是否完成：0=否 1=是 */
+  isCompleted?: number;
+  completeTime?: string;
+  /** 状态：0=已退课 1=学习中 2=已完成 3=已过期 */
+  status?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 学习记录状态 */
+export enum LearnRecordStatus {
+  REFUNDED = 0,
+  LEARNING = 1,
+  COMPLETED = 2,
+  EXPIRED = 3,
+}
+
+/** 学习记录状态文案 */
+export const LEARN_STATUS_LABELS: Record<number, string> = {
+  0: '已退课',
+  1: '学习中',
+  2: '已完成',
+  3: '已过期',
+};
 
 /** 课程类型选项（对齐后端 courseType） */
 export const COURSE_TYPE_LABELS: Record<number, string> = {

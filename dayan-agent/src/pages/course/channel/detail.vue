@@ -17,6 +17,19 @@
     />
 
     <template v-else-if="content">
+      <!-- ===== 视频播放器（有视频时置顶） ===== -->
+      <view v-if="videoUrl" class="video-wrap">
+        <video
+          :src="videoUrl"
+          controls
+          class="course-video"
+          object-fit="contain"
+          :poster="content.coverImage ? formatFileUrl(content.coverImage) : ''"
+          @timeupdate="onVideoTimeUpdate"
+          @ended="onVideoEnded"
+        />
+      </view>
+
       <!-- ===== 文章头部（公众号样式：标题 + meta 行） ===== -->
       <view class="article-head">
         <text class="article-title">{{ content.courseName }}</text>
@@ -31,9 +44,12 @@
         </view>
       </view>
 
-      <!-- ===== 正文（纯文本按空行分段） ===== -->
-      <view v-if="paragraphs.length" class="article-body">
-        <text v-for="(p, i) in paragraphs" :key="i" class="paragraph">{{ p }}</text>
+      <!-- ===== 正文（HTML 富文本 / 纯文本降级） ===== -->
+      <view v-if="content.courseBody" class="article-body">
+        <rich-text v-if="isHtml" :nodes="content.courseBody" />
+        <template v-else>
+          <text v-for="(p, i) in paragraphs" :key="i" class="paragraph">{{ p }}</text>
+        </template>
       </view>
       <DyEmpty v-else text="正文整理中" icon="文" color="blue" />
 
@@ -47,8 +63,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
-import { getCourseDetail } from '@/api/course';
+import { onLoad, onUnload } from '@dcloudio/uni-app';
+import { getCourseDetail, reportProgress } from '@/api/course';
+import { formatFileUrl } from '@/utils/file';
 import type { Course } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
@@ -65,7 +82,19 @@ const content = ref<Course | null>(null);
 const loading = ref(false);
 const loadError = ref(false);
 
-/** 正文分段：按空行拆分为段，过滤纯空白段 */
+/** 视频地址：videoUrl 可能是 OSS key 或完整 URL */
+const videoUrl = computed(() => {
+  const raw = content.value?.videoUrl;
+  return raw ? formatFileUrl(raw) : '';
+});
+
+/** 是否包含 HTML 标签（富文本内容） */
+const isHtml = computed(() => {
+  const body = content.value?.courseBody || '';
+  return /<[a-z][\s\S]*>/i.test(body);
+});
+
+/** 正文分段：按空行拆分为段，过滤纯空白段（纯文本降级用） */
 const paragraphs = computed<string[]>(() => {
   if (!content.value?.courseBody) return [];
   return content.value.courseBody
@@ -98,12 +127,51 @@ function formatDate(dt?: string): string {
   return norm.length >= 10 ? norm.slice(0, 10) : norm;
 }
 
+// ====== 视频进度追踪 ======
+
+let lastReportTime = 0;
+let watchedSeconds = 0;
+
+function onVideoTimeUpdate(e: { detail: { currentTime: number; duration: number } }) {
+  const now = Date.now();
+  watchedSeconds++;
+
+  if (now - lastReportTime >= 30_000 && content.value) {
+    lastReportTime = now;
+    const minutes = Math.floor(watchedSeconds / 60);
+    if (minutes > 0) {
+      reportProgress({
+        courseCode: content.value.courseCode,
+        learnTimeDelta: minutes,
+      }).catch(() => {/* 静默失败 */});
+      watchedSeconds = watchedSeconds % 60;
+    }
+  }
+}
+
+function onVideoEnded() {
+  if (!content.value) return;
+  reportProgress({
+    courseCode: content.value.courseCode,
+    currentLesson: 1,
+    learnTimeDelta: Math.ceil(watchedSeconds / 60),
+  }).catch(() => {/* 静默失败 */});
+}
+
 onLoad((options) => {
   const code = options?.code;
   if (!code) return;
-  // 先占位 courseCode 供 loadDetail 使用，成功后整对象替换
   content.value = { courseCode: code, courseName: '' };
   loadDetail();
+});
+
+onUnload(() => {
+  if (content.value && watchedSeconds >= 10) {
+    reportProgress({
+      courseCode: content.value.courseCode,
+      learnTimeDelta: Math.ceil(watchedSeconds / 60),
+    }).catch(() => {/* 静默失败 */});
+  }
 });
 </script>
 
@@ -113,6 +181,17 @@ onLoad((options) => {
   padding: $spacing-lg $spacing-md 60rpx;
   min-height: 100vh;
   background: $bg-card;
+}
+
+/* ===== 视频播放器 ===== */
+.video-wrap {
+  margin: -$spacing-lg (-$spacing-md) $spacing-lg;
+  border-radius: 0;
+  overflow: hidden;
+}
+.course-video {
+  width: 100%;
+  height: 420rpx;
 }
 
 /* ===== 文章头部 ===== */

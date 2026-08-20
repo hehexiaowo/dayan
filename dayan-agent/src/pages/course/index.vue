@@ -6,8 +6,13 @@
         <text class="banner-title">学习中心</text>
         <text class="banner-sub">专业赋能，持续提升</text>
       </view>
-      <view class="banner-icon">
-        <text class="banner-icon-text">学</text>
+      <view class="banner-right">
+        <view class="banner-icon">
+          <text class="banner-icon-text">学</text>
+        </view>
+        <view class="my-learning-btn dy-clickable" @click="goMyLearning">
+          <text class="my-learning-text">我的学习</text>
+        </view>
       </view>
     </view>
 
@@ -29,23 +34,24 @@
       />
 
       <!-- 板块卡片 -->
-      <view
-        v-for="board in boards"
-        v-else
-        :key="board.key"
-        class="board-card dy-clickable"
-        @click="goBoard(board)"
-      >
-        <view class="board-icon" :class="'icon-' + board.key">
-          <text class="board-icon-text">{{ board.icon }}</text>
+      <template v-else>
+        <view
+          v-for="board in boards"
+          :key="board.key"
+          class="board-card dy-clickable"
+          @click="goBoard(board)"
+        >
+          <view class="board-icon" :class="'icon-' + board.key">
+            <text class="board-icon-text">{{ board.icon }}</text>
+          </view>
+          <text class="board-title">{{ board.title }}</text>
+          <text class="board-sub">{{ board.subtitle }}</text>
+          <view class="board-foot">
+            <text class="board-count">{{ counts[board.key] }} {{ board.unit }}</text>
+            <text class="board-arrow">›</text>
+          </view>
         </view>
-        <text class="board-title">{{ board.title }}</text>
-        <text class="board-sub">{{ board.subtitle }}</text>
-        <view class="board-foot">
-          <text class="board-count">{{ counts[board.key] }} {{ board.unit }}</text>
-          <text class="board-arrow">›</text>
-        </view>
-      </view>
+      </template>
     </view>
 
     <!-- ===== 底部提示 ===== -->
@@ -58,9 +64,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
-import { getCourses } from '@/api/course';
+import { getCourseCounts } from '@/api/course';
 import { CourseSource } from '@/types';
-import type { Course } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
 import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
 
@@ -134,11 +139,11 @@ async function loadCounts() {
   loading.value = true;
   loadError.value = false;
   try {
-    const courses = await getCourses().catch(() => [] as Course[]);
-    counts.dayan = courses.filter((c) => (c.courseSource ?? CourseSource.SELF) === CourseSource.SELF).length;
-    counts.channel = courses.filter((c) => c.courseSource === CourseSource.CHANNEL).length;
-    counts.external = courses.filter((c) => c.courseSource === CourseSource.EXTERNAL).length;
-    counts.yanming = courses.filter((c) => c.courseSource === CourseSource.YANMING).length;
+    const map = await getCourseCounts();
+    counts.dayan = map['1'] ?? 0;
+    counts.channel = map['2'] ?? 0;
+    counts.external = map['3'] ?? 0;
+    counts.yanming = map['4'] ?? 0;
   } catch {
     loadError.value = true;
   } finally {
@@ -148,6 +153,10 @@ async function loadCounts() {
 
 function goBoard(board: BoardDef) {
   uni.navigateTo({ url: board.url });
+}
+
+function goMyLearning() {
+  uni.navigateTo({ url: '/pages/course/my-learning/index' });
 }
 
 onShow(() => {
@@ -177,6 +186,25 @@ onShow(() => {
 
 .banner-content {
   flex: 1;
+}
+
+.banner-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.my-learning-btn {
+  padding: 6rpx 20rpx;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+  border-radius: 999rpx;
+}
+
+.my-learning-text {
+  font-size: 22rpx;
+  color: #fff;
 }
 
 .banner-title {

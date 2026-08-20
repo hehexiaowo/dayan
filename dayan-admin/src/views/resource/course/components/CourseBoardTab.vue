@@ -4,6 +4,8 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 import { useCrud } from '@/composables/useCrud'
 import { pageCourses, createCourse, updateCourse, deleteCourse } from '@/api/course'
 import { COURSE_SOURCE_OPTIONS, COURSE_STATUS_OPTIONS, type CourseInfo, type CourseInfoQuery } from '@/types/course'
+import FileUploader from '@/components/FileUploader/index.vue'
+import RichEditor from '@/components/RichEditor/index.vue'
 
 /**
  * 课程板块 tab（渠道课程 / 外部课程 / 雁鸣中国共用）。
@@ -44,6 +46,7 @@ const CourseStatusValue = { DRAFT: 0, PENDING: 1, ONLINE: 2, OFFLINE: 3, FINISHE
 const form = reactive<CourseInfo>({
   courseName: '',
   courseSource: props.source,
+  coverImage: '',
   courseDescription: '',
   courseBody: '',
   author: '',
@@ -64,6 +67,7 @@ function resetForm() {
     courseCode: undefined,
     courseName: '',
     courseSource: props.source,
+    coverImage: '',
     courseDescription: '',
     courseBody: '',
     author: '',
@@ -88,6 +92,7 @@ function openEdit(row: CourseInfo) {
     courseCode: row.courseCode,
     courseName: row.courseName,
     courseSource: row.courseSource ?? props.source,
+    coverImage: row.coverImage ?? '',
     courseDescription: row.courseDescription ?? '',
     courseBody: row.courseBody ?? '',
     author: row.author ?? '',
@@ -248,6 +253,11 @@ loadPage()
             </el-form-item>
           </el-col>
           <el-col :span="24">
+            <el-form-item label="封面图">
+              <FileUploader v-model="form.coverImage" type="image" module="course" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
             <el-form-item label="摘要">
               <el-input v-model="form.courseDescription" type="textarea" :rows="2" maxlength="500" />
             </el-form-item>
@@ -292,7 +302,7 @@ loadPage()
           </el-col>
           <el-col :span="24">
             <el-form-item label="正文">
-              <el-input v-model="form.courseBody" type="textarea" :rows="6" placeholder="正文内容（纯文本）" />
+              <RichEditor v-model="form.courseBody" :height="300" placeholder="正文内容（支持富文本）" module="course" />
             </el-form-item>
           </el-col>
         </el-row>

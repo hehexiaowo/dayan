@@ -5,8 +5,19 @@
     </template>
 
     <template v-else-if="course">
-      <!-- 头图 -->
-      <view class="hero">
+      <!-- 视频/头图 -->
+      <view v-if="videoUrl" class="video-wrap">
+        <video
+          :src="videoUrl"
+          controls
+          class="course-video"
+          object-fit="contain"
+          :poster="course.coverImage ? formatFileUrl(course.coverImage) : ''"
+          @timeupdate="onVideoTimeUpdate"
+          @ended="onVideoEnded"
+        />
+      </view>
+      <view v-else class="hero">
         <image
           v-if="course.coverImage"
           :src="formatFileUrl(course.coverImage)"
@@ -118,8 +129,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
-import { getCourseDetail } from '@/api/course';
+import { onLoad, onUnload } from '@dcloudio/uni-app';
+import { getCourseDetail, reportProgress } from '@/api/course';
 import { formatFileUrl } from '@/utils/file';
 import { COURSE_TYPE_LABELS, type Course, type CourseOutlineChapter } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
@@ -145,6 +156,12 @@ function formatPrice(price?: number): string {
   if (price == null) return '-';
   return Number(price).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
+
+/** 视频地址：videoUrl 可能是 OSS key 或完整 URL */
+const videoUrl = computed(() => {
+  const raw = course.value?.videoUrl;
+  return raw ? formatFileUrl(raw) : '';
+});
 
 /** 学习目标按行拆分（中文分号/换行分隔） */
 const objectiveLines = computed(() =>
@@ -186,6 +203,49 @@ async function loadDetail() {
   }
 }
 
+// ====== 视频进度追踪 ======
+
+/** 上次上报时间戳（节流用） */
+let lastReportTime = 0;
+/** 累计观看秒数（本次会话） */
+let watchedSeconds = 0;
+/** 当前播放位置（秒） */
+let currentPos = 0;
+
+/**
+ * 视频 timeupdate 事件：每秒触发，节流 30 秒上报一次。
+ * uni-app video 组件 e.detail = { currentTime, duration }。
+ */
+function onVideoTimeUpdate(e: { detail: { currentTime: number; duration: number } }) {
+  const now = Date.now();
+  currentPos = e.detail.currentTime;
+  watchedSeconds++;
+
+  // 节流：30 秒上报一次
+  if (now - lastReportTime >= 30_000 && course.value) {
+    lastReportTime = now;
+    const minutes = Math.floor(watchedSeconds / 60);
+    if (minutes > 0) {
+      reportProgress({
+        courseCode: course.value.courseCode,
+        learnTimeDelta: minutes,
+      }).catch(() => {/* 静默失败 */});
+      watchedSeconds = watchedSeconds % 60; // 只清整分钟部分
+    }
+  }
+}
+
+/** 视频播放结束：标记完成 */
+function onVideoEnded() {
+  if (!course.value) return;
+  const totalClass = course.value.totalClass || 1;
+  reportProgress({
+    courseCode: course.value.courseCode,
+    currentLesson: totalClass,
+    learnTimeDelta: Math.ceil(watchedSeconds / 60),
+  }).catch(() => {/* 静默失败 */});
+}
+
 function goBack() {
   uni.navigateBack({
     fail: () => uni.redirectTo({ url: '/pages/course/dayan/index' }),
@@ -196,6 +256,16 @@ onLoad((query) => {
   courseCode.value = (query?.code as string) || '';
   loadDetail();
 });
+
+onUnload(() => {
+  // 离开页面时上报剩余观看时长
+  if (course.value && watchedSeconds >= 10) {
+    reportProgress({
+      courseCode: course.value.courseCode,
+      learnTimeDelta: Math.ceil(watchedSeconds / 60),
+    }).catch(() => {/* 静默失败 */});
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -203,6 +273,16 @@ onLoad((query) => {
   padding: $spacing-md $spacing-md 60rpx;
   min-height: 100vh;
   background: $bg-page;
+}
+
+/* 视频播放器 */
+.video-wrap {
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+.course-video {
+  width: 100%;
+  height: 420rpx;
 }
 
 /* 头图 */

@@ -62,14 +62,23 @@
           </view>
           <!-- 右侧缩略图 -->
           <view class="content-thumb" :class="'thumb-' + board.key">
-            <text class="thumb-char">{{ coverChar(item) }}</text>
+            <image
+              v-if="item.coverImage"
+              :src="formatFileUrl(item.coverImage)"
+              mode="aspectFill"
+              class="thumb-img"
+            />
+            <text v-else class="thumb-char">{{ coverChar(item) }}</text>
             <text v-if="item.badge" class="thumb-badge" :class="badgeClass(item.badge)">{{ item.badge }}</text>
           </view>
         </view>
 
-        <!-- 列表底部提示 -->
-        <view class="list-end">
-          <text class="list-end-text">更多内容持续上线中</text>
+        <!-- 加载更多 / 到底提示 -->
+        <view v-if="loading" class="list-loading">
+          <DySkeleton :rows="1" avatar card />
+        </view>
+        <view v-else-if="noMore" class="list-end">
+          <text class="list-end-text">已加载全部内容</text>
         </view>
       </template>
     </view>
@@ -78,8 +87,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
-import { getCourses } from '@/api/course';
+import { onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
+import { pageCourses } from '@/api/course';
+import { formatFileUrl } from '@/utils/file';
 import { CourseSource } from '@/types';
 import type { Course } from '@/types';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
@@ -91,8 +101,10 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
  * - 布局仿微信公众号历史消息：头条大卡（封面 + 标题叠加 + 白底 meta 行），
  *   其余条目左文右缩略图；无图片字段，封面用板块色渐变 + 标题首字代替；
  * - 板块渲染差异：渠道=视频样式（播放钮/播放量）；
- * - 导航栏标题由 pages.json 承载（渠道课程）。
+ * - 分页加载，触底自动加载更多。
  */
+
+const PAGE_SIZE = 20;
 
 /** 板块渲染语义：视频样式 + 播放量 */
 const board = { key: 'channel', title: '渠道课程', icon: '渠', source: CourseSource.CHANNEL } as const;
@@ -100,6 +112,9 @@ const board = { key: 'channel', title: '渠道课程', icon: '渠', source: Cour
 const items = ref<Course[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
+const currentPage = ref(1);
+const total = ref(0);
+const noMore = computed(() => items.value.length >= total.value && total.value > 0);
 
 /** 头条（排序即权重：sortOrder/publishTime 倒序的第一条） */
 const hero = computed<Course>(() => items.value[0]);
@@ -134,14 +149,29 @@ function badgeClass(badge?: string): string {
   return 'cb-info';
 }
 
-async function loadList() {
+async function loadList(reset = false) {
+  if (loading.value) return;
+  if (reset) {
+    currentPage.value = 1;
+    items.value = [];
+  }
   loading.value = true;
   loadError.value = false;
   try {
-    items.value = await getCourses(undefined, board.source);
+    const result = await pageCourses({
+      courseSource: board.source,
+      current: currentPage.value,
+      size: PAGE_SIZE,
+    });
+    if (reset) {
+      items.value = result.records;
+    } else {
+      items.value.push(...result.records);
+    }
+    total.value = result.total;
+    currentPage.value++;
   } catch {
     loadError.value = true;
-    items.value = [];
   } finally {
     loading.value = false;
   }
@@ -153,14 +183,20 @@ function onItemClick(item: Course) {
 }
 
 onShow(() => {
-  loadList();
+  loadList(true);
 });
 
 onPullDownRefresh(async () => {
   try {
-    await loadList();
+    await loadList(true);
   } finally {
     uni.stopPullDownRefresh();
+  }
+});
+
+onReachBottom(() => {
+  if (!noMore.value && !loading.value) {
+    loadList(false);
   }
 });
 </script>
@@ -373,6 +409,11 @@ onPullDownRefresh(async () => {
   overflow: hidden;
 }
 
+.thumb-img {
+  width: 100%;
+  height: 100%;
+}
+
 .thumb-channel {
   background: $gradient-green;
 }
@@ -407,6 +448,11 @@ onPullDownRefresh(async () => {
 .cb-new { color: $brand-primary; }
 .cb-info { color: $brand-info; }
 .cb-default { color: $text-secondary; }
+
+/* 加载更多 */
+.list-loading {
+  padding: $spacing-md 0;
+}
 
 /* 列表底部 */
 .list-end {

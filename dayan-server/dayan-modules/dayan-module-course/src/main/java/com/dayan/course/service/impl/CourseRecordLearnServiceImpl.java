@@ -8,10 +8,13 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.course.dto.CourseRecordLearnCreateDTO;
 import com.dayan.course.dto.CourseRecordLearnQueryDTO;
 import com.dayan.course.dto.CourseRecordLearnUpdateDTO;
+import com.dayan.course.entity.CourseInfo;
 import com.dayan.course.entity.CourseRecordLearn;
+import com.dayan.course.mapper.CourseInfoMapper;
 import com.dayan.course.mapper.CourseRecordLearnMapper;
 import com.dayan.course.service.CourseRecordLearnService;
 import com.dayan.course.vo.CourseRecordLearnVO;
+import com.dayan.common.mybatis.context.ContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,7 @@ public class CourseRecordLearnServiceImpl implements CourseRecordLearnService {
     private static final int COMPLETED = 1;
 
     private final CourseRecordLearnMapper courseRecordLearnMapper;
+    private final CourseInfoMapper courseInfoMapper;
 
     @Override
     public PageResult<CourseRecordLearnVO> page(CourseRecordLearnQueryDTO query) {
@@ -224,5 +228,107 @@ public class CourseRecordLearnServiceImpl implements CourseRecordLearnService {
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         return vo;
+    }
+
+    // ====== Agent 端 ======
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CourseRecordLearnVO reportProgress(String agentCode, String courseCode,
+                                              Integer currentLesson, Integer learnTimeDelta) {
+        // 查已有记录
+        CourseRecordLearn record = courseRecordLearnMapper.selectOne(
+                new LambdaQueryWrapper<CourseRecordLearn>()
+                        .eq(CourseRecordLearn::getAgentCode, agentCode)
+                        .eq(CourseRecordLearn::getCourseCode, courseCode)
+                        .last("LIMIT 1"));
+
+        if (record == null) {
+            // 首次学习，自动创建记录
+            CourseInfo course = courseInfoMapper.selectOne(
+                    new LambdaQueryWrapper<CourseInfo>()
+                            .eq(CourseInfo::getCourseCode, courseCode)
+                            .last("LIMIT 1"));
+            if (course == null) {
+                throw new BusinessException(ErrorCode.NOT_FOUND, "课程不存在: " + courseCode);
+            }
+
+            record = new CourseRecordLearn();
+            record.setAgentCode(agentCode);
+            record.setCourseCode(courseCode);
+            // learner_name 非空约束：优先取登录账号姓名，兜底 agentCode
+            String accountName = ContextHolder.getAccountName();
+            record.setLearnerName(accountName == null || accountName.isEmpty()
+                    ? agentCode : accountName);
+            record.setTotalLesson(course.getTotalClass() == null ? 0 : course.getTotalClass());
+            record.setCurrentLesson(currentLesson == null ? 0 : currentLesson);
+            record.setLearnProgress(calcProgress(
+                    currentLesson == null ? 0 : currentLesson,
+                    record.getTotalLesson()));
+            record.setTotalLearnTime(learnTimeDelta == null ? 0 : Math.max(0, learnTimeDelta));
+            record.setLastLearnTime(LocalDateTime.now());
+            record.setEnrollTime(LocalDateTime.now());
+            record.setIsCompleted(NOT_COMPLETED);
+            record.setStatus(STATUS_LEARNING);
+            courseRecordLearnMapper.insert(record);
+            log.info("Agent 首次学习自动创建记录: agentCode={}, courseCode={}", agentCode, courseCode);
+        } else {
+            // 更新已有记录
+            CourseRecordLearn update = new CourseRecordLearn();
+            update.setId(record.getId());
+
+            if (currentLesson != null) {
+                update.setCurrentLesson(currentLesson);
+                int totalLesson = record.getTotalLesson() == null ? 0 : record.getTotalLesson();
+                update.setLearnProgress(calcProgress(currentLesson, totalLesson));
+            }
+            if (learnTimeDelta != null && learnTimeDelta > 0) {
+                int prev = record.getTotalLearnTime() == null ? 0 : record.getTotalLearnTime();
+                update.setTotalLearnTime(prev + learnTimeDelta);
+            }
+            update.setLastLearnTime(LocalDateTime.now());
+
+            // 自动判定完成
+            int newLesson = currentLesson != null ? currentLesson
+                    : (record.getCurrentLesson() == null ? 0 : record.getCurrentLesson());
+            int totalLesson = record.getTotalLesson() == null ? 0 : record.getTotalLesson();
+            if (totalLesson > 0 && newLesson >= totalLesson
+                    && (record.getIsCompleted() == null || record.getIsCompleted() == NOT_COMPLETED)) {
+                update.setIsCompleted(COMPLETED);
+                update.setCompleteTime(LocalDateTime.now());
+                update.setStatus(2); // 已完成
+                log.info("Agent 学习完成自动标记: agentCode={}, courseCode={}", agentCode, courseCode);
+            }
+
+            courseRecordLearnMapper.updateById(update);
+            // 刷新内存对象用于返回
+            if (currentLesson != null) record.setCurrentLesson(currentLesson);
+            if (update.getTotalLearnTime() != null) record.setTotalLearnTime(update.getTotalLearnTime());
+            if (update.getLearnProgress() != null) record.setLearnProgress(update.getLearnProgress());
+            if (update.getLastLearnTime() != null) record.setLastLearnTime(update.getLastLearnTime());
+            if (update.getIsCompleted() != null) record.setIsCompleted(update.getIsCompleted());
+            if (update.getCompleteTime() != null) record.setCompleteTime(update.getCompleteTime());
+            if (update.getStatus() != null) record.setStatus(update.getStatus());
+        }
+        return toVO(record);
+    }
+
+    @Override
+    public CourseRecordLearnVO getMyRecord(String agentCode, String courseCode) {
+        CourseRecordLearn record = courseRecordLearnMapper.selectOne(
+                new LambdaQueryWrapper<CourseRecordLearn>()
+                        .eq(CourseRecordLearn::getAgentCode, agentCode)
+                        .eq(CourseRecordLearn::getCourseCode, courseCode)
+                        .last("LIMIT 1"));
+        return record == null ? null : toVO(record);
+    }
+
+    @Override
+    public List<CourseRecordLearnVO> listMyRecords(String agentCode) {
+        return courseRecordLearnMapper.selectList(
+                new LambdaQueryWrapper<CourseRecordLearn>()
+                        .eq(CourseRecordLearn::getAgentCode, agentCode)
+                        .orderByDesc(CourseRecordLearn::getLastLearnTime))
+                .stream().map(this::toVO).toList();
     }
 }

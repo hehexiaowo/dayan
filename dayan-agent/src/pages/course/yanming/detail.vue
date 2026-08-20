@@ -31,9 +31,12 @@
         </view>
       </view>
 
-      <!-- ===== 正文（纯文本按空行分段） ===== -->
-      <view v-if="paragraphs.length" class="article-body">
-        <text v-for="(p, i) in paragraphs" :key="i" class="paragraph">{{ p }}</text>
+      <!-- ===== 正文（HTML 富文本 / 纯文本降级） ===== -->
+      <view v-if="content.courseBody" class="article-body">
+        <rich-text v-if="isHtml" :nodes="content.courseBody" />
+        <template v-else>
+          <text v-for="(p, i) in paragraphs" :key="i" class="paragraph">{{ p }}</text>
+        </template>
       </view>
       <DyEmpty v-else text="正文整理中" icon="文" color="blue" />
 
@@ -65,7 +68,13 @@ const content = ref<Course | null>(null);
 const loading = ref(false);
 const loadError = ref(false);
 
-/** 正文分段：按空行拆分为段，过滤纯空白段 */
+/** 是否包含 HTML 标签（富文本内容） */
+const isHtml = computed(() => {
+  const body = content.value?.courseBody || '';
+  return /<[a-z][\s\S]*>/i.test(body);
+});
+
+/** 正文分段：按空行拆分为段，过滤纯空白段（纯文本降级用） */
 const paragraphs = computed<string[]>(() => {
   if (!content.value?.courseBody) return [];
   return content.value.courseBody
