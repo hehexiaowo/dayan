@@ -28,23 +28,23 @@
         </view>
         <view class="tool-item dy-clickable" @click="onTool('sojourn')">
           <DyIconBlock text="旅" color="green" size="md" />
-          <text class="tool-label">旅游短居网络</text>
+          <text class="tool-label">旅居网络</text>
         </view>
         <view class="tool-item dy-clickable" @click="onTool('vital')">
           <DyIconBlock text="活" color="orange" size="md" />
-          <text class="tool-label">活力长居网络</text>
+          <text class="tool-label">活力网络</text>
         </view>
         <view class="tool-item dy-clickable" @click="onTool('care')">
           <DyIconBlock text="照" color="red" size="md" />
-          <text class="tool-label">照护长居网络</text>
+          <text class="tool-label">照护网络</text>
         </view>
         <view class="tool-item dy-clickable" @click="onTool('pensioncal')">
           <DyIconBlock text="退" color="orange" size="md" />
-          <text class="tool-label">养老金计算器</text>
+          <text class="tool-label">养老金计算</text>
         </view>
         <view class="tool-item dy-clickable" @click="onTool('gapcal')">
           <DyIconBlock text="缺" color="red" size="md" />
-          <text class="tool-label">养老缺口计算器</text>
+          <text class="tool-label">缺口计算</text>
         </view>
         <view class="tool-item dy-clickable" @click="onTool('aiartist')">
           <DyIconBlock text="AI" color="red" size="md" />
