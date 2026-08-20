@@ -16,8 +16,6 @@ import com.dayan.tool.entity.ToolAichatSession;
 import com.dayan.tool.mapper.ToolAichatMessageMapper;
 import com.dayan.tool.mapper.ToolAichatSessionMapper;
 import com.dayan.tool.service.AiClientHolder;
-import com.dayan.channel.entity.ChannelConfigTool;
-import com.dayan.channel.service.ChannelConfigToolService;
 import com.dayan.tool.service.ToolAichatChatListener;
 import com.dayan.tool.service.ToolAichatChatService;
 import com.dayan.tool.service.ToolAichatSessionService;
@@ -70,7 +68,7 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
     private final ToolInfoService toolInfoService;
     private final SystemKnowledgeRepoService knowledgeRepoService;
     private final AiClientHolder aiClientHolder;
-    private final ChannelConfigToolService channelConfigToolService;
+    private final ChannelConfigToolBridge channelConfigToolBridge;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -367,18 +365,7 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
         }
         String channelCode = ContextHolder.getChannelCode();
         if (StrUtil.isNotBlank(channelCode)) {
-            ChannelConfigTool config = channelConfigToolService.getByChannelToolType(channelCode, toolCode, 1);
-            if (config != null && StrUtil.isNotBlank(config.getConfigJson())) {
-                try {
-                    cn.hutool.json.JSONObject json = JSONUtil.parseObj(config.getConfigJson());
-                    cn.hutool.json.JSONArray arr = json.getJSONArray("repoIds");
-                    if (arr != null) {
-                        merged.addAll(arr.toList(Long.class));
-                    }
-                } catch (Exception e) {
-                    log.warn("解析渠道补充知识库配置失败: channelCode={}, toolCode={}", channelCode, toolCode);
-                }
-            }
+            merged.addAll(channelConfigToolBridge.listChannelRepoIds(channelCode, toolCode));
         }
         return List.copyOf(merged);
     }

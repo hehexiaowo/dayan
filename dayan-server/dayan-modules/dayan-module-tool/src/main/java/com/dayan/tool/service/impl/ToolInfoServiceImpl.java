@@ -12,8 +12,6 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.tool.dto.ToolInfoCreateDTO;
 import com.dayan.tool.dto.ToolInfoQueryDTO;
 import com.dayan.tool.dto.ToolInfoUpdateDTO;
-import com.dayan.channel.entity.ChannelConfigTool;
-import com.dayan.channel.service.ChannelConfigToolService;
 import com.dayan.tool.entity.ToolInfo;
 import com.dayan.tool.mapper.ToolInfoMapper;
 import com.dayan.tool.model.ToolAiartistPipelineConfig;
@@ -49,7 +47,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
 
     private final ToolInfoMapper toolInfoMapper;
     private final SequenceProvider sequenceProvider;
-    private final ChannelConfigToolService channelConfigToolService;
+    private final ChannelConfigToolBridge channelConfigToolBridge;
 
     @Override
     public PageResult<ToolInfoVO> page(ToolInfoQueryDTO query) {
@@ -328,17 +326,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         }
         String channelCode = com.dayan.common.mybatis.context.ContextHolder.getChannelCode();
         if (StrUtil.isNotBlank(channelCode)) {
-            ChannelConfigTool config = channelConfigToolService.getByChannelToolType(channelCode, toolCode, 1);
-            if (config != null && StrUtil.isNotBlank(config.getConfigJson())) {
-                try {
-                    JSONObject json = JSONUtil.parseObj(config.getConfigJson());
-                    if (json.getJSONArray("repoIds") != null) {
-                        merged.addAll(json.getJSONArray("repoIds").toList(Long.class));
-                    }
-                } catch (Exception e) {
-                    log.warn("解析渠道补充知识库配置失败: channelCode={}, toolCode={}", channelCode, toolCode);
-                }
-            }
+            merged.addAll(channelConfigToolBridge.listChannelRepoIds(channelCode, toolCode));
         }
         return List.copyOf(merged);
     }
