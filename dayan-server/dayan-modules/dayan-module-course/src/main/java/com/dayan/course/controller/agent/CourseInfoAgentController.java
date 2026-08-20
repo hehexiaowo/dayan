@@ -43,7 +43,7 @@ public class CourseInfoAgentController {
         return R.ok(courseInfoService.listForAgent(channelCode, courseType, courseSource));
     }
 
-    @Operation(summary = "上架课程分页（支持关键词/分类筛选）")
+    @Operation(summary = "上架课程分页（支持关键词/分类筛选，按渠道配置过滤）")
     @GetMapping("/page")
     public R<PageResult<CourseAgentVO>> page(
             @Parameter(description = "课程类型") @RequestParam(required = false) Integer courseType,
@@ -52,7 +52,8 @@ public class CourseInfoAgentController {
             @Parameter(description = "分类编码") @RequestParam(required = false) String categoryCode,
             @RequestParam(defaultValue = "1") int current,
             @RequestParam(defaultValue = "20") int size) {
-        return R.ok(courseInfoService.pagePublished(courseType, courseSource, keyword, categoryCode, current, size));
+        String channelCode = ContextHolder.getChannelCode();
+        return R.ok(courseInfoService.pagePublished(channelCode, courseType, courseSource, keyword, categoryCode, current, size));
     }
 
     @Operation(summary = "各板块上架课程计数")

@@ -331,10 +331,17 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     }
 
     @Override
-    public PageResult<CourseAgentVO> pagePublished(Integer courseType, Integer courseSource,
+    public PageResult<CourseAgentVO> pagePublished(String channelCode, Integer courseType, Integer courseSource,
                                                    String keyword, String categoryCode,
                                                    int current, int size) {
+        // 渠道配置的课程
+        List<String> configuredCodes = channelConfigCourseBridge.listConfiguredCourseCodes(channelCode);
+        if (configuredCodes.isEmpty()) {
+            return new PageResult<>(current, size, 0L, List.of());
+        }
+
         LambdaQueryWrapper<CourseInfo> wrapper = new LambdaQueryWrapper<CourseInfo>()
+                .in(CourseInfo::getCourseCode, configuredCodes)
                 .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
                 .eq(courseType != null, CourseInfo::getCourseType, courseType)
                 .eq(courseSource != null, CourseInfo::getCourseSource, courseSource)

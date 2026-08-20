@@ -45,8 +45,8 @@ public interface CourseInfoService {
     /** Agent 端课程列表：平台课程 + 本渠道课程（按渠道过滤） */
     List<CourseAgentVO> listForAgent(String channelCode, Integer courseType, Integer courseSource);
 
-    /** Agent 端：上架课程分页（courseType/courseSource/keyword/categoryCode 可空） */
-    PageResult<CourseAgentVO> pagePublished(Integer courseType, Integer courseSource,
+    /** Agent 端：上架课程分页（courseType/courseSource/keyword/categoryCode 可空，按渠道配置过滤） */
+    PageResult<CourseAgentVO> pagePublished(String channelCode, Integer courseType, Integer courseSource,
                                             String keyword, String categoryCode,
                                             int current, int size);
 
