@@ -50,8 +50,8 @@ public interface CourseInfoService {
                                             String keyword, String categoryCode,
                                             int current, int size);
 
-    /** Agent 端：各板块上架课程计数（key=courseSource, value=count） */
-    Map<Integer, Long> countPublishedBySource();
+    /** Agent 端：各板块上架课程计数（key=courseSource, value=count，按渠道配置过滤） */
+    Map<Integer, Long> countPublishedBySource(String channelCode);
 
     /** Agent 端：上架课程详情（仅上架可访问；view_count +1；聚合讲师简要信息） */
     CourseAgentVO getPublishedDetail(String courseCode);

@@ -369,10 +369,16 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     }
 
     @Override
-    public Map<Integer, Long> countPublishedBySource() {
+    public Map<Integer, Long> countPublishedBySource(String channelCode) {
+        // 渠道配置的课程
+        List<String> configuredCodes = channelConfigCourseBridge.listConfiguredCourseCodes(channelCode);
+        if (configuredCodes.isEmpty()) {
+            return Map.of();
+        }
         // 按 courseSource 分组计数，仅上架课程
         List<CourseInfo> courses = courseInfoMapper.selectList(
                 new LambdaQueryWrapper<CourseInfo>()
+                        .in(CourseInfo::getCourseCode, configuredCodes)
                         .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
                         .select(CourseInfo::getCourseSource));
         return courses.stream()

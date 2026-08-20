@@ -56,10 +56,11 @@ public class CourseInfoAgentController {
         return R.ok(courseInfoService.pagePublished(channelCode, courseType, courseSource, keyword, categoryCode, current, size));
     }
 
-    @Operation(summary = "各板块上架课程计数")
+    @Operation(summary = "各板块上架课程计数（按渠道配置过滤）")
     @GetMapping("/count")
     public R<Map<Integer, Long>> count() {
-        return R.ok(courseInfoService.countPublishedBySource());
+        String channelCode = ContextHolder.getChannelCode();
+        return R.ok(courseInfoService.countPublishedBySource(channelCode));
     }
 
     @Operation(summary = "课程详情（仅上架；累加浏览量）")
