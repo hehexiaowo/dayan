@@ -10,10 +10,6 @@
     <view class="tools-card">
       <view class="tools-title">常用功能</view>
       <view class="tools-grid">
-        <view class="tool-item dy-clickable" @click="onTool('lead')">
-          <DyIconBlock text="线" color="blue" size="md" />
-          <text class="tool-label">线索管理</text>
-        </view>
         <view class="tool-item dy-clickable" @click="onTool('content')">
           <DyIconBlock text="文" color="green" size="md" />
           <text class="tool-label">内容获客</text>
@@ -22,17 +18,33 @@
           <DyIconBlock text="海" color="orange" size="md" />
           <text class="tool-label">营销海报</text>
         </view>
+        <view class="tool-item dy-clickable" @click="onTool('lead')">
+          <DyIconBlock text="线" color="blue" size="md" />
+          <text class="tool-label">线索管理</text>
+        </view>
         <view class="tool-item dy-clickable" @click="onTool('card')">
           <DyIconBlock text="名" color="blue" size="md" />
           <text class="tool-label">电子名片</text>
         </view>
+        <view class="tool-item dy-clickable" @click="onTool('sojourn')">
+          <DyIconBlock text="旅" color="green" size="md" />
+          <text class="tool-label">旅游短居</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('vital')">
+          <DyIconBlock text="活" color="orange" size="md" />
+          <text class="tool-label">活力长居</text>
+        </view>
+        <view class="tool-item dy-clickable" @click="onTool('care')">
+          <DyIconBlock text="照" color="red" size="md" />
+          <text class="tool-label">照护长居</text>
+        </view>
         <view class="tool-item dy-clickable" @click="onTool('pensioncal')">
           <DyIconBlock text="退" color="orange" size="md" />
-          <text class="tool-label">养老计算</text>
+          <text class="tool-label">养老金计算</text>
         </view>
         <view class="tool-item dy-clickable" @click="onTool('gapcal')">
           <DyIconBlock text="缺" color="red" size="md" />
-          <text class="tool-label">缺口计算</text>
+          <text class="tool-label">缺口计算器</text>
         </view>
         <view class="tool-item dy-clickable" @click="onTool('aiartist')">
           <DyIconBlock text="AI" color="red" size="md" />
@@ -41,10 +53,6 @@
         <view class="tool-item dy-clickable" @click="onTool('aichat')">
           <DyIconBlock text="答" color="red" size="md" />
           <text class="tool-label">你问我答</text>
-        </view>
-        <view class="tool-item dy-clickable" @click="onTool('network')">
-          <DyIconBlock text="网" color="green" size="md" />
-          <text class="tool-label">养老网络</text>
         </view>
       </view>
     </view>
@@ -206,8 +214,16 @@ function onTool(type: string) {
     uni.navigateTo({ url: '/pages/acquisition/aichat/index' });
     return;
   }
-  if (type === 'network') {
-    uni.navigateTo({ url: '/pages/business/park/index' });
+  if (type === 'vital') {
+    uni.navigateTo({ url: '/pages/business/park/vital/list' });
+    return;
+  }
+  if (type === 'care') {
+    uni.navigateTo({ url: '/pages/business/park/care/list' });
+    return;
+  }
+  if (type === 'sojourn') {
+    uni.navigateTo({ url: '/pages/business/park/sojourn/list' });
     return;
   }
   uni.showToast({ title: '功能开发中', icon: 'none' });
