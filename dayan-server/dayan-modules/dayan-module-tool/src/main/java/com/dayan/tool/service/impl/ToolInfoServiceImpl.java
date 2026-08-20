@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 工具服务实现。
@@ -74,6 +76,32 @@ public class ToolInfoServiceImpl implements ToolInfoService {
                         .eq(ToolInfo::getStatus, 1)
                         .orderByAsc(ToolInfo::getId))
                 .stream().map(this::toVO).toList();
+    }
+
+    @Override
+    public List<ToolInfoVO> listForAgent(String channelCode) {
+        // 全部启用工具
+        List<ToolInfoVO> allTools = toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
+                        .eq(ToolInfo::getStatus, 1)
+                        .orderByAsc(ToolInfo::getId))
+                .stream().map(this::toVO).toList();
+
+        // 渠道配置的工具（可能包含额外工具，需要补充）
+        List<String> configuredCodes = channelConfigToolBridge.listConfiguredToolCodes(channelCode);
+        if (configuredCodes.isEmpty()) {
+            return allTools;
+        }
+        // 补充配置工具（去重）
+        Set<String> existingCodes = allTools.stream().map(ToolInfoVO::getToolCode).collect(Collectors.toSet());
+        List<String> newCodes = configuredCodes.stream().filter(c -> !existingCodes.contains(c)).toList();
+        if (!newCodes.isEmpty()) {
+            List<ToolInfoVO> configuredTools = toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
+                            .in(ToolInfo::getToolCode, newCodes)
+                            .eq(ToolInfo::getStatus, 1))
+                    .stream().map(this::toVO).toList();
+            allTools.addAll(configuredTools);
+        }
+        return allTools;
     }
 
     @Override

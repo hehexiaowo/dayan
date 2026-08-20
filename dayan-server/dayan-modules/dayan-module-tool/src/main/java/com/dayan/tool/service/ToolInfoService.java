@@ -31,6 +31,14 @@ public interface ToolInfoService {
      */
     List<ToolInfoVO> listEnabled();
 
+    /**
+     * Agent 端工具列表（按渠道过滤）：全部启用工具 ∪ 渠道配置工具（并集）。
+     *
+     * @param channelCode 渠道编码
+     * @return 工具列表（去重）
+     */
+    List<ToolInfoVO> listForAgent(String channelCode);
+
     /** 问答人物列表（tool_type=aichat 且启用，按 id 升序；repoIds 已做渠道合并） */
     List<ToolAichatPersonaVO> listQaPersonas();
 

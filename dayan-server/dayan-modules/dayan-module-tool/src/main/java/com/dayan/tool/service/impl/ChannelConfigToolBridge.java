@@ -26,6 +26,30 @@ public class ChannelConfigToolBridge {
     private final JdbcTemplate jdbcTemplate;
 
     /**
+     * 读取渠道已配置的工具编码列表（config_type=0, status=1）。
+     *
+     * @param channelCode 渠道编码
+     * @return 工具编码列表（不存在返回空列表）
+     */
+    public List<String> listConfiguredToolCodes(String channelCode) {
+        if (StrUtil.isBlank(channelCode)) {
+            return List.of();
+        }
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT tool_code FROM channel_config_tool WHERE channel_code = ? AND config_type = 0 AND status = 1 AND deleted = 0",
+                    channelCode);
+            return rows.stream()
+                    .map(r -> (String) r.get("tool_code"))
+                    .filter(StrUtil::isNotBlank)
+                    .toList();
+        } catch (Exception e) {
+            log.warn("读取渠道工具配置失败: channelCode={}", channelCode, e);
+            return List.of();
+        }
+    }
+
+    /**
      * 读取渠道补充知识库 ID 列表（从 channel_config_tool 读 config_type=1 的 config_json.repoIds）。
      *
      * @param channelCode 渠道编码

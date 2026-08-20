@@ -1,6 +1,7 @@
 package com.dayan.tool.controller.agent;
 
 import com.dayan.common.core.resp.R;
+import com.dayan.common.mybatis.context.ContextHolder;
 import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.ToolInfoVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,9 +27,10 @@ public class AgentToolController {
 
     private final ToolInfoService toolInfoService;
 
-    @Operation(summary = "端上可用工具列表")
+    @Operation(summary = "启用工具列表（按渠道过滤）")
     @GetMapping
     public R<List<ToolInfoVO>> list() {
-        return R.ok(toolInfoService.listEnabled());
+        String channelCode = ContextHolder.getChannelCode();
+        return R.ok(toolInfoService.listForAgent(channelCode));
     }
 }
