@@ -259,6 +259,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         ToolAichatPersonaVO vo = new ToolAichatPersonaVO();
         vo.setToolCode(tool.getToolCode());
         vo.setPersonaName(tool.getToolName());
+        vo.setToolDesc(tool.getToolDesc());
         if (StrUtil.isNotBlank(tool.getConfigJson())) {
             JSONObject cfg = JSONUtil.parseObj(tool.getConfigJson());
             vo.setIcon(cfg.getStr("icon"));

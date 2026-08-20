@@ -16,6 +16,9 @@ public class ToolAichatPersonaVO {
     /** 人物名称（= tool_info.tool_name） */
     private String personaName;
 
+    /** 工具简介（= tool_info.tool_desc） */
+    private String toolDesc;
+
     /** 头像（文字或图标名） */
     private String icon;
 
