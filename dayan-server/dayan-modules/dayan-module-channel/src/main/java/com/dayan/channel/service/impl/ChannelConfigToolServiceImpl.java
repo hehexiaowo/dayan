@@ -9,6 +9,8 @@ import com.dayan.channel.service.ChannelConfigToolService;
 import com.dayan.common.core.exception.BusinessException;
 import com.dayan.common.core.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +63,18 @@ public class ChannelConfigToolServiceImpl implements ChannelConfigToolService {
         if (StrUtil.isBlank(value)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, message);
         }
+    }
+
+    @Override
+    public List<String> listConfiguredToolCodes(String channelCode, int configType) {
+        if (StrUtil.isBlank(channelCode)) {
+            return List.of();
+        }
+        return configToolMapper.selectList(new LambdaQueryWrapper<ChannelConfigTool>()
+                        .select(ChannelConfigTool::getToolCode)
+                        .eq(ChannelConfigTool::getChannelCode, channelCode)
+                        .eq(ChannelConfigTool::getConfigType, configType))
+                .stream().map(ChannelConfigTool::getToolCode).toList();
     }
 
     private void validateJson(String configJson) {

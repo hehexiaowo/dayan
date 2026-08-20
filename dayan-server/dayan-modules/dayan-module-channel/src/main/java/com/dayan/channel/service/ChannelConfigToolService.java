@@ -2,6 +2,8 @@ package com.dayan.channel.service;
 
 import com.dayan.channel.entity.ChannelConfigTool;
 
+import java.util.List;
+
 /**
  * 渠道工具配置服务（通用读写：按 channel_code + tool_code + config_type 操作 config_json）。
  *
@@ -18,4 +20,9 @@ public interface ChannelConfigToolService {
      * 保存/更新配置（全量替换：删除旧行后插入；configJson 必须为合法 JSON）。
      */
     void save(String channelCode, String toolCode, int configType, String configJson);
+
+    /**
+     * 按渠道查询所有已配置的工具编码（config_type 指定，status=1）。
+     */
+    List<String> listConfiguredToolCodes(String channelCode, int configType);
 }

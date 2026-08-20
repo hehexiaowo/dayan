@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +57,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     private final CourseInfoMapper courseInfoMapper;
     private final CourseLecturerMapper courseLecturerMapper;
     private final SequenceProvider sequenceProvider;
+    private final ChannelConfigCourseBridge channelConfigCourseBridge;
 
     @Override
     public PageResult<CourseInfoVO> page(CourseInfoQueryDTO query) {
@@ -386,7 +388,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     @Override
     public List<CourseAgentVO> listForAgent(String channelCode, Integer courseType, Integer courseSource) {
         // 平台课程（channel_code IS NULL）+ 本渠道课程（channel_code = channelCode）
-        return courseInfoMapper.selectList(new LambdaQueryWrapper<CourseInfo>()
+        List<CourseAgentVO> courses = courseInfoMapper.selectList(new LambdaQueryWrapper<CourseInfo>()
                         .eq(CourseInfo::getCourseStatus, STATUS_ONLINE)
                         .eq(courseType != null, CourseInfo::getCourseType, courseType)
                         .eq(courseSource != null, CourseInfo::getCourseSource, courseSource)
@@ -394,6 +396,23 @@ public class CourseInfoServiceImpl implements CourseInfoService {
                                 .or().eq(CourseInfo::getChannelCode, channelCode))
                         .orderByAsc(CourseInfo::getSortOrder))
                 .stream().map(this::toAgentVO).toList();
+
+        // 渠道配置的课程（可能包含外部课程，需要补充）
+        List<String> configuredCodes = channelConfigCourseBridge.listConfiguredCourseCodes(channelCode);
+        if (configuredCodes.isEmpty()) {
+            return courses;
+        }
+        // 补充配置课程（去重）
+        Set<String> existingCodes = courses.stream().map(CourseAgentVO::getCourseCode).collect(Collectors.toSet());
+        List<String> newCodes = configuredCodes.stream().filter(c -> !existingCodes.contains(c)).toList();
+        if (!newCodes.isEmpty()) {
+            List<CourseAgentVO> configuredCourses = courseInfoMapper.selectList(new LambdaQueryWrapper<CourseInfo>()
+                            .in(CourseInfo::getCourseCode, newCodes)
+                            .eq(CourseInfo::getCourseStatus, STATUS_ONLINE))
+                    .stream().map(this::toAgentVO).toList();
+            courses.addAll(configuredCourses);
+        }
+        return courses;
     }
 
     @Override
