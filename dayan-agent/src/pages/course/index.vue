@@ -140,8 +140,10 @@ async function loadCounts() {
   loadError.value = false;
   try {
     const map = await getCourseCounts();
+    // 所有配置的课程总数（不分 courseSource）
+    const total = Object.values(map).reduce((sum, count) => sum + count, 0);
     counts.dayan = map['1'] ?? 0;
-    counts.channel = map['2'] ?? 0;
+    counts.channel = total; // 渠道课程显示所有配置的课程总数
     counts.external = map['3'] ?? 0;
     counts.yanming = map['4'] ?? 0;
   } catch {
