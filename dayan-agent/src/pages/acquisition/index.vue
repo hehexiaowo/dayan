@@ -38,6 +38,10 @@
           <DyIconBlock text="照" color="red" size="md" />
           <text class="tool-label">照护网络</text>
         </view>
+        <view class="tool-item dy-clickable" @click="onTool('brand')">
+          <DyIconBlock text="品" color="blue" size="md" />
+          <text class="tool-label">养老品牌</text>
+        </view>
         <view class="tool-item dy-clickable" @click="onTool('pensioncal')">
           <DyIconBlock text="退" color="orange" size="md" />
           <text class="tool-label">养老金计算</text>
@@ -224,6 +228,10 @@ function onTool(type: string) {
   }
   if (type === 'sojourn') {
     uni.navigateTo({ url: '/pages/business/park/sojourn/list' });
+    return;
+  }
+  if (type === 'brand') {
+    uni.showToast({ title: '养老品牌功能开发中', icon: 'none' });
     return;
   }
   uni.showToast({ title: '功能开发中', icon: 'none' });
