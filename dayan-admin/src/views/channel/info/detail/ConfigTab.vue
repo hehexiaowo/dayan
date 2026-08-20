@@ -21,7 +21,11 @@ import {
   listSceneConfigs,
   saveSceneConfigs,
   listGoodsConfigs,
-  saveGoodsConfigs
+  saveGoodsConfigs,
+  listCourseConfigs,
+  saveCourseConfigs,
+  listToolConfigs,
+  saveToolConfigs
 } from '@/api/channel-sub'
 import {
   CHANNEL_CONTENT_TYPE_OPTIONS,
@@ -33,14 +37,16 @@ import {
 import type {
   ChannelConfigContent,
   ChannelConfigScene,
-  ChannelConfigGoods
+  ChannelConfigGoods,
+  ChannelConfigCourse,
+  ChannelConfigTool
 } from '@/types/channel'
 
 const props = defineProps<{
   channelCode: string
 }>()
 
-const activeSubTab = ref<'content' | 'scene' | 'goods'>('content')
+const activeSubTab = ref<'content' | 'scene' | 'goods' | 'course' | 'tool'>('content')
 
 // ==================== 内容配置 ====================
 const contentLoading = ref(false)
@@ -191,8 +197,100 @@ async function saveGoods() {
   }
 }
 
+// ==================== 课程配置 ====================
+const courseLoading = ref(false)
+const courseSaving = ref(false)
+const courseList = ref<ChannelConfigCourse[]>([])
+
+async function loadCourse() {
+  courseLoading.value = true
+  try {
+    courseList.value = await listCourseConfigs(props.channelCode)
+  } catch {
+    courseList.value = []
+  } finally {
+    courseLoading.value = false
+  }
+}
+
+function addCourseRow() {
+  courseList.value.push({
+    channelCode: props.channelCode,
+    courseCode: '',
+    configType: 0,
+    configJson: '{}',
+    status: 1
+  })
+}
+
+function removeCourseRow(index: number) {
+  courseList.value.splice(index, 1)
+}
+
+async function saveCourse() {
+  const invalid = courseList.value.find((c) => !c.courseCode)
+  if (invalid) {
+    ElMessage.warning('存在课程编码为空的行，请补全或删除')
+    return
+  }
+  courseSaving.value = true
+  try {
+    await saveCourseConfigs(props.channelCode, courseList.value)
+    ElMessage.success('课程配置已保存')
+    await loadCourse()
+  } finally {
+    courseSaving.value = false
+  }
+}
+
+// ==================== 工具配置 ====================
+const toolLoading = ref(false)
+const toolSaving = ref(false)
+const toolList = ref<ChannelConfigTool[]>([])
+
+async function loadTool() {
+  toolLoading.value = true
+  try {
+    toolList.value = await listToolConfigs(props.channelCode)
+  } catch {
+    toolList.value = []
+  } finally {
+    toolLoading.value = false
+  }
+}
+
+function addToolRow() {
+  toolList.value.push({
+    channelCode: props.channelCode,
+    toolCode: '',
+    configType: 0,
+    configJson: '{}',
+    status: 1
+  })
+}
+
+function removeToolRow(index: number) {
+  toolList.value.splice(index, 1)
+}
+
+async function saveTool() {
+  const invalid = toolList.value.find((t) => !t.toolCode)
+  if (invalid) {
+    ElMessage.warning('存在工具编码为空的行，请补全或删除')
+    return
+  }
+  toolSaving.value = true
+  try {
+    await saveToolConfigs(props.channelCode, toolList.value)
+    ElMessage.success('工具配置已保存')
+    await loadTool()
+  } finally {
+    toolSaving.value = false
+  }
+}
+
 // ==================== 整体清空 ====================
-async function clearAll(type: 'content' | 'scene' | 'goods') {
+async function clearAll(type: 'content' | 'scene' | 'goods' | 'course' | 'tool') {
   await ElMessageBox.confirm('确定清空当前渠道的该类配置吗？保存后生效。', '清空配置', {
     confirmButtonText: '确定清空',
     cancelButtonText: '取消',
@@ -200,7 +298,9 @@ async function clearAll(type: 'content' | 'scene' | 'goods') {
   })
   if (type === 'content') contentList.value = []
   else if (type === 'scene') sceneList.value = []
-  else goodsList.value = []
+  else if (type === 'goods') goodsList.value = []
+  else if (type === 'course') courseList.value = []
+  else toolList.value = []
   ElMessage.success('已清空，点击「保存配置」生效')
 }
 
@@ -213,10 +313,12 @@ watch(
   { immediate: true }
 )
 
-// 切换子 tab 时按需加载（避免一次拉 3 类）
+// 切换子 tab 时按需加载（避免一次拉 5 类）
 function handleSubTabChange(name: string | number) {
   if (name === 'scene' && sceneList.value.length === 0 && !sceneLoading.value) loadScene()
   else if (name === 'goods' && goodsList.value.length === 0 && !goodsLoading.value) loadGoods()
+  else if (name === 'course' && courseList.value.length === 0 && !courseLoading.value) loadCourse()
+  else if (name === 'tool' && toolList.value.length === 0 && !toolLoading.value) loadTool()
 }
 </script>
 
@@ -225,7 +327,7 @@ function handleSubTabChange(name: string | number) {
     <el-alert
       type="info"
       :closable="false"
-      title="分发配置采用「整体保存」模式：可新增/删除行（仅前端），点击「保存配置」后端先删后增全量覆盖。contentCode/sceneCode/goodsCode 为关联主档案的业务编码。"
+      title="分发配置采用「整体保存」模式：可新增/删除行（仅前端），点击「保存配置」后端先删后增全量覆盖。contentCode/sceneCode/goodsCode/courseCode/toolCode 为关联主档案的业务编码。"
       show-icon
       style="margin-bottom: 12px"
     />
@@ -448,6 +550,89 @@ function handleSubTabChange(name: string | number) {
           </el-table-column>
         </el-table>
         <el-empty v-if="!goodsLoading && goodsList.length === 0" description="暂无商品配置，点击「新增行」" />
+      </el-tab-pane>
+
+      <!-- ========== 课程配置 ========== -->
+      <el-tab-pane label="课程配置" name="course">
+        <div class="sub-toolbar">
+          <span class="count">共 {{ courseList.length }} 条</span>
+          <div class="sub-toolbar-actions">
+            <el-button type="primary" :icon="'Plus'" @click="addCourseRow">新增行</el-button>
+            <el-button :icon="'Delete'" size="small" @click="clearAll('course')">清空</el-button>
+            <el-button type="success" :icon="'Check'" size="small" :loading="courseSaving" @click="saveCourse">
+              保存配置
+            </el-button>
+          </div>
+        </div>
+        <el-table v-loading="courseLoading" :data="courseList" border stripe size="small" row-key="courseCode">
+          <el-table-column label="课程编码" min-width="160">
+            <template #default="{ row }">
+              <el-input v-model="row.courseCode" placeholder="关联课程编码" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="配置类型" width="120" align="center">
+            <template #default="{ row }">
+              <el-select v-model="row.configType" size="small" style="width: 100%">
+                <el-option :value="0" label="基础可见性" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-select v-model="row.status" size="small" style="width: 100%">
+                <el-option v-for="o in CHANNEL_CONFIG_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="80" fixed="right" align="center">
+            <template #default="{ $index }">
+              <el-button link type="danger" size="small" @click="removeCourseRow($index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-if="!courseLoading && courseList.length === 0" description="暂无课程配置，点击「新增行」" />
+      </el-tab-pane>
+
+      <!-- ========== 工具配置 ========== -->
+      <el-tab-pane label="工具配置" name="tool">
+        <div class="sub-toolbar">
+          <span class="count">共 {{ toolList.length }} 条</span>
+          <div class="sub-toolbar-actions">
+            <el-button type="primary" :icon="'Plus'" @click="addToolRow">新增行</el-button>
+            <el-button :icon="'Delete'" size="small" @click="clearAll('tool')">清空</el-button>
+            <el-button type="success" :icon="'Check'" size="small" :loading="toolSaving" @click="saveTool">
+              保存配置
+            </el-button>
+          </div>
+        </div>
+        <el-table v-loading="toolLoading" :data="toolList" border stripe size="small" row-key="toolCode">
+          <el-table-column label="工具编码" min-width="160">
+            <template #default="{ row }">
+              <el-input v-model="row.toolCode" placeholder="关联工具编码" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="配置类型" width="120" align="center">
+            <template #default="{ row }">
+              <el-select v-model="row.configType" size="small" style="width: 100%">
+                <el-option :value="0" label="基础可见性" />
+                <el-option :value="1" label="问答知识库补充" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-select v-model="row.status" size="small" style="width: 100%">
+                <el-option v-for="o in CHANNEL_CONFIG_STATUS_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="80" fixed="right" align="center">
+            <template #default="{ $index }">
+              <el-button link type="danger" size="small" @click="removeToolRow($index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-if="!toolLoading && toolList.length === 0" description="暂无工具配置，点击「新增行」" />
       </el-tab-pane>
     </el-tabs>
   </div>

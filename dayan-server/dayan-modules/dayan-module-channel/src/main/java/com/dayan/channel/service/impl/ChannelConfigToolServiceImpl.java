@@ -77,6 +77,37 @@ public class ChannelConfigToolServiceImpl implements ChannelConfigToolService {
                 .stream().map(ChannelConfigTool::getToolCode).toList();
     }
 
+    @Override
+    public List<ChannelConfigTool> listByChannel(String channelCode) {
+        requireNotBlank(channelCode, "渠道编码不能为空");
+        return configToolMapper.selectList(new LambdaQueryWrapper<ChannelConfigTool>()
+                .eq(ChannelConfigTool::getChannelCode, channelCode)
+                .orderByAsc(ChannelConfigTool::getId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveAll(String channelCode, List<ChannelConfigTool> configs) {
+        requireNotBlank(channelCode, "渠道编码不能为空");
+        // 先删后增（全量覆盖）
+        configToolMapper.delete(new LambdaQueryWrapper<ChannelConfigTool>()
+                .eq(ChannelConfigTool::getChannelCode, channelCode));
+        if (configs == null || configs.isEmpty()) {
+            log.info("渠道工具配置已清空: channelCode={}", channelCode);
+            return;
+        }
+        for (ChannelConfigTool config : configs) {
+            config.setId(null);
+            config.setChannelCode(channelCode);
+            if (config.getConfigType() == null) config.setConfigType(0);
+            if (config.getConfigJson() == null) config.setConfigJson("{}");
+            if (config.getStatus() == null) config.setStatus(1);
+            validateJson(config.getConfigJson());
+            configToolMapper.insert(config);
+        }
+        log.info("渠道工具配置批量保存成功: channelCode={}, 数量={}", channelCode, configs.size());
+    }
+
     private void validateJson(String configJson) {
         if (StrUtil.isBlank(configJson)) {
             return;

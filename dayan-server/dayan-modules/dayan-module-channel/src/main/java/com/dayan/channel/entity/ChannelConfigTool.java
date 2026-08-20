@@ -35,4 +35,7 @@ public class ChannelConfigTool extends BaseEntity {
 
     /** 配置内容 JSON（格式随 config_type 不同） */
     private String configJson;
+
+    /** 状态（0=禁用 1=启用） */
+    private Integer status;
 }

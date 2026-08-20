@@ -9,7 +9,9 @@ import type {
   ChannelOpenPlatformQuery,
   ChannelConfigContent,
   ChannelConfigScene,
-  ChannelConfigGoods
+  ChannelConfigGoods,
+  ChannelConfigCourse,
+  ChannelConfigTool
 } from '@/types/channel'
 
 /**
@@ -233,6 +235,44 @@ export function listGoodsConfigs(channelCode: string): Promise<ChannelConfigGood
 export function saveGoodsConfigs(channelCode: string, data: ChannelConfigGoods[]): Promise<void> {
   return request<void>({
     url: `/admin-api/channel-configs/${channelCode}/goods`,
+    method: 'put',
+    data
+  })
+}
+
+// ---------- 课程配置（course）----------
+
+/** 课程配置列表：GET /admin-api/channel-configs/{channelCode}/course */
+export function listCourseConfigs(channelCode: string): Promise<ChannelConfigCourse[]> {
+  return request<ChannelConfigCourse[]>({
+    url: `/admin-api/channel-configs/${channelCode}/course`,
+    method: 'get'
+  })
+}
+
+/** 保存课程配置（全量覆盖）：PUT /admin-api/channel-configs/{channelCode}/course */
+export function saveCourseConfigs(channelCode: string, data: ChannelConfigCourse[]): Promise<void> {
+  return request<void>({
+    url: `/admin-api/channel-configs/${channelCode}/course`,
+    method: 'put',
+    data
+  })
+}
+
+// ---------- 工具配置（tool）----------
+
+/** 工具配置列表：GET /admin-api/channel-configs/{channelCode}/tool */
+export function listToolConfigs(channelCode: string): Promise<ChannelConfigTool[]> {
+  return request<ChannelConfigTool[]>({
+    url: `/admin-api/channel-configs/${channelCode}/tool`,
+    method: 'get'
+  })
+}
+
+/** 保存工具配置（全量覆盖）：PUT /admin-api/channel-configs/{channelCode}/tool */
+export function saveToolConfigs(channelCode: string, data: ChannelConfigTool[]): Promise<void> {
+  return request<void>({
+    url: `/admin-api/channel-configs/${channelCode}/tool`,
     method: 'put',
     data
   })

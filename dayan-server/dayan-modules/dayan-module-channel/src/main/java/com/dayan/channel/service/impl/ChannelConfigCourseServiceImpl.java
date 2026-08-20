@@ -78,6 +78,37 @@ public class ChannelConfigCourseServiceImpl implements ChannelConfigCourseServic
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<ChannelConfigCourse> listByChannel(String channelCode) {
+        requireNotBlank(channelCode, "渠道编码不能为空");
+        return configCourseMapper.selectList(new LambdaQueryWrapper<ChannelConfigCourse>()
+                .eq(ChannelConfigCourse::getChannelCode, channelCode)
+                .orderByAsc(ChannelConfigCourse::getId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveAll(String channelCode, List<ChannelConfigCourse> configs) {
+        requireNotBlank(channelCode, "渠道编码不能为空");
+        // 先删后增（全量覆盖）
+        configCourseMapper.delete(new LambdaQueryWrapper<ChannelConfigCourse>()
+                .eq(ChannelConfigCourse::getChannelCode, channelCode));
+        if (configs == null || configs.isEmpty()) {
+            log.info("渠道课程配置已清空: channelCode={}", channelCode);
+            return;
+        }
+        for (ChannelConfigCourse config : configs) {
+            config.setId(null);
+            config.setChannelCode(channelCode);
+            if (config.getConfigType() == null) config.setConfigType(0);
+            if (config.getConfigJson() == null) config.setConfigJson("{}");
+            if (config.getStatus() == null) config.setStatus(1);
+            validateJson(config.getConfigJson());
+            configCourseMapper.insert(config);
+        }
+        log.info("渠道课程配置批量保存成功: channelCode={}, 数量={}", channelCode, configs.size());
+    }
+
     private void requireNotBlank(String value, String message) {
         if (StrUtil.isBlank(value)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, message);

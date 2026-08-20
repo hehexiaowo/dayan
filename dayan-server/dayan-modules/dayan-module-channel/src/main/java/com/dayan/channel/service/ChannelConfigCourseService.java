@@ -22,4 +22,14 @@ public interface ChannelConfigCourseService {
      * 按渠道查询所有已配置的课程编码（config_type=0，status=1）。
      */
     List<String> listConfiguredCourseCodes(String channelCode);
+
+    /**
+     * 按渠道查询所有配置（用于 admin 端列表）。
+     */
+    List<ChannelConfigCourse> listByChannel(String channelCode);
+
+    /**
+     * 批量保存（全量覆盖：先删后增）。
+     */
+    void saveAll(String channelCode, List<ChannelConfigCourse> configs);
 }

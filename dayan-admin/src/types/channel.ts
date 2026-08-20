@@ -480,3 +480,40 @@ export const CHANNEL_YES_NO_OPTIONS = [
   { label: '否', value: 0 },
   { label: '是', value: 1 }
 ] as const
+
+// ==================== 子表：渠道配置（Config course/tool，list+save 全量覆盖模式）====================
+
+/**
+ * 渠道配置课程（ChannelConfigCourse）。
+ *
+ * 关联到 course 主档案的 courseCode，config_type=0 为基础可见性配置。
+ */
+export interface ChannelConfigCourse {
+  id?: number
+  channelCode?: string
+  courseCode: string
+  /** 配置类型（0=基础可见性，预留扩展） */
+  configType?: number
+  /** 配置内容 JSON（格式随 config_type 不同） */
+  configJson?: string
+  /** 状态：0禁用/1启用 */
+  status?: number
+}
+
+/**
+ * 渠道配置工具（ChannelConfigTool）。
+ *
+ * 关联到 tool 主档案的 toolCode，config_type=0 为基础可见性配置，
+ * config_type=1 为问答人物知识库补充。
+ */
+export interface ChannelConfigTool {
+  id?: number
+  channelCode?: string
+  toolCode: string
+  /** 配置类型（0=基础可见性，1=问答人物知识库补充） */
+  configType?: number
+  /** 配置内容 JSON（格式随 config_type 不同） */
+  configJson?: string
+  /** 状态：0禁用/1启用 */
+  status?: number
+}

@@ -25,4 +25,14 @@ public interface ChannelConfigToolService {
      * 按渠道查询所有已配置的工具编码（config_type 指定，status=1）。
      */
     List<String> listConfiguredToolCodes(String channelCode, int configType);
+
+    /**
+     * 按渠道查询所有配置（用于 admin 端列表）。
+     */
+    List<ChannelConfigTool> listByChannel(String channelCode);
+
+    /**
+     * 批量保存（全量覆盖：先删后增）。
+     */
+    void saveAll(String channelCode, List<ChannelConfigTool> configs);
 }
