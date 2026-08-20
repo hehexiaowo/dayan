@@ -166,3 +166,13 @@ VALUES
   ('channel:tool:aichat:update', '问答人物补充库',   'channel:system', 3, '/channel-api/tools/aichat/personas/*/repos',   'PUT',  211, 1, NOW(), NOW(), 'system', 'system', 0)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
+-- ========== 增量：课程配置权限码 ==========
+INSERT INTO `channel_permission`
+  (`permission_code`, `permission_name`, `parent_code`, `permission_type`,
+   `path`, `method`, `sort_order`, `status`,
+   `created_at`, `updated_at`, `creator`, `updater`, `deleted`)
+VALUES
+  ('channel:course:view',   '课程配置查看',   'channel:system', 3, '/channel-api/courses/config/**',   'GET',  220, 1, NOW(), NOW(), 'system', 'system', 0),
+  ('channel:course:update', '课程配置更新',   'channel:system', 3, '/channel-api/courses/config/**',   'PUT',  221, 1, NOW(), NOW(), 'system', 'system', 0)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+

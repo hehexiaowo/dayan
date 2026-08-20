@@ -189,3 +189,13 @@ VALUES
  'ChatDotRound', 50, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
 ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
 
+-- ==================== 课程配置（系统管理 → 课程配置，渠道课程可见性配置）====================
+INSERT INTO system_menu
+(menu_code, menu_name, parent_code, menu_type, path, component, permission_code,
+ icon, sort_order, is_visible, is_external, is_cache, domain_type, status,
+ created_at, updated_at, creator, updater, deleted, deleted_at)
+VALUES
+('channel_system_course', '课程配置', 'channel_system', 2, '/system/course', 'system/course/index', 'channel:course:view',
+ 'Reading', 60, 1, 0, 0, 'channel', 1, NOW(), NOW(), 'system', 'system', 0, NULL)
+ON DUPLICATE KEY UPDATE `updated_at` = `updated_at`;
+
