@@ -42,19 +42,20 @@
           <DyIconBlock text="品" color="blue" size="md" />
           <text class="tool-label">养老品牌</text>
         </view>
-        <view class="tool-item dy-clickable" @click="onTool('pensioncal')">
+        <!-- 配置菜单：需 channel 端配置才显示 -->
+        <view v-if="hasPension" class="tool-item dy-clickable" @click="onTool('pensioncal')">
           <DyIconBlock text="退" color="orange" size="md" />
           <text class="tool-label">养老金计算</text>
         </view>
-        <view class="tool-item dy-clickable" @click="onTool('gapcal')">
+        <view v-if="hasGap" class="tool-item dy-clickable" @click="onTool('gapcal')">
           <DyIconBlock text="缺" color="red" size="md" />
           <text class="tool-label">缺口计算</text>
         </view>
-        <view class="tool-item dy-clickable" @click="onTool('aiartist')">
+        <view v-if="hasAiArtist" class="tool-item dy-clickable" @click="onTool('aiartist')">
           <DyIconBlock text="AI" color="red" size="md" />
           <text class="tool-label">AI 创作</text>
         </view>
-        <view class="tool-item dy-clickable" @click="onTool('aichat')">
+        <view v-if="hasAiChat" class="tool-item dy-clickable" @click="onTool('aichat')">
           <DyIconBlock text="答" color="red" size="md" />
           <text class="tool-label">你问我答</text>
         </view>
@@ -131,12 +132,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { getContentList } from '@/api/content';
 import { getPosterTemplates } from '@/api/poster';
+import { getTools } from '@/api/tool';
 import { formatFileUrl } from '@/utils/file';
-import type { ContentArticle } from '@/types';
+import type { ContentArticle, ToolInfo } from '@/types';
 import type { PosterTemplate } from '@/api/poster';
 import DyIconBlock from '@/components/DyIconBlock/DyIconBlock.vue';
 import DySkeleton from '@/components/DySkeleton/DySkeleton.vue';
@@ -149,11 +151,21 @@ import DyEmpty from '@/components/DyEmpty/DyEmpty.vue';
  * - 你问我答的问答人物为其二级页面（aichat/index 人物选择），不在本页平铺；
  * - 「今日热点」独立区块：最新/最热内容（前 4）+ 海报模板（前 2），横向滑动；
  * - 线索清单/搜索已拆至独立「线索管理」页（个人中心「线索记录」同入口）。
+ *
+ * 常驻菜单：内容获客、营销海报、线索管理、电子名片、旅居网络、活力网络、照护网络、养老品牌
+ * 配置菜单：养老金计算、缺口计算、AI创作、你问我答（需 channel 端配置才显示）
  */
 
 const hotLoading = ref(false);
 const hotContents = ref<ContentArticle[]>([]);
 const hotPosters = ref<PosterTemplate[]>([]);
+const tools = ref<ToolInfo[]>([]);
+
+// 配置菜单：根据工具列表判断是否显示
+const hasPension = computed(() => tools.value.some(t => t.toolType === 'pension'));
+const hasGap = computed(() => tools.value.some(t => t.toolType === 'gap'));
+const hasAiArtist = computed(() => tools.value.some(t => t.toolType === 'aiartist'));
+const hasAiChat = computed(() => tools.value.some(t => t.toolType === 'aichat'));
 
 async function loadHot() {
   hotLoading.value = true;
@@ -164,9 +176,13 @@ async function loadHot() {
     // 海报：取前 2
     const posters = await getPosterTemplates();
     hotPosters.value = (posters || []).slice(0, 2);
+    // 工具：获取可用工具列表（用于判断配置菜单是否显示）
+    const toolList = await getTools();
+    tools.value = toolList || [];
   } catch {
     hotContents.value = [];
     hotPosters.value = [];
+    tools.value = [];
   } finally {
     hotLoading.value = false;
   }
