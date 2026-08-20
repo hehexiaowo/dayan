@@ -7,7 +7,6 @@ import com.dayan.tool.dto.ToolInfoUpdateDTO;
 import com.dayan.tool.model.ToolAiartistPipelineConfig;
 import com.dayan.tool.vo.ToolAichatPersonaVO;
 import com.dayan.tool.vo.ToolAiartistConfigVO;
-import com.dayan.tool.vo.ToolChannelPersonaVO;
 import com.dayan.tool.vo.ToolInfoVO;
 
 import java.util.List;
@@ -37,9 +36,6 @@ public interface ToolInfoService {
 
     /** 问答人物详情（tool_code 对应的 aichat 实例，不存在抛 NOT_FOUND） */
     ToolAichatPersonaVO getQaPersona(String toolCode);
-
-    /** 渠道端问答人物列表（启用中 aichat 实例；含全局库与本渠道补充库） */
-    List<ToolChannelPersonaVO> listChannelPersonas(String channelCode);
 
     /** AI 创作分类列表（tool_type=aiartist 且启用，按 id 升序） */
     List<ToolAiartistConfigVO> listAiartistConfigs();

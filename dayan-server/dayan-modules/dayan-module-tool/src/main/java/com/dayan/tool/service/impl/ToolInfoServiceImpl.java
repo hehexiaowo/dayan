@@ -12,15 +12,15 @@ import com.dayan.common.core.resp.PageResult;
 import com.dayan.tool.dto.ToolInfoCreateDTO;
 import com.dayan.tool.dto.ToolInfoQueryDTO;
 import com.dayan.tool.dto.ToolInfoUpdateDTO;
+import com.dayan.channel.entity.ChannelConfigTool;
+import com.dayan.channel.service.ChannelConfigToolService;
 import com.dayan.tool.entity.ToolInfo;
 import com.dayan.tool.mapper.ToolInfoMapper;
 import com.dayan.tool.model.ToolAiartistPipelineConfig;
 import com.dayan.tool.model.ToolType;
-import com.dayan.tool.service.ToolChannelRepoBindService;
 import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.ToolAichatPersonaVO;
 import com.dayan.tool.vo.ToolAiartistConfigVO;
-import com.dayan.tool.vo.ToolChannelPersonaVO;
 import com.dayan.tool.vo.ToolInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +49,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
 
     private final ToolInfoMapper toolInfoMapper;
     private final SequenceProvider sequenceProvider;
-    private final ToolChannelRepoBindService bindService;
+    private final ChannelConfigToolService channelConfigToolService;
 
     @Override
     public PageResult<ToolInfoVO> page(ToolInfoQueryDTO query) {
@@ -86,27 +86,10 @@ public class ToolInfoServiceImpl implements ToolInfoService {
                         .orderByAsc(ToolInfo::getId))
                 .stream().map(this::toPersona)
                 .map(p -> {
-                    p.setRepoIds(bindService.mergeRepoIds(p.getToolCode(), p.getRepoIds()));
+                    p.setRepoIds(mergeRepoIds(p.getToolCode(), p.getRepoIds()));
                     return p;
                 })
                 .toList();
-    }
-
-    @Override
-    public List<ToolChannelPersonaVO> listChannelPersonas(String channelCode) {
-        return toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
-                        .eq(ToolInfo::getToolType, ToolType.AI_QA)
-                        .eq(ToolInfo::getStatus, 1)
-                        .orderByAsc(ToolInfo::getId))
-                .stream().map(tool -> {
-                    ToolChannelPersonaVO vo = new ToolChannelPersonaVO();
-                    vo.setToolCode(tool.getToolCode());
-                    vo.setPersonaName(tool.getToolName());
-                    vo.setToolDesc(tool.getToolDesc());
-                    vo.setGlobalRepoIds(parseRepoIds(tool));
-                    vo.setChannelRepoIds(bindService.listRepoIds(tool.getToolCode(), channelCode));
-                    return vo;
-                }).toList();
     }
 
     @Override
@@ -332,5 +315,31 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         return vo;
+    }
+
+    /**
+     * 合并有效知识库：全局 repoIds + 当前渠道补充 repoIds（去重保序；无渠道上下文退化为仅全局）。
+     * 渠道补充从 channel_config_tool(config_type=1) 读取 config_json 中的 repoIds。
+     */
+    private List<Long> mergeRepoIds(String toolCode, List<Long> globalRepoIds) {
+        java.util.Set<Long> merged = new java.util.LinkedHashSet<>();
+        if (globalRepoIds != null && !globalRepoIds.isEmpty()) {
+            merged.addAll(globalRepoIds);
+        }
+        String channelCode = com.dayan.common.mybatis.context.ContextHolder.getChannelCode();
+        if (StrUtil.isNotBlank(channelCode)) {
+            ChannelConfigTool config = channelConfigToolService.getByChannelToolType(channelCode, toolCode, 1);
+            if (config != null && StrUtil.isNotBlank(config.getConfigJson())) {
+                try {
+                    JSONObject json = JSONUtil.parseObj(config.getConfigJson());
+                    if (json.getJSONArray("repoIds") != null) {
+                        merged.addAll(json.getJSONArray("repoIds").toList(Long.class));
+                    }
+                } catch (Exception e) {
+                    log.warn("解析渠道补充知识库配置失败: channelCode={}, toolCode={}", channelCode, toolCode);
+                }
+            }
+        }
+        return List.copyOf(merged);
     }
 }

@@ -16,10 +16,11 @@ import com.dayan.tool.entity.ToolAichatSession;
 import com.dayan.tool.mapper.ToolAichatMessageMapper;
 import com.dayan.tool.mapper.ToolAichatSessionMapper;
 import com.dayan.tool.service.AiClientHolder;
+import com.dayan.channel.entity.ChannelConfigTool;
+import com.dayan.channel.service.ChannelConfigToolService;
 import com.dayan.tool.service.ToolAichatChatListener;
 import com.dayan.tool.service.ToolAichatChatService;
 import com.dayan.tool.service.ToolAichatSessionService;
-import com.dayan.tool.service.ToolChannelRepoBindService;
 import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.ToolAichatChatResultVO;
 import com.dayan.tool.vo.ToolAichatMessageVO;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -68,7 +70,7 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
     private final ToolInfoService toolInfoService;
     private final SystemKnowledgeRepoService knowledgeRepoService;
     private final AiClientHolder aiClientHolder;
-    private final ToolChannelRepoBindService bindService;
+    private final ChannelConfigToolService channelConfigToolService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -203,7 +205,7 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
                                                                    List<String> texts) {
         List<ToolAichatChatResultVO.Citation> citations = new ArrayList<>();
         Set<String> seen = new HashSet<>();
-        List<Long> repoIds = bindService.mergeRepoIds(persona.getToolCode(), persona.getRepoIds());
+        List<Long> repoIds = mergeRepoIds(persona.getToolCode(), persona.getRepoIds());
         for (Long repoId : repoIds) {
             try {
                 knowledgeRepoService.requireRepoVisibleForPersona(repoId);  // 人物绑定路径：平台库放行 + 渠道库归属校验
@@ -352,6 +354,33 @@ public class ToolAichatChatServiceImpl implements ToolAichatChatService {
                 ? null
                 : JSONUtil.toList(m.getCitations(), ToolAichatChatResultVO.Citation.class));
         return vo;
+    }
+
+    /**
+     * 合并有效知识库：全局 repoIds + 当前渠道补充 repoIds（去重保序；无渠道上下文退化为仅全局）。
+     * 渠道补充从 channel_config_tool(config_type=1) 读取 config_json 中的 repoIds。
+     */
+    private List<Long> mergeRepoIds(String toolCode, List<Long> globalRepoIds) {
+        Set<Long> merged = new LinkedHashSet<>();
+        if (globalRepoIds != null && !globalRepoIds.isEmpty()) {
+            merged.addAll(globalRepoIds);
+        }
+        String channelCode = ContextHolder.getChannelCode();
+        if (StrUtil.isNotBlank(channelCode)) {
+            ChannelConfigTool config = channelConfigToolService.getByChannelToolType(channelCode, toolCode, 1);
+            if (config != null && StrUtil.isNotBlank(config.getConfigJson())) {
+                try {
+                    cn.hutool.json.JSONObject json = JSONUtil.parseObj(config.getConfigJson());
+                    cn.hutool.json.JSONArray arr = json.getJSONArray("repoIds");
+                    if (arr != null) {
+                        merged.addAll(arr.toList(Long.class));
+                    }
+                } catch (Exception e) {
+                    log.warn("解析渠道补充知识库配置失败: channelCode={}, toolCode={}", channelCode, toolCode);
+                }
+            }
+        }
+        return List.copyOf(merged);
     }
 
 }
