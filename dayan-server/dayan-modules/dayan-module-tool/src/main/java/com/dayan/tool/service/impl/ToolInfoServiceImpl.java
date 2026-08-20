@@ -20,6 +20,7 @@ import com.dayan.tool.service.ToolChannelRepoBindService;
 import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.ToolAichatPersonaVO;
 import com.dayan.tool.vo.ToolAiartistConfigVO;
+import com.dayan.tool.vo.ToolChannelPersonaVO;
 import com.dayan.tool.vo.ToolInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -89,6 +90,23 @@ public class ToolInfoServiceImpl implements ToolInfoService {
                     return p;
                 })
                 .toList();
+    }
+
+    @Override
+    public List<ToolChannelPersonaVO> listChannelPersonas(String channelCode) {
+        return toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
+                        .eq(ToolInfo::getToolType, ToolType.AI_QA)
+                        .eq(ToolInfo::getStatus, 1)
+                        .orderByAsc(ToolInfo::getId))
+                .stream().map(tool -> {
+                    ToolChannelPersonaVO vo = new ToolChannelPersonaVO();
+                    vo.setToolCode(tool.getToolCode());
+                    vo.setPersonaName(tool.getToolName());
+                    vo.setToolDesc(tool.getToolDesc());
+                    vo.setGlobalRepoIds(parseRepoIds(tool));
+                    vo.setChannelRepoIds(bindService.listRepoIds(tool.getToolCode(), channelCode));
+                    return vo;
+                }).toList();
     }
 
     @Override
