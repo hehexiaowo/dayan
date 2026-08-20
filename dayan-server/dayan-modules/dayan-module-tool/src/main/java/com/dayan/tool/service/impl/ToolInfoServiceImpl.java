@@ -91,6 +91,16 @@ public class ToolInfoServiceImpl implements ToolInfoService {
     }
 
     @Override
+    public List<ToolAichatPersonaVO> listQaPersonasRaw() {
+        return toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
+                        .eq(ToolInfo::getToolType, ToolType.AI_QA)
+                        .eq(ToolInfo::getStatus, 1)
+                        .orderByAsc(ToolInfo::getId))
+                .stream().map(this::toPersona)
+                .toList();
+    }
+
+    @Override
     public ToolAichatPersonaVO getQaPersona(String toolCode) {
         ToolInfo tool = requireTool(toolCode);
         if (!ToolType.AI_QA.equals(tool.getToolType())) {

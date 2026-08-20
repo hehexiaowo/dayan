@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Channel 渠道端 AI 问答人物接口（渠道补充知识库）。
@@ -50,15 +51,19 @@ public class ChannelToolAichatController {
     @GetMapping("/personas")
     public R<List<ToolChannelPersonaVO>> personas() {
         String channelCode = ContextHolder.getChannelCode();
-        List<ToolChannelPersonaVO> result = toolInfoService.listQaPersonas().stream().map(p -> {
+        // 从 tool 域获取所有启用的 aichat 人物（不做合并）
+        List<ToolAichatPersonaVO> rawPersonas = toolInfoService.listQaPersonasRaw();
+        List<ToolChannelPersonaVO> result = rawPersonas.stream().map(p -> {
             ToolChannelPersonaVO vo = new ToolChannelPersonaVO();
             vo.setToolCode(p.getToolCode());
             vo.setPersonaName(p.getPersonaName());
             vo.setToolDesc(p.getToolDesc());
-            vo.setGlobalRepoIds(p.getRepoIds());
+            // globalRepoIds = admin 全局绑定（config_json.repoIds，未合并）
+            vo.setGlobalRepoIds(p.getRepoIds() != null ? p.getRepoIds() : List.of());
+            // channelRepoIds = 本渠道补充（从 channel_config_tool 读 config_type=1）
             vo.setChannelRepoIds(getChannelRepoIds(channelCode, p.getToolCode()));
             return vo;
-        }).toList();
+        }).collect(Collectors.toList());
         return R.ok(result);
     }
 

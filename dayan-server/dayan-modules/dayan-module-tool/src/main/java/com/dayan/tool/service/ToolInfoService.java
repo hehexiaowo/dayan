@@ -31,8 +31,11 @@ public interface ToolInfoService {
      */
     List<ToolInfoVO> listEnabled();
 
-    /** 问答人物列表（tool_type=aichat 且启用，按 id 升序） */
+    /** 问答人物列表（tool_type=aichat 且启用，按 id 升序；repoIds 已做渠道合并） */
     List<ToolAichatPersonaVO> listQaPersonas();
+
+    /** 问答人物列表（tool_type=aichat 且启用，按 id 升序；repoIds 为原始全局值，不做渠道合并） */
+    List<ToolAichatPersonaVO> listQaPersonasRaw();
 
     /** 问答人物详情（tool_code 对应的 aichat 实例，不存在抛 NOT_FOUND） */
     ToolAichatPersonaVO getQaPersona(String toolCode);
