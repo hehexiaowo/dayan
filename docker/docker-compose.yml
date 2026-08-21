@@ -7,7 +7,7 @@ name: dayan
 # 停止：docker compose down
 #
 # 注意：
-# - MySQL 启动时自动执行 db/migration（127 表 DDL + 99_seed.sh 种子）
+# - MySQL 启动时自动执行 db/migration（schema.sql 建表 + seed.sql 种子）
 # - 应用依赖基础设施健康检查通过后启动
 # - 前端工程需单独构建（见各自目录 README）
 

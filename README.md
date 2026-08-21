@@ -26,7 +26,7 @@ dayan/
 ├── dayan-channel/            Channel 前端（Vue3 + Element Plus）
 ├── dayan-agent/              Agent 小程序/H5（uni-app，端口 517x dev）
 ├── dayan-client/             Client 小程序/H5（uni-app）
-├── db/migration/              90 个迁移文件（DDL + 种子，Docker MySQL 启动自动执行）
+├── db/migration/              最终架构 schema.sql + 种子 seed.sql（Docker MySQL 启动自动执行）
 ├── docker/                    Dockerfile + docker-compose 编排（infra 基础设施 / 全量 8 服务）
 ├── docs/                      设计文档（01-09：需求/DB/架构/部署/API/规范/测试/计划/现状说明）
 └── .superpowers/              AI 辅助开发规格与计划（本地工作区，gitignore 不入库；个别审查报告已提交留档）
@@ -100,4 +100,4 @@ docker compose -f docker/docker-compose.yml up -d --build
 - 设计文档：`docs/01产品需求设计文档_v4.0.md` ~ `docs/09实现现状与变更说明.md`
 - 开发规范：`docs/06项目开发规范.md`
 - AI 开发工作区：`.superpowers/specs/`（设计规格）、`.superpowers/plans/`（实现计划）、`.superpowers/sdd/progress.md`（执行账本）——本地工作区，gitignore 不入库（sdd 下个别最终审查报告已提交留档）
-- 数据库迁移：`db/migration/`（编号只增，`SET NAMES utf8mb4` 开头，种子幂等）
+- 数据库初始化：`db/migration/`（schema.sql 最终架构 + seed.sql 幂等种子，`SET NAMES utf8mb4` 开头；历史迁移链已合并，见目录 README）
