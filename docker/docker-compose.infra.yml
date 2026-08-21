@@ -1,3 +1,5 @@
+name: dayan
+
 # 大雁养老 - 基础设施编排（MySQL + Redis + Nacos + MinIO）
 #
 # 用途：开发期只启动依赖中间件，应用在 IDE 本地运行（便于调试）。
