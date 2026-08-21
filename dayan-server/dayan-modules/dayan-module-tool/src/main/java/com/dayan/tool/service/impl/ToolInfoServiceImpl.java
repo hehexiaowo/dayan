@@ -14,11 +14,9 @@ import com.dayan.tool.dto.ToolInfoQueryDTO;
 import com.dayan.tool.dto.ToolInfoUpdateDTO;
 import com.dayan.tool.entity.ToolInfo;
 import com.dayan.tool.mapper.ToolInfoMapper;
-import com.dayan.tool.model.ToolAiartistPipelineConfig;
 import com.dayan.tool.model.ToolType;
 import com.dayan.tool.service.ToolInfoService;
 import com.dayan.tool.vo.ToolAichatPersonaVO;
-import com.dayan.tool.vo.ToolAiartistConfigVO;
 import com.dayan.tool.vo.ToolInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -124,34 +122,6 @@ public class ToolInfoServiceImpl implements ToolInfoService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "问答人物不存在: " + toolCode);
         }
         return toPersona(tool);
-    }
-
-    @Override
-    public List<ToolAiartistConfigVO> listAiartistConfigs() {
-        return toolInfoMapper.selectList(new LambdaQueryWrapper<ToolInfo>()
-                        .eq(ToolInfo::getToolType, ToolType.AI_CREATOR)
-                        .eq(ToolInfo::getStatus, 1)
-                        .orderByAsc(ToolInfo::getId))
-                .stream().map(this::toAiartistConfig).toList();
-    }
-
-    @Override
-    public ToolAiartistConfigVO getAiartistConfig(String toolCode) {
-        ToolInfo tool = requireTool(toolCode);
-        if (!ToolType.AI_CREATOR.equals(tool.getToolType())) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "AI 创作分类不存在: " + toolCode);
-        }
-        return toAiartistConfig(tool);
-    }
-
-    @Override
-    public ToolAiartistPipelineConfig getAiartistPipelineConfig(String toolCode) {
-        ToolInfo tool = requireTool(toolCode);
-        if (!ToolType.AI_CREATOR.equals(tool.getToolType())) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "AI 创作分类不存在: " + toolCode);
-        }
-        return ToolAiartistPipelineConfig.parse(StrUtil.isBlank(tool.getConfigJson())
-                ? null : JSONUtil.parseObj(tool.getConfigJson()));
     }
 
     @Override
@@ -266,7 +236,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         }
     }
 
-    /** aiartist 类型必须配置创作目的与人设描述（config_json.purpose / systemPrompt） */
+    /** aiartist 类型必须配置创作目的（config_json.purpose，如 rewrite） */
     private void validateAiartistConfig(String toolType, String configJson) {
         if (!ToolType.AI_CREATOR.equals(toolType)) {
             return;
@@ -274,10 +244,7 @@ public class ToolInfoServiceImpl implements ToolInfoService {
         JSONObject cfg = StrUtil.isBlank(configJson) ? null : JSONUtil.parseObj(configJson);
         if (cfg == null || StrUtil.isBlank(cfg.getStr("purpose"))) {
             throw new BusinessException(ErrorCode.PARAM_ERROR,
-                    "AI 创作类型必须配置创作目的（config_json.purpose：science/park/product）");
-        }
-        if (StrUtil.isBlank(cfg.getStr("systemPrompt"))) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "AI 创作类型必须配置人设描述（config_json.systemPrompt）");
+                    "AI 创作类型必须配置创作目的（config_json.purpose，如 rewrite）");
         }
     }
 
@@ -310,22 +277,6 @@ public class ToolInfoServiceImpl implements ToolInfoService {
             }
         }
         return List.of();
-    }
-
-    /** 组装 AI 创作分类：名称取 toolName，purpose/图标/人设来自 config_json */
-    private ToolAiartistConfigVO toAiartistConfig(ToolInfo tool) {
-        ToolAiartistConfigVO vo = new ToolAiartistConfigVO();
-        vo.setToolCode(tool.getToolCode());
-        vo.setToolName(tool.getToolName());
-        vo.setToolDesc(tool.getToolDesc());
-        if (StrUtil.isNotBlank(tool.getConfigJson())) {
-            JSONObject cfg = JSONUtil.parseObj(tool.getConfigJson());
-            vo.setPurpose(cfg.getStr("purpose"));
-            vo.setIcon(cfg.getStr("icon"));
-            vo.setIconColor(cfg.getStr("iconColor"));
-            vo.setSystemPrompt(cfg.getStr("systemPrompt"));
-        }
-        return vo;
     }
 
     private ToolInfoVO toVO(ToolInfo entity) {
